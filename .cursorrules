@@ -1,0 +1,282 @@
+Language Guidelines
+// 语言规范
+- Think in English, respond in Chinese
+  // 用英文思考，用中文回应
+- Keep technical terms in English
+  // 技术术语保持英文
+- Use bilingual comments
+  // 使用双语注释
+
+Full Stack Development Guidelines
+// 全栈开发规范
+
+Technology Stack
+// 技术栈
+Frontend:
+// 前端：
+- Vue 3 with Composition API for UI framework
+  // 使用 Vue 3 组合式 API 作为 UI 框架
+- Vite for build tooling
+  // 使用 Vite 作为构建工具
+- Element Plus for UI components
+  // 使用 Element Plus 作为 UI 组件库
+  - Use on-demand import for components
+    // 按需引入组件
+  - Follow Element Plus design system
+    // 遵循 Element Plus 设计系统
+  - Use component props for customization
+    // 使用组件属性进行自定义
+  - Implement responsive layouts
+    // 实现响应式布局
+- Pinia for state management
+  // 使用 Pinia 进行状态管理
+- Axios for HTTP requests
+  // 使用 Axios 进行 HTTP 请求
+
+Backend:
+// 后端：
+- Go with Gin framework for HTTP services
+  // 使用 Go 和 Gin 框架开发 HTTP 服务
+- GORM for ORM and database operations
+  // 使用 GORM 进行 ORM 和数据库操作
+  - Use model struct tags
+    // 使用模型结构体标签
+  - Follow naming conventions
+    // 遵循命名约定
+  - Implement hooks when needed
+    // 必要时实现钩子
+  - Use transactions appropriately
+    // 适当使用事务
+- Zap for logging
+  // 使用 Zap 进行日志记录
+- Viper for configuration
+  // 使用 Viper 进行配置管理
+
+Project Structure
+// 项目结构
+Frontend:
+// 前端：
+- src/
+  - components/ for reusable components
+    // 可复用组件
+    - common/ for wrapped Element Plus components
+      // Element Plus 组件封装
+    - business/ for business components
+      // 业务组件
+  - styles/ for global styles
+    // 全局样式
+    - element-plus/ for Element Plus theme customization
+      // Element Plus 主题定制
+    - variables.scss for shared variables
+      // 共享变量
+  - views/ for page components
+    // 页面组件
+  - router/ for Vue Router
+    // 路由配置
+  - stores/ for Pinia stores
+    // Pinia 状态管理
+  - utils/ for utilities
+    // 工具函数
+  - api/ for API integration
+    // API 集成
+    - generated/ for Swagger generated API
+      // Swagger 生成的 API
+
+Backend:
+// 后端：
+- cmd/ for main program entry points
+  // 主程序入口
+- internal/ for internal packages
+  // 内部包
+  - app/ for lifecycle management
+    // 生命周期管理
+  - controller/ for request handling
+    // 请求处理
+  - route/ for routing
+    // 路由管理
+  - iface/ for interfaces
+    // 接口定义
+  - global/ for constants
+    // 全局常量
+  - logging/ for log config
+    // 日志配置
+  - domain/ for database models
+    // 数据库模型
+- runtime/ for runtime files
+  // 运行时文件
+- scripts/ for utilities
+  // 工具脚本
+
+Code Style and Conventions
+// 代码风格和约定
+Frontend:
+// 前端：
+- Use composition API and <script setup>
+  // 使用组合式 API 和 setup 语法
+- Prefer const/let over var
+  // 优先使用 const/let
+- Use arrow functions
+  // 使用箭头函数
+- Follow Vue 3 best practices
+  // 遵循 Vue 3 最佳实践
+
+Backend:
+// 后端：
+- Use idiomatic Go
+  // 使用地道的 Go 风格
+- Follow Go naming conventions
+  // 遵循 Go 命名约定
+- Handle errors appropriately
+  // 适当处理错误
+- Use panic sparingly
+  // 谨慎使用 panic
+
+Naming Conventions
+// 命名约定
+Frontend:
+// 前端：
+- PascalCase for components
+  // 组件使用帕斯卡命名法
+- camelCase for variables/functions
+  // 变量/函数使用驼峰命名法
+- kebab-case for files/directories
+  // 文件/目录使用短横线命名法
+
+Backend:
+// 后端：
+- CamelCase for exported names
+  // 导出名称使用驼峰命名法
+- camelCase for internal names
+  // 内部名称使用驼峰命名法
+- lowercase for packages
+  // 包名使用小写
+
+API Integration
+// API 集成
+- RESTful design principles
+  // RESTful 设计原则
+- Consistent error formats
+  // 统一的错误格式
+- Proper status codes
+  // 合适的状态码
+- Version control in URL
+  // URL 中的版本控制
+- Swagger/OpenAPI documentation
+  // Swagger/OpenAPI 文档
+
+Security
+// 安全性
+- Authentication & Authorization
+  // 认证和授权
+- Input validation
+  // 输入验证
+- XSS & CSRF protection
+  // XSS 和 CSRF 防护
+- Secure headers
+  // 安全头部
+- SQL injection prevention
+  // SQL 注入防护
+
+Performance
+// 性能
+Frontend:
+// 前端：
+- Lazy loading
+  // 懒加载
+- Asset optimization
+  // 资源优化
+- Code splitting
+  // 代码分割
+- Cache management
+  // 缓存管理
+
+Backend:
+// 后端：
+- Connection pooling
+  // 连接池
+- Query optimization
+  // 查询优化
+- Async operations
+  // 异步操作
+- Resource monitoring
+  // 资源监控
+
+Testing
+// 测试
+Frontend:
+// 前端：
+- Unit tests with Vitest
+  // 使用 Vitest 进行单元测试
+- Component testing
+  // 组件测试
+- E2E with Cypress
+  // 使用 Cypress 进行端到端测试
+
+Backend:
+// 后端：
+- Unit tests with testify
+  // 使用 testify 进行单元测试
+- Integration tests
+  // 集成测试
+- Mock external dependencies
+  // Mock 外部依赖
+
+Development Workflow
+// 开发工作流
+- Git version control
+  // Git 版本控制
+- Code review process
+  // 代码审查流程
+- CI/CD pipeline
+  // CI/CD 流水线
+- Environment management
+  // 环境管理
+- Dependency updates
+  // 依赖更新
+
+Documentation
+// 文档
+- API documentation
+  // API 文档
+- Setup instructions
+  // 安装说明
+- Architecture diagrams
+  // 架构图
+- Code comments
+  // 代码注释
+- Change logs
+  // 变更日志
+
+Follow official documentation and project-specific guidelines for up-to-date best practices.
+// 遵循官方文档和项目特定指南以获取最新的最佳实践。
+
+UI and Design System
+// UI 和设计系统
+- Element Plus Components
+  // Element Plus 组件
+  - Use semantic components
+    // 使用语义化组件
+  - Follow form validation patterns
+    // 遵循表单验证模式
+  - Implement consistent layouts
+    // 实现一致的布局
+  - Use built-in transitions
+    // 使用内置过渡动画
+- Theme Customization
+  // 主题定制
+  - Define color variables
+    // 定义颜色变量
+  - Use CSS variables
+    // 使用 CSS 变量
+  - Maintain dark mode support
+    // 保持暗色模式支持
+- Responsive Design
+  // 响应式设计
+  - Use Element Plus breakpoints
+    // 使用 Element Plus 断点
+  - Implement mobile-first approach
+    // 实现移动优先方法
+  - Test across devices
+    // 跨设备测试
+
+      

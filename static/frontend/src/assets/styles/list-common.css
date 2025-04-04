@@ -1,0 +1,65 @@
+/* 列表页面通用样式 */
+.list-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.operation-bar {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.el-table {
+  flex: 1;
+  overflow: auto;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* 对话框内容区域最大高度 */
+.el-dialog__body {
+  max-height: calc(90vh - 150px);
+  overflow-y: auto;
+}
+
+/* 预览和图表容器样式 */
+.preview-container,
+.chart-container {
+  height: 100%;
+  min-height: 400px;
+}
+
+.preview-placeholder,
+.chart-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  background-color: #f5f7fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #909399;
+  border: 1px dashed #dcdfe6;
+}
+
+/* 数据表格容器 */
+.data-table {
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+} 

@@ -1,0 +1,37 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# build output
+/output/
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# runtime files
+/runtime/
+
+.idea/
+
+/docs
+
+*.pb.go
+
+# 前端
+/static/frontend/node_modules/
+/static/frontend/.DS_Store
+/static/frontend/dist/
+
+# Editor directories and files
+/static/frontend/.vscode/
+!/static/frontend/.vscode/extensions.json
+/static/frontend/.idea/

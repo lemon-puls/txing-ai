@@ -1,0 +1,52 @@
+[log.console]
+enabled = false
+
+
+# 数据库配置
+[db]
+# 数据库类型 mysql, sqlite3
+type = ""
+# mysql 格式： <user>:<password>@tcp(<host>:<port>)/<database>  
+# sqlite3 格式： file: <文件路径> 如： file:runtime/cas.db
+uri = "" 
+# 数据库连接参数 参数间使用 & 连接
+params = ""
+
+# redis 配置
+[redis]
+# redis 地址
+addr = "localhost:6379"
+# redis 密码
+password = ""
+# redis 数据库
+db = 1
+
+# 短信配置
+[sms]
+access-key-id = ""
+access-key-secret = ""
+endpoint = "dysmsapi.aliyuncs.com"
+sign-name = "阿里云短信测试"
+template-code = "SMS_12345678"
+# 验证码过期时间，单位秒
+ttl = 300
+
+# token 配置
+[token]
+# 签发者
+issuer = "cas-auth-service"
+# 访问 token 密钥
+access-secret = ""
+# 刷新 token 密钥
+refresh-secret = ""
+# 刷新 token 密钥
+# 访问 token 有效期，单位秒
+access-expire = 3600
+# 刷新 token 有效期，单位秒
+refresh-expire = 86400
+
+[app]
+# 服务名称 用于获取本服务的权限信息
+name = "cas"
+# grpc 服务地址
+grpc-server-addr = ":8088"
