@@ -92,18 +92,28 @@ Backend:
     // 生命周期管理
   - controller/ for request handling
     // 请求处理
-  - route/ for routing
-    // 路由管理
+  - middleware/ for HTTP middleware
+    // HTTP 中间件
+  - domain/ for database models
+    // 数据库实体
+  - dto/ for data transfer objects
+    // 数据传输对象
+  - vo/ for view objects
+    // 视图对象
+  - enum/ for enumerations
+    // 枚举定义
+  - global/ for shared packages
+    // 公共包
   - iface/ for interfaces
     // 接口定义
-  - global/ for constants
-    // 全局常量
-  - logging/ for log config
-    // 日志配置
-  - domain/ for database models
-    // 数据库模型
-- runtime/ for runtime files
-  // 运行时文件
+  - service/ for business logic
+    // 业务服务
+  - route/ for routing
+    // 路由管理
+  - utils/ for utilities
+    // 工具函数
+- runtime/ for runtime files (logs, configs, etc.)
+  // 运行时文件（日志、配置文件等）
 - scripts/ for utilities
   // 工具脚本
 

@@ -1,0 +1,42 @@
+server:
+  # 服务名称
+  name: "txing-ai"
+  # 服务环境
+  profile: "dev"
+  # 服务监听地址
+  port: 8080
+  # 服务版本
+  version: "v1.0.0"
+
+# 日志配置
+log:
+  # 日志级别
+  level: "debug"
+  # 日志文件名 大小达到 max_size 后会自动分割，保留 max_age 天，最多保留 max_backups 个分割文件
+  # 写满后自动新建日志文件命令： txing-ai-2024-10-14T16-12-28.237.log
+  file_name: "runtime/log/txing-ai.log"
+  # 日志文件大小 单位：MB
+  max_size: 4
+  # 日志文件保留天数
+  max_age: 30
+  # 日志文件分割数量上限
+  max_backups: 10
+# Redis 配置
+redis:
+  # Redis 地址
+  host: localhost
+  # Redis 端口
+  port: 6379
+  # Redis 密码
+  password: "123456"
+  # 指定数据库
+  db: 3
+
+mysql:
+  host: localhost
+  port: 3306
+  username: root
+  password: 123456
+  database: "txing_ai"
+  max_open_conns: 200
+  max_idle_conns: 50
