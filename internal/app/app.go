@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/config"
+	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 	"txing-ai/internal/middleware"
 	"txing-ai/internal/route"
@@ -32,16 +33,16 @@ func (s *server) Start() {
 	go func() {
 		// TODO 加 recover 处理
 		if err := s.impl.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			zap.L().Error("listen and serve error", zap.Error(err))
+			log.Error("listen and serve error", zap.Error(err))
 		}
-		zap.L().Info("server closed")
+		log.Info("server closed")
 	}()
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
 	err := s.resProvider.GetRedisClient().Close()
 	if err != nil {
-		zap.L().Error("redis client close error", zap.Error(err))
+		log.Error("redis client close error", zap.Error(err))
 	}
 
 	return s.impl.Shutdown(ctx)
@@ -71,7 +72,7 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	// 解析命令行参数
 	flag.Parse()
 
-	zap.L().Info("server listening on port", zap.Int("port", *port))
+	log.Info("server listening on port", zap.Int("port", *port))
 
 	// 创建一个HTTP服务器
 	srv := &http.Server{

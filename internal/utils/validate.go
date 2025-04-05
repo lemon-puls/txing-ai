@@ -8,23 +8,24 @@ import (
 	"strings"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/config"
+	"txing-ai/internal/global/logging/log"
 )
 
 func ValidateError(c *gin.Context, err error) {
 	// 打印出失败请求的 body
 	body, _ := ioutil.ReadAll(c.Request.Body)
-	zap.L().Error("validate error", zap.Error(err), zap.String("body", string(body)))
+	log.Error("validate error", zap.Error(err), zap.String("body", string(body)))
 	errors, ok := err.(validator.ValidationErrors)
 	if !ok {
 		// 非参数校验错误
-		zap.L().Error("not a validate error", zap.Error(errors))
+		log.Error("not a validate error", zap.Error(errors))
 		ErrorWithMsg(c, err.Error(), err)
 		return
 	}
 
 	// 参数校验错误
 	errMsgMap := removeStructPrefix(errors.Translate(config.Trans))
-	zap.L().Error("validate error", zap.Any("errors", errMsgMap))
+	log.Error("validate error", zap.Any("errors", errMsgMap))
 	ErrorWithData(c, global.CodeInvalidParams, errMsgMap, err)
 }
 

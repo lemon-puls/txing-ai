@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 )
 
 type Response struct {
@@ -30,7 +31,7 @@ func ErrorWithMsg(ctx *gin.Context, msg string, err error) {
 		fields = append(fields, zap.Error(err))
 	}
 
-	zap.L().Error("return error", fields...)
+	log.Error("return error", fields...)
 
 	response(ctx, http.StatusOK, &Response{
 		Code: global.CodeServerInternalError,
@@ -51,7 +52,7 @@ func ErrorWithCode(ctx *gin.Context, code global.Code, err error) {
 		fields = append(fields, zap.Error(err))
 	}
 
-	zap.L().Error("return error", fields...)
+	log.Error("return error", fields...)
 
 	response(ctx, http.StatusOK, &Response{
 		Code: int(code),
@@ -72,7 +73,7 @@ func ErrorWithCodeAndMsg(ctx *gin.Context, code global.Code, msg string, err err
 		fields = append(fields, zap.Error(err))
 	}
 
-	zap.L().Error("return error", fields...)
+	log.Error("return error", fields...)
 
 	response(ctx, http.StatusOK, &Response{
 		Code: int(code),
@@ -94,7 +95,7 @@ func ErrorWithData(ctx *gin.Context, code global.Code, data interface{}, err err
 		fields = append(fields, zap.Error(err))
 	}
 
-	zap.L().Error("return error", fields...)
+	log.Error("return error", fields...)
 
 	response(ctx, http.StatusOK, &Response{
 		Code: int(code),

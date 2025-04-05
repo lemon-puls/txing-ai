@@ -10,6 +10,7 @@ import (
 	model "txing-ai/internal/domain"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging"
+	"txing-ai/internal/global/logging/log"
 )
 
 // 分页
@@ -60,13 +61,13 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 	})
 
 	if err != nil {
-		zap.L().Error("mysql connect failed, panic", zap.Error(err))
+		log.Error("mysql connect failed, panic", zap.Error(err))
 		panic(err)
 	}
 	// 连接池
 	sqlDB, err := db.DB()
 	if err != nil {
-		zap.L().Error("get sqlDB failed, panic", zap.Error(err))
+		log.Error("get sqlDB failed, panic", zap.Error(err))
 		panic(err)
 	}
 	sqlDB.SetMaxIdleConns(maxIdleConns) // 设置连接池中空闲连接的最大数量

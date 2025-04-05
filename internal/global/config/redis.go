@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 )
 
 func NewRedisClient(cfg *global.RedisConfig, ctx context.Context) *redis.Client {
@@ -18,9 +19,9 @@ func NewRedisClient(cfg *global.RedisConfig, ctx context.Context) *redis.Client 
 	})
 	// 验证连接
 	if _, err := RDB.Ping(ctx).Result(); err != nil {
-		zap.L().Error("redis connect failed, panic", zap.Error(err))
+		log.Error("redis connect failed, panic", zap.Error(err))
 		panic(err)
 	}
-	zap.L().Info("redis connect success")
+	log.Info("redis connect success")
 	return RDB
 }

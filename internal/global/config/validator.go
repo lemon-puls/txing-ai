@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"reflect"
 	"strings"
+	"txing-ai/internal/global/logging/log"
 )
 
 var (
@@ -41,9 +42,9 @@ func InitTranslator(language string) error {
 	var ok bool
 	Trans, ok = uni.GetTranslator(language)
 	if !ok {
-		zap.L().Error("uni.GetTranslator failed", zap.String("language", language))
+		log.Error("uni.GetTranslator failed", zap.String("language", language))
 		Trans = uni.GetFallback()
-		zap.L().Info("uni.GetFallback", zap.String("language", Trans.Locale()))
+		log.Info("uni.GetFallback", zap.String("language", Trans.Locale()))
 	}
 
 	// 注册翻译器到 gin 校验器
