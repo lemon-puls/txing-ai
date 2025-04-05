@@ -1,13 +1,20 @@
 package logging
 
 import (
+	"os"
+	"txing-ai/internal/global"
+
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"txing-ai/internal/global"
 )
 
+// Logger 全局logger实例
+// Global logger instance
+var Logger *zap.Logger
+
+// InitLogger 初始化logger
+// Initialize logger
 func InitLogger(logConfig *global.LogConfig, profile string) {
 	writeSyncer := getLogWriter(logConfig.FileName, logConfig.MaxSize, logConfig.MaxBackups, logConfig.MaxAge)
 	encoder := getProdEncoder()
@@ -28,10 +35,45 @@ func InitLogger(logConfig *global.LogConfig, profile string) {
 		core = zapcore.NewCore(encoder, writeSyncer, l)
 	}
 
-	logger := zap.New(core, zap.AddCaller())
+	Logger = zap.New(core, zap.AddCaller())
+	zap.ReplaceGlobals(Logger)
 
-	zap.ReplaceGlobals(logger)
-	zap.L().Info("logger init success")
+	Info("logger init success")
+}
+
+// Debug logs a message at DebugLevel
+func Debug(msg string, fields ...zap.Field) {
+	Logger.Debug(msg, fields...)
+}
+
+// Info logs a message at InfoLevel
+func Info(msg string, fields ...zap.Field) {
+	Logger.Info(msg, fields...)
+}
+
+// Warn logs a message at WarnLevel
+func Warn(msg string, fields ...zap.Field) {
+	Logger.Warn(msg, fields...)
+}
+
+// Error logs a message at ErrorLevel
+func Error(msg string, fields ...zap.Field) {
+	Logger.Error(msg, fields...)
+}
+
+// Fatal logs a message at FatalLevel
+func Fatal(msg string, fields ...zap.Field) {
+	Logger.Fatal(msg, fields...)
+}
+
+// With creates a child logger with the given fields
+func With(fields ...zap.Field) *zap.Logger {
+	return Logger.With(fields...)
+}
+
+// Named creates a child logger with the given name
+func Named(name string) *zap.Logger {
+	return Logger.Named(name)
 }
 
 func getProdEncoder() zapcore.Encoder {
