@@ -60,7 +60,7 @@ func (c *Connection) ReadFromWsLoop() {
 }
 
 // 开启消息处理
-func (c *Connection) handle(handler func(*dto.WsMessageRequest) error) {
+func (c *Connection) Handle(handler func(*dto.WsMessageRequest) error) {
 	go c.HandleMessageLoop(handler)
 	c.ReadFromWsLoop()
 }

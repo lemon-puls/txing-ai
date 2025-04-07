@@ -11,3 +11,15 @@ const (
 const (
 	ChannelTypeVolcengine = "volcengine"
 )
+
+// 所有大模型
+const (
+	ModelDeepSeekV3 = "deepseek-v3-250324"
+	ModelDeepSeekR1 = "deepseek-r1-250120"
+)
+
+// 消息类型
+const (
+	MessageTypeChat = "chat"
+	MessageTypeStop = "stop"
+)
