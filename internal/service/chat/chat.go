@@ -25,7 +25,7 @@ type partialChunk struct {
 }
 
 // 处理聊天（调用大模型发送消息，并且响应结果）
-func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) string {
+func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) (content, reasoningContent string) {
 
 	// 创建响应缓冲区
 	buffer := utils.NewChatRespBuffer()
@@ -34,7 +34,7 @@ func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *g
 
 	if err != nil {
 		log.Error("execChat failed", zap.Error(err))
-		return err.Error()
+		return err.Error(), ""
 	}
 
 	if buffer.IsEmpty() {
@@ -45,9 +45,9 @@ func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *g
 			ConversationId: conversation.Id,
 		})
 		if err != nil {
-			return ""
+			return
 		}
-		return defaultRespMessage
+		return defaultRespMessage, ""
 	}
 
 	// 发送消息结束标志
@@ -110,10 +110,13 @@ func execChat(conn *utils.Connection, conversation *domain.Conversation, buffer 
 				return nil
 			}
 
+			content, reasoningContent := buffer.WriteChunk(data.Chunk)
+
 			err := conn.Send(dto.WsMessageResponse{
-				Content:        buffer.WriteChunk(data.Chunk),
-				End:            false,
-				ConversationId: conversation.Id,
+				Content:          content,
+				ReasoningContent: reasoningContent,
+				End:              false,
+				ConversationId:   conversation.Id,
 			})
 			if err != nil {
 				log.Error("failed to send message to client", zap.Error(err))

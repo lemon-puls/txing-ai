@@ -9,6 +9,8 @@ import (
 type ChatRespBuffer struct {
 	// 消息内容
 	Content string `json:"content"`
+	// 思考过程消息
+	ReasoningContent string `json:"reasoning_content"`
 	// 最后的消息块
 	Last string `json:"last"`
 	// 消息块数
@@ -24,14 +26,21 @@ func NewChatRespBuffer() *ChatRespBuffer {
 	}
 }
 
-func (b *ChatRespBuffer) WriteChunk(chunk *global.Chunk) string {
+func (b *ChatRespBuffer) WriteChunk(chunk *global.Chunk) (content, reasoningContent string) {
 	if chunk == nil {
-		return ""
+		return
 	}
 
-	b.Write(chunk.Content)
+	if chunk.Content != "" {
+		b.Write(chunk.Content)
+		content = chunk.Content
+	}
+	if chunk.ReasoningContent != "" {
+		b.WriteReasoningContent(chunk.ReasoningContent)
+		reasoningContent = chunk.ReasoningContent
+	}
 
-	return chunk.Content
+	return content, reasoningContent
 }
 
 // 写入消息
@@ -41,14 +50,19 @@ func (b *ChatRespBuffer) Write(content string) {
 	b.Content += content
 }
 
+// 写入思考过程消息
+func (b *ChatRespBuffer) WriteReasoningContent(reasoningContent string) {
+	b.ReasoningContent += reasoningContent
+}
+
 func (b *ChatRespBuffer) IsEmpty() bool {
 	return len(b.Content) == 0
 }
 
 // 获取消息 （如果消息为空，则返回默认消息）
-func (b *ChatRespBuffer) GetOrDefault(defaultMessage string) string {
+func (b *ChatRespBuffer) GetOrDefault(defaultMessage string) (content, reasoningContent string) {
 	if b.IsEmpty() {
-		return defaultMessage
+		return defaultMessage, ""
 	}
-	return b.Content
+	return b.Content, b.ReasoningContent
 }

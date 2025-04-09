@@ -71,9 +71,9 @@ func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest)
 	return nil
 }
 
-func (c *Conversation) SaveResponse(db *gorm.DB, response string) {
+func (c *Conversation) SaveResponse(db *gorm.DB, content string, reasoningContent string) {
 	// 添加消息到会话消息记录中
-	c.addMessageFromAssistant(response)
+	c.addMessageFromAssistant(content, reasoningContent)
 
 	// 更新会话信息到数据库
 	c.updateOrCreate(db)
@@ -142,16 +142,17 @@ func (c *Conversation) GetChatMessages() []global.Message {
 	return c.FormattedMessage[len(c.FormattedMessage)-length:]
 }
 
-func (c *Conversation) addMessageFromAssistant(response string) {
+func (c *Conversation) addMessageFromAssistant(content, reasoningContent string) {
 	// 如果消息内容为空，则不添加到消息记录中
-	if len(response) == 0 {
+	if len(content) == 0 {
 		log.Error("response is empty, skip addMessageFromAssistant")
 		return
 	}
 
 	// 将消息添加到会话消息记录中
 	c.addMessage(global.Message{
-		Role:    global.Assistant,
-		Content: response,
+		Role:             global.Assistant,
+		Content:          content,
+		ReasoningContent: reasoningContent,
 	})
 }

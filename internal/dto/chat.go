@@ -20,5 +20,7 @@ type WsMessageRequest struct {
 type WsMessageResponse struct {
 	ConversationId int64  `json:"conversationId"`
 	Content        string `json:"content"`
-	End            bool   `json:"end"`
+	// 思考过程消息
+	ReasoningContent string `json:"reasoning_content"`
+	End              bool   `json:"end"`
 }

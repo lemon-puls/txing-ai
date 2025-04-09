@@ -5,12 +5,15 @@ type Hook func(chunk *Chunk) error
 
 // 聊天消息
 type Message struct {
-	Role    string  `json:"role"`
-	Content string  `json:"content"`
-	Name    *string `json:"name,omitempty"`
+	Role             string  `json:"role"`
+	Content          string  `json:"content"`
+	ReasoningContent string  `json:"reasoning_content"`
+	Name             *string `json:"name,omitempty"`
 }
 
 // 流式聊天响应消息块
 type Chunk struct {
 	Content string `json:"content"`
+	// 思考过程消息
+	ReasoningContent string `json:"reasoning_content"`
 }

@@ -78,7 +78,15 @@ func (c ChatClient) StreamChat(conf *adaptercommon.ChatConfig, callback global.H
 
 		if len(recv.Choices) > 0 {
 			fmt.Print(recv.Choices[0].Delta.Content)
-			chunk := &global.Chunk{Content: recv.Choices[0].Delta.Content}
+			var reasoningContent string
+			if recv.Choices[0].Delta.ReasoningContent != nil {
+				reasoningContent = *recv.Choices[0].Delta.ReasoningContent
+			}
+
+			chunk := &global.Chunk{
+				Content:          recv.Choices[0].Delta.Content,
+				ReasoningContent: reasoningContent,
+			}
 			err := callback(chunk)
 			if err != nil {
 				log.Error("callback error", zap.Error(err))
