@@ -1,10 +1,11 @@
 package dto
 
 type WsMessageRequest struct {
-	Type    string `json:"type"`
-	Content string `json:"content"`
-	Model   string `json:"model"`
-	Context int    `json:"context"`
+	Type      string `json:"type"`
+	Content   string `json:"content"`
+	Model     string `json:"model"`
+	Context   int    `json:"context"`
+	EnableWeb bool   `json:"enableWeb"`
 
 	// optional fields
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
@@ -17,8 +18,7 @@ type WsMessageRequest struct {
 }
 
 type WsMessageResponse struct {
-	Type    string `json:"type"`
-	Content string `json:"content"`
-	Model   string `json:"model"`
-	Context int    `json:"context"`
+	ConversationId int64  `json:"conversationId"`
+	Content        string `json:"content"`
+	End            bool   `json:"end"`
 }

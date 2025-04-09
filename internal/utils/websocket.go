@@ -2,11 +2,13 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
+	"net/http"
 	"time"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global/logging/log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 // 用于管理底层 WebSocket 连接的读写等操作
@@ -19,7 +21,11 @@ type WebSocket struct {
 
 func NewWebSocket(ctx *gin.Context) *WebSocket {
 
-	upgrader := &websocket.Upgrader{}
+	upgrader := &websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true // 允许所有源
+		},
+	}
 
 	var conn *websocket.Conn
 	var err error
@@ -63,6 +69,14 @@ func (w *WebSocket) Read() (messageType int, message []byte, err error) {
 
 func (w *WebSocket) IsClosed() bool {
 	return w.Closed
+}
+
+func (w *WebSocket) Send(v interface{}) error {
+	return w.SendJson(v)
+}
+
+func (w *WebSocket) SendJson(v interface{}) error {
+	return w.Conn.WriteJSON(v)
 }
 
 // 读取消息 并且转换为指定类型

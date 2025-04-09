@@ -12,7 +12,7 @@ type Channel struct {
 	Type     string   `gorm:"type:varchar(50);not null;comment:渠道类型" json:"type"`
 	Priority int      `gorm:"type:int;default:0;comment:优先级" json:"priority"`
 	Weight   int      `gorm:"type:int;default:0;comment:权重" json:"weight"`
-	Models   []string `gorm:"type:json;comment:支持的模型列表" json:"models"`
+	Models   []string `gorm:"type:json;serializer:json;comment:支持的模型列表" json:"models"`
 	Retry    int      `gorm:"type:int;default:3;comment:重试次数" json:"retry"`
 	Secret   string   `gorm:"type:varchar(255);comment:密钥" json:"secret"`
 	Endpoint string   `gorm:"type:varchar(255);not null;comment:服务地址" json:"endpoint"`

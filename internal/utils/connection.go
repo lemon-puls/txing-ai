@@ -89,3 +89,7 @@ func (c *Connection) IsClosed() bool {
 func (c *Connection) skipMessage() {
 	<-c.stack
 }
+
+func (c *Connection) Send(msg dto.WsMessageResponse) error {
+	return c.conn.Send(msg)
+}

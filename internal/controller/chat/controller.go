@@ -5,6 +5,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	"txing-ai/internal/utils"
 )
@@ -39,7 +40,12 @@ func Chat(c *gin.Context) {
 		case global.MessageTypeChat:
 			// TODO 处理聊天消息
 			// 1. 保存消息
-			// 2. 调用模型
+			if err := conversation.HandleMessage(msg, db); err == nil {
+				// 2. 调用模型，返回响应结果
+				response := chat.HandleChat(buf, conversation, db)
+				// 3. 保存响应结果
+				conversation.SaveResponse(db, response)
+			}
 
 		case global.MessageTypeStop:
 		}

@@ -1,6 +1,12 @@
 package domain
 
-import "txing-ai/internal/global"
+import (
+	"errors"
+	"gorm.io/gorm"
+	"txing-ai/internal/dto"
+	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
+)
 
 type Conversation struct {
 	BaseModel
@@ -23,4 +29,129 @@ type Conversation struct {
 
 	// 非数据库字段
 	FormattedMessage []global.Message `gorm:"-" json:"formattedMessage"`
+}
+
+const (
+	defaultContextLength = 8
+)
+
+// 处理消息
+func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
+	// 如果是会话的第一条消息，则更新会话名称
+	if len(c.Message) == 0 {
+		// 更新会话名称
+		c.Name = msg.Content
+	}
+	// 添加消息到会话消息记录中，并应用调用参数
+	if err := c.addMessageFromWsMessageRequest(msg); err != nil {
+		return err
+	}
+
+	// 更新会话信息到数据库
+	if err := c.updateOrCreate(db); err != nil {
+		return err
+	}
+	return nil
+}
+
+// 将 WsMessageRequest 消息添加到会话消息记录中
+func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest) error {
+	// 如果消息内容为空，则不添加到消息记录中
+	if len(msg.Content) == 0 {
+		return errors.New("message content is empty")
+	}
+
+	// 将消息添加到会话消息记录中
+	c.addMessage(global.Message{
+		Role:    global.User,
+		Content: msg.Content,
+	})
+	// 应用调用参数
+	c.applyCallParams(msg)
+	return nil
+}
+
+func (c *Conversation) SaveResponse(db *gorm.DB, response string) {
+	// 添加消息到会话消息记录中
+	c.addMessageFromAssistant(response)
+
+	// 更新会话信息到数据库
+	c.updateOrCreate(db)
+}
+
+// 添加消息到会话消息记录中
+func (c *Conversation) addMessage(msg global.Message) {
+	c.FormattedMessage = append(c.FormattedMessage, msg)
+}
+
+// 应用本次调用参数
+func (c *Conversation) applyCallParams(msg *dto.WsMessageRequest) {
+	c.MaxTokens = msg.MaxTokens
+	c.TopP = msg.TopP
+	c.TopK = msg.TopK
+	c.PresencePenalty = msg.PresencePenalty
+	c.FrequencyPenalty = msg.FrequencyPenalty
+	c.RepetitionPenalty = msg.RepetitionPenalty
+	c.EnableWeb = msg.EnableWeb
+	c.Model = msg.Model
+	c.setContextLength(msg.Context)
+
+}
+
+// 设置上下文长度
+func (c *Conversation) setContextLength(context int) {
+	if context <= 0 {
+		c.Context = defaultContextLength
+	} else {
+		c.Context = context
+	}
+}
+
+func (c *Conversation) getContextLength() int {
+	if c.Context <= 0 {
+		return defaultContextLength
+	}
+	return c.Context
+}
+
+func (c *Conversation) updateOrCreate(db *gorm.DB) error {
+	// 执行新增或更新操作
+	tx := db.Save(c)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+// 获取到用于发送给大模型的消息切片（context 的长度）
+func (c *Conversation) GetChatMessages() []global.Message {
+	//// 深复制消息
+	//var cp []global.Message
+	//err := copier.Copy(&cp, &c.FormattedMessage)
+	//if err != nil {
+	//	log.Error("copier.Copy failed", zap.Error(err))
+	//	panic(err)
+	//}
+
+	length := c.getContextLength()
+
+	if len(c.FormattedMessage) < length {
+		return c.FormattedMessage
+	}
+
+	return c.FormattedMessage[len(c.FormattedMessage)-length:]
+}
+
+func (c *Conversation) addMessageFromAssistant(response string) {
+	// 如果消息内容为空，则不添加到消息记录中
+	if len(response) == 0 {
+		log.Error("response is empty, skip addMessageFromAssistant")
+		return
+	}
+
+	// 将消息添加到会话消息记录中
+	c.addMessage(global.Message{
+		Role:    global.Assistant,
+		Content: response,
+	})
 }
