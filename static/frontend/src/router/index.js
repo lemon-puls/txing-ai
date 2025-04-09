@@ -5,6 +5,30 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      component: () => import('@/layouts/BlankLayout.vue'),
+      children: [
+        {
+          path: '', // 默认路由为欢迎页
+          name: 'welcome',
+          component: () => import('@/views/welcome-page.vue'),
+          meta: {
+            title: '欢迎',
+            icon: 'home'
+          }
+        },
+        {
+          path: 'home',
+          name: 'home',
+          component: () => import('@/views/home/index.vue'),
+          meta: {
+            title: '首页',
+            icon: 'home'
+          }
+        }
+      ]
+    },
+    {
+      path: '/admin',
       component: () => import('@/layouts/DefaultLayout.vue'),
       children: [
         {
