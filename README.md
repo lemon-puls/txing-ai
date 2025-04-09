@@ -1,6 +1,171 @@
 # Txing AI
 
+<div align="center">
+  <img src="docs/images/logo.png" alt="Txing AI Logo" width="200"/>
 
+  <h1>Txing AI</h1>
+  <p>🤖 智能对话平台 | 多模型支持 | 智能负载均衡</p>
+
+  [![Go Version](https://img.shields.io/badge/Go-1.23%2B-blue.svg)](https://go.dev/)
+  [![Vue Version](https://img.shields.io/badge/Vue-3.x-brightgreen.svg)](https://vuejs.org/)
+  [![Element Plus](https://img.shields.io/badge/Element%20Plus-Latest-blue)](https://element-plus.org/)
+  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+  [📚 文档](docs/README.md) |
+  [🚀 快速开始](#快速开始) |
+  [👥 贡献](#贡献指南) |
+  [📝 更新日志](CHANGELOG.md)
+</div>
+
+---
+
+Txing AI 是一个现代化的 AI 聊天平台，基于 Vue 3 和 Go 开发，支持多模型接入和智能会话管理。平台采用前后端分离架构，提供流畅的用户体验和强大的后台管理功能。
+
+## 🌟 功能特点
+
+### 👥 用户端功能
+
+- **多模型支持**
+  - 支持接入多种大语言模型（如 DeepSeek、ChatGPT 等）
+  - 模型市场自由选择，支持模型评分和评价
+  - 实时对话流式响应，打字机效果
+  - 智能上下文管理，支持多轮对话
+  - 支持网页搜索增强
+
+- **预设系统**
+  - 自定义 AI 助手角色（支持设定角色背景、性格特征等）
+  - 预设市场一键使用，支持按场景分类
+  - 个性化对话场景定制
+  - 预设分享与导入功能
+  - 预设评分和收藏系统
+
+- **会话管理**
+  - 多会话并行支持，快速切换
+  - 历史记录完整保存与查看
+  - 会话导出备份（支持多种格式）
+  - 实时保存同步
+  - 会话标题自动生成
+  - 会话分类管理
+
+### 👨‍ 管理端功能
+
+- **渠道管理**
+  - 多渠道统一管理（支持多个供应商）
+  - 智能负载均衡策略
+    - 优先级控制（1-100，数字越大优先级越高）
+    - 权重分配（按百分比分配流量）
+    - 自动故障转移
+  - 模型组合配置（一个渠道支持多个模型）
+  - 实时状态监控
+    - 调用量统计
+    - 响应时间监控
+    - 错误率统计
+    - 成本统计
+
+- **预设管理**
+  - 预设审核发布流程
+  - 分类标签管理系统
+  - 热门推荐设置
+  - 内容质量控制
+  - 用户反馈处理
+  - 预设排行榜
+
+- **用户管理**
+  - 用户权限分级控制
+  - 使用量统计分析
+    - 调用次数统计
+    - 使用时长统计
+    - 费用统计
+  - 异常行为监控
+  - 账户状态管理
+  - 用户反馈处理
+
+- **模型市场**
+  - 模型上架审核流程
+  - 价格策略设置
+    - 按次计费
+    - 按 Token 计费
+  - 使用量统计
+  - 评分反馈系统
+  - 模型性能监控
+  - 模型版本管理
+
+## 🔧 技术架构
+
+### 🎨 前端技术栈
+- Vue 3 (Composition API)
+  - 响应式数据处理
+  - 组件化开发
+- Element Plus
+  - 美观的 UI 组件
+  - 响应式布局
+- Vite
+  - 快速的开发构建
+  - 模块热重载
+- Pinia
+  - 状态管理
+  - 持久化存储
+- Axios
+  - 请求拦截器
+  - 响应处理
+- WebSocket
+  - 实时通信
+  - 断线重连
+
+### ⚙️ 后端技术栈
+- Go
+  - 高性能
+  - 并发处理
+- Gin
+  - 路由管理
+  - 中间件支持
+- GORM
+  - ORM 映射
+  - 数据库操作
+- Redis
+  - 缓存处理
+  - 会话存储
+- WebSocket
+  - 长连接管理
+  - 消息推送
+- Zap
+  - 日志记录
+  - 性能监控
+
+## 💫 系统特点
+
+1. **智能负载均衡**
+   - Channel 系统支持多模型配置
+   - 基于优先级和权重的智能调度
+   - 自动故障转移机制
+   - 动态负载分配
+   - 实时监控和调整
+   - 成本优化策略
+
+2. **高性能设计**
+   - WebSocket 实时通信
+   - 流式响应处理
+   - 连接池优化
+   - 多级缓存策略
+   - 异步处理机制
+   - 性能监控告警
+
+3. **安全性**
+   - 完整的权限控制系统
+   - 数据加密传输
+   - 敏感信息保护
+   - 操作日志审计
+   - 防攻击策略
+   - 数据备份恢复
+
+4. **可扩展性**
+   - 模块化架构设计
+   - 插件化模型接入
+   - 灵活的配置系统
+   - 开放的 API 设计
+   - 第三方集成支持
+   - 自定义扩展能力
 
 ## ✨ 特性
 
@@ -16,7 +181,6 @@
     - Element Plus 组件库提供美观的 UI
     - Pinia 状态管理
     - Vue Router 路由管理
-
 
 ## 🚀 快速开始
 
@@ -116,3 +280,29 @@ go run cmd/main.go
 - [Vue.js](https://vuejs.org/)
 - [Element Plus](https://element-plus.org/)
 - [Vite](https://vitejs.dev/)
+
+## 📊 统计
+
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=txing-ai.readme)
+[![Stars](https://img.shields.io/github/stars/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/stargazers)
+[![Forks](https://img.shields.io/github/forks/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/network/members)
+[![Issues](https://img.shields.io/github/issues/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/pulls)
+
+## 🎉 展示
+
+<div align="center">
+  <img src="docs/images/screenshot1.png" alt="Screenshot 1" width="45%"/>
+  <img src="docs/images/screenshot2.png" alt="Screenshot 2" width="45%"/>
+</div>
+
+<div align="center">
+  <img src="docs/images/screenshot3.png" alt="Screenshot 3" width="45%"/>
+  <img src="docs/images/screenshot4.png" alt="Screenshot 4" width="45%"/>
+</div>
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by The Txing AI Team</sub>
+</div>
