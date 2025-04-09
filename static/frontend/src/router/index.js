@@ -24,6 +24,15 @@ const router = createRouter({
             title: '首页',
             icon: 'home'
           }
+        },
+        {
+          path: 'chat',
+          name: 'chat',
+          component: () => import('@/views/chat/index.vue'),
+          meta: {
+            title: '智能对话',
+            icon: 'chat'
+          }
         }
       ]
     },
