@@ -1,5 +1,47 @@
 <template>
   <div class="welcome-container">
+    <!-- 顶部导航栏 -->
+    <div class="nav-header">
+      <div class="nav-content">
+        <div class="nav-left">
+          <div class="logo">
+            <span class="logo-text">Txing AI</span>
+          </div>
+        </div>
+        <div class="nav-right">
+          <a href="https://github.com/yourusername/txing-ai" target="_blank" class="github-link">
+            <el-tooltip content="在 GitHub 上查看" placement="bottom">
+              <el-icon class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg></el-icon>
+            </el-tooltip>
+          </a>
+          <div class="user-info">
+            <el-dropdown trigger="click">
+              <div class="user-avatar">
+                <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+                <el-icon class="el-icon--right"><CaretBottom /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item>
+                    <el-icon><User /></el-icon>
+                    <span>个人中心</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <el-icon><Setting /></el-icon>
+                    <span>设置</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided>
+                    <el-icon><SwitchButton /></el-icon>
+                    <span>退出登录</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 动态背景 -->
     <div class="animated-background">
       <div class="light"></div>
@@ -71,7 +113,15 @@
 <script setup name="WelcomePage">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChatRound, Shop, ArrowRight } from '@element-plus/icons-vue'
+import { 
+  ChatRound, 
+  Shop, 
+  ArrowRight, 
+  User, 
+  Setting, 
+  SwitchButton,
+  CaretBottom 
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const hoveredCard = ref(null)
@@ -167,6 +217,93 @@ const navigateToMarket = () => {
   overflow: hidden;
 }
 
+// 导航栏样式
+.nav-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  z-index: 100;
+  
+  .nav-content {
+    max-width: 1200px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    .nav-left {
+      display: flex;
+      align-items: center;
+      
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        .logo-text {
+          font-size: 24px;
+          font-weight: bold;
+          background: linear-gradient(45deg, #4158D0, #C850C0);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+      }
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+
+      .github-link {
+        display: flex;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.7);
+        transition: color 0.3s ease;
+
+        &:hover {
+          color: var(--el-color-primary);
+        }
+
+        .nav-icon {
+          font-size: 24px;
+        }
+      }
+
+      .user-info {
+        .user-avatar {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          padding: 2px;
+          border-radius: 50%;
+          transition: background-color 0.3s ease;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          .el-icon--right {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+          }
+        }
+      }
+    }
+  }
+}
+
+// 调整内容区域的上边距，为导航栏留出空间
+.content {
+  padding-top: 64px;
+}
+
 // 动态背景
 .animated-background {
   position: absolute;
@@ -205,15 +342,6 @@ const navigateToMarket = () => {
     border-radius: 50%;
     animation: float 8s infinite;
   }
-}
-
-.content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 1200px;
-  padding: 20px;
-  text-align: center;
 }
 
 .main-title {
