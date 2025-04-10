@@ -59,6 +59,15 @@
 
     <!-- 右侧聊天区域 -->
     <div class="chat-main">
+      <!-- 添加展开按钮 -->
+      <div 
+        class="sidebar-expand" 
+        :class="{ show: isSidebarCollapsed }"
+        @click="toggleSidebar"
+      >
+        <el-icon><Fold class="expand-icon" /></el-icon>
+      </div>
+      
       <template v-if="currentChat">
         <!-- 聊天头部 -->
         <div class="chat-header">
@@ -378,14 +387,15 @@ onMounted(() => {
   --bg-secondary: #f5f7fa;
   --text-primary: #333333;
   --text-secondary: #666666;
-  --border-color: #e6e6e6;
+  --border-color: rgba(0, 0, 0, 0.1);
   --hover-bg: #f5f7fa;
   --active-bg: #ecf5ff;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.05);
   --message-bg-user: #ecf5ff;
   --message-bg-assistant: #f5f7fa;
   --scrollbar-thumb: #c0c4cc;
   --scrollbar-track: #f5f7fa;
+  --divider-rgb: 0, 0, 0;
 }
 
 .dark-theme {
@@ -393,14 +403,15 @@ onMounted(() => {
   --bg-secondary: #2d2d2d;
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
-  --border-color: #3a3a3a;
+  --border-color: rgba(255, 255, 255, 0.1);
   --hover-bg: #2d2d2d;
   --active-bg: #363636;
-  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color: rgba(0, 0, 0, 0.2);
   --message-bg-user: #363636;
   --message-bg-assistant: #2d2d2d;
   --scrollbar-thumb: #4a4a4a;
   --scrollbar-track: #2d2d2d;
+  --divider-rgb: 255, 255, 255;
 
   :deep(.el-button) {
     --el-button-bg-color: #363636;
@@ -447,10 +458,29 @@ onMounted(() => {
 .sidebar {
   width: 300px;
   background: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
+  position: relative;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(180deg, 
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.1) 15%,
+      rgba(var(--divider-rgb), 0.2) 30%,
+      rgba(var(--divider-rgb), 0.3) 50%,
+      rgba(var(--divider-rgb), 0.2) 70%,
+      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+    box-shadow: 1px 0 2px rgba(0, 0, 0, 0.05);
+  }
 
   &.sidebar-collapsed {
     width: 0;
@@ -583,16 +613,68 @@ onMounted(() => {
   flex-direction: column;
   background: var(--bg-primary);
   position: relative;
+
+  // 添加固定的展开按钮
+  .sidebar-expand {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 12px 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+
+    &.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    &:hover {
+      background: var(--hover-bg);
+      transform: translateY(-50%) translateX(2px);
+    }
+
+    .expand-icon {
+      transition: transform 0.3s ease;
+      transform: rotate(180deg);
+    }
+  }
 }
 
 .chat-header {
   padding: 16px 24px;
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: var(--bg-primary);
   z-index: 1;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.1) 15%,
+      rgba(var(--divider-rgb), 0.2) 30%,
+      rgba(var(--divider-rgb), 0.3) 50%,
+      rgba(var(--divider-rgb), 0.2) 70%,
+      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
 
   .chat-title {
     display: flex;
@@ -613,6 +695,26 @@ onMounted(() => {
   overflow-y: auto;
   padding: 24px;
   scroll-behavior: smooth;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.1) 15%,
+      rgba(var(--divider-rgb), 0.2) 30%,
+      rgba(var(--divider-rgb), 0.3) 50%,
+      rgba(var(--divider-rgb), 0.2) 70%,
+      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .message-item {
@@ -690,7 +792,26 @@ onMounted(() => {
 .chat-input {
   padding: 16px 24px;
   background: var(--bg-primary);
-  border-top: 1px solid var(--border-color);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.1) 15%,
+      rgba(var(--divider-rgb), 0.2) 30%,
+      rgba(var(--divider-rgb), 0.3) 50%,
+      rgba(var(--divider-rgb), 0.2) 70%,
+      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .input-wrapper {
