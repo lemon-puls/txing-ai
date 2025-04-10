@@ -60,14 +60,14 @@
     <!-- 右侧聊天区域 -->
     <div class="chat-main">
       <!-- 添加展开按钮 -->
-      <div 
-        class="sidebar-expand" 
+      <div
+        class="sidebar-expand"
         :class="{ show: isSidebarCollapsed }"
         @click="toggleSidebar"
       >
         <el-icon><Fold class="expand-icon" /></el-icon>
       </div>
-      
+
       <template v-if="currentChat">
         <!-- 聊天头部 -->
         <div class="chat-header">
@@ -115,7 +115,7 @@
               </div>
             </div>
           </TransitionGroup>
-          
+
           <!-- 输入提示 -->
           <div v-if="isTyping" class="typing-indicator">
             <div class="typing-dot"></div>
@@ -126,11 +126,61 @@
 
         <!-- 聊天输入区域 -->
         <div class="chat-input">
+          <div class="resize-handle" @mousedown="startResize"></div>
+          <div class="quick-settings">
+            <div class="model-selector">
+              <el-popover
+                placement="top"
+                :width="300"
+                trigger="click"
+                popper-class="model-popover"
+              >
+                <template #reference>
+                  <div class="current-model">
+                    <div class="model-icon">
+                      <el-icon><ChatRound /></el-icon>
+                    </div>
+                    <span class="model-name">{{ currentChat.model }}</span>
+                    <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+                  </div>
+                </template>
+                <div class="model-list">
+                  <div
+                    v-for="model in availableModels"
+                    :key="model.value"
+                    class="model-item"
+                    :class="{ active: currentChat.model === model.value }"
+                    @click="selectModel(model)"
+                  >
+                    <div class="model-item-icon" :class="model.type">
+                      <el-icon><component :is="model.icon" /></el-icon>
+                    </div>
+                    <div class="model-item-info">
+                      <div class="model-item-name">{{ model.label }}</div>
+                      <div class="model-item-desc">{{ model.description }}</div>
+                    </div>
+                    <el-icon v-if="currentChat.model === model.value"><Check /></el-icon>
+                  </div>
+                </div>
+              </el-popover>
+            </div>
+            <div class="feature-toggles">
+              <el-tooltip content="联网搜索" placement="top">
+                <div
+                  class="feature-toggle"
+                  :class="{ active: currentChat.webSearch }"
+                  @click="toggleWebSearch"
+                >
+                  <el-icon><Connection /></el-icon>
+                </div>
+              </el-tooltip>
+            </div>
+          </div>
           <div class="input-wrapper">
             <el-input
               v-model="messageInput"
               type="textarea"
-              :rows="3"
+              :rows="textareaRows"
               placeholder="输入消息，Enter 发送，Shift + Enter 换行"
               resize="none"
               @keydown.enter.exact.prevent="sendMessage"
@@ -168,30 +218,69 @@
     <!-- 设置对话框 -->
     <el-dialog
       v-model="showSettings"
-      title="会话设置"
+      title="高级参数设置"
       width="500px"
       destroy-on-close
       class="settings-dialog"
     >
       <div class="settings-content">
         <el-form label-position="top">
-          <el-form-item label="选择模型">
-            <el-select v-model="currentChat.model" class="w-full">
-              <el-option label="GPT-3.5" value="gpt-3.5-turbo" />
-              <el-option label="GPT-4" value="gpt-4" />
-              <el-option label="Claude" value="claude" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-switch
-              v-model="currentChat.webSearch"
-              active-text="启用联网搜索"
+          <el-form-item label="最大Token数">
+            <el-input-number
+              v-model="currentChat.maxTokens"
+              :min="1"
+              :max="4096"
+              class="w-full"
             />
           </el-form-item>
           <el-form-item label="温度">
             <el-slider
               v-model="currentChat.temperature"
               :min="0"
+              :max="2"
+              :step="0.1"
+              show-input
+            />
+          </el-form-item>
+          <el-form-item label="Top-P采样">
+            <el-slider
+              v-model="currentChat.topP"
+              :min="0"
+              :max="1"
+              :step="0.05"
+              show-input
+            />
+          </el-form-item>
+          <el-form-item label="Top-K采样">
+            <el-input-number
+              v-model="currentChat.topK"
+              :min="1"
+              :max="100"
+              class="w-full"
+            />
+          </el-form-item>
+          <el-form-item label="存在惩罚">
+            <el-slider
+              v-model="currentChat.presencePenalty"
+              :min="-2"
+              :max="2"
+              :step="0.1"
+              show-input
+            />
+          </el-form-item>
+          <el-form-item label="频率惩罚">
+            <el-slider
+              v-model="currentChat.frequencyPenalty"
+              :min="-2"
+              :max="2"
+              :step="0.1"
+              show-input
+            />
+          </el-form-item>
+          <el-form-item label="重复惩罚">
+            <el-slider
+              v-model="currentChat.repetitionPenalty"
+              :min="1"
               :max="2"
               :step="0.1"
               show-input
@@ -209,10 +298,10 @@
 
 <script setup name="ChatPage">
 import { ref, nextTick, onMounted } from 'vue'
-import { 
-  Plus, ChatRound, More, Fold, Setting, 
+import {
+  Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
-  Sunny, Moon
+  Connection, ArrowDown, Check
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -237,7 +326,26 @@ const showSettings = ref(false)
 const messageInput = ref('')
 const isTyping = ref(false)
 const messagesContainer = ref(null)
-const currentChat = ref(null)
+const currentChat = ref({
+  id: 1,
+  title: '新对话',
+  model: 'gpt-3.5-turbo',
+  webSearch: false,
+  maxTokens: 2048,
+  temperature: 1,
+  topP: 0.7,
+  topK: 50,
+  presencePenalty: 0,
+  frequencyPenalty: 0,
+  repetitionPenalty: 1,
+  messages: [
+    {
+      id: 1,
+      role: 'assistant',
+      content: '你好！我是 AI 助手，有什么我可以帮你的吗？'
+    }
+  ]
+})
 const chatList = ref([
   {
     id: 1,
@@ -259,6 +367,45 @@ const chatList = ref([
 // 头像
 const userAvatar = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
 const aiAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+// 可用模型列表
+const availableModels = [
+  {
+    label: 'Deepseek-R1',
+    value: 'deepseek-r1',
+    type: 'deepseek',
+    icon: 'ChatRound',
+    description: '强大的代码理解和生成能力'
+  },
+  {
+    label: 'GPT-4 Turbo',
+    value: 'gpt-4-turbo',
+    type: 'gpt',
+    icon: 'ChatRound',
+    description: '最新的 GPT-4 模型，支持更长上下文'
+  },
+  {
+    label: 'GPT-4',
+    value: 'gpt-4',
+    type: 'gpt',
+    icon: 'ChatRound',
+    description: '强大的推理和分析能力'
+  },
+  {
+    label: 'GPT-3.5 Turbo',
+    value: 'gpt-3.5-turbo',
+    type: 'gpt',
+    icon: 'ChatRound',
+    description: '快速响应，性价比高'
+  },
+  {
+    label: 'Claude 2',
+    value: 'claude-2',
+    type: 'claude',
+    icon: 'ChatRound',
+    description: '优秀的写作和分析能力'
+  }
+]
 
 // 主题切换
 const toggleTheme = () => {
@@ -338,14 +485,14 @@ const scrollToBottom = async () => {
 
 const sendMessage = async () => {
   if (!messageInput.value.trim()) return
-  
+
   // 添加用户消息
   currentChat.value.messages.push({
     id: Date.now(),
     role: 'user',
     content: messageInput.value
   })
-  
+
   currentChat.value.lastMessage = messageInput.value
   messageInput.value = ''
   await scrollToBottom()
@@ -368,16 +515,56 @@ const saveSettings = () => {
   ElMessage.success('设置已保存')
 }
 
+// 选择模型
+const selectModel = (model) => {
+  currentChat.value.model = model.value
+}
+
+// 切换联网搜索
+const toggleWebSearch = () => {
+  currentChat.value.webSearch = !currentChat.value.webSearch
+}
+
 // 监听系统主题变化
 onMounted(() => {
   currentChat.value = chatList.value[0]
-  
+
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
   mediaQuery.addEventListener('change', e => {
     isDarkTheme.value = e.matches
     document.documentElement.classList.toggle('dark', e.matches)
   })
 })
+
+// 添加输入框高度相关的状态和方法
+const textareaRows = ref(3)
+let startY = 0
+let startHeight = 0
+const minRows = 3
+const maxRows = 15
+
+const startResize = (e) => {
+  startY = e.clientY
+  startHeight = textareaRows.value
+
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+}
+
+const handleResize = (e) => {
+  const delta = startY - e.clientY
+  const rowHeight = 24 // 每行大约的高度
+  const rowDelta = Math.round(delta / rowHeight)
+
+  let newRows = startHeight + rowDelta
+  newRows = Math.max(minRows, Math.min(maxRows, newRows))
+  textareaRows.value = newRows
+}
+
+const stopResize = () => {
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+}
 </script>
 
 <style scoped lang="scss">
@@ -396,6 +583,7 @@ onMounted(() => {
   --scrollbar-thumb: #c0c4cc;
   --scrollbar-track: #f5f7fa;
   --divider-rgb: 0, 0, 0;
+  --el-color-primary-rgb: 64, 158, 255;
 }
 
 .dark-theme {
@@ -412,6 +600,7 @@ onMounted(() => {
   --scrollbar-thumb: #4a4a4a;
   --scrollbar-track: #2d2d2d;
   --divider-rgb: 255, 255, 255;
+  --el-color-primary-rgb: 64, 158, 255;
 
   :deep(.el-button) {
     --el-button-bg-color: #363636;
@@ -470,7 +659,7 @@ onMounted(() => {
     top: 0;
     bottom: 0;
     width: 1px;
-    background: linear-gradient(180deg, 
+    background: linear-gradient(180deg,
       rgba(var(--divider-rgb), 0) 0%,
       rgba(var(--divider-rgb), 0.1) 15%,
       rgba(var(--divider-rgb), 0.2) 30%,
@@ -541,7 +730,7 @@ onMounted(() => {
     justify-content: center;
     border-radius: 10px;
     background: linear-gradient(135deg, #4158D0, #C850C0);
-    
+
     .chat-icon {
       font-size: 20px;
       color: white;
@@ -774,25 +963,26 @@ onMounted(() => {
       margin: 8px 0;
     }
   }
-}
 
-.message-actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+  .message-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
-.message-item:hover .message-actions {
-  opacity: 1;
+  .message-item:hover .message-actions {
+    opacity: 1;
+  }
 }
 
 .chat-input {
-  padding: 16px 24px;
+  padding: 0px 24px 16px;
   background: var(--bg-primary);
   position: relative;
+  border-top: 1px solid var(--border-color);
 
   &::before {
     content: '';
@@ -803,78 +993,282 @@ onMounted(() => {
     height: 1px;
     background: linear-gradient(90deg,
       rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0.5) 15%,
+      rgba(var(--divider-rgb), 0.7) 30%,
+      rgba(var(--divider-rgb), 0.9) 50%,
+      rgba(var(--divider-rgb), 0.7) 70%,
+      rgba(var(--divider-rgb), 0.5) 85%,
       rgba(var(--divider-rgb), 0) 100%
     );
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.05);
+    z-index: 1;
+  }
+
+  .resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    cursor: row-resize;
+    z-index: 2;
+    background: #f5f7fa;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(180deg,
+        rgba(var(--divider-rgb), 0.3) 0%,
+        rgba(var(--divider-rgb), 0) 100%
+      );
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg,
+        rgba(var(--divider-rgb), 0) 0%,
+        rgba(var(--divider-rgb), 0.5) 20%,
+        rgba(var(--divider-rgb), 0.8) 50%,
+        rgba(var(--divider-rgb), 0.5) 80%,
+        rgba(var(--divider-rgb), 0) 100%
+      );
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    &:hover::before {
+      opacity: 1;
+    }
+  }
+}
+
+.quick-settings {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  margin: 0;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -8px;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.5) 15%,
+      rgba(var(--divider-rgb), 0.7) 30%,
+      rgba(var(--divider-rgb), 0.9) 50%,
+      rgba(var(--divider-rgb), 0.7) 70%,
+      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -8px;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.5) 15%,
+      rgba(var(--divider-rgb), 0.7) 30%,
+      rgba(var(--divider-rgb), 0.9) 50%,
+      rgba(var(--divider-rgb), 0.7) 70%,
+      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+  }
+}
+
+.model-selector {
+  .current-model {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+
+    &:hover {
+      border-color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+
+    .model-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #4158D0, #C850C0);
+      color: white;
+    }
+
+    .model-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .arrow-icon {
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .arrow-icon {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.model-list {
+  .model-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: var(--el-color-primary-light-9);
+    }
+
+    &.active {
+      background: var(--el-color-primary-light-8);
+    }
+
+    .model-item-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      color: white;
+
+      &.gpt {
+        background: linear-gradient(135deg, #4158D0, #C850C0);
+      }
+
+      &.claude {
+        background: linear-gradient(135deg, #FF4B2B, #FF416C);
+      }
+
+      &.deepseek {
+        background: linear-gradient(135deg, #11998e, #38ef7d);
+      }
+    }
+
+    .model-item-info {
+      flex: 1;
+      min-width: 0;
+
+      .model-item-name {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 2px;
+      }
+
+      .model-item-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.feature-toggles {
+  display: flex;
+  gap: 8px;
+
+  .feature-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+
+    &:hover {
+      border-color: var(--el-color-primary);
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+
+    &.active {
+      background: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+      color: white;
+    }
+  }
+}
+
+:deep(.model-popover) {
+  padding: 8px !important;
+
+  .el-popper__arrow::before {
+    background: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
   }
 }
 
 .input-wrapper {
   position: relative;
-  
+
+  .custom-input {
+    transition: all 0.3s ease;
+
+    :deep(.el-textarea__inner) {
+      resize: none !important;
+      transition: all 0.3s ease;
+      padding-right: 90px;
+      line-height: 1.6;
+      font-size: 14px;
+
+      &:focus {
+        box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
+      }
+    }
+  }
+
   .input-actions {
     position: absolute;
     right: 8px;
     bottom: 8px;
   }
 
-  .custom-input {
-    transition: all 0.3s ease;
-
-    &:focus {
-      transform: translateY(-2px);
-    }
-  }
-
   .send-button {
     background: linear-gradient(135deg, #4158D0, #C850C0);
     border: none;
     transition: all 0.3s ease;
-
-    &:hover {
-      transform: scale(1.1);
-    }
-  }
-}
-
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: 16px;
-  align-items: center;
-}
-
-.typing-dot {
-  width: 8px;
-  height: 8px;
-  background: #409eff;
-  border-radius: 50%;
-  animation: typing 1s infinite;
-
-  &:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-
-  &:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-}
-
-.chat-empty {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  .create-button {
-    background: linear-gradient(135deg, #4158D0, #C850C0);
-    border: none;
-    transition: transform 0.3s ease;
 
     &:hover {
       transform: scale(1.1);
@@ -946,4 +1340,4 @@ onMounted(() => {
     max-width: 90%;
   }
 }
-</style> 
+</style>
