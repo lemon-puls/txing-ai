@@ -7,8 +7,8 @@
 
     <!-- 粒子动画背景 -->
     <div class="particles">
-      <div 
-        v-for="particle in particles" 
+      <div
+        v-for="particle in particles"
         :key="particle.id"
         class="particle"
         :style="particle.style"
@@ -19,12 +19,15 @@
     <div class="content">
       <h1 class="main-title">
         <span class="gradient-text">AI Assistant</span>
-        <div class="subtitle">智能助手，助您提升效率</div>
+        <div class="subtitle">
+          <span class="typing-text"></span>
+          <span class="cursor">|</span>
+        </div>
       </h1>
-      
+
       <div class="cards-container">
         <!-- 聊天入口 -->
-        <div 
+        <div
           class="entrance-card chat-card"
           :class="{ 'card-hover': hoveredCard === 'chat' }"
           @click="navigateToChat"
@@ -43,7 +46,7 @@
         </div>
 
         <!-- 市场入口 -->
-        <div 
+        <div
           class="entrance-card market-card"
           :class="{ 'card-hover': hoveredCard === 'market' }"
           @click="navigateToMarket"
@@ -74,6 +77,15 @@ const router = useRouter()
 const hoveredCard = ref(null)
 const particles = ref([])
 
+// 打字效果相关变量
+const text = '智能助手，助您提升效率'
+const typingSpeed = 150 // 打字速度（毫秒）
+const eraseSpeed = 100  // 删除速度（毫秒）
+const delayBetweenLoops = 2000 // 循环之间的延迟（毫秒）
+let currentText = ''
+let isTyping = true
+let currentIndex = 0
+
 // 生成随机数在指定范围内
 const random = (min, max) => Math.random() * (max - min) + min
 
@@ -97,8 +109,37 @@ const initParticles = () => {
   particles.value = particlesArray
 }
 
+// 打字效果函数
+const typeText = () => {
+  const typingElement = document.querySelector('.typing-text')
+  if (!typingElement) return
+
+  if (isTyping) {
+    if (currentIndex < text.length) {
+      currentText += text[currentIndex]
+      typingElement.textContent = currentText
+      currentIndex++
+      setTimeout(typeText, typingSpeed)
+    } else {
+      isTyping = false
+      setTimeout(typeText, delayBetweenLoops)
+    }
+  } else {
+    if (currentText.length > 0) {
+      currentText = currentText.slice(0, -1)
+      typingElement.textContent = currentText
+      setTimeout(typeText, eraseSpeed)
+    } else {
+      isTyping = true
+      currentIndex = 0
+      setTimeout(typeText, delayBetweenLoops)
+    }
+  }
+}
+
 onMounted(() => {
   initParticles()
+  typeText() // 启动打字效果
 })
 
 const handleHover = (card) => {
@@ -193,6 +234,17 @@ const navigateToMarket = () => {
     font-size: 1.5em;
     color: rgba(255, 255, 255, 0.7);
     font-weight: normal;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+
+    .cursor {
+      display: inline-block;
+      animation: blink 1s infinite;
+      color: var(--el-color-primary);
+      font-weight: 200;
+    }
   }
 }
 
@@ -207,7 +259,7 @@ const navigateToMarket = () => {
 .entrance-card {
   position: relative;
   width: 300px;
-  height: 400px;
+  height: 320px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 20px;
   backdrop-filter: blur(10px);
@@ -334,6 +386,16 @@ const navigateToMarket = () => {
   }
 }
 
+// 添加光标闪烁动画
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
 // 响应式设计
 @media screen and (max-width: 768px) {
   .main-title {
@@ -370,4 +432,4 @@ const navigateToMarket = () => {
     }
   }
 }
-</style> 
+</style>
