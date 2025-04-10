@@ -180,16 +180,23 @@
                 </div>
               </el-popover>
             </div>
-            <div class="feature-toggles">
-              <el-tooltip content="联网搜索" placement="top">
-                <div
-                  class="feature-toggle"
-                  :class="{ active: currentChat.webSearch }"
-                  @click="toggleWebSearch"
-                >
-                  <el-icon><Connection /></el-icon>
+            <div class="quick-actions">
+              <el-tooltip content="AI 助手市场" placement="top">
+                <div class="action-btn" @click="showPresetMarket = true">
+                  <el-icon><Shop /></el-icon>
                 </div>
               </el-tooltip>
+              <div class="feature-toggles">
+                <el-tooltip content="联网搜索" placement="top">
+                  <div
+                    class="feature-toggle"
+                    :class="{ active: currentChat.webSearch }"
+                    @click="toggleWebSearch"
+                  >
+                    <el-icon><Connection /></el-icon>
+                  </div>
+                </el-tooltip>
+              </div>
             </div>
           </div>
           <div class="input-wrapper">
@@ -332,6 +339,12 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- AI 助手市场 -->
+    <PresetMarket
+      v-model:visible="showPresetMarket"
+      @select="handlePresetSelect"
+    />
   </div>
 </template>
 
@@ -341,12 +354,14 @@ import { useRouter } from 'vue-router'
 import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
-  Connection, ArrowDown, Check, Picture, HomeFilled
+  Connection, ArrowDown, Check, Picture, HomeFilled,
+  Shop
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css'
+import PresetMarket from '@/components/chat/PresetMarket.vue'
 
 // 配置 marked
 marked.setOptions({
@@ -458,6 +473,9 @@ const bgPatterns = [
 ]
 const currentBgPattern = ref('none')
 const showBgPatternDialog = ref(false)
+
+// AI 助手市场
+const showPresetMarket = ref(false)
 
 // 主题切换
 const toggleTheme = () => {
@@ -637,6 +655,26 @@ const selectBgPattern = (pattern) => {
   currentBgPattern.value = pattern
   showBgPatternDialog.value = false
   localStorage.setItem('chatBgPattern', pattern)
+}
+
+const handlePresetSelect = (preset) => {
+  const newChat = {
+    id: Date.now(),
+    title: `与 ${preset.name} 对话`,
+    model: currentChat.value?.model || 'gpt-3.5-turbo',
+    webSearch: false,
+    temperature: 1,
+    lastMessage: preset.description,
+    messages: [
+      {
+        id: 1,
+        role: 'assistant',
+        content: preset.context || `你好！我是 ${preset.name}，${preset.description}`
+      }
+    ]
+  }
+  chatList.value.unshift(newChat)
+  currentChat.value = newChat
 }
 </script>
 
@@ -1412,6 +1450,40 @@ const selectBgPattern = (pattern) => {
 
     &:hover {
       transform: scale(1.1);
+    }
+  }
+}
+
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+
+    &:hover {
+      color: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+      transform: translateY(-2px);
+    }
+
+    .el-icon {
+      font-size: 16px;
     }
   }
 }
