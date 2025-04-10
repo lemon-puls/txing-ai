@@ -6,11 +6,17 @@
     <!-- 左侧会话列表 -->
     <div class="sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
       <!-- 新建会话按钮 -->
-      <div class="new-chat-btn" @click="createNewChat">
-        <el-button type="primary" class="w-full new-chat-button">
-          <template #icon><Plus class="icon-bounce" /></template>
-          新建会话
-        </el-button>
+      <div class="action-buttons">
+        <el-tooltip content="返回首页" placement="right">
+          <el-button circle class="home-button" @click="goToHome">
+            <el-icon><HomeFilled /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="新建会话" placement="right">
+          <el-button type="primary" circle class="new-chat-button" @click="createNewChat">
+            <el-icon><Plus class="icon-bounce" /></el-icon>
+          </el-button>
+        </el-tooltip>
       </div>
 
       <!-- 会话列表 -->
@@ -330,11 +336,12 @@
 </template>
 
 <script setup name="ChatPage">
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
-  Connection, ArrowDown, Check, Moon, Sunny, Picture
+  Connection, ArrowDown, Check, Picture, HomeFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -461,6 +468,12 @@ const toggleTheme = () => {
 // 方法
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+const router = useRouter()
+
+const goToHome = () => {
+  router.push('/')
 }
 
 const createNewChat = () => {
@@ -777,19 +790,53 @@ const selectBgPattern = (pattern) => {
   }
 }
 
-.new-chat-btn {
+.action-buttons {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(180deg,
+    var(--bg-primary) 0%,
+    var(--bg-secondary) 100%
+  );
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  .home-button {
+    transition: all 0.3s ease;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    height: 40px;
+    width: 40px;
+    color: var(--text-primary);
+
+    &:hover {
+      color: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+      transform: translateY(-2px);
+    }
+
+    .el-icon {
+      font-size: 18px;
+    }
+  }
 
   .new-chat-button {
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
+    border: none;
+    height: 30px;
+    width: 30px;
+    box-shadow: 0 2px 12px rgba(var(--el-color-primary-rgb), 0.2);
 
     &:hover {
       transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(var(--el-color-primary-rgb), 0.3);
     }
 
     .icon-bounce {
       animation: iconBounce 1s infinite;
+      font-size: 18px;
     }
   }
 }
