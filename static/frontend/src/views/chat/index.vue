@@ -1,5 +1,8 @@
 <template>
-  <div class="chat-container" :class="{ 'dark-theme': isDarkTheme }">
+  <div class="chat-container" :class="[
+    { 'dark-theme': isDarkTheme },
+    `bg-pattern-${currentBgPattern}`
+  ]">
     <!-- 左侧会话列表 -->
     <div class="sidebar" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
       <!-- 新建会话按钮 -->
@@ -46,11 +49,18 @@
 
       <!-- 底部操作区 -->
       <div class="sidebar-footer">
-        <el-tooltip content="切换主题" placement="top">
-          <div class="theme-toggle" @click="toggleTheme">
-            <el-icon><component :is="isDarkTheme ? 'Sunny' : 'Moon'" /></el-icon>
-          </div>
-        </el-tooltip>
+        <div class="footer-actions">
+          <el-tooltip content="切换主题" placement="top">
+            <div class="theme-toggle" @click="toggleTheme">
+              <el-icon><component :is="isDarkTheme ? 'Sunny' : 'Moon'" /></el-icon>
+            </div>
+          </el-tooltip>
+          <el-tooltip content="切换背景" placement="top">
+            <div class="bg-toggle" @click="showBgPatternSelector">
+              <el-icon><Picture /></el-icon>
+            </div>
+          </el-tooltip>
+        </div>
         <div class="sidebar-toggle" @click="toggleSidebar">
           <el-icon><Fold /></el-icon>
         </div>
@@ -293,15 +303,38 @@
         <el-button type="primary" @click="saveSettings">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- 背景切换对话框 -->
+    <el-dialog
+      v-model="showBgPatternDialog"
+      title="选择背景样式"
+      width="360px"
+      class="bg-patterns-dialog"
+    >
+      <div class="patterns-grid">
+        <div
+          v-for="pattern in bgPatterns"
+          :key="pattern.value"
+          class="pattern-item"
+          :class="[
+            `pattern-${pattern.value}`,
+            { active: currentBgPattern === pattern.value }
+          ]"
+          @click="selectBgPattern(pattern.value)"
+        >
+          <div class="pattern-name">{{ pattern.label }}</div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="ChatPage">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, watch } from 'vue'
 import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
-  Connection, ArrowDown, Check
+  Connection, ArrowDown, Check, Moon, Sunny, Picture
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -406,6 +439,18 @@ const availableModels = [
     description: '优秀的写作和分析能力'
   }
 ]
+
+// 背景相关
+const bgPatterns = [
+  { label: '渐变青绿', value: '1' },
+  { label: '渐变橙粉', value: '2' },
+  { label: '渐变紫蓝', value: '3' },
+  { label: '渐变粉红', value: '4' },
+  { label: '渐变紫粉', value: '5' },
+  { label: '无背景', value: 'none' }
+]
+const currentBgPattern = ref('none')
+const showBgPatternDialog = ref(false)
 
 // 主题切换
 const toggleTheme = () => {
@@ -534,6 +579,11 @@ onMounted(() => {
     isDarkTheme.value = e.matches
     document.documentElement.classList.toggle('dark', e.matches)
   })
+
+  const savedPattern = localStorage.getItem('chatBgPattern')
+  if (savedPattern) {
+    currentBgPattern.value = savedPattern
+  }
 })
 
 // 添加输入框高度相关的状态和方法
@@ -564,6 +614,16 @@ const handleResize = (e) => {
 const stopResize = () => {
   document.removeEventListener('mousemove', handleResize)
   document.removeEventListener('mouseup', stopResize)
+}
+
+const showBgPatternSelector = () => {
+  showBgPatternDialog.value = true
+}
+
+const selectBgPattern = (pattern) => {
+  currentBgPattern.value = pattern
+  showBgPatternDialog.value = false
+  localStorage.setItem('chatBgPattern', pattern)
 }
 </script>
 
@@ -625,6 +685,46 @@ const stopResize = () => {
   background: var(--bg-secondary);
   color: var(--text-primary);
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+    background: var(--chat-bg-pattern);
+    pointer-events: none;
+  }
+
+  &.bg-pattern-1 {
+    --chat-bg-pattern: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+  }
+
+  &.bg-pattern-2 {
+    --chat-bg-pattern: linear-gradient(to right, #fa709a 0%, #fee140 100%);
+  }
+
+  &.bg-pattern-3 {
+    --chat-bg-pattern: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  &.bg-pattern-4 {
+    --chat-bg-pattern: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+  }
+
+  &.bg-pattern-5 {
+    --chat-bg-pattern: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+  }
+
+  &.bg-pattern-none {
+    --chat-bg-pattern: none;
+  }
 }
 
 // 自定义滚动条
@@ -783,16 +883,9 @@ const stopResize = () => {
   align-items: center;
   border-top: 1px solid var(--border-color);
 
-  .theme-toggle, .sidebar-toggle {
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: var(--hover-bg);
-      transform: scale(1.1);
-    }
+  .footer-actions {
+    display: flex;
+    gap: 12px;
   }
 }
 
@@ -1338,6 +1431,73 @@ const stopResize = () => {
 
   .message-content {
     max-width: 90%;
+  }
+}
+
+.bg-patterns-dialog {
+  .patterns-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
+
+    .pattern-item {
+      height: 80px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+      display: flex;
+      align-items: flex-end;
+      padding: 12px;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      &.active {
+        border-color: var(--el-color-primary);
+      }
+
+      .pattern-name {
+        color: #fff;
+        font-size: 14px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        z-index: 1;
+      }
+
+      &.pattern-1 {
+        background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+      }
+
+      &.pattern-2 {
+        background: linear-gradient(to right, #fa709a 0%, #fee140 100%);
+      }
+
+      &.pattern-3 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      &.pattern-4 {
+        background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+      }
+
+      &.pattern-5 {
+        background: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+      }
+
+      &.pattern-none {
+        background: var(--bg-secondary);
+        border: 1px dashed var(--border-color);
+        .pattern-name {
+          color: var(--text-primary);
+          text-shadow: none;
+        }
+      }
+    }
   }
 }
 </style>
