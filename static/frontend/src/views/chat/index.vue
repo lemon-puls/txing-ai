@@ -89,7 +89,7 @@
         <div class="chat-header">
           <div class="chat-title">
             <span>{{ currentChat.title }}</span>
-            <el-tag size="small" effect="plain" class="ml-2 model-tag">{{ currentChat.model }}</el-tag>
+<!--            <el-tag size="small" effect="plain" class="ml-2 model-tag">{{ currentChat.model }}</el-tag>-->
           </div>
           <div class="chat-settings">
             <el-tooltip content="模型设置" placement="bottom">
@@ -97,6 +97,28 @@
                 <el-icon><Setting /></el-icon>
               </el-button>
             </el-tooltip>
+            <el-dropdown trigger="click">
+              <div class="user-avatar">
+                <el-avatar :size="32" :src="userAvatar">U</el-avatar>
+                <el-icon class="el-icon--right"><CaretBottom /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item>
+                    <el-icon><User /></el-icon>
+                    <span>个人中心</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <el-icon><Setting /></el-icon>
+                    <span>设置</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided>
+                    <el-icon><SwitchButton /></el-icon>
+                    <span>退出登录</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
 
@@ -355,7 +377,7 @@ import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
   Connection, ArrowDown, Check, Picture, HomeFilled,
-  Shop
+  Shop, User, CaretBottom, SwitchButton
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
@@ -1235,23 +1257,23 @@ const handlePresetSelect = (preset) => {
   border-radius: 6px;
   position: relative;
 
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -8px;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-  }
+  //&::before {
+  //  content: '';
+  //  position: absolute;
+  //  left: 0;
+  //  right: 0;
+  //  top: -8px;
+  //  height: 1px;
+  //  background: linear-gradient(90deg,
+  //    rgba(var(--divider-rgb), 0) 0%,
+  //    rgba(var(--divider-rgb), 0.5) 15%,
+  //    rgba(var(--divider-rgb), 0.7) 30%,
+  //    rgba(var(--divider-rgb), 0.9) 50%,
+  //    rgba(var(--divider-rgb), 0.7) 70%,
+  //    rgba(var(--divider-rgb), 0.5) 85%,
+  //    rgba(var(--divider-rgb), 0) 100%
+  //  );
+  //}
 
   &::after {
     content: '';
@@ -1616,6 +1638,37 @@ const handlePresetSelect = (preset) => {
           text-shadow: none;
         }
       }
+    }
+  }
+}
+
+.chat-settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .user-avatar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: var(--hover-bg);
+      transform: translateY(-1px);
+    }
+
+    .el-icon--right {
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .el-icon--right {
+      transform: rotate(180deg);
     }
   }
 }

@@ -38,12 +38,14 @@
             <el-avatar :size="36" :src="preset.avatar">
               {{ preset.name.charAt(0) }}
             </el-avatar>
-            <div class="preset-type" :class="preset.type">
-              {{ preset.type === 'official' ? '官方' : '社区' }}
-            </div>
           </div>
           <div class="preset-info">
-            <h3 class="preset-name">{{ preset.name }}</h3>
+            <div class="preset-name-row">
+              <h3 class="preset-name">{{ preset.name }}</h3>
+              <div class="preset-type" :class="preset.type">
+                {{ preset.type === 'official' ? '官方' : '社区' }}
+              </div>
+            </div>
             <p class="preset-description">{{ preset.description }}</p>
           </div>
         </div>
@@ -283,11 +285,13 @@ const handleCurrentChange = (val) => {
 
 <style scoped lang="scss">
 .preset-market-dialog {
+
+  // TODO 解决这里样式不生效的问题
   :deep(.el-dialog__body) {
     padding: 0;
+    overflow-y: initial;
   }
 }
-
 .search-area {
   padding: 16px 20px;
   border-bottom: 1px solid var(--el-border-color-light);
@@ -385,25 +389,6 @@ const handleCurrentChange = (val) => {
 
     .preset-avatar {
       position: relative;
-
-      .preset-type {
-        position: absolute;
-        bottom: -4px;
-        right: -4px;
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        color: white;
-        font-weight: 500;
-
-        &.official {
-          background: linear-gradient(135deg, #4158D0, #C850C0);
-        }
-
-        &.community {
-          background: linear-gradient(135deg, #11998e, #38ef7d);
-        }
-      }
     }
   }
 
@@ -411,11 +396,38 @@ const handleCurrentChange = (val) => {
     flex: 1;
     min-width: 0;
 
+    .preset-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
     .preset-name {
-      margin: 0 0 4px;
+      margin: 0;
       font-size: 15px;
       font-weight: 500;
       color: var(--el-text-color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preset-type {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      flex-shrink: 0;
+
+      &.official {
+        background: linear-gradient(135deg, #4158D0, #C850C0);
+      }
+
+      &.community {
+        background: linear-gradient(135deg, #11998e, #38ef7d);
+      }
     }
 
     .preset-description {
