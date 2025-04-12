@@ -2,25 +2,61 @@
   <div class="assistant-container">
     <!-- 顶部搜索区域 -->
     <div class="search-section" :style="{ backgroundImage: `url(${bgImage})` }">
-      <h1 class="title">做您强大的 AI 助手</h1>
-      <div class="action-buttons">
-        <el-button type="primary" class="action-btn" @click="startChat">
-          <el-icon><Timer /></el-icon>
-          开始聊天
-        </el-button>
-        <el-button type="primary" class="action-btn" @click="createAssistant">
-          <el-icon><Plus /></el-icon>
-          创建助手
-        </el-button>
+      <div class="nav-header">
+        <div class="nav-content">
+          <div class="nav-left">
+            <div class="logo">
+              <span class="logo-text">Txing AI</span>
+            </div>
+          </div>
+          <div class="nav-right">
+            <el-dropdown trigger="click">
+              <div class="user-avatar">
+                <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+                <el-icon class="el-icon--right"><CaretBottom /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item>
+                    <el-icon><User /></el-icon>
+                    <span>个人中心</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <el-icon><Setting /></el-icon>
+                    <span>设置</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided>
+                    <el-icon><SwitchButton /></el-icon>
+                    <span>退出登录</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+        </div>
       </div>
-      <div class="search-box">
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索您的 AI 助手"
-          :prefix-icon="Search"
-          clearable
-          @keyup.enter="handleSearch"
-        />
+
+      <div class="search-content">
+        <h1 class="title">做您强大的 AI 助手</h1>
+        <div class="action-buttons">
+          <el-button type="primary" class="action-btn" @click="startChat">
+            <el-icon><Timer /></el-icon>
+            开始聊天
+          </el-button>
+          <el-button type="primary" class="action-btn" @click="createAssistant">
+            <el-icon><Plus /></el-icon>
+            创建助手
+          </el-button>
+        </div>
+        <div class="search-box">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索您的 AI 助手"
+            :prefix-icon="Search"
+            clearable
+            @keyup.enter="handleSearch"
+          />
+        </div>
       </div>
     </div>
 
@@ -105,7 +141,16 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import {Search, Plus, Timer, ArrowRight} from '@element-plus/icons-vue'
+import {
+  Search,
+  Plus,
+  Timer,
+  ArrowRight,
+  User,
+  Setting,
+  SwitchButton,
+  CaretBottom
+} from '@element-plus/icons-vue'
 import bgImage from '@/assets/images/header-bg.jpg'
 
 // 搜索关键词
@@ -232,7 +277,7 @@ const useAssistant = (preset) => {
 }
 
 .search-section {
-  padding: 60px 20px;
+  padding: 0 0 60px;
   position: relative;
   color: white;
   overflow: hidden;
@@ -249,115 +294,144 @@ const useAssistant = (preset) => {
     z-index: 1;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background:
-      radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-    z-index: 2;
-    animation: glowPulse 8s ease-in-out infinite alternate;
-  }
-
-  .title {
+  .nav-header {
     position: relative;
-    font-size: 3.5em;
-    margin-bottom: 30px;
-    font-weight: 800;
-    z-index: 3;
-    background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.8) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-    animation: titleFloat 3s ease-in-out infinite;
-  }
+    z-index: 10;
+    height: 64px;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-  .action-buttons {
-    position: relative;
-    margin-bottom: 30px;
-    z-index: 3;
+    .nav-content {
+      max-width: 1200px;
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-    .action-btn {
-      margin: 0 10px;
-      padding: 12px 32px;
-      font-size: 16px;
-      font-weight: 500;
-      border: none;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-
-      border-radius: 20px;
-
-      &::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: conic-gradient(
-          from 0deg,
-          transparent 0%,
-          rgba(255, 255, 255, 0.2) 25%,
-          transparent 50%
-        );
-        animation: rotate 4s linear infinite;
+      .nav-left {
+        .logo {
+          .logo-text {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #fff, rgba(255, 255, 255, 0.8));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+        }
       }
 
-      &:hover {
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-      }
+      .nav-right {
+        .user-avatar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 50%;
+          transition: all 0.3s ease;
 
-      .el-icon {
-        margin-right: 8px;
-        animation: iconBounce 2s infinite;
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          .el-icon--right {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+          }
+        }
       }
     }
   }
 
-  .search-box {
+  .search-content {
     position: relative;
-    max-width: 600px;
-    margin: 0 auto;
     z-index: 3;
+    padding: 40px 20px;
+    text-align: center;
 
-    :deep(.el-input__wrapper) {
-      padding: 12px 24px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
+    .title {
+      font-size: 3.5em;
+      margin-bottom: 30px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+      animation: titleFloat 3s ease-in-out infinite;
+    }
 
-      border-radius: 30px;
+    .action-buttons {
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
 
-      &:hover, &:focus-within {
+      .action-btn {
+        padding: 12px 32px;
+        font-size: 16px;
+        font-weight: 500;
+        border: none;
         background: rgba(255, 255, 255, 0.15);
-        border-color: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+
+        .el-icon {
+          margin-right: 8px;
+          transition: transform 0.3s ease;
+        }
+
+        &:hover {
+          transform: translateY(-2px);
+          background: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+          .el-icon {
+            transform: scale(1.2);
+          }
+        }
       }
     }
 
-    :deep(.el-input__inner) {
-      font-size: 16px;
-      color: white;
+    .search-box {
+      position: relative;
+      max-width: 600px;
+      margin: 0 auto;
+      z-index: 3;
 
-      &::placeholder {
+      :deep(.el-input__wrapper) {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border-radius: 30px;
+
+        &:hover, &:focus-within {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+      }
+
+      :deep(.el-input__inner) {
+        font-size: 16px;
+        color: white;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.8);
+        }
+      }
+
+      :deep(.el-input__prefix) {
         color: rgba(255, 255, 255, 0.8);
       }
-    }
-
-    :deep(.el-input__prefix) {
-      color: rgba(255, 255, 255, 0.8);
     }
   }
 }
