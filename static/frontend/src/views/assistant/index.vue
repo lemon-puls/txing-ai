@@ -1,5 +1,5 @@
 <template>
-  <div class="home-container">
+  <div class="assistant-container">
     <!-- 顶部搜索区域 -->
     <div class="search-section" :style="{ backgroundImage: `url(${bgImage})` }">
       <h1 class="title">做您强大的 AI 助手</h1>
@@ -40,35 +40,72 @@
 
     <!-- AI助手列表 -->
     <div class="assistants-grid">
-      <el-card
-        v-for="assistant in filteredAssistants"
-        :key="assistant.id"
-        class="assistant-card"
-        shadow="hover"
+<!--      <el-card-->
+<!--        v-for="assistant in filteredAssistants"-->
+<!--        :key="assistant.id"-->
+<!--        class="assistant-card"-->
+<!--        shadow="hover"-->
+<!--      >-->
+<!--        <div class="assistant-header">-->
+<!--          <el-avatar :src="assistant.avatar" :size="40" />-->
+<!--          <div class="assistant-info">-->
+<!--            <h3>{{ assistant.name }}</h3>-->
+<!--            <p>{{ assistant.description }}</p>-->
+<!--          </div>-->
+<!--          <el-button-->
+<!--            type="primary"-->
+<!--            size="small"-->
+<!--            class="use-btn"-->
+<!--            @click="useAssistant(assistant)"-->
+<!--          >-->
+<!--            使用-->
+<!--          </el-button>-->
+<!--        </div>-->
+<!--      </el-card>-->
+
+
+      <div
+        v-for="preset in filteredAssistants"
+        :key="preset.id"
+        class="preset-card"
       >
-        <div class="assistant-header">
-          <el-avatar :src="assistant.avatar" :size="40" />
-          <div class="assistant-info">
-            <h3>{{ assistant.name }}</h3>
-            <p>{{ assistant.description }}</p>
+        <div class="preset-content">
+          <div class="preset-avatar">
+            <el-avatar :size="36" :src="preset.avatar">
+              {{ preset.name.charAt(0) }}
+            </el-avatar>
           </div>
+          <div class="preset-info">
+            <div class="preset-name-row">
+              <h3 class="preset-name">{{ preset.name }}</h3>
+              <div class="preset-type" :class="preset.type">
+                {{ preset.type === 'official' ? '官方' : '社区' }}
+              </div>
+            </div>
+            <p class="preset-description">{{ preset.description }}</p>
+          </div>
+        </div>
+        <div class="preset-actions">
           <el-button
             type="primary"
-            size="small"
-            class="use-btn"
-            @click="useAssistant(assistant)"
+            class="use-button"
+            @click.stop="useAssistant(preset)"
           >
-            使用
+            <span class="button-content">
+              <el-icon><ArrowRight /></el-icon>
+              使用
+            </span>
+            <span class="button-background"></span>
           </el-button>
         </div>
-      </el-card>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Search, Plus, Timer } from '@element-plus/icons-vue'
+import {Search, Plus, Timer, ArrowRight} from '@element-plus/icons-vue'
 import bgImage from '@/assets/images/header-bg.jpg'
 
 // 搜索关键词
@@ -96,21 +133,24 @@ const assistants = [
     name: '鱼聪明 AI 助手',
     description: '您的专属大脑，双语对话帮手',
     avatar: 'https://placeholder.co/100',
-    category: 'all'
+    category: 'all',
+    type: 'official'
   },
   {
     id: 2,
     name: 'Midjourney 提示词生成器',
     description: 'midjourney 提示词自动生成',
     avatar: 'https://placeholder.co/100',
-    category: 'tools'
+    category: 'tools',
+    type: 'official'
   },
   {
     id: 3,
     name: '小红书文案写手',
     description: '帮您写出爆款小红书文案',
     avatar: 'https://placeholder.co/100',
-    category: 'writing'
+    category: 'writing',
+    type: 'community'
   },
   // 更多助手数据...
 ]
@@ -146,13 +186,13 @@ const createAssistant = () => {
   console.log('创建助手')
 }
 
-const useAssistant = (assistant) => {
-  console.log('使用助手:', assistant)
+const useAssistant = (preset) => {
+  console.log('使用助手:', preset)
 }
 </script>
 
 <style lang="scss" scoped>
-.home-container {
+.assistant-container {
   min-height: 100vh;
   background-color: var(--bg-primary);
   position: relative;
@@ -165,11 +205,11 @@ const useAssistant = (assistant) => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 0% 0%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 100% 0%, rgba(200, 80, 192, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(64, 158, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(200, 80, 192, 0.1) 0%, transparent 50%);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(43, 94, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 100% 0%, rgba(30, 136, 229, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(43, 94, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 0% 100%, rgba(3, 169, 244, 0.1) 0%, transparent 50%);
     filter: blur(60px);
     opacity: 0.5;
     z-index: 0;
@@ -183,8 +223,8 @@ const useAssistant = (assistant) => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234158D0' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background:
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232B5EFF' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     opacity: 0.5;
     z-index: 0;
     pointer-events: none;
@@ -196,7 +236,7 @@ const useAssistant = (assistant) => {
   position: relative;
   color: white;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -204,7 +244,7 @@ const useAssistant = (assistant) => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #4158D0, #C850C0);
+    background: linear-gradient(135deg, #2B5EFF, #1E88E5);
     opacity: 0.95;
     z-index: 1;
   }
@@ -216,7 +256,7 @@ const useAssistant = (assistant) => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
+    background:
       radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
       radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     z-index: 2;
@@ -252,6 +292,8 @@ const useAssistant = (assistant) => {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
+
+      border-radius: 20px;
 
       &::before {
         content: '';
@@ -295,6 +337,8 @@ const useAssistant = (assistant) => {
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
 
+      border-radius: 30px;
+
       &:hover, &:focus-within {
         background: rgba(255, 255, 255, 0.15);
         border-color: rgba(255, 255, 255, 0.3);
@@ -306,7 +350,7 @@ const useAssistant = (assistant) => {
     :deep(.el-input__inner) {
       font-size: 16px;
       color: white;
-      
+
       &::placeholder {
         color: rgba(255, 255, 255, 0.8);
       }
@@ -337,9 +381,9 @@ const useAssistant = (assistant) => {
     bottom: 0;
     height: 2px;
     background: linear-gradient(90deg,
-      rgba(64, 158, 255, 0) 0%,
-      rgba(64, 158, 255, 0.5) 50%,
-      rgba(64, 158, 255, 0) 100%
+      rgba(43, 94, 255, 0) 0%,
+      rgba(43, 94, 255, 0.5) 50%,
+      rgba(43, 94, 255, 0) 100%
     );
   }
 
@@ -355,16 +399,16 @@ const useAssistant = (assistant) => {
     border: 1px solid transparent;
 
     &:hover {
-      background: rgba(64, 158, 255, 0.1);
-      border-color: rgba(64, 158, 255, 0.2);
+      background: rgba(43, 94, 255, 0.1);
+      border-color: rgba(43, 94, 255, 0.2);
       transform: translateY(-2px);
     }
 
     &.active {
-      background: linear-gradient(135deg, #4158D0, #C850C0);
+      background: linear-gradient(135deg, #2B5EFF, #1E88E5);
       color: white;
       border: none;
-      box-shadow: 0 4px 15px rgba(65, 88, 208, 0.35);
+      box-shadow: 0 4px 15px rgba(43, 94, 255, 0.35);
     }
 
     .el-icon {
@@ -388,11 +432,16 @@ const useAssistant = (assistant) => {
   position: relative;
   z-index: 1;
 
-  .assistant-card {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(64, 158, 255, 0.1);
+  .preset-card {
+    background: var(--el-bg-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--el-border-color-lighter);
     position: relative;
     overflow: hidden;
 
@@ -403,86 +452,132 @@ const useAssistant = (assistant) => {
       left: 0;
       right: 0;
       height: 4px;
-      background: linear-gradient(90deg, #4158D0, #C850C0);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-primary-light-3));
+      transform: translateY(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-      border-color: rgba(64, 158, 255, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      border-color: var(--el-color-primary-light-5);
 
       &::before {
-        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .use-button {
+        .button-background {
+          transform: translateX(0);
+        }
       }
     }
 
-    .assistant-header {
+    .preset-content {
+      display: flex;
+      gap: 12px;
+    }
+
+    .preset-avatar {
+      position: relative;
+    }
+  }
+
+  .preset-info {
+    flex: 1;
+    min-width: 0;
+
+    .preset-name-row {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 20px;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
 
-      .el-avatar {
-        border: 2px solid transparent;
-        background: linear-gradient(135deg, #4158D0, #C850C0);
-        transition: all 0.3s ease;
+    .preset-name {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-        &:hover {
-          transform: rotate(360deg);
-        }
+    .preset-type {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      flex-shrink: 0;
+
+      &.official {
+        background: linear-gradient(135deg, #2B5EFF, #1E88E5);
       }
 
-      .assistant-info {
-        flex: 1;
-        h3 {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 600;
-          background: linear-gradient(135deg, #4158D0, #C850C0);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        p {
-          margin: 8px 0 0;
-          font-size: 14px;
-          color: #666;
-          line-height: 1.4;
-        }
+      &.community {
+        background: linear-gradient(135deg, #03A9F4, #1E88E5);
       }
+    }
 
-      .use-btn {
-        padding: 8px 24px;
-        font-weight: 500;
-        background: linear-gradient(135deg, #4158D0, #C850C0);
-        border: none;
+    .preset-description {
+      margin: 0;
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.5;
+    }
+  }
+
+  .preset-actions {
+    margin-top: auto;
+
+    .use-button {
+      width: 100%;
+      border: none;
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      padding: 8px 0;
+
+      .button-content {
         position: relative;
-        overflow: hidden;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 13px;
+      }
 
-        &::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: conic-gradient(
-            from 0deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.2) 25%,
-            transparent 50%
-          );
-          animation: rotate 4s linear infinite;
-        }
+      .button-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg,
+        var(--el-color-primary) 0%,
+        var(--el-color-primary-light-3) 50%,
+        var(--el-color-primary) 100%
+        );
+        transform: translateX(-100%);
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(65, 88, 208, 0.35);
-        }
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.2);
       }
     }
   }
+
 }
 
 @keyframes backgroundShift {

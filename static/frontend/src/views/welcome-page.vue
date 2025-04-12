@@ -113,14 +113,14 @@
 <script setup name="WelcomePage">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  ChatRound, 
-  Shop, 
-  ArrowRight, 
-  User, 
-  Setting, 
+import {
+  ChatRound,
+  Shop,
+  ArrowRight,
+  User,
+  Setting,
   SwitchButton,
-  CaretBottom 
+  CaretBottom
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -201,7 +201,7 @@ const navigateToChat = () => {
 }
 
 const navigateToMarket = () => {
-  router.push('/home')
+  router.push('/assistant')
 }
 </script>
 
@@ -225,7 +225,7 @@ const navigateToMarket = () => {
   right: 0;
   height: 64px;
   z-index: 100;
-  
+
   .nav-content {
     max-width: 1200px;
     height: 100%;
@@ -234,20 +234,20 @@ const navigateToMarket = () => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    
+
     .nav-left {
       display: flex;
       align-items: center;
-      
+
       .logo {
         display: flex;
         align-items: center;
         gap: 8px;
-        
+
         .logo-text {
           font-size: 24px;
           font-weight: bold;
-          background: linear-gradient(45deg, #4158D0, #C850C0);
+          background: linear-gradient(45deg, #2B5EFF, #1E88E5);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -322,9 +322,9 @@ const navigateToMarket = () => {
     transform: translate(-50%, -50%);
     background: radial-gradient(
       circle,
-      rgba(65, 88, 208, 0.15) 0%,
-      rgba(200, 80, 192, 0.15) 30%,
-      rgba(255, 204, 112, 0.15) 70%
+      rgba(43, 94, 255, 0.15) 0%,
+      rgba(30, 136, 229, 0.15) 30%,
+      rgba(3, 169, 244, 0.15) 70%
     );
     animation: rotate 20s linear infinite;
   }
@@ -338,7 +338,7 @@ const navigateToMarket = () => {
 
   .particle {
     position: absolute;
-    background: rgba(255, 255, 255, 0.5);
+    background: linear-gradient(45deg, rgba(43, 94, 255, 0.5), rgba(3, 169, 244, 0.5));
     border-radius: 50%;
     animation: float 8s infinite;
   }
@@ -350,7 +350,7 @@ const navigateToMarket = () => {
   .gradient-text {
     font-size: 4em;
     font-weight: bold;
-    background: linear-gradient(45deg, #4158D0, #C850C0, #FFCC70);
+    background: linear-gradient(45deg, #2B5EFF, #1E88E5, #03A9F4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -398,7 +398,7 @@ const navigateToMarket = () => {
 
   &.card-hover {
     transform: translateY(-10px) rotateX(5deg) rotateY(5deg);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.2);
 
     .card-overlay {
       opacity: 1;
@@ -431,13 +431,13 @@ const navigateToMarket = () => {
     font-size: 64px;
     margin-bottom: 20px;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    color: #4158D0;
+    color: #2B5EFF;
   }
 
   h2 {
     font-size: 24px;
     margin: 20px 0;
-    background: linear-gradient(45deg, #4158D0, #C850C0);
+    background: linear-gradient(45deg, #2B5EFF, #1E88E5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -452,7 +452,7 @@ const navigateToMarket = () => {
 
   .card-action {
     font-size: 24px;
-    color: #C850C0;
+    color: #1E88E5;
     opacity: 0;
     transition: all 0.3s ease;
   }
@@ -465,9 +465,9 @@ const navigateToMarket = () => {
     bottom: 0;
     background: linear-gradient(
       45deg,
-      rgba(65, 88, 208, 0.1) 0%,
-      rgba(200, 80, 192, 0.1) 50%,
-      rgba(255, 204, 112, 0.1) 100%
+      rgba(43, 94, 255, 0.1) 0%,
+      rgba(30, 136, 229, 0.1) 50%,
+      rgba(3, 169, 244, 0.1) 100%
     );
     opacity: 0;
     transition: opacity 0.5s ease;

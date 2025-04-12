@@ -17,9 +17,9 @@ const router = createRouter({
           }
         },
         {
-          path: 'home',
-          name: 'home',
-          component: () => import('@/views/home/index.vue'),
+          path: 'assistant',
+          name: 'assistant',
+          component: () => import('@/views/assistant/index.vue'),
           meta: {
             title: '首页',
             icon: 'home'
