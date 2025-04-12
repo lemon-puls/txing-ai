@@ -240,7 +240,17 @@ const createAssistant = () => {
 }
 
 const useAssistant = (preset) => {
-  console.log('使用助手:', preset)
+  router.push({
+    path: '/chat',
+    query: {
+      newChat: 'true',
+      assistantId: preset.id,
+      assistantName: preset.name,
+      assistantAvatar: preset.avatar,
+      assistantDescription: preset.description,
+      assistantType: preset.type
+    }
+  })
 }
 </script>
 

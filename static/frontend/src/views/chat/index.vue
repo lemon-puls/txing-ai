@@ -132,8 +132,11 @@
               :class="message.role"
             >
               <div class="message-avatar">
-                <el-avatar :size="40" :src="message.role === 'user' ? userAvatar : aiAvatar">
-                  {{ message.role === 'user' ? 'U' : 'AI' }}
+                <el-avatar 
+                  :size="40" 
+                  :src="message.role === 'user' ? userAvatar : (currentChat.assistant?.avatar || aiAvatar)"
+                >
+                  {{ message.role === 'user' ? 'U' : (currentChat.assistant?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
               <div class="message-content">
@@ -520,18 +523,27 @@ const goToHome = () => {
 const createNewChat = () => {
   const newChat = {
     id: Date.now(),
-    title: '新对话',
+    title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
     model: 'gpt-3.5-turbo',
     webSearch: false,
     temperature: 1,
-    lastMessage: '你好！我是 AI 助手，有什么我可以帮你的吗？',
+    lastMessage: route.query.assistantDescription || '你好！我是 AI 助手，有什么我可以帮你的吗？',
     messages: [
       {
         id: 1,
         role: 'assistant',
-        content: '你好！我是 AI 助手，有什么我可以帮你的吗？'
+        content: route.query.assistantDescription 
+          ? `你好！我是 ${route.query.assistantName}，${route.query.assistantDescription}`
+          : '你好！我是 AI 助手，有什么我可以帮你的吗？'
       }
-    ]
+    ],
+    assistant: route.query.assistantId ? {
+      id: route.query.assistantId,
+      name: route.query.assistantName,
+      avatar: route.query.assistantAvatar,
+      description: route.query.assistantDescription,
+      type: route.query.assistantType
+    } : null
   }
   chatList.value.unshift(newChat)
   currentChat.value = newChat
