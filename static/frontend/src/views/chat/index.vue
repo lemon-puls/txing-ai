@@ -372,7 +372,7 @@
 
 <script setup name="ChatPage">
 import { ref, nextTick, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
@@ -511,6 +511,7 @@ const toggleSidebar = () => {
 }
 
 const router = useRouter()
+const route = useRoute()
 
 const goToHome = () => {
   router.push('/')
@@ -625,7 +626,12 @@ const toggleWebSearch = () => {
 
 // 监听系统主题变化
 onMounted(() => {
-  currentChat.value = chatList.value[0]
+  // 检查是否需要创建新对话
+  if (route.query.newChat === 'true') {
+    createNewChat()
+  } else {
+    currentChat.value = chatList.value[0]
+  }
 
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
   mediaQuery.addEventListener('change', e => {

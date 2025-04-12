@@ -152,6 +152,9 @@ import {
   CaretBottom
 } from '@element-plus/icons-vue'
 import bgImage from '@/assets/images/header-bg.jpg'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 搜索关键词
 const searchQuery = ref('')
@@ -224,7 +227,12 @@ const selectCategory = (categoryId) => {
 }
 
 const startChat = () => {
-  console.log('开始聊天')
+  router.push({
+    path: '/chat',
+    query: {
+      newChat: 'true'
+    }
+  })
 }
 
 const createAssistant = () => {
