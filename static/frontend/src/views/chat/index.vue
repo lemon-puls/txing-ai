@@ -140,6 +140,16 @@
                 </el-avatar>
               </div>
               <div class="message-content">
+                <!-- 添加思考过程组件 -->
+                <div v-if="message.thought_process" class="thought-process">
+                  <div class="thought-header" @click="toggleThought(message)">
+                    <el-icon :class="{ 'is-fold': !message.showThought }"><ArrowRight /></el-icon>
+                    <span>已深度思考 (用时6秒)</span>
+                  </div>
+                  <div v-show="message.showThought" class="thought-content">
+                    {{ message.thought_process }}
+                  </div>
+                </div>
                 <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
                   <el-button-group>
@@ -380,7 +390,7 @@ import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
   Connection, ArrowDown, Check, Picture, HomeFilled,
-  Shop, User, CaretBottom, SwitchButton
+  Shop, User, CaretBottom, SwitchButton, ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -469,10 +479,10 @@ const renderMessage = (content) => {
         console.warn('Language highlight error:', err);
         highlightedCode = hljs.highlight(codeStr, { language: 'plaintext' }).value;
       }
-      
+
       // 生成唯一ID用于复制功能
       const blockId = `code-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       return `
         <pre class="code-block" id="${blockId}">
           <div class="code-header">
@@ -524,7 +534,7 @@ const messagesContainer = ref(null)
 const currentChat = ref({
   id: 1,
   title: '冒泡排序实现',
-  model: 'gpt-3.5-turbo',
+  model: 'deepseek-r1',
   webSearch: false,
   maxTokens: 2048,
   temperature: 1,
@@ -629,7 +639,9 @@ public class BubbleSort {
 
 5. **稳定性**：冒泡排序是稳定的排序算法，因为相等的元素不会交换位置
 
-你可以根据需要选择基本版或优化版的实现。对于小型数组或基本有序的数组，冒泡排序是一个不错的选择。`
+你可以根据需要选择基本版或优化版的实现。对于小型数组或基本有序的数组，冒泡排序是一个不错的选择。`,
+      thought_process: '好的，用户问"你是谁"，我需要根据给定的知识手册来回答。首先，查看知识手册中类型为"问身份"的条目，发现对应的回答都是统一的模板，强调我是腾讯元宇宙，支持切换多种大模型，当前使用的是Deepseek-R1，并说明我的功能。用户的问题正好匹配这些条目，所以直接引用相关内容。需要注意保持口语化和自然，避免机械呆板。同时，按照设定，要拟人化回复，所以可以稍微调整结构，让回答更亲切。比如开头用"你好呀！"来增添亲和力，然后分点介绍功能，最后以表情符号结尾，显得更友好。不需要添加额外信息，确保回答准确且符合手册内容。',
+      showThought: true
     }
   ]
 })
@@ -645,7 +657,9 @@ const chatList = ref([
       {
         id: 1,
         role: 'assistant',
-        content: currentChat.value.messages[0].content
+        content: currentChat.value.messages[0].content,
+        thought_process: currentChat.value.messages[0].thought_process,
+        showThought: currentChat.value.messages[0].showThought,
       }
     ]
   }
@@ -837,6 +851,15 @@ const selectModel = (model) => {
 // 切换联网搜索
 const toggleWebSearch = () => {
   currentChat.value.webSearch = !currentChat.value.webSearch
+}
+
+// 切换思考过程的显示/隐藏
+const toggleThought = (message) => {
+  if (!message.showThought) {
+    message.showThought = true;
+  } else {
+    message.showThought = false;
+  }
 }
 
 // 监听系统主题变化
@@ -1401,8 +1424,45 @@ const handlePresetSelect = (preset) => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  &:hover {
-    transform: translateY(-1px);
+  .thought-process {
+    margin-bottom: 16px;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    overflow: hidden;
+
+    .thought-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: rgba(var(--el-color-primary-rgb), 0.05);
+      }
+
+      .el-icon {
+        font-size: 16px;
+        transition: transform 0.3s ease;
+
+        &.is-fold {
+          transform: rotate(90deg);
+        }
+      }
+    }
+
+    .thought-content {
+      padding: 12px 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      white-space: pre-wrap;
+    }
   }
 
   .message-text {
