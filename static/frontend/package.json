@@ -15,6 +15,7 @@
     "@element-plus/icons-vue": "^2.3.1",
     "element-plus": "^2.9.3",
     "frontend": "file:",
+    "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "marked": "^15.0.8",
     "pinia": "^2.3.0",
