@@ -136,6 +136,12 @@
         </div>
       </div>
     </div>
+
+    <!-- 创建助手弹窗 -->
+    <create-assistant-dialog
+      v-model:visible="createDialogVisible"
+      @created="handleAssistantCreated"
+    />
   </div>
 </template>
 
@@ -153,8 +159,16 @@ import {
 } from '@element-plus/icons-vue'
 import bgImage from '@/assets/images/header-bg.jpg'
 import { useRouter } from 'vue-router'
+import CreateAssistantDialog from '@/components/assistant/CreateAssistantDialog.vue'
+
+defineOptions({
+  name: 'AssistantList'
+})
 
 const router = useRouter()
+
+// 创建助手弹窗可见性
+const createDialogVisible = ref(false)
 
 // 搜索关键词
 const searchQuery = ref('')
@@ -236,7 +250,11 @@ const startChat = () => {
 }
 
 const createAssistant = () => {
-  console.log('创建助手')
+  createDialogVisible.value = true
+}
+
+const handleAssistantCreated = () => {
+  // TODO: 刷新助手列表
 }
 
 const useAssistant = (preset) => {
