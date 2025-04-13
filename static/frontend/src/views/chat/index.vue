@@ -380,7 +380,7 @@ import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
   Connection, ArrowDown, Check, Picture, HomeFilled,
-  Shop, User, CaretBottom, SwitchButton
+  Shop, User, CaretBottom, SwitchButton, Document
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -455,11 +455,48 @@ marked.setOptions({
 // 渲染消息内容
 const renderMessage = (content) => {
   try {
-    const rendered = marked(content);
+    // 自定义代码块渲染
+    const renderer = new marked.Renderer();
+    renderer.code = ({raw, lang, text}) => {
+      console.log(text, lang)
+      var code = text;
+      // 确保 code 是字符串类型
+      const codeStr = String(code || '');
+      const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
+      const escapedCode = codeStr
+        .replace(/`/g, '\\`')
+        .replace(/\$/g, '\\$')
+        .replace(/\\/g, '\\\\');
+
+      let highlightedCode;
+      try {
+        highlightedCode = hljs.highlight(codeStr, { language: validLang }).value;
+      } catch (err) {
+        console.warn('Language highlight error:', err);
+        highlightedCode = hljs.highlight(codeStr, { language: 'plaintext' }).value;
+      }
+
+      return `
+        <pre class="code-block">
+          <div class="code-header">
+            <div class="lang-info">
+              <span class="code-lang">${validLang.toUpperCase()}</span>
+            </div>
+            <button class="copy-button">
+                <span> 复制 </span>
+            </button>
+          </div>
+          <code class="hljs language-${validLang}">${highlightedCode}</code>
+        </pre>
+      `.trim();
+    };
+
+    marked.use({ renderer });
+    const rendered = marked(String(content || ''));
     return `<div class="markdown-body">${rendered}</div>`;
   } catch (err) {
     console.error('Markdown rendering error:', err);
-    return content;
+    return String(content || '');
   }
 }
 
@@ -936,51 +973,6 @@ const handlePresetSelect = (preset) => {
     background-color: rgba(var(--el-color-primary-rgb), 0.15);
   }
 
-  //:deep(.markdown-body) {
-  //  color-scheme: dark;
-  //  --color-prettylights-syntax-comment: #8b949e;
-  //  --color-prettylights-syntax-constant: #79c0ff;
-  //  --color-prettylights-syntax-entity: #d2a8ff;
-  //  --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
-  //  --color-prettylights-syntax-entity-tag: #7ee787;
-  //  --color-prettylights-syntax-keyword: #ff7b72;
-  //  --color-prettylights-syntax-string: #a5d6ff;
-  //  --color-prettylights-syntax-variable: #ffa657;
-  //  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
-  //  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
-  //  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
-  //  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
-  //  --color-prettylights-syntax-carriage-return-bg: #b62324;
-  //  --color-prettylights-syntax-string-regexp: #7ee787;
-  //  --color-prettylights-syntax-markup-list: #f2cc60;
-  //  --color-prettylights-syntax-markup-heading: #1f6feb;
-  //  --color-prettylights-syntax-markup-italic: #c9d1d9;
-  //  --color-prettylights-syntax-markup-bold: #c9d1d9;
-  //  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
-  //  --color-prettylights-syntax-markup-deleted-bg: #67060c;
-  //  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
-  //  --color-prettylights-syntax-markup-inserted-bg: #033a16;
-  //  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
-  //  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
-  //  --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
-  //  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
-  //  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
-  //  --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
-  //  --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
-  //  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
-  //  --color-fg-default: #e6edf3;
-  //  --color-fg-muted: #7d8590;
-  //  --color-fg-subtle: #6e7681;
-  //  --color-canvas-default: transparent;
-  //  --color-canvas-subtle: #161b22;
-  //  --color-border-default: #30363d;
-  //  --color-border-muted: #21262d;
-  //  --color-neutral-muted: rgba(110,118,129,0.4);
-  //  --color-accent-fg: #2f81f7;
-  //  --color-accent-emphasis: #1f6feb;
-  //  --color-attention-subtle: rgba(187,128,9,0.15);
-  //  --color-danger-fg: #f85149;
-  //}
 }
 
 .chat-container {
@@ -1408,17 +1400,82 @@ const handlePresetSelect = (preset) => {
       text-rendering: optimizeLegibility;
       color: var(--text-primary);
 
-      pre {
+      pre.code-block {
         background: #282c34;
         margin: 1em 0;
-        padding: 1em;
-        border-radius: 6px;
+        padding: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+
+        .code-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 12px;
+          background: #21252b;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          height: 40px;
+
+          .lang-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .code-lang {
+              color: #abb2bf;
+              font-size: 12px;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              font-weight: 500;
+              background: rgba(255, 255, 255, 0.1);
+              padding: 2px 8px;
+              border-radius: 4px;
+              letter-spacing: 0.5px;
+            }
+          }
+
+          .copy-button {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0);
+            color: #abb2bf;
+            padding: 4px 12px;
+            height: 28px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+            .copy-icon {
+              font-size: 14px;
+            }
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.05);
+              border-color: rgba(255, 255, 255, 0.2);
+              color: #fff;
+            }
+
+            &:active {
+              transform: translateY(1px);
+            }
+          }
+        }
 
         code {
           font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
-          font-size: 13px;
+          font-size: 14px;
           background: transparent;
           text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+          padding: 16px;
+          display: block;
+          overflow-x: auto;
+          line-height: 1.6;
         }
       }
 
