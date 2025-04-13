@@ -144,7 +144,7 @@
                 <div v-if="message.thought_process" class="thought-process">
                   <div class="thought-header" @click="toggleThought(message)">
                     <el-icon :class="{ 'is-fold': !message.showThought }"><ArrowRight /></el-icon>
-                    <span>已深度思考 (用时6秒)</span>
+                    <span>已深度思考 (用时{{ message === streamingMessage ? Math.floor(thoughtTime / 1000) : 6 }}秒)</span>
                   </div>
                   <div v-show="message.showThought" class="thought-content">
                     {{ message.thought_process }}
@@ -723,6 +723,168 @@ const showBgPatternDialog = ref(false)
 // AI 助手市场
 const showPresetMarket = ref(false)
 
+// 添加响应式变量
+const streamingMessage = ref(null)
+const streamingThought = ref(null)
+const thoughtTime = ref(0)
+
+// 模拟流式响应
+const simulateStreamResponse = async (content, thought) => {
+  isTyping.value = true
+  streamingMessage.value = {
+    id: Date.now(),
+    role: 'assistant',
+    content: '',
+    thought_process: '',
+    showThought: true
+  }
+  currentChat.value.messages.push(streamingMessage.value)
+  await scrollToBottom()
+
+  // 首先流式显示思考过程
+  const thoughtChars = thought.split('')
+  for (let char of thoughtChars) {
+    streamingMessage.value.thought_process += char
+    thoughtTime.value += 50 + Math.random() * 50
+    await new Promise(resolve => setTimeout(resolve, 30 + Math.random() * 20))
+    await scrollToBottom()
+  }
+
+  // 然后流式显示回复内容
+  const chars = content.split('')
+  for (let char of chars) {
+    streamingMessage.value.content += char
+    await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 30))
+    await scrollToBottom()
+  }
+
+  isTyping.value = false
+  streamingMessage.value = null
+  thoughtTime.value = 0
+}
+
+// 发送消息
+const sendMessage = async () => {
+  if (!messageInput.value.trim()) return
+
+  // 添加用户消息
+  currentChat.value.messages.push({
+    id: Date.now(),
+    role: 'user',
+    content: messageInput.value
+  })
+
+  currentChat.value.lastMessage = messageInput.value
+  const userInput = messageInput.value
+  messageInput.value = ''
+  await scrollToBottom()
+
+  // 模拟 AI 响应
+  if (userInput.toLowerCase().includes('java') && userInput.toLowerCase().includes('冒泡排序')) {
+    const thought = '收到用户请求实现Java版本的冒泡排序算法。我需要：\n1. 首先解释冒泡排序的基本原理\n2. 提供基础版本的实现代码\n3. 添加优化版本作为改进\n4. 补充算法的复杂度和稳定性分析\n5. 确保代码注释清晰，便于理解\n让我按照这个思路来组织回答...'
+    
+    const content = `# Java实现冒泡排序
+
+冒泡排序是一种简单的排序算法，它重复地遍历要排序的列表，比较相邻的元素并交换它们的位置，直到列表排序完成。
+
+以下是Java实现冒泡排序的代码：
+
+\`\`\`java
+public class BubbleSort {
+    public static void bubbleSort(int[] arr) {
+        int n = arr.length;
+        // 外层循环控制排序轮数
+        for (int i = 0; i < n - 1; i++) {
+            // 内层循环控制每轮比较次数
+            for (int j = 0; j < n - i - 1; j++) {
+                // 如果前一个元素比后一个元素大，则交换它们
+                if (arr[j] > arr[j + 1]) {
+                    // 交换arr[j]和arr[j+1]
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    // 优化版的冒泡排序（如果某一轮没有发生交换，说明已经有序）
+    public static void optimizedBubbleSort(int[] arr) {
+        int n = arr.length;
+        boolean swapped;
+        for (int i = 0; i < n - 1; i++) {
+            swapped = false;
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    // 交换arr[j]和arr[j+1]
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                    swapped = true;
+                }
+            }
+            // 如果没有发生交换，提前结束排序
+            if (!swapped) {
+                break;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {64, 34, 25, 12, 22, 11, 90};
+
+        System.out.println("排序前的数组:");
+        printArray(arr);
+
+        bubbleSort(arr);
+        // 或者使用优化版: optimizedBubbleSort(arr);
+
+        System.out.println("排序后的数组:");
+        printArray(arr);
+    }
+
+    // 辅助方法：打印数组
+    public static void printArray(int[] arr) {
+        for (int value : arr) {
+            System.out.print(value + " ");
+        }
+        System.out.println();
+    }
+}
+\`\`\`
+
+## 代码说明
+
+1. **基本冒泡排序**：
+   - 外层循环控制排序轮数（n-1轮）
+   - 内层循环比较相邻元素，如果顺序不对就交换
+   - 每轮结束后，最大的元素会"冒泡"到数组末尾
+
+2. **优化版冒泡排序**：
+   - 添加了\`swapped\`标志位
+   - 如果某一轮没有发生交换，说明数组已经有序，可以提前结束排序
+   - 对于基本有序的数组，能显著提高效率
+
+3. **时间复杂度**：
+   - 最坏情况：O(n²)（完全逆序）
+   - 最好情况：O(n)（已经有序，使用优化版）
+   - 平均情况：O(n²)
+
+4. **空间复杂度**：O(1)，是原地排序算法
+
+5. **稳定性**：冒泡排序是稳定的排序算法，因为相等的元素不会交换位置
+
+你可以根据需要选择基本版或优化版的实现。对于小型数组或基本有序的数组，冒泡排序是一个不错的选择。`
+
+    await simulateStreamResponse(content, thought)
+  } else {
+    // 其他普通回复的模拟流式响应...
+    const thought = '分析用户的问题，准备合适的回复...'
+    const content = '这是一个模拟的回复，包含代码示例：\n```javascript\nconsole.log("Hello World!");\n```'
+    await simulateStreamResponse(content, thought)
+  }
+}
+
 // 主题切换
 const toggleTheme = () => {
   isDarkTheme.value = !isDarkTheme.value
@@ -809,33 +971,6 @@ const scrollToBottom = async () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
-}
-
-const sendMessage = async () => {
-  if (!messageInput.value.trim()) return
-
-  // 添加用户消息
-  currentChat.value.messages.push({
-    id: Date.now(),
-    role: 'user',
-    content: messageInput.value
-  })
-
-  currentChat.value.lastMessage = messageInput.value
-  messageInput.value = ''
-  await scrollToBottom()
-
-  // 模拟 AI 响应
-  isTyping.value = true
-  setTimeout(() => {
-    currentChat.value.messages.push({
-      id: Date.now(),
-      role: 'assistant',
-      content: '这是一个模拟的回复，包含代码示例：\n```javascript\nconsole.log("Hello World!");\n```'
-    })
-    isTyping.value = false
-    scrollToBottom()
-  }, 1000)
 }
 
 const saveSettings = () => {
@@ -1439,6 +1574,7 @@ const handlePresetSelect = (preset) => {
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.3s ease;
+      user-select: none;
 
       &:hover {
         background: rgba(var(--el-color-primary-rgb), 0.05);
