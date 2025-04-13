@@ -380,7 +380,7 @@ import {
   Plus, ChatRound, More, Fold, Setting,
   CopyDocument, RefreshRight, Upload, Position,
   Connection, ArrowDown, Check, Picture, HomeFilled,
-  Shop, User, CaretBottom, SwitchButton, Document
+  Shop, User, CaretBottom, SwitchButton
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -457,16 +457,10 @@ const renderMessage = (content) => {
   try {
     // 自定义代码块渲染
     const renderer = new marked.Renderer();
-    renderer.code = ({raw, lang, text}) => {
-      console.log(text, lang)
-      var code = text;
+    renderer.code = ({text, lang}) => {
       // 确保 code 是字符串类型
-      const codeStr = String(code || '');
+      const codeStr = String(text || '');
       const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
-      const escapedCode = codeStr
-        .replace(/`/g, '\\`')
-        .replace(/\$/g, '\\$')
-        .replace(/\\/g, '\\\\');
 
       let highlightedCode;
       try {
@@ -475,15 +469,35 @@ const renderMessage = (content) => {
         console.warn('Language highlight error:', err);
         highlightedCode = hljs.highlight(codeStr, { language: 'plaintext' }).value;
       }
-
+      
+      // 生成唯一ID用于复制功能
+      const blockId = `code-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       return `
-        <pre class="code-block">
+        <pre class="code-block" id="${blockId}">
           <div class="code-header">
             <div class="lang-info">
               <span class="code-lang">${validLang.toUpperCase()}</span>
             </div>
-            <button class="copy-button">
-                <span> 复制 </span>
+            <button class="copy-button" onclick="(() => {
+              const codeBlock = document.getElementById('${blockId}');
+              const code = codeBlock.querySelector('code').textContent;
+              const button = codeBlock.querySelector('.copy-button');
+              navigator.clipboard.writeText(code)
+                .then(() => {
+                  button.innerHTML = '<span>已复制</span>';
+                  setTimeout(() => {
+                    button.innerHTML = '<span>复制</span>';
+                  }, 2000);
+                })
+                .catch(() => {
+                  button.innerHTML = '<span>复制失败</span>';
+                  setTimeout(() => {
+                    button.innerHTML = '<span>复制</span>';
+                  }, 2000);
+                });
+            })()">
+              <span>复制</span>
             </button>
           </div>
           <code class="hljs language-${validLang}">${highlightedCode}</code>
