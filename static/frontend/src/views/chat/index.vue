@@ -132,15 +132,15 @@
               :class="message.role"
             >
               <div class="message-avatar">
-                <el-avatar 
-                  :size="40" 
+                <el-avatar
+                  :size="40"
                   :src="message.role === 'user' ? userAvatar : (currentChat.assistant?.avatar || aiAvatar)"
                 >
                   {{ message.role === 'user' ? 'U' : (currentChat.assistant?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
               <div class="message-content">
-                <div class="message-text" v-html="formatMessage(message.content)"></div>
+                <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
                   <el-button-group>
                     <el-button text size="small" @click="copyMessage(message)">
@@ -383,21 +383,83 @@ import {
   Shop, User, CaretBottom, SwitchButton
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { marked } from 'marked'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/atom-one-dark.css'
+import { marked } from 'marked';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark.css';
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import python from 'highlight.js/lib/languages/python'
+import java from 'highlight.js/lib/languages/java'
+import cpp from 'highlight.js/lib/languages/cpp'
+import csharp from 'highlight.js/lib/languages/csharp'
+import go from 'highlight.js/lib/languages/go'
+import rust from 'highlight.js/lib/languages/rust'
+import sql from 'highlight.js/lib/languages/sql'
+import xml from 'highlight.js/lib/languages/xml'
+import css from 'highlight.js/lib/languages/css'
+import scss from 'highlight.js/lib/languages/scss'
+import json from 'highlight.js/lib/languages/json'
+import yaml from 'highlight.js/lib/languages/yaml'
+import markdown from 'highlight.js/lib/languages/markdown'
+import bash from 'highlight.js/lib/languages/bash'
+import shell from 'highlight.js/lib/languages/shell'
+import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import PresetMarket from '@/components/chat/PresetMarket.vue'
+
+// 注册语言
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('java', java)
+hljs.registerLanguage('cpp', cpp)
+hljs.registerLanguage('csharp', csharp)
+hljs.registerLanguage('go', go)
+hljs.registerLanguage('rust', rust)
+hljs.registerLanguage('sql', sql)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('scss', scss)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('yaml', yaml)
+hljs.registerLanguage('markdown', markdown)
+hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('shell', shell)
+hljs.registerLanguage('dockerfile', dockerfile)
 
 // 配置 marked
 marked.setOptions({
   highlight: function(code, lang) {
     if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value
+      try {
+        return hljs.highlight(lang, code).value;
+      } catch (err) {
+        console.warn('Language highlight error:', err);
+      }
     }
-    return hljs.highlightAuto(code).value
+    try {
+      return hljs.highlightAuto(code).value;
+    } catch (err) {
+      console.warn('Auto highlight error:', err);
+      return code;
+    }
   },
-  breaks: true
+  langPrefix: 'hljs language-',
+  breaks: true,
+  gfm: true,
+  headerIds: false,
+  mangle: false
 })
+
+// 渲染消息内容
+const renderMessage = (content) => {
+  try {
+    const rendered = marked(content);
+    return rendered;
+  } catch (err) {
+    console.error('Markdown rendering error:', err);
+    return content;
+  }
+}
 
 // 状态
 const isDarkTheme = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -408,7 +470,7 @@ const isTyping = ref(false)
 const messagesContainer = ref(null)
 const currentChat = ref({
   id: 1,
-  title: '新对话',
+  title: '冒泡排序实现',
   model: 'gpt-3.5-turbo',
   webSearch: false,
   maxTokens: 2048,
@@ -422,23 +484,115 @@ const currentChat = ref({
     {
       id: 1,
       role: 'assistant',
-      content: '你好！我是 AI 助手，有什么我可以帮你的吗？'
+      content: `# Java实现冒泡排序
+
+冒泡排序是一种简单的排序算法，它重复地遍历要排序的列表，比较相邻的元素并交换它们的位置，直到列表排序完成。
+
+以下是Java实现冒泡排序的代码：
+
+\`\`\`java
+public class BubbleSort {
+
+    public static void bubbleSort(int[] arr) {
+        int n = arr.length;
+        // 外层循环控制排序轮数
+        for (int i = 0; i < n - 1; i++) {
+            // 内层循环控制每轮比较次数
+            for (int j = 0; j < n - i - 1; j++) {
+                // 如果前一个元素比后一个元素大，则交换它们
+                if (arr[j] > arr[j + 1]) {
+                    // 交换arr[j]和arr[j+1]
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                }
+            }
+        }
+    }
+
+    // 优化版的冒泡排序（如果某一轮没有发生交换，说明已经有序）
+    public static void optimizedBubbleSort(int[] arr) {
+        int n = arr.length;
+        boolean swapped;
+        for (int i = 0; i < n - 1; i++) {
+            swapped = false;
+            for (int j = 0; j < n - i - 1; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    // 交换arr[j]和arr[j+1]
+                    int temp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = temp;
+                    swapped = true;
+                }
+            }
+            // 如果没有发生交换，提前结束排序
+            if (!swapped) {
+                break;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int[] arr = {64, 34, 25, 12, 22, 11, 90};
+
+        System.out.println("排序前的数组:");
+        printArray(arr);
+
+        bubbleSort(arr);
+        // 或者使用优化版: optimizedBubbleSort(arr);
+
+        System.out.println("排序后的数组:");
+        printArray(arr);
+    }
+
+    // 辅助方法：打印数组
+    public static void printArray(int[] arr) {
+        for (int value : arr) {
+            System.out.print(value + " ");
+        }
+        System.out.println();
+    }
+}
+\`\`\`
+
+## 代码说明
+
+1. **基本冒泡排序**：
+   - 外层循环控制排序轮数（n-1轮）
+   - 内层循环比较相邻元素，如果顺序不对就交换
+   - 每轮结束后，最大的元素会"冒泡"到数组末尾
+
+2. **优化版冒泡排序**：
+   - 添加了\`swapped\`标志位
+   - 如果某一轮没有发生交换，说明数组已经有序，可以提前结束排序
+   - 对于基本有序的数组，能显著提高效率
+
+3. **时间复杂度**：
+   - 最坏情况：O(n²)（完全逆序）
+   - 最好情况：O(n)（已经有序，使用优化版）
+   - 平均情况：O(n²)
+
+4. **空间复杂度**：O(1)，是原地排序算法
+
+5. **稳定性**：冒泡排序是稳定的排序算法，因为相等的元素不会交换位置
+
+你可以根据需要选择基本版或优化版的实现。对于小型数组或基本有序的数组，冒泡排序是一个不错的选择。`
     }
   ]
 })
 const chatList = ref([
   {
     id: 1,
-    title: '新对话',
+    title: '冒泡排序实现',
     model: 'gpt-3.5-turbo',
     webSearch: false,
     temperature: 1,
-    lastMessage: '你好！我是 AI 助手，有什么我可以帮你的吗？',
+    lastMessage: 'Java实现冒泡排序的详细说明和代码示例',
     messages: [
       {
         id: 1,
         role: 'assistant',
-        content: '你好！我是 AI 助手，有什么我可以帮你的吗？'
+        content: currentChat.value.messages[0].content
       }
     ]
   }
@@ -532,7 +686,7 @@ const createNewChat = () => {
       {
         id: 1,
         role: 'assistant',
-        content: route.query.assistantDescription 
+        content: route.query.assistantDescription
           ? `你好！我是 ${route.query.assistantName}，${route.query.assistantDescription}`
           : '你好！我是 AI 助手，有什么我可以帮你的吗？'
       }
@@ -564,10 +718,6 @@ const handleChatAction = (command, chat) => {
       }
     }
   }
-}
-
-const formatMessage = (content) => {
-  return marked(content)
 }
 
 const copyMessage = async (message) => {
@@ -638,6 +788,8 @@ const toggleWebSearch = () => {
 
 // 监听系统主题变化
 onMounted(() => {
+  hljs.highlightAll()
+
   // 检查是否需要创建新对话
   if (route.query.newChat === 'true') {
     createNewChat()
@@ -740,7 +892,7 @@ const handlePresetSelect = (preset) => {
 .dark-theme {
   --bg-primary: #1a1a1a;
   --bg-secondary: #2d2d2d;
-  --text-primary: #ffffff;
+  --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
   --border-color: rgba(255, 255, 255, 0.1);
   --hover-bg: #2d2d2d;
@@ -767,6 +919,19 @@ const handlePresetSelect = (preset) => {
 
   :deep(.el-input__inner) {
     color: var(--text-primary);
+  }
+
+  :deep(pre) {
+    background: #1e1e1e !important;
+
+    &::before {
+      background: #2d2d2d !important;
+      color: #a0a0a0 !important;
+    }
+  }
+
+  :deep(code:not(pre code)) {
+    background-color: rgba(var(--el-color-primary-rgb), 0.15);
   }
 }
 
@@ -1138,6 +1303,7 @@ const handlePresetSelect = (preset) => {
     .message-content {
       background: var(--message-bg-user);
       border-radius: 12px 2px 12px 12px;
+      color: var(--text-primary);
     }
 
     .message-actions {
@@ -1145,53 +1311,202 @@ const handlePresetSelect = (preset) => {
     }
   }
 
-  &.assistant .message-content {
-    background: var(--message-bg-assistant);
-    border-radius: 2px 12px 12px 12px;
+  &.assistant {
+    .message-content {
+      background: var(--message-bg-assistant);
+      border-radius: 2px 12px 12px 12px;
+    }
+
+    .message-avatar {
+      .el-avatar {
+        background: linear-gradient(135deg, #4158D0, #C850C0);
+      }
+    }
+  }
+
+  .message-avatar {
+    .el-avatar {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
   }
 }
 
 .message-content {
-  max-width: 80%;
-  padding: 16px;
-  box-shadow: 0 2px 8px var(--shadow-color);
+  max-width: 85%;
+  padding: 12px;
+  box-shadow: 0 1px 2px var(--shadow-color);
   transition: transform 0.3s ease;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-primary);
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
 
   .message-text {
-    line-height: 1.6;
+    line-height: 1.4;
     white-space: pre-wrap;
+
+    :deep(h1) {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 6px 0 3px;
+      line-height: 1.3;
+      color: var(--text-primary);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    :deep(h2) {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 4px 0 2px;
+      line-height: 1.3;
+      color: var(--text-primary);
+    }
 
     :deep(pre) {
       background: #282c34;
-      padding: 16px;
+      padding: 12px 16px;
       border-radius: 8px;
       margin: 8px 0;
+      position: relative;
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
       overflow-x: auto;
+
+      code {
+        font-family: inherit;
+        padding: 0;
+        background: none;
+        color: #abb2bf;
+        tab-size: 2;
+
+        &.hljs {
+          background: transparent;
+          padding: 0;
+        }
+      }
+
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #4b5263;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #21252b;
+        border-radius: 3px;
+      }
     }
 
-    :deep(code) {
-      font-family: 'Fira Code', monospace;
-    }
+    :deep(.hljs) {
+      color: #abb2bf;
+      background: transparent;
 
-    :deep(p) {
-      margin: 8px 0;
+      .hljs-comment,
+      .hljs-quote {
+        color: #5c6370;
+        font-style: italic;
+      }
+
+      .hljs-doctag,
+      .hljs-keyword,
+      .hljs-formula {
+        color: #c678dd;
+      }
+
+      .hljs-section,
+      .hljs-name,
+      .hljs-selector-tag,
+      .hljs-deletion,
+      .hljs-subst {
+        color: #e06c75;
+      }
+
+      .hljs-literal {
+        color: #56b6c2;
+      }
+
+      .hljs-string,
+      .hljs-regexp,
+      .hljs-addition,
+      .hljs-attribute,
+      .hljs-meta .hljs-string {
+        color: #98c379;
+      }
+
+      .hljs-attr,
+      .hljs-variable,
+      .hljs-template-variable,
+      .hljs-type,
+      .hljs-selector-class,
+      .hljs-selector-attr,
+      .hljs-selector-pseudo,
+      .hljs-number {
+        color: #d19a66;
+      }
+
+      .hljs-symbol,
+      .hljs-bullet,
+      .hljs-link,
+      .hljs-meta,
+      .hljs-selector-id,
+      .hljs-title {
+        color: #61aeee;
+      }
+
+      .hljs-built_in,
+      .hljs-title.class_,
+      .hljs-class .hljs-title {
+        color: #e6c07b;
+      }
+
+      .hljs-emphasis {
+        font-style: italic;
+      }
+
+      .hljs-strong {
+        font-weight: bold;
+      }
     }
   }
 
   .message-actions {
-    margin-top: 8px;
+    margin-top: 4px;
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 4px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
+
+    .el-button {
+      padding: 2px 6px;
+      font-size: 12px;
+      height: 24px;
+      --el-button-hover-bg-color: var(--el-color-primary-light-8);
+      --el-button-hover-text-color: var(--el-color-primary);
+
+      .el-icon {
+        margin-right: 2px;
+        font-size: 12px;
+      }
+    }
   }
 
-  .message-item:hover .message-actions {
+  &:hover .message-actions {
     opacity: 1;
   }
 }
@@ -1274,24 +1589,6 @@ const handlePresetSelect = (preset) => {
   background: var(--bg-secondary);
   border-radius: 6px;
   position: relative;
-
-  //&::before {
-  //  content: '';
-  //  position: absolute;
-  //  left: 0;
-  //  right: 0;
-  //  top: -8px;
-  //  height: 1px;
-  //  background: linear-gradient(90deg,
-  //    rgba(var(--divider-rgb), 0) 0%,
-  //    rgba(var(--divider-rgb), 0.5) 15%,
-  //    rgba(var(--divider-rgb), 0.7) 30%,
-  //    rgba(var(--divider-rgb), 0.9) 50%,
-  //    rgba(var(--divider-rgb), 0.7) 70%,
-  //    rgba(var(--divider-rgb), 0.5) 85%,
-  //    rgba(var(--divider-rgb), 0) 100%
-  //  );
-  //}
 
   &::after {
     content: '';
