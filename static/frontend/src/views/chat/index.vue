@@ -97,28 +97,7 @@
                 <el-icon><Setting /></el-icon>
               </el-button>
             </el-tooltip>
-            <el-dropdown trigger="click">
-              <div class="user-avatar">
-                <el-avatar :size="32" :src="userAvatar">U</el-avatar>
-                <el-icon class="el-icon--right"><CaretBottom /></el-icon>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item>
-                    <el-icon><User /></el-icon>
-                    <span>个人中心</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item>
-                    <el-icon><Setting /></el-icon>
-                    <span>设置</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item divided>
-                    <el-icon><SwitchButton /></el-icon>
-                    <span>退出登录</span>
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <UserAvatar />
           </div>
         </div>
 
@@ -387,10 +366,20 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  Plus, ChatRound, More, Fold, Setting,
-  CopyDocument, RefreshRight, Upload, Position,
-  Connection, ArrowDown, Check, Picture, HomeFilled,
-  Shop, User, CaretBottom, SwitchButton, ArrowRight
+  Plus,
+  ChatRound,
+  Setting,
+  ArrowRight,
+  CopyDocument,
+  RefreshRight,
+  Upload,
+  Position,
+  Connection,
+  ArrowDown,
+  Check,
+  Picture,
+  HomeFilled,
+  Shop
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -417,6 +406,7 @@ import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import PresetMarket from '@/components/chat/PresetMarket.vue'
 import 'github-markdown-css/github-markdown-light.css'
 import 'github-markdown-css/github-markdown-dark.css'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -725,7 +715,6 @@ const showPresetMarket = ref(false)
 
 // 添加响应式变量
 const streamingMessage = ref(null)
-const streamingThought = ref(null)
 const thoughtTime = ref(0)
 
 // 模拟流式响应
