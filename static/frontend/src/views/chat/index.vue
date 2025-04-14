@@ -1480,6 +1480,13 @@ const handlePresetSelect = (preset) => {
   padding: 24px;
   scroll-behavior: smooth;
   position: relative;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1200px;
+
+  @media screen and (max-width: 768px) {
+    padding: 16px;
+  }
 
   &::after {
     content: '';
@@ -1558,6 +1565,14 @@ const handlePresetSelect = (preset) => {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  @media screen and (min-width: 1200px) {
+    max-width: 900px;
+  }
+
+  @media screen and (min-width: 1600px) {
+    max-width: 1000px;
+  }
 
   .thought-process {
     margin-bottom: 16px;
