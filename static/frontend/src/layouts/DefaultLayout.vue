@@ -313,6 +313,10 @@ const handleCommand = async (command) => {
       font-size: 15px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+      .el-menu-tooltip__trigger {
+        justify-content: center;
+      }
+
       &.is-active {
         background: var(--el-color-primary-light-9);
         color: var(--el-color-primary);
@@ -344,7 +348,6 @@ const handleCommand = async (command) => {
 
       .el-icon {
         font-size: 20px;
-        margin-right: 8px;
         transition: all 0.3s;
       }
     }
