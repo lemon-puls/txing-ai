@@ -1,33 +1,69 @@
 <template>
   <el-container class="layout-container">
     <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '200px'" class="aside">
+    <el-aside :width="isCollapse ? '64px' : '220px'" class="aside">
       <!-- Logo -->
-      <div class="logo" :style="{ width: isCollapse ? '64px' : '200px' }">
-        <span v-show="!isCollapse">Txing AI</span>
-        <span v-show="isCollapse">AI</span>
+      <div class="logo" :class="{ 'is-collapse': isCollapse }">
+        <div class="logo-content">
+          <el-icon class="logo-icon"><Monitor /></el-icon>
+          <span class="logo-text" v-show="!isCollapse">Txing Admin</span>
+        </div>
       </div>
 
       <!-- 导航菜单 -->
-      <el-menu
-        class="menu"
-        :collapse="isCollapse"
-        :collapse-transition="false"
-        :router="true"
-        :default-active="activeMenu"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
-      >
-        <el-menu-item index="/users">
-          <el-icon><User /></el-icon>
-          <template #title>用户管理</template>
-        </el-menu-item>
-      </el-menu>
+      <el-scrollbar>
+        <el-menu
+          class="menu"
+          :collapse="isCollapse"
+          :collapse-transition="false"
+          :router="true"
+          :default-active="activeMenu"
+        >
+          <el-menu-item index="/dashboard">
+            <el-icon><DataBoard /></el-icon>
+            <template #title>控制台</template>
+          </el-menu-item>
+
+          <el-menu-item index="/users">
+            <el-icon><User /></el-icon>
+            <template #title>用户管理</template>
+          </el-menu-item>
+
+          <el-menu-item index="/channels">
+            <el-icon><Connection /></el-icon>
+            <template #title>渠道设置</template>
+          </el-menu-item>
+
+          <el-menu-item index="/models">
+            <el-icon><Cpu /></el-icon>
+            <template #title>模型管理</template>
+          </el-menu-item>
+
+          <el-menu-item index="/pricing">
+            <el-icon><Wallet /></el-icon>
+            <template #title>价格设置</template>
+          </el-menu-item>
+
+          <el-menu-item index="/orders">
+            <el-icon><List /></el-icon>
+            <template #title>订单管理</template>
+          </el-menu-item>
+
+          <el-menu-item index="/system">
+            <el-icon><Setting /></el-icon>
+            <template #title>系统设置</template>
+          </el-menu-item>
+
+          <el-menu-item index="/logs">
+            <el-icon><Document /></el-icon>
+            <template #title>系统日志</template>
+          </el-menu-item>
+        </el-menu>
+      </el-scrollbar>
     </el-aside>
 
     <!-- 主体区域 -->
-    <el-container>
+    <el-container class="main-container">
       <!-- 顶部导航 -->
       <el-header height="60px" class="header">
         <div class="header-left">
@@ -39,24 +75,58 @@
             <Expand v-else />
           </el-icon>
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item>{{ currentRoute.meta.title }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
         <div class="header-right">
-          <el-dropdown trigger="click" @command="handleCommand">
+          <!-- 全局搜索 -->
+          <div class="search-box">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索..."
+              :prefix-icon="Search"
+              clearable
+            />
+          </div>
+
+          <!-- 快捷操作 -->
+          <div class="quick-actions">
+            <el-tooltip content="全屏" placement="bottom">
+              <el-icon class="action-icon" @click="toggleFullscreen"><FullScreen /></el-icon>
+            </el-tooltip>
+            <el-tooltip content="主题" placement="bottom">
+              <el-icon class="action-icon" @click="toggleTheme"><Moon /></el-icon>
+            </el-tooltip>
+          </div>
+
+          <!-- 用户信息 -->
+          <el-dropdown trigger="hover" @command="handleCommand">
             <div class="user-info">
-              <el-avatar :size="32" :src="userAvatar">
+              <el-avatar :size="32" :src="userAvatar" class="user-avatar">
                 {{ userInfo?.userName?.charAt(0)?.toUpperCase() }}
               </el-avatar>
-              <span class="username">{{ userInfo?.userName }}</span>
-              <el-icon><CaretBottom /></el-icon>
+              <div class="user-detail" v-show="!isCollapse">
+                <span class="username">{{ userInfo?.userName || '管理员' }}</span>
+                <span class="user-role">超级管理员</span>
+              </div>
+              <el-icon class="el-icon--right"><CaretBottom /></el-icon>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  <span>个人信息</span>
+                </el-dropdown-item>
+                <el-dropdown-item command="settings">
+                  <el-icon><Setting /></el-icon>
+                  <span>系统设置</span>
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  <span>退出登录</span>
+                </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -83,12 +153,27 @@ import {
   User,
   Fold,
   Expand,
-  CaretBottom
+  CaretBottom,
+  Monitor,
+  DataBoard,
+  Connection,
+  Cpu,
+  Wallet,
+  List,
+  Setting,
+  Document,
+  Search,
+  FullScreen,
+  Bell,
+  Moon,
+  SwitchButton
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
+const searchKeyword = ref('')
+const isDark = ref(false)
 
 // 获取用户信息
 const userInfo = computed(() => {
@@ -112,12 +197,29 @@ const toggleSidebar = () => {
   isCollapse.value = !isCollapse.value
 }
 
+// 切换全屏
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen()
+  } else {
+    document.exitFullscreen()
+  }
+}
+
+// 切换主题
+const toggleTheme = () => {
+  isDark.value = !isDark.value
+  document.documentElement.classList.toggle('dark')
+}
+
 // 处理下拉菜单命令
 const handleCommand = async (command) => {
   switch (command) {
     case 'profile':
-      // 跳转到个人信息页面
       router.push('/profile')
+      break
+    case 'settings':
+      router.push('/system')
       break
     case 'logout':
       try {
@@ -126,11 +228,9 @@ const handleCommand = async (command) => {
           cancelButtonText: '取消',
           type: 'warning'
         })
-        // 清除本地存储
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        // 跳转到登录页
         router.push('/login')
       } catch {
         // 取消退出
@@ -144,87 +244,236 @@ const handleCommand = async (command) => {
 .layout-container {
   height: 100vh;
   width: 100vw;
+  background: var(--el-bg-color);
+  overflow: hidden;
 }
 
 .aside {
-  background-color: #304156;
-  transition: width 0.3s;
-  height: 100%;
-  overflow-y: auto;
+  background: var(--el-menu-bg-color);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.12);
+  border-right: none;
+  border-radius: 0 24px 24px 0;
+  overflow: hidden;
 
-  &::-webkit-scrollbar {
-    width: 0;
-    background: transparent;
+  .logo {
+    height: 70px;
+    padding: 0 24px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--el-menu-bg-color);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+
+    &.is-collapse {
+      padding: 0 16px;
+    }
+
+    .logo-content {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+      color: var(--el-color-primary);
+      filter: drop-shadow(0 0 8px var(--el-color-primary-light-5));
+      transition: all 0.4s;
+
+      &:hover {
+        transform: rotate(360deg);
+      }
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--el-color-primary), #409EFF 70%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 1px;
+    }
+  }
+
+  .menu {
+    border: none;
+    padding: 16px;
+
+    :deep(.el-menu-item) {
+      height: 56px;
+      line-height: 56px;
+      margin: 8px 0;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &.is-active {
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
+        transform: translateX(4px);
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: -16px;
+          top: 50%;
+          transform: translateY(-50%);
+          height: 24px;
+          width: 4px;
+          background: var(--el-color-primary);
+          border-radius: 0 4px 4px 0;
+          box-shadow: 0 0 8px var(--el-color-primary);
+          animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        .el-icon {
+          animation: iconFloat 3s ease-in-out infinite;
+        }
+      }
+
+      &:hover {
+        background: var(--el-color-primary-light-9);
+        transform: translateX(4px);
+      }
+
+      .el-icon {
+        font-size: 20px;
+        margin-right: 8px;
+        transition: all 0.3s;
+      }
+    }
   }
 }
 
-.logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
-  color: #fff;
-  font-size: 20px;
-  font-weight: bold;
-  background-color: #2b2f3a;
-  transition: width 0.3s;
+.main-container {
+  background: var(--el-bg-color-page);
+  position: relative;
   overflow: hidden;
-  white-space: nowrap;
-}
-
-.menu {
-  border: none;
-  height: calc(100% - 60px);
 }
 
 .header {
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-}
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-
-  .toggle-sidebar {
-    font-size: 20px;
-    cursor: pointer;
-    color: #606266;
-
-    &:hover {
-      color: var(--el-color-primary);
-    }
-  }
-}
-
-.header-right {
-  .user-info {
+  .header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-    transition: all 0.3s;
+    gap: 20px;
 
-    &:hover {
-      background-color: #f5f7fa;
+    .toggle-sidebar {
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--el-text-color-secondary);
+      transition: all 0.3s;
+
+      &:hover {
+        color: var(--el-color-primary);
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+
+    .search-box {
+      width: 240px;
+
+      :deep(.el-input__wrapper) {
+        border-radius: 20px;
+        box-shadow: 0 0 0 1px var(--el-border-color-light);
+
+        &:hover, &:focus-within {
+          box-shadow: 0 0 0 1px var(--el-color-primary);
+        }
+      }
     }
 
-    .username {
-      color: #606266;
-      font-size: 14px;
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .action-icon {
+        font-size: 20px;
+        color: var(--el-text-color-secondary);
+        cursor: pointer;
+        transition: all 0.3s;
+
+        &:hover {
+          color: var(--el-color-primary);
+          transform: translateY(-2px);
+        }
+      }
+
+      .action-badge {
+        :deep(.el-badge__content) {
+          box-shadow: 0 0 0 1px var(--el-bg-color);
+        }
+      }
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.3s;
+
+      &:hover {
+        background: var(--el-fill-color-light);
+      }
+
+      .user-avatar {
+        border: 2px solid var(--el-color-primary-light-5);
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
+        font-weight: bold;
+      }
+
+      .user-detail {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+
+        .username {
+          font-size: 14px;
+          color: var(--el-text-color-primary);
+          font-weight: 500;
+        }
+
+        .user-role {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+        }
+      }
+
+      .el-icon--right {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
     }
   }
 }
 
 .main {
-  background-color: #f0f2f5;
   padding: 20px;
+  background: var(--el-bg-color-page);
   height: calc(100vh - 60px);
   overflow-y: auto;
 
@@ -234,7 +483,7 @@ const handleCommand = async (command) => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(144, 147, 153, 0.3);
+    background: var(--el-scrollbar-bg-color);
     border-radius: 3px;
   }
 }
@@ -253,5 +502,41 @@ const handleCommand = async (command) => {
 .fade-transform-leave-to {
   opacity: 0;
   transform: translateX(30px);
+}
+
+// 添加动画关键帧
+@keyframes glow {
+  from {
+    box-shadow: 0 0 4px var(--el-color-primary);
+  }
+  to {
+    box-shadow: 0 0 12px var(--el-color-primary);
+  }
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(var(--el-color-danger-rgb), 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(var(--el-color-danger-rgb), 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(var(--el-color-danger-rgb), 0);
+  }
 }
 </style>
