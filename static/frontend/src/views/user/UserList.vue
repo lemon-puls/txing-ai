@@ -181,13 +181,144 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .user-list {
   padding: 24px;
+
+  :deep(.el-card) {
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .el-card__body {
+      padding: 24px;
+    }
+  }
+
+  :deep(.el-table) {
+    border-radius: 12px;
+    overflow: hidden;
+
+    th.el-table__cell {
+      background-color: var(--el-fill-color-light);
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .el-table__cell {
+      font-size: 14px;
+    }
+  }
 }
 
 .search-form {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover, &:focus-within {
+      box-shadow: 0 0 0 1px var(--el-color-primary);
+      transform: translateY(-1px);
+    }
+  }
 
   :deep(.el-select) {
     width: 180px;
+
+    .el-input__wrapper {
+      border-radius: 12px;
+    }
+  }
+
+  :deep(.el-button) {
+    border-radius: 12px;
+    padding: 12px 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &.el-button--primary {
+      &:hover {
+        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+      }
+    }
+  }
+}
+
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+
+  :deep(.el-pagination) {
+    padding: 12px 24px;
+    background: var(--el-bg-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+    .el-pagination__sizes {
+      .el-input__wrapper {
+        border-radius: 8px;
+      }
+    }
+
+    button {
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+    }
+
+    .el-pager li {
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &.is-active {
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+:deep(.el-tag) {
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 13px;
+  border: none;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+:deep(.el-button--link) {
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: all 0.3s;
+
+  &:hover {
+    background: var(--el-color-primary-light-9);
+    transform: translateY(-1px);
   }
 }
 
@@ -210,12 +341,6 @@ onMounted(async () => {
 .no-roles {
   color: #909399;
   font-size: 13px;
-}
-
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
 }
 
 .role-tree-container {
