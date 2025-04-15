@@ -15,9 +15,27 @@ export const useThemeStore = defineStore('theme', {
     },
 
     setPrimaryColor(color) {
-      this.primaryColor = color
+      if (!color) return
+      
+      const el = document.documentElement
+      el.style.setProperty('--el-color-primary', color)
+      
+      // 转换为 RGB 格式并存储
+      const rgb = this.hexToRgb(color)
+      if (rgb) {
+        el.style.setProperty('--el-color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`)
+      }
+      
+      // 生成主题色的不同层级
+      const levels = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+      levels.forEach((level, index) => {
+        const lightColor = this.getLightColor(color, level)
+        el.style.setProperty(`--el-color-primary-light-${index + 1}`, lightColor)
+      })
+      
+      // 保存到本地存储
       localStorage.setItem('primaryColor', color)
-      this.applyTheme()
+      this.primaryColor = color
     },
 
     applyTheme() {

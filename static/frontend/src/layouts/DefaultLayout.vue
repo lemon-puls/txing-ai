@@ -99,40 +99,9 @@
             <el-tooltip :content="isDark ? '浅色模式' : '深色模式'" placement="bottom">
               <el-icon class="action-icon" @click="toggleTheme"><Moon /></el-icon>
             </el-tooltip>
-            <el-popover
-              v-model:visible="showThemePanel"
-              placement="bottom"
-              :width="200"
-              trigger="click"
-            >
-              <template #reference>
-                <el-icon class="action-icon"><Setting /></el-icon>
-              </template>
-              <div class="theme-panel">
-                <h3>主题设置</h3>
-                <div class="theme-item">
-                  <span>主题色</span>
-                  <el-color-picker
-                    v-model="primaryColor"
-                    :predefine="[
-                      '#409EFF',
-                      '#67C23A',
-                      '#E6A23C',
-                      '#F56C6C',
-                      '#909399'
-                    ]"
-                    @change="changePrimaryColor"
-                  />
-                </div>
-                <div class="theme-item">
-                  <span>深色模式</span>
-                  <el-switch
-                    v-model="isDark"
-                    @change="toggleTheme"
-                  />
-                </div>
-              </div>
-            </el-popover>
+            <el-tooltip content="主题设置" placement="bottom">
+              <el-icon class="action-icon" @click="showThemePanel = true"><Setting /></el-icon>
+            </el-tooltip>
           </div>
 
           <!-- 用户信息 -->
@@ -176,11 +145,53 @@
         </router-view>
       </el-main>
     </el-container>
+
+    <!-- 主题设置抽屉 -->
+    <el-drawer
+      v-model="showThemePanel"
+      title="主题设置"
+      size="300px"
+      :with-header="false"
+    >
+      <div class="theme-drawer">
+        <div class="drawer-header">
+          <h2>主题设置</h2>
+          <el-icon class="close-icon" @click="showThemePanel = false"><Close /></el-icon>
+        </div>
+        <div class="drawer-content">
+          <div class="setting-item">
+            <span class="setting-label">主题色</span>
+            <el-color-picker
+              v-model="tempPrimaryColor"
+              :predefine="[
+                '#409EFF',
+                '#67C23A',
+                '#E6A23C',
+                '#F56C6C',
+                '#909399'
+              ]"
+              show-alpha
+            />
+          </div>
+          <div class="setting-item">
+            <span class="setting-label">深色模式</span>
+            <el-switch
+              v-model="isDark"
+              @change="toggleTheme"
+            />
+          </div>
+        </div>
+        <div class="drawer-footer">
+          <el-button @click="showThemePanel = false">取消</el-button>
+          <el-button type="primary" @click="confirmThemeChange">确认</el-button>
+        </div>
+      </div>
+    </el-drawer>
   </el-container>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElColorPicker } from 'element-plus'
 import { useThemeStore } from '@/stores/theme'
@@ -200,7 +211,8 @@ import {
   Search,
   FullScreen,
   Moon,
-  SwitchButton
+  SwitchButton,
+  Close
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -229,7 +241,7 @@ const currentRoute = computed(() => route)
 
 // 主题相关计算属性
 const isDark = computed(() => themeStore.isDark)
-const primaryColor = computed(() => themeStore.primaryColor)
+const tempPrimaryColor = ref(themeStore.primaryColor)
 
 // 切换侧边栏
 const toggleSidebar = () => {
@@ -250,10 +262,18 @@ const toggleTheme = () => {
   themeStore.toggleTheme()
 }
 
-// 更改主题色
-const changePrimaryColor = (color) => {
-  themeStore.setPrimaryColor(color)
+// 确认主题色更改
+const confirmThemeChange = () => {
+  themeStore.setPrimaryColor(tempPrimaryColor.value)
+  showThemePanel.value = false
 }
+
+// 监听面板显示状态，重置临时颜色
+watch(showThemePanel, (val) => {
+  if (val) {
+    tempPrimaryColor.value = themeStore.primaryColor
+  }
+})
 
 // 初始化主题
 onMounted(() => {
@@ -366,7 +386,7 @@ const handleCommand = async (command) => {
       }
 
       &.is-active {
-        background: var(--el-color-primary-light-9);
+        //background: var(--el-color-primary-light-9);
         color: var(--el-color-primary);
         transform: translateX(4px);
 
@@ -485,6 +505,7 @@ const handleCommand = async (command) => {
       padding: 4px 8px;
       border-radius: 6px;
       transition: all 0.3s;
+      outline: none !important;
 
       &:hover {
         background: var(--el-fill-color-light);
@@ -591,41 +612,72 @@ const handleCommand = async (command) => {
   }
 }
 
-.theme-panel {
-  padding: 16px;
+.theme-drawer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 
-  h3 {
-    margin: 0 0 16px;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-  }
-
-  .theme-item {
+  .drawer-header {
+    padding: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    border-bottom: 1px solid var(--el-border-color-light);
 
-    &:last-child {
-      margin-bottom: 0;
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
     }
 
-    span {
-      font-size: 14px;
-      color: var(--el-text-color-regular);
+    .close-icon {
+      font-size: 20px;
+      color: var(--el-text-color-secondary);
+      cursor: pointer;
+      transition: all 0.3s;
+
+      &:hover {
+        color: var(--el-color-primary);
+        transform: rotate(90deg);
+      }
     }
+  }
+
+  .drawer-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .setting-label {
+        font-size: 14px;
+        color: var(--el-text-color-primary);
+      }
+    }
+  }
+
+  .drawer-footer {
+    padding: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--el-border-color-light);
   }
 }
 
-:deep(.el-color-picker__trigger) {
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 0 0 1px var(--el-border-color-light);
-}
-
-:deep(.el-switch) {
-  --el-switch-on-color: var(--el-color-primary);
+:deep(.el-drawer__body) {
+  padding: 0;
 }
 
 // 暗色主题样式覆盖
@@ -635,7 +687,7 @@ const handleCommand = async (command) => {
   --el-color-primary-light-7: var(--el-color-primary);
   --el-color-primary-light-8: var(--el-color-primary);
   --el-color-primary-light-9: rgba(var(--el-color-primary-rgb), 0.2);
-  
+
   .aside {
     background: var(--el-menu-bg-color);
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
@@ -650,7 +702,7 @@ const handleCommand = async (command) => {
   .el-card {
     background: var(--el-bg-color);
     border-color: var(--el-border-color-light);
-    
+
     .el-card__header {
       border-color: var(--el-border-color-light);
     }
@@ -660,7 +712,7 @@ const handleCommand = async (command) => {
     --el-table-border-color: var(--el-border-color-light);
     --el-table-header-bg-color: var(--el-fill-color-light);
     --el-table-row-hover-bg-color: var(--el-fill-color-light);
-    
+
     th.el-table__cell {
       background: var(--el-fill-color-light);
     }
