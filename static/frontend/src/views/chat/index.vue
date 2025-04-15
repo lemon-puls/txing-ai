@@ -363,8 +363,9 @@
 </template>
 
 <script setup name="ChatPage">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useThemeStore } from '@/stores/theme'
 import {
   Plus,
   ChatRound,
@@ -379,7 +380,9 @@ import {
   Check,
   Picture,
   HomeFilled,
-  Shop
+  Shop,
+  Moon,
+  Sunny
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -514,8 +517,11 @@ const renderMessage = (content) => {
   }
 }
 
+// 使用主题 store
+const themeStore = useThemeStore()
+
 // 状态
-const isDarkTheme = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
+const isDarkTheme = computed(() => themeStore.isDark)
 const isSidebarCollapsed = ref(false)
 const showSettings = ref(false)
 const messageInput = ref('')
@@ -771,7 +777,7 @@ const sendMessage = async () => {
   // 模拟 AI 响应
   if (userInput.toLowerCase().includes('java') && userInput.toLowerCase().includes('冒泡排序')) {
     const thought = '收到用户请求实现Java版本的冒泡排序算法。我需要：\n1. 首先解释冒泡排序的基本原理\n2. 提供基础版本的实现代码\n3. 添加优化版本作为改进\n4. 补充算法的复杂度和稳定性分析\n5. 确保代码注释清晰，便于理解\n让我按照这个思路来组织回答...'
-    
+
     const content = `# Java实现冒泡排序
 
 冒泡排序是一种简单的排序算法，它重复地遍历要排序的列表，比较相邻的元素并交换它们的位置，直到列表排序完成。
@@ -876,8 +882,7 @@ public class BubbleSort {
 
 // 主题切换
 const toggleTheme = () => {
-  isDarkTheme.value = !isDarkTheme.value
-  document.documentElement.classList.toggle('dark', isDarkTheme.value)
+  themeStore.toggleTheme()
 }
 
 // 方法
@@ -997,16 +1002,13 @@ onMounted(() => {
     currentChat.value = chatList.value[0]
   }
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  mediaQuery.addEventListener('change', e => {
-    isDarkTheme.value = e.matches
-    document.documentElement.classList.toggle('dark', e.matches)
-  })
-
   const savedPattern = localStorage.getItem('chatBgPattern')
   if (savedPattern) {
     currentBgPattern.value = savedPattern
   }
+
+  // 初始化主题
+  themeStore.initTheme()
 })
 
 // 添加输入框高度相关的状态和方法
@@ -1071,76 +1073,12 @@ const handlePresetSelect = (preset) => {
 </script>
 
 <style scoped lang="scss">
-// 主题变量
-:root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f7fa;
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --border-color: rgba(0, 0, 0, 0.1);
-  --hover-bg: #f5f7fa;
-  --active-bg: #ecf5ff;
-  --shadow-color: rgba(0, 0, 0, 0.05);
-  --message-bg-user: #ecf5ff;
-  --message-bg-assistant: #f5f7fa;
-  --scrollbar-thumb: #c0c4cc;
-  --scrollbar-track: #f5f7fa;
-  --divider-rgb: 0, 0, 0;
-  --el-color-primary-rgb: 64, 158, 255;
-}
-
-.dark-theme {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --border-color: rgba(255, 255, 255, 0.1);
-  --hover-bg: #2d2d2d;
-  --active-bg: #363636;
-  --shadow-color: rgba(0, 0, 0, 0.2);
-  --message-bg-user: #363636;
-  --message-bg-assistant: #2d2d2d;
-  --scrollbar-thumb: #4a4a4a;
-  --scrollbar-track: #2d2d2d;
-  --divider-rgb: 255, 255, 255;
-  --el-color-primary-rgb: 64, 158, 255;
-
-  :deep(.el-button) {
-    --el-button-bg-color: #363636;
-    --el-button-border-color: #4a4a4a;
-    --el-button-hover-bg-color: #4a4a4a;
-    --el-button-hover-border-color: #5a5a5a;
-  }
-
-  :deep(.el-input__wrapper) {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
-  }
-
-  :deep(.el-input__inner) {
-    color: var(--text-primary);
-  }
-
-  :deep(pre) {
-    background: #1e1e1e !important;
-
-    &::before {
-      background: #2d2d2d !important;
-      color: #a0a0a0 !important;
-    }
-  }
-
-  :deep(code:not(pre code)) {
-    background-color: rgba(var(--el-color-primary-rgb), 0.15);
-  }
-
-}
-
+// 移除本地主题变量定义，使用全局变量
 .chat-container {
   display: flex;
   height: 100vh;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-primary);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -1203,11 +1141,12 @@ const handlePresetSelect = (preset) => {
 
 .sidebar {
   width: 300px;
-  background: var(--bg-primary);
+  background: var(--el-bg-color);
   position: relative;
   display: flex;
   flex-direction: column;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-right: 1px solid var(--el-border-color-light);
 
   &::after {
     content: '';
@@ -1303,13 +1242,13 @@ const handlePresetSelect = (preset) => {
   border: 1px solid transparent;
 
   &:hover {
-    background: var(--hover-bg);
+    background: var(--el-fill-color-light);
     border-color: var(--border-color);
     transform: translateX(4px);
   }
 
   &.active {
-    background: var(--active-bg);
+    background: var(--el-color-primary-light-9);
     border-color: var(--border-color);
   }
 
@@ -1351,7 +1290,7 @@ const handlePresetSelect = (preset) => {
 
   .chat-preview {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--el-text-color-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1566,7 +1505,7 @@ const handlePresetSelect = (preset) => {
   .thought-process {
     margin-bottom: 16px;
     border-radius: 6px;
-    background: var(--bg-secondary);
+    background: var(--el-bg-color);
     overflow: hidden;
 
     .thought-header {
@@ -1575,13 +1514,13 @@ const handlePresetSelect = (preset) => {
       gap: 8px;
       padding: 8px 12px;
       font-size: 13px;
-      color: var(--text-secondary);
+      color: var(--el-text-color-secondary);
       cursor: pointer;
       transition: all 0.3s ease;
       user-select: none;
 
       &:hover {
-        background: rgba(var(--el-color-primary-rgb), 0.05);
+        background: var(--el-fill-color);
       }
 
       .el-icon {
@@ -1598,21 +1537,21 @@ const handlePresetSelect = (preset) => {
       padding: 12px 16px;
       font-size: 14px;
       line-height: 1.6;
-      color: var(--text-secondary);
-      border-top: 1px solid var(--border-color);
-      background: var(--bg-primary);
+      color: var(--el-text-color-regular);
+      border-top: 1px solid var(--el-border-color-light);
+      background: var(--el-bg-color);
       white-space: pre-wrap;
     }
   }
 
   .message-text {
     :deep(.markdown-body) {
-      background: transparent;
+      background: transparent !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       font-size: 16px;
       line-height: 1.6;
       text-rendering: optimizeLegibility;
-      color: var(--text-primary);
+      color: var(--el-text-color-primary) !important;
 
       pre.code-block {
         background: #282c34;
@@ -1734,9 +1673,9 @@ const handlePresetSelect = (preset) => {
 
 .chat-input {
   padding: 0px 24px 16px;
-  background: var(--bg-primary);
+  background: var(--el-bg-color);
   position: relative;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--el-border-color-light);
 
   &::before {
     content: '';
@@ -1762,7 +1701,7 @@ const handlePresetSelect = (preset) => {
     left: 0;
     right: 0;
     top: 0;
-    height: 1px;
+    //height: 1px;
     cursor: row-resize;
     z-index: 2;
     background: #f5f7fa;
@@ -1807,7 +1746,7 @@ const handlePresetSelect = (preset) => {
   align-items: center;
   padding: 8px 16px;
   margin: 0;
-  background: var(--bg-secondary);
+  //background: var(--el-fill-color-light);
   border-radius: 6px;
   position: relative;
 
