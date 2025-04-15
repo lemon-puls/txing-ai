@@ -96,9 +96,43 @@
             <el-tooltip content="全屏" placement="bottom">
               <el-icon class="action-icon" @click="toggleFullscreen"><FullScreen /></el-icon>
             </el-tooltip>
-            <el-tooltip content="主题" placement="bottom">
+            <el-tooltip :content="isDark ? '浅色模式' : '深色模式'" placement="bottom">
               <el-icon class="action-icon" @click="toggleTheme"><Moon /></el-icon>
             </el-tooltip>
+            <el-popover
+              v-model:visible="showThemePanel"
+              placement="bottom"
+              :width="200"
+              trigger="click"
+            >
+              <template #reference>
+                <el-icon class="action-icon"><Setting /></el-icon>
+              </template>
+              <div class="theme-panel">
+                <h3>主题设置</h3>
+                <div class="theme-item">
+                  <span>主题色</span>
+                  <el-color-picker
+                    v-model="primaryColor"
+                    :predefine="[
+                      '#409EFF',
+                      '#67C23A',
+                      '#E6A23C',
+                      '#F56C6C',
+                      '#909399'
+                    ]"
+                    @change="changePrimaryColor"
+                  />
+                </div>
+                <div class="theme-item">
+                  <span>深色模式</span>
+                  <el-switch
+                    v-model="isDark"
+                    @change="toggleTheme"
+                  />
+                </div>
+              </div>
+            </el-popover>
           </div>
 
           <!-- 用户信息 -->
@@ -146,9 +180,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElColorPicker } from 'element-plus'
+import { useThemeStore } from '@/stores/theme'
 import {
   User,
   Fold,
@@ -164,16 +199,16 @@ import {
   Document,
   Search,
   FullScreen,
-  Bell,
   Moon,
   SwitchButton
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
+const themeStore = useThemeStore()
 const isCollapse = ref(false)
 const searchKeyword = ref('')
-const isDark = ref(false)
+const showThemePanel = ref(false)
 
 // 获取用户信息
 const userInfo = computed(() => {
@@ -192,6 +227,10 @@ const activeMenu = computed(() => route.path)
 // 当前路由信息
 const currentRoute = computed(() => route)
 
+// 主题相关计算属性
+const isDark = computed(() => themeStore.isDark)
+const primaryColor = computed(() => themeStore.primaryColor)
+
 // 切换侧边栏
 const toggleSidebar = () => {
   isCollapse.value = !isCollapse.value
@@ -208,9 +247,18 @@ const toggleFullscreen = () => {
 
 // 切换主题
 const toggleTheme = () => {
-  isDark.value = !isDark.value
-  document.documentElement.classList.toggle('dark')
+  themeStore.toggleTheme()
 }
+
+// 更改主题色
+const changePrimaryColor = (color) => {
+  themeStore.setPrimaryColor(color)
+}
+
+// 初始化主题
+onMounted(() => {
+  themeStore.initTheme()
+})
 
 // 处理下拉菜单命令
 const handleCommand = async (command) => {
@@ -540,6 +588,82 @@ const handleCommand = async (command) => {
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(var(--el-color-danger-rgb), 0);
+  }
+}
+
+.theme-panel {
+  padding: 16px;
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  .theme-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    span {
+      font-size: 14px;
+      color: var(--el-text-color-regular);
+    }
+  }
+}
+
+:deep(.el-color-picker__trigger) {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 0 0 1px var(--el-border-color-light);
+}
+
+:deep(.el-switch) {
+  --el-switch-on-color: var(--el-color-primary);
+}
+
+// 暗色主题样式覆盖
+:root.dark {
+  --el-color-primary-light-3: var(--el-color-primary);
+  --el-color-primary-light-5: var(--el-color-primary);
+  --el-color-primary-light-7: var(--el-color-primary);
+  --el-color-primary-light-8: var(--el-color-primary);
+  --el-color-primary-light-9: rgba(var(--el-color-primary-rgb), 0.2);
+  
+  .aside {
+    background: var(--el-menu-bg-color);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .header {
+    background: var(--el-bg-color);
+    border-color: var(--el-border-color-light);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .el-card {
+    background: var(--el-bg-color);
+    border-color: var(--el-border-color-light);
+    
+    .el-card__header {
+      border-color: var(--el-border-color-light);
+    }
+  }
+
+  .el-table {
+    --el-table-border-color: var(--el-border-color-light);
+    --el-table-header-bg-color: var(--el-fill-color-light);
+    --el-table-row-hover-bg-color: var(--el-fill-color-light);
+    
+    th.el-table__cell {
+      background: var(--el-fill-color-light);
+    }
   }
 }
 </style>
