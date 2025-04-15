@@ -202,109 +202,14 @@ onMounted(async () => {
   :deep(.el-table) {
     border-radius: 12px;
     overflow: hidden;
-    --el-table-header-bg-color: var(--el-fill-color-light);
-    --el-table-bg-color: var(--el-bg-color);
-    --el-table-tr-bg-color: var(--el-bg-color);
-    --el-table-row-hover-bg-color: var(--el-fill-color-light);
-    --el-table-border-color: var(--el-border-color-light);
-    --el-table-text-color: var(--el-text-color-regular);
-    --el-table-header-text-color: var(--el-text-color-primary);
 
     th.el-table__cell {
-      background-color: var(--el-fill-color-light);
       font-weight: 600;
       font-size: 15px;
-      color: var(--el-text-color-primary);
     }
 
     .el-table__cell {
       font-size: 14px;
-      color: var(--el-text-color-regular);
-      border-bottom: 1px solid var(--el-border-color-light);
-    }
-
-    .el-table__inner-wrapper::before {
-      background-color: var(--el-border-color-light);
-    }
-  }
-
-  // 深色模式下的特殊处理
-  :root.dark & {
-    :deep(.el-table) {
-      --el-table-header-bg-color: var(--el-bg-color);
-      --el-table-row-hover-bg-color: var(--el-fill-color-light);
-
-      th.el-table__cell {
-        background-color: var(--el-bg-color);
-      }
-
-      .el-table__cell {
-        background-color: var(--el-bg-color);
-      }
-    }
-
-    :deep(.el-card) {
-      background-color: var(--el-bg-color);
-      border-color: var(--el-border-color-light);
-
-      .el-card__body {
-        background-color: var(--el-bg-color);
-      }
-    }
-
-    :deep(.el-button--default) {
-      background-color: var(--el-fill-color-light);
-      border-color: var(--el-border-color-light);
-      color: var(--el-text-color-regular);
-
-      &:hover {
-        background-color: var(--el-fill-color);
-        border-color: var(--el-color-primary);
-        color: var(--el-color-primary);
-      }
-    }
-
-    :deep(.el-input__wrapper) {
-      background-color: var(--el-fill-color-light);
-    }
-
-    :deep(.el-select .el-input__wrapper) {
-      background-color: var(--el-fill-color-light);
-    }
-
-    .pagination {
-      :deep(.el-pagination) {
-        background-color: var(--el-bg-color);
-
-        .el-pagination__total,
-        .el-pagination__jump {
-          color: var(--el-text-color-regular);
-        }
-
-        .el-input__wrapper {
-          background-color: var(--el-fill-color-light);
-        }
-
-        button {
-          background-color: var(--el-fill-color-light);
-          color: var(--el-text-color-regular);
-
-          &:disabled {
-            background-color: var(--el-fill-color-light);
-            color: var(--el-text-color-placeholder);
-          }
-        }
-
-        .el-pager li {
-          background-color: var(--el-fill-color-light);
-          color: var(--el-text-color-regular);
-
-          &.is-active {
-            background-color: var(--el-color-primary);
-            color: #fff;
-          }
-        }
-      }
     }
   }
 }
@@ -359,7 +264,6 @@ onMounted(async () => {
 
   :deep(.el-pagination) {
     padding: 12px 24px;
-    background: var(--el-bg-color);
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 

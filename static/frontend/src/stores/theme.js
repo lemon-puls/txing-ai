@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import '@/styles/dark.scss'
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
