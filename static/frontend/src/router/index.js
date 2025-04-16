@@ -47,12 +47,12 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      component: () => import('@/layouts/DefaultLayout.vue'),
+      component: () => import('@/layouts/AdminLayout.vue'),
       children: [
         {
-          path: '/users',
+          path: 'users',
           name: 'users',
-          component: () => import('@/views/user/UserList.vue'),
+          component: () => import('@/views/admin/user/UserList.vue'),
           meta: {
             title: '用户管理',
             icon: 'user'

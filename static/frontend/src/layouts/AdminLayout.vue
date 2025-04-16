@@ -24,7 +24,7 @@
             <template #title>控制台</template>
           </el-menu-item>
 
-          <el-menu-item index="/users">
+          <el-menu-item index="/admin/users">
             <el-icon><User /></el-icon>
             <template #title>用户管理</template>
           </el-menu-item>
@@ -34,7 +34,7 @@
             <template #title>渠道设置</template>
           </el-menu-item>
 
-          <el-menu-item index="/models">
+          <el-menu-item index="/admin/models">
             <el-icon><Cpu /></el-icon>
             <template #title>模型管理</template>
           </el-menu-item>

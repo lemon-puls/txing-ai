@@ -103,7 +103,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { defaultApi } from '@/api'
+import { defaultApi } from '@/api/index.js'
 
 // 搜索表单数据
 const searchForm = ref({
