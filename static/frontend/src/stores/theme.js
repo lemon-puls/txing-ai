@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import '@/styles/dark.scss'
+import '@/styles/light.scss'
 import { toRgba, mix } from 'color2k'
 
 export const useThemeStore = defineStore('theme', {
@@ -56,7 +57,7 @@ export const useThemeStore = defineStore('theme', {
       // 设置主题色
       const el = document.documentElement
       const [r, g, b] = this.getRgbValues(this.primaryColor)
-      
+
       el.style.setProperty('--el-color-primary', this.primaryColor)
       el.style.setProperty('--el-color-primary-rgb', `${r}, ${g}, ${b}`)
 
@@ -77,6 +78,8 @@ export const useThemeStore = defineStore('theme', {
         el.style.setProperty('--el-border-color-light', '#363637')
         el.style.setProperty('--el-fill-color-light', '#262727')
         el.style.setProperty('--el-menu-bg-color', '#141414')
+        // 黑暗主题下 hover 下背景色为透明
+        el.style.setProperty('--el-hover-fill', 'rgba(255, 255, 255, 0.1)')
       } else {
         el.style.removeProperty('--el-bg-color')
         el.style.removeProperty('--el-bg-color-page')
@@ -86,6 +89,8 @@ export const useThemeStore = defineStore('theme', {
         el.style.removeProperty('--el-border-color-light')
         el.style.removeProperty('--el-fill-color-light')
         el.style.removeProperty('--el-menu-bg-color')
+        // hover 下背景色
+        el.style.setProperty('--el-hover-fill', '#dcdbdb')
       }
     },
 

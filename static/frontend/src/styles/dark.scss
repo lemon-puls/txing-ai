@@ -56,8 +56,20 @@
     background-color: var(--el-fill-color-light);
   }
 
+  .el-select__wrapper {
+    background-color: var(--el-bg-color) ;
+  }
+
+  .el-input__inner,
+  .el-textarea__inner {
+    background-color: var(--el-fill-color-light);
+    color: var(--el-text-color-regular);
+  }
+
   // 按钮样式
-  .el-button--default {
+  .el-button {
+    --el-fill-color-blank: none !important;
+
     background-color: var(--el-fill-color-light);
     border-color: var(--el-border-color-light);
     color: var(--el-text-color-regular);
@@ -67,6 +79,7 @@
       border-color: var(--el-color-primary);
       color: var(--el-color-primary);
     }
+
   }
 
   // 分页样式
@@ -119,6 +132,10 @@
         color: var(--el-text-color-placeholder);
       }
     }
+  }
+
+  .el-dropdown__popper {
+    --el-dropdown-menuItem-hover-fill: var(--el-hover-fill) !important;
   }
 
   // 弹窗样式
