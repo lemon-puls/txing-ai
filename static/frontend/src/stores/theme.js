@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import '@/styles/dark.scss'
+import { toRgba, mix } from 'color2k'
 
 export const useThemeStore = defineStore('theme', {
   state: () => ({
@@ -14,25 +15,35 @@ export const useThemeStore = defineStore('theme', {
       this.applyTheme()
     },
 
+    // 将 rgba 字符串转换为 RGB 值
+    getRgbValues(color) {
+      const rgba = toRgba(color)
+      // toRgba 返回形如 "rgba(r, g, b, a)" 的字符串
+      const values = rgba.match(/[\d.]+/g)
+      if (!values) return [0, 0, 0]
+      // 将 0-1 的值转换为 0-255
+      return values.slice(0, 3).map(v => Math.round(parseFloat(v) * 255))
+    },
+
     setPrimaryColor(color) {
       if (!color) return
-      
+
       const el = document.documentElement
       el.style.setProperty('--el-color-primary', color)
-      
+
       // 转换为 RGB 格式并存储
-      const rgb = this.hexToRgb(color)
-      if (rgb) {
-        el.style.setProperty('--el-color-primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`)
-      }
-      
+      const [r, g, b] = this.getRgbValues(color)
+      el.style.setProperty('--el-color-primary-rgb', `${r}, ${g}, ${b}`)
+
       // 生成主题色的不同层级
-      const levels = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-      levels.forEach((level, index) => {
-        const lightColor = this.getLightColor(color, level)
-        el.style.setProperty(`--el-color-primary-light-${index + 1}`, lightColor)
-      })
-      
+      for (let i = 1; i <= 9; i++) {
+        // 计算混合比例：从 90% 到 10%（越小越浅）
+        const weight = (10 - i) * 0.1
+        // 使用 color2k 的 mix 函数混合颜色
+        const lightColor = mix(color, '#ffffff', weight)
+        el.style.setProperty(`--el-color-primary-light-${i}`, lightColor)
+      }
+
       // 保存到本地存储
       localStorage.setItem('primaryColor', color)
       this.primaryColor = color
@@ -41,20 +52,21 @@ export const useThemeStore = defineStore('theme', {
     applyTheme() {
       // 应用暗色主题
       document.documentElement.classList.toggle('dark', this.isDark)
-      
+
       // 设置主题色
       const el = document.documentElement
-      const primaryRgb = this.hexToRgb(this.primaryColor)
+      const [r, g, b] = this.getRgbValues(this.primaryColor)
       
       el.style.setProperty('--el-color-primary', this.primaryColor)
-      el.style.setProperty('--el-color-primary-rgb', primaryRgb)
-      
+      el.style.setProperty('--el-color-primary-rgb', `${r}, ${g}, ${b}`)
+
       // 生成主题色的不同层级
       for (let i = 1; i <= 9; i++) {
-        const lightColor = this.getLightColor(this.primaryColor, i / 10)
+        const weight = (10 - i) * 0.1
+        const lightColor = mix(this.primaryColor, '#ffffff', weight)
         el.style.setProperty(`--el-color-primary-light-${i}`, lightColor)
       }
-      
+
       // 生成暗色主题变量
       if (this.isDark) {
         el.style.setProperty('--el-bg-color', '#141414')
@@ -77,26 +89,9 @@ export const useThemeStore = defineStore('theme', {
       }
     },
 
-    // 将 hex 颜色转换为 rgb
-    hexToRgb(hex) {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-      return result
-        ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
-        : null
-    },
-
-    // 获取主题色的浅色变体
-    getLightColor(color, level) {
-      const rgb = this.hexToRgb(color)
-      if (!rgb) return color
-      const [r, g, b] = rgb.split(',').map(Number)
-      const amount = level * 100
-      return `rgb(${Math.min(r + amount, 255)}, ${Math.min(g + amount, 255)}, ${Math.min(b + amount, 255)})`
-    },
-
     // 初始化主题
     initTheme() {
       this.applyTheme()
     }
   }
-}) 
+})

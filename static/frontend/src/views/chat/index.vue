@@ -1248,7 +1248,7 @@ const handlePresetSelect = (preset) => {
   }
 
   &.active {
-    background: var(--el-color-primary-light-9);
+    //background: var(--el-color-primary-light-9);
     border-color: var(--border-color);
   }
 
