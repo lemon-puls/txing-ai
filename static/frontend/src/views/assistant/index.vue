@@ -130,27 +130,53 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import {
   Search,
   Plus,
   Timer,
-  ArrowRight,
-  User,
-  Setting,
-  SwitchButton,
-  CaretBottom
+  ArrowRight
 } from '@element-plus/icons-vue'
 import bgImage from '@/assets/images/header-bg.jpg'
 import { useRouter } from 'vue-router'
 import CreateAssistantDialog from '@/components/assistant/CreateAssistantDialog.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import { useThemeStore } from '@/stores/theme'
 
 defineOptions({
   name: 'AssistantList'
 })
 
 const router = useRouter()
+const themeStore = useThemeStore()
+
+// 存储进入页面时的主题状态
+const previousThemeState = ref(null)
+const previousTheme = ref("'#409EFF'")
+
+// 在组件挂载时切换为明亮主题
+onMounted(() => {
+  // 保存当前主题状态
+  previousThemeState.value = themeStore.isDark
+  previousTheme.value = themeStore.primaryColor
+  themeStore.setPrimaryColor('#409EFF')
+  // 如果当前是暗色主题，切换为明亮主题
+  if (themeStore.isDark) {
+    themeStore.toggleTheme()
+  }
+})
+
+// 在组件卸载前恢复原来的主题
+onBeforeUnmount(() => {
+  // 恢复原来的主题状态
+  if (previousThemeState.value) {
+    themeStore.setPrimaryColor(previousTheme.value)
+  }
+  // 如果之前是暗色主题，现在是明亮主题，则切换回暗色主题
+  if (previousThemeState.value && !themeStore.isDark) {
+    themeStore.toggleTheme()
+  }
+})
 
 // 创建助手弹窗可见性
 const createDialogVisible = ref(false)
