@@ -58,6 +58,15 @@ const router = createRouter({
             icon: 'user'
           }
         },
+        {
+          path: 'models',
+          name: 'models',
+          component: () => import('@/views/admin/model/ModelList.vue'),
+          meta: {
+            title: '模型管理',
+            icon: 'cpu'
+          }
+        }
       ]
     }
   ],
