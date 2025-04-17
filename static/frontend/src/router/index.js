@@ -66,6 +66,15 @@ const router = createRouter({
             title: '模型管理',
             icon: 'cpu'
           }
+        },
+        {
+          path: 'channels',
+          name: 'channels',
+          component: () => import('@/views/admin/channel/ChannelList.vue'),
+          meta: {
+            title: '模型管理',
+            icon: 'cpu'
+          }
         }
       ]
     }

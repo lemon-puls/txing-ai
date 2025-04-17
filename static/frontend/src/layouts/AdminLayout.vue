@@ -29,7 +29,7 @@
             <template #title>用户管理</template>
           </el-menu-item>
 
-          <el-menu-item index="/channels">
+          <el-menu-item index="/admin/channels">
             <el-icon><Connection /></el-icon>
             <template #title>渠道设置</template>
           </el-menu-item>
