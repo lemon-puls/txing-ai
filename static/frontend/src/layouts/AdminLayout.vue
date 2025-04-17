@@ -45,25 +45,25 @@
           </el-menu-item>
 
 
-          <el-menu-item index="/pricing">
-            <el-icon><Wallet /></el-icon>
-            <template #title>价格设置</template>
-          </el-menu-item>
+<!--          <el-menu-item index="/pricing">-->
+<!--            <el-icon><Wallet /></el-icon>-->
+<!--            <template #title>价格设置</template>-->
+<!--          </el-menu-item>-->
 
-          <el-menu-item index="/orders">
-            <el-icon><List /></el-icon>
-            <template #title>订单管理</template>
-          </el-menu-item>
+<!--          <el-menu-item index="/orders">-->
+<!--            <el-icon><List /></el-icon>-->
+<!--            <template #title>订单管理</template>-->
+<!--          </el-menu-item>-->
 
-          <el-menu-item index="/system">
-            <el-icon><Setting /></el-icon>
-            <template #title>系统设置</template>
-          </el-menu-item>
+<!--          <el-menu-item index="/system">-->
+<!--            <el-icon><Setting /></el-icon>-->
+<!--            <template #title>系统设置</template>-->
+<!--          </el-menu-item>-->
 
-          <el-menu-item index="/logs">
-            <el-icon><Document /></el-icon>
-            <template #title>系统日志</template>
-          </el-menu-item>
+<!--          <el-menu-item index="/logs">-->
+<!--            <el-icon><Document /></el-icon>-->
+<!--            <template #title>系统日志</template>-->
+<!--          </el-menu-item>-->
         </el-menu>
       </el-scrollbar>
     </el-aside>
