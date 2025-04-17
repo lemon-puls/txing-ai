@@ -56,6 +56,34 @@
       </el-col>
     </el-row>
 
+    <!-- 渠道和助手使用情况 -->
+    <el-row :gutter="20" class="mb-4">
+      <el-col :span="12">
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>渠道使用占比</span>
+            </div>
+          </template>
+          <div class="chart-container">
+            <v-chart class="pie-chart" :option="channelChartOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>AI助手使用排行</span>
+            </div>
+          </template>
+          <div class="chart-container">
+            <v-chart class="chart" :option="assistantChartOption" autoresize />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- 最近活动 -->
     <el-row>
       <el-col :span="24">
@@ -88,7 +116,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, PieChart } from 'echarts/charts'
+import { LineChart, PieChart, BarChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -106,6 +134,7 @@ use([
   CanvasRenderer,
   LineChart,
   PieChart,
+  BarChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -211,6 +240,99 @@ const pieChartOption = ref({
   ]
 })
 
+// 渠道使用占比图表配置
+const channelChartOption = ref({
+  tooltip: {
+    trigger: 'item',
+    formatter: '{a} <br/>{b}: {c} ({d}%)'
+  },
+  legend: {
+    orient: 'vertical',
+    left: 'left'
+  },
+  series: [
+    {
+      name: '渠道使用',
+      type: 'pie',
+      radius: ['50%', '70%'], // 环形图
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: false,
+        position: 'center'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      labelLine: {
+        show: false
+      },
+      data: [
+        { value: 1048, name: 'Web端' },
+        { value: 735, name: '移动端' },
+        { value: 580, name: '微信小程序' },
+        { value: 484, name: '企业微信' },
+        { value: 300, name: '钉钉' }
+      ]
+    }
+  ]
+})
+
+// AI助手使用排行图表配置
+const assistantChartOption = ref({
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'shadow'
+    }
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'value'
+  },
+  yAxis: {
+    type: 'category',
+    data: ['助手10', '助手9', '助手8', '助手7', '助手6', '助手5', '助手4', '助手3', '助手2', '助手1'],
+    axisLabel: {
+      interval: 0,
+      rotate: 0
+    }
+  },
+  series: [
+    {
+      name: '使用次数',
+      type: 'bar',
+      data: [320, 380, 450, 500, 580, 650, 750, 800, 900, 1200],
+      itemStyle: {
+        color: function(params) {
+          // 颜色渐变
+          const colorList = ['#83bff6', '#188df0', '#188df0', '#188df0', '#188df0', 
+                           '#188df0', '#188df0', '#188df0', '#188df0', '#0b5ea8'];
+          return colorList[params.dataIndex];
+        },
+        borderRadius: [0, 4, 4, 0]
+      },
+      label: {
+        show: true,
+        position: 'right'
+      }
+    }
+  ]
+})
+
 // 最近活动数据
 const activities = ref([
   {
@@ -307,6 +429,7 @@ onMounted(() => {
     
     .chart, .pie-chart {
       height: 100%;
+      width: 100%;
     }
   }
 }
