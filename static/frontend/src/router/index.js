@@ -75,6 +75,12 @@ const router = createRouter({
             title: '模型管理',
             icon: 'cpu'
           }
+        },
+        {
+          path: 'preset',
+          name: 'PresetList',
+          component: () => import('@/views/admin/preset/PresetList.vue'),
+          meta: { title: 'AI 助手管理', icon: 'Robot' }
         }
       ]
     }

@@ -39,6 +39,12 @@
             <template #title>模型管理</template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/preset">
+            <el-icon><Cpu /></el-icon>
+            <template #title>AI 助手管理</template>
+          </el-menu-item>
+
+
           <el-menu-item index="/pricing">
             <el-icon><Wallet /></el-icon>
             <template #title>价格设置</template>

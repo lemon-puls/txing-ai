@@ -1,0 +1,642 @@
+<template>
+  <div class="preset-container">
+    <!-- 搜索表单 -->
+    <el-card class="search-form">
+      <el-form :inline="true" :model="searchForm">
+        <el-form-item label="助手名称">
+          <el-input v-model="searchForm.name" placeholder="请输入助手名称" clearable />
+        </el-form-item>
+        <el-form-item label="类型">
+          <el-select v-model="searchForm.official" placeholder="请选择类型" clearable>
+            <el-option :value="true" label="官方助手" />
+            <el-option :value="false" label="社区助手" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
+          <el-button type="success" @click="handleAdd">新增助手</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 助手列表 -->
+    <div class="preset-list">
+      <el-card v-for="preset in presets" :key="preset.id" class="preset-card">
+        <div class="preset-header" @click="toggleExpand(preset)">
+          <div class="preset-basic-info">
+            <div class="preset-avatar">
+              <el-avatar :size="48" :src="preset.avatar">{{ preset.name.charAt(0) }}</el-avatar>
+            </div>
+            <div class="preset-info">
+              <div class="preset-title">
+                <h3>{{ preset.name }}</h3>
+                <el-tag v-if="preset.official" type="success" effect="dark">官方</el-tag>
+                <el-tag v-else type="primary" effect="dark">社区</el-tag>
+              </div>
+              <div class="preset-description">{{ preset.description || '暂无描述' }}</div>
+            </div>
+          </div>
+          <div class="preset-actions">
+            <el-button text type="primary">
+              {{ preset.isExpanded ? '收起' : '展开' }}
+              <el-icon>
+                <ArrowDown v-if="!preset.isExpanded" />
+                <ArrowUp v-else />
+              </el-icon>
+            </el-button>
+          </div>
+        </div>
+
+        <!-- 展开的详细信息 -->
+        <el-collapse-transition>
+          <div v-show="preset.isExpanded" class="preset-detail">
+            <el-form
+              :model="preset"
+              label-width="100px"
+              class="preset-form"
+            >
+              <el-form-item label="助手头像" class="avatar-uploader">
+                <el-upload
+                  class="avatar-upload"
+                  :show-file-list="false"
+                  :auto-upload="false"
+                  :on-change="(file) => handleAvatarChange(file, preset)"
+                  accept="image/*"
+                >
+                  <div class="avatar-wrapper">
+                    <img v-if="preset.avatar" :src="preset.avatar" class="avatar-image">
+                    <el-icon v-else class="avatar-icon"><Plus /></el-icon>
+                  </div>
+                </el-upload>
+              </el-form-item>
+              <el-form-item label="助手名称">
+                <el-input v-model="preset.name" placeholder="请输入助手名称" />
+              </el-form-item>
+              <el-form-item label="助手描述">
+                <el-input
+                  v-model="preset.description"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="请输入助手描述"
+                />
+              </el-form-item>
+              <el-form-item label="上下文设定">
+                <el-input
+                  v-model="preset.context"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="请输入上下文设定"
+                />
+              </el-form-item>
+              <el-form-item label="官方助手">
+                <el-switch v-model="preset.official" />
+              </el-form-item>
+              <div class="form-actions">
+                <el-button type="primary" @click="handleSave(preset)">保存</el-button>
+                <el-button type="danger" @click="handleDelete(preset)">删除</el-button>
+              </div>
+            </el-form>
+          </div>
+        </el-collapse-transition>
+      </el-card>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 30, 50]"
+        :total="total"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
+
+    <!-- 新增/编辑对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogType === 'add' ? '新增助手' : '编辑助手'"
+      width="600px"
+    >
+      <el-form
+        ref="presetFormRef"
+        :model="presetForm"
+        :rules="presetRules"
+        label-width="100px"
+      >
+        <el-form-item label="助手头像" prop="avatar" class="avatar-uploader">
+          <el-upload
+            class="avatar-upload"
+            :show-file-list="false"
+            :auto-upload="false"
+            :on-change="handleDialogAvatarChange"
+            accept="image/*"
+          >
+            <div class="avatar-wrapper">
+              <img v-if="presetForm.avatar" :src="presetForm.avatar" class="avatar-image">
+              <el-icon v-else class="avatar-icon"><Plus /></el-icon>
+            </div>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="助手名称" prop="name">
+          <el-input v-model="presetForm.name" placeholder="请输入助手名称" />
+        </el-form-item>
+        <el-form-item label="助手描述" prop="description">
+          <el-input
+            v-model="presetForm.description"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入助手描述"
+          />
+        </el-form-item>
+        <el-form-item label="上下文设定" prop="context">
+          <el-input
+            v-model="presetForm.context"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入上下文设定"
+          />
+        </el-form-item>
+        <el-form-item label="官方助手" prop="official">
+          <el-switch v-model="presetForm.official" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 图片裁剪对话框 -->
+    <el-dialog
+      v-model="cropperVisible"
+      title="裁剪头像"
+      width="600px"
+      append-to-body
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <div class="cropper-container">
+        <VueCropper
+          ref="cropperRef"
+          :img="cropperImage"
+          :outputSize="1"
+          outputType="png"
+          :info="true"
+          :full="true"
+          :canMove="true"
+          :canMoveBox="true"
+          :original="false"
+          :autoCrop="true"
+          :autoCropWidth="200"
+          :autoCropHeight="200"
+          :fixedBox="true"
+          :fixed="true"
+          :fixedNumber="[1, 1]"
+          :centerBox="true"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="cropperVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleCropImage">确认</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown, ArrowUp, Plus } from '@element-plus/icons-vue'
+import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
+import 'vue-cropper/dist/index.css'
+
+// 搜索表单
+const searchForm = ref({
+  name: '',
+  official: ''
+})
+
+// 分页数据
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+// 助手数据
+const presets = ref([])
+
+// 对话框数据
+const dialogVisible = ref(false)
+const dialogType = ref('add')
+const presetFormRef = ref(null)
+const presetForm = ref({
+  name: '',
+  description: '',
+  context: '',
+  avatar: '',
+  official: false
+})
+
+// 裁剪相关
+const cropperVisible = ref(false)
+const cropperImage = ref('')
+const cropperRef = ref(null)
+const currentPreset = ref(null)
+
+// 表单验证规则
+const presetRules = {
+  name: [
+    { required: true, message: '请输入助手名称', trigger: 'blur' },
+    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  description: [
+    { max: 200, message: '描述不能超过200个字符', trigger: 'blur' }
+  ],
+  context: [
+    { required: true, message: '请输入上下文设定', trigger: 'blur' }
+  ]
+}
+
+// 加载助手列表
+const loadPresets = async () => {
+  // TODO: 调用API获取助手列表
+  // 模拟数据
+  presets.value = [
+    {
+      id: 1,
+      name: '编程助手',
+      description: '专业的代码编写和问题解答助手',
+      context: '你是一个专业的程序员，擅长解答各种编程问题...',
+      avatar: '',
+      official: true,
+      isExpanded: false
+    },
+    {
+      id: 2,
+      name: '写作助手',
+      description: '帮助改进文章结构和表达的助手',
+      context: '你是一个专业的文字工作者，擅长文章创作和润色...',
+      avatar: '',
+      official: true,
+      isExpanded: false
+    }
+  ]
+  total.value = 100
+}
+
+// 搜索
+const handleSearch = () => {
+  currentPage.value = 1
+  loadPresets()
+}
+
+// 重置搜索
+const handleReset = () => {
+  searchForm.value = {
+    name: '',
+    official: ''
+  }
+  currentPage.value = 1
+  loadPresets()
+}
+
+// 切换展开/收起
+const toggleExpand = (preset) => {
+  preset.isExpanded = !preset.isExpanded
+}
+
+// 新增助手
+const handleAdd = () => {
+  dialogType.value = 'add'
+  presetForm.value = {
+    name: '',
+    description: '',
+    context: '',
+    avatar: '',
+    official: false
+  }
+  dialogVisible.value = true
+}
+
+// 保存助手
+const handleSave = async (preset) => {
+  // TODO: 调用保存API
+  ElMessage.success('保存成功')
+  loadPresets()
+}
+
+// 删除助手
+const handleDelete = async (preset) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除助手【${preset.name}】吗？`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    // TODO: 调用删除API
+    ElMessage.success('删除成功')
+    loadPresets()
+  } catch {
+    // 取消删除
+  }
+}
+
+// 提交表单
+const handleSubmit = async () => {
+  if (!presetFormRef.value) return
+  await presetFormRef.value.validate(async (valid) => {
+    if (valid) {
+      // TODO: 调用保存API
+      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+      dialogVisible.value = false
+      loadPresets()
+    }
+  })
+}
+
+// 分页大小变化
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  loadPresets()
+}
+
+// 页码变化
+const handleCurrentChange = (page) => {
+  currentPage.value = page
+  loadPresets()
+}
+
+// 处理头像变更（列表中）
+const handleAvatarChange = (file, preset) => {
+  if (!file) return
+  handleImageUpload(file, preset)
+}
+
+// 处理头像变更（对话框中）
+const handleDialogAvatarChange = (file) => {
+  if (!file) return
+  handleImageUpload(file)
+}
+
+// 处理图片上传
+const handleImageUpload = (file, preset = null) => {
+  // 验证文件类型和大小
+  const isImage = file.raw.type.startsWith('image/')
+  const isLt2M = file.raw.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('请上传图片文件！')
+    return
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB！')
+    return
+  }
+
+  // 读取文件并显示裁剪对话框
+  const reader = new FileReader()
+  reader.readAsDataURL(file.raw)
+  reader.onload = (e) => {
+    cropperImage.value = e.target.result
+    currentPreset.value = preset
+    cropperVisible.value = true
+  }
+}
+
+// 处理图片裁剪
+const handleCropImage = () => {
+  if (!cropperRef.value) return
+
+  cropperRef.value.getCropData((data) => {
+    if (currentPreset.value) {
+      currentPreset.value.avatar = data
+    } else {
+      presetForm.value.avatar = data
+    }
+    cropperVisible.value = false
+  })
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadPresets()
+})
+</script>
+
+<style lang="scss" scoped>
+.preset-container {
+  padding: 24px;
+
+  :deep(.el-card) {
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+  }
+}
+
+.search-form {
+  margin-bottom: 24px;
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 12px;
+  }
+
+  :deep(.el-select) {
+    width: 180px;
+  }
+
+  :deep(.el-button) {
+    border-radius: 12px;
+    padding: 12px 24px;
+    transition: all 0.3s;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &.el-button--primary {
+      &:hover {
+        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
+      }
+    }
+  }
+}
+
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.preset-card {
+  .preset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    cursor: pointer;
+  }
+
+  .preset-basic-info {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .preset-info {
+    flex: 1;
+  }
+
+  .preset-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+  }
+
+  .preset-description {
+    color: var(--el-text-color-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .preset-detail {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+
+  .preset-form {
+    padding-top: 20px;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+
+  :deep(.el-pagination) {
+    padding: 12px 24px;
+    border-radius: 12px;
+    background: var(--el-bg-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.avatar-uploader {
+  :deep(.el-upload) {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.avatar-wrapper {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  border: 2px dashed var(--el-border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &:hover {
+    border-color: var(--el-color-primary);
+    transform: translateY(-2px);
+  }
+
+  .avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-icon {
+    font-size: 30px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.cropper-container {
+  height: 500px;
+  background: #262626;
+
+  :deep(.vue-cropper) {
+    height: 100%;
+    width: 100%;
+
+    .cropper-view-box,
+    .cropper-face {
+      border-radius: 50%;
+    }
+
+    .cropper-dashed {
+      display: none;
+    }
+
+    .cropper-view-box {
+      outline: 1px solid #fff;
+      box-shadow: 0 0 0 1px #fff;
+    }
+
+    .cropper-face {
+      background-color: transparent !important;
+    }
+
+    .cropper-point {
+      width: 8px !important;
+      height: 8px !important;
+      opacity: 1 !important;
+      background-color: #fff !important;
+      border-radius: 50%;
+
+      &.point-se {
+        width: 8px !important;
+        height: 8px !important;
+      }
+    }
+
+    .cropper-line {
+      background: #fff;
+      opacity: 0.3;
+    }
+  }
+}
+</style>
