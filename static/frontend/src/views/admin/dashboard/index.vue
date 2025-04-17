@@ -11,7 +11,7 @@
             </el-icon>
           </div>
           <div class="card-content">
-            <div class="value">{{ item.value }}</div>
+            <div class="value">{{ item.displayValue }}</div>
             <div class="trend" :class="{ 'up': item.trend > 0, 'down': item.trend < 0 }">
               {{ Math.abs(item.trend) }}%
               <el-icon>
@@ -115,6 +115,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { use } from 'echarts/core'
+import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, PieChart, BarChart } from 'echarts/charts'
 import {
@@ -199,13 +200,25 @@ const chartOption = ref({
       name: '对话数',
       type: 'line',
       smooth: true,
-      data: [120, 132, 101, 134, 90, 230, 210]
+      data: [120, 132, 101, 134, 90, 230, 210],
+      animation: true,
+      animationDuration: 2000,
+      animationEasing: 'quadraticInOut',
+      animationDelay: function (idx) {
+        return idx * 100;
+      }
     },
     {
       name: '用户数',
       type: 'line',
       smooth: true,
-      data: [220, 182, 191, 234, 290, 330, 310]
+      data: [220, 182, 191, 234, 290, 330, 310],
+      animation: true,
+      animationDuration: 2000,
+      animationEasing: 'quadraticInOut',
+      animationDelay: function (idx) {
+        return idx * 100 + 1000;
+      }
     }
   ]
 })
@@ -235,7 +248,15 @@ const pieChartOption = ref({
           shadowOffsetX: 0,
           shadowColor: 'rgba(0, 0, 0, 0.5)'
         }
-      }
+      },
+      animation: true,
+      animationDuration: 2000,
+      animationEasing: 'cubicInOut',
+      animationDelay: function (idx) {
+        return idx * 200;
+      },
+      animationDurationUpdate: 1000,
+      animationEasingUpdate: 'cubicInOut'
     }
   ]
 })
@@ -254,7 +275,7 @@ const channelChartOption = ref({
     {
       name: '渠道使用',
       type: 'pie',
-      radius: ['50%', '70%'], // 环形图
+      radius: ['50%', '70%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 10,
@@ -281,7 +302,15 @@ const channelChartOption = ref({
         { value: 580, name: '微信小程序' },
         { value: 484, name: '企业微信' },
         { value: 300, name: '钉钉' }
-      ]
+      ],
+      animation: true,
+      animationDuration: 2500,
+      animationEasing: 'cubicInOut',
+      animationDelay: function (idx) {
+        return idx * 200;
+      },
+      animationDurationUpdate: 1000,
+      animationEasingUpdate: 'cubicInOut'
     }
   ]
 })
@@ -318,7 +347,6 @@ const assistantChartOption = ref({
       data: [320, 380, 450, 500, 580, 650, 750, 800, 900, 1200],
       itemStyle: {
         color: function(params) {
-          // 颜色渐变
           const colorList = ['#83bff6', '#188df0', '#188df0', '#188df0', '#188df0', 
                            '#188df0', '#188df0', '#188df0', '#188df0', '#0b5ea8'];
           return colorList[params.dataIndex];
@@ -328,7 +356,15 @@ const assistantChartOption = ref({
       label: {
         show: true,
         position: 'right'
-      }
+      },
+      animation: true,
+      animationDuration: 3000,
+      animationEasing: 'elasticOut',
+      animationDelay: function (idx) {
+        return idx * 100;
+      },
+      animationDurationUpdate: 1000,
+      animationEasingUpdate: 'cubicInOut'
     }
   ]
 })
@@ -355,6 +391,50 @@ const activities = ref([
   }
 ])
 
+// 数字动画函数
+const animateValue = (start, end, duration, callback) => {
+  const startTime = performance.now()
+  const update = () => {
+    const currentTime = performance.now()
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    
+    // 使用缓动函数使动画更平滑
+    const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+    const current = Math.floor(start + (end - start) * easeOutQuart)
+    
+    callback(current)
+    
+    if (progress < 1) {
+      requestAnimationFrame(update)
+    }
+  }
+  update()
+}
+
+// 格式化数字
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k'
+  }
+  return num.toString()
+}
+
+// 动态更新统计数据
+const updateStatistics = () => {
+  statistics.value.forEach((stat, index) => {
+    const endValue = parseInt(stat.value.replace(/[^0-9]/g, ''))
+    let startValue = 0
+    
+    animateValue(startValue, endValue, 2000, (value) => {
+      statistics.value[index] = {
+        ...stat,
+        displayValue: formatNumber(value)
+      }
+    })
+  })
+}
+
 // 监听图表时间范围变化
 watch(chartTimeRange, (newValue) => {
   // TODO: 根据时间范围更新图表数据
@@ -362,7 +442,29 @@ watch(chartTimeRange, (newValue) => {
 })
 
 onMounted(() => {
-  // TODO: 从后端获取实际数据
+  // 添加进入动画延迟
+  setTimeout(() => {
+    updateStatistics()
+  }, 300)
+
+  // 创建图表实例的引用
+  const charts = ref([])
+
+  // 获取所有图表实例
+  const chartEls = document.querySelectorAll('.chart, .pie-chart')
+  chartEls.forEach(el => {
+    const chart = echarts.init(el)
+    charts.value.push(chart)
+  })
+
+  // 清除现有动画并重新设置选项以触发动画
+  charts.value.forEach(chart => {
+    chart.clear()
+    const option = chart.getOption()
+    if (option) {
+      chart.setOption(option, true)
+    }
+  })
 })
 </script>
 
@@ -370,8 +472,86 @@ onMounted(() => {
 .dashboard-container {
   padding: 20px;
 
+  // 添加页面进入动画
+  animation: fadeInUp 0.8s ease-out;
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .mb-4 {
     margin-bottom: 20px;
+  }
+
+  // 为所有卡片添加统一的圆角和过渡效果
+  :deep(.el-card) {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: cardFadeIn 0.6s ease-out backwards;
+
+    @for $i from 1 through 10 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.1}s;
+      }
+    }
+
+    &:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+      .icon {
+        transform: scale(1.2) rotate(10deg);
+      }
+    }
+
+    .el-card__header {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%);
+    }
+
+    .el-card__body {
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      &:hover::after {
+        opacity: 1;
+      }
+    }
+  }
+
+  @keyframes cardFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .statistic-card {
@@ -384,10 +564,32 @@ onMounted(() => {
       .title {
         font-size: 16px;
         color: #606266;
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -4px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: #409EFF;
+          transition: width 0.3s ease;
+        }
       }
 
       .icon {
         color: #409EFF;
+        background: rgba(64, 158, 255, 0.1);
+        padding: 8px;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+
+    &:hover {
+      .title::after {
+        width: 100%;
       }
     }
 
@@ -400,37 +602,125 @@ onMounted(() => {
         font-size: 24px;
         font-weight: bold;
         color: #303133;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          transform: scale(1.1);
+          color: #409EFF;
+        }
       }
 
       .trend {
         display: flex;
         align-items: center;
         font-size: 14px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
         
         &.up {
           color: #67C23A;
+          background: rgba(103, 194, 58, 0.1);
+          
+          &:hover {
+            background: rgba(103, 194, 58, 0.2);
+            transform: translateY(-2px);
+          }
         }
         
         &.down {
           color: #F56C6C;
+          background: rgba(245, 108, 108, 0.1);
+          
+          &:hover {
+            background: rgba(245, 108, 108, 0.2);
+            transform: translateY(-2px);
+          }
         }
       }
     }
   }
 
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .chart-container {
     height: 350px;
+    position: relative;
     
     .chart, .pie-chart {
       height: 100%;
       width: 100%;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.02);
+      }
     }
+  }
+
+  // 美化表格圆角和动画
+  :deep(.el-table) {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    th {
+      background-color: #f5f7fa;
+      transition: background-color 0.3s ease;
+    }
+
+    tr {
+      transition: all 0.3s ease;
+      
+      &:hover > td {
+        background-color: rgba(64, 158, 255, 0.1) !important;
+      }
+    }
+
+    .el-tag {
+      border-radius: 12px;
+      padding: 0 12px;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  // 添加按钮动画
+  :deep(.el-button) {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // 添加单选按钮组动画
+  :deep(.el-radio-group) {
+    .el-radio-button__inner {
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+  }
+
+  .el-radio-group {
+    margin-left: auto; // 确保按钮组靠右
   }
 }
 </style> 
