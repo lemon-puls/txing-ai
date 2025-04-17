@@ -19,7 +19,7 @@
           :router="true"
           :default-active="activeMenu"
         >
-          <el-menu-item index="/dashboard">
+          <el-menu-item index="/admin">
             <el-icon><DataBoard /></el-icon>
             <template #title>控制台</template>
           </el-menu-item>

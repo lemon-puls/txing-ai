@@ -50,6 +50,15 @@ const router = createRouter({
       component: () => import('@/layouts/AdminLayout.vue'),
       children: [
         {
+          path: '',
+          name: 'dashboard',
+          component: () => import('@/views/admin/dashboard/index.vue'),
+          meta: {
+            title: '控制台',
+            icon: 'DataLine'
+          }
+        },
+        {
           path: 'users',
           name: 'users',
           component: () => import('@/views/admin/user/UserList.vue'),
@@ -72,15 +81,18 @@ const router = createRouter({
           name: 'channels',
           component: () => import('@/views/admin/channel/ChannelList.vue'),
           meta: {
-            title: '模型管理',
-            icon: 'cpu'
+            title: '渠道管理',
+            icon: 'Connection'
           }
         },
         {
           path: 'preset',
           name: 'PresetList',
           component: () => import('@/views/admin/preset/PresetList.vue'),
-          meta: { title: 'AI 助手管理', icon: 'Robot' }
+          meta: { 
+            title: 'AI 助手管理', 
+            icon: 'Robot' 
+          }
         }
       ]
     }
