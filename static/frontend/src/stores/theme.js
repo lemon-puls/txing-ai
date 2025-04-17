@@ -39,7 +39,7 @@ export const useThemeStore = defineStore('theme', {
       // 生成主题色的不同层级
       for (let i = 1; i <= 9; i++) {
         // 计算混合比例：从 90% 到 10%（越小越浅）
-        const weight = (10 - i) * 0.1
+        const weight = i * 0.1
         // 使用 color2k 的 mix 函数混合颜色
         const lightColor = mix(color, '#ffffff', weight)
         el.style.setProperty(`--el-color-primary-light-${i}`, lightColor)
@@ -63,7 +63,7 @@ export const useThemeStore = defineStore('theme', {
 
       // 生成主题色的不同层级
       for (let i = 1; i <= 9; i++) {
-        const weight = (10 - i) * 0.1
+        const weight = i * 0.1
         const lightColor = mix(this.primaryColor, '#ffffff', weight)
         el.style.setProperty(`--el-color-primary-light-${i}`, lightColor)
       }
