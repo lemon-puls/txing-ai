@@ -102,11 +102,8 @@
             <el-tooltip content="全屏" placement="bottom">
               <el-icon class="action-icon" @click="toggleFullscreen"><FullScreen /></el-icon>
             </el-tooltip>
-            <el-tooltip :content="isDark ? '浅色模式' : '深色模式'" placement="bottom">
-              <el-icon class="action-icon" @click="toggleTheme"><Moon /></el-icon>
-            </el-tooltip>
             <el-tooltip content="主题设置" placement="bottom">
-              <el-icon class="action-icon" @click="showThemePanel = true"><Setting /></el-icon>
+              <el-icon class="action-icon" @click="showThemeDrawer = true"><Setting /></el-icon>
             </el-tooltip>
           </div>
 
@@ -153,53 +150,14 @@
     </el-container>
 
     <!-- 主题设置抽屉 -->
-    <el-drawer
-      v-model="showThemePanel"
-      title="主题设置"
-      size="300px"
-      :with-header="false"
-    >
-      <div class="theme-drawer">
-        <div class="drawer-header">
-          <h2>主题设置</h2>
-          <el-icon class="close-icon" @click="showThemePanel = false"><Close /></el-icon>
-        </div>
-        <div class="drawer-content">
-          <div class="setting-item">
-            <span class="setting-label">主题色</span>
-            <el-color-picker
-              v-model="tempPrimaryColor"
-              :predefine="[
-                '#409EFF',
-                '#67C23A',
-                '#E6A23C',
-                '#F56C6C',
-                '#909399'
-              ]"
-              show-alpha
-            />
-          </div>
-          <div class="setting-item">
-            <span class="setting-label">深色模式</span>
-            <el-switch
-              v-model="isDark"
-              @change="toggleTheme"
-            />
-          </div>
-        </div>
-        <div class="drawer-footer">
-          <el-button @click="showThemePanel = false">取消</el-button>
-          <el-button type="primary" @click="confirmThemeChange">确认</el-button>
-        </div>
-      </div>
-    </el-drawer>
+    <ThemeDrawer v-model="showThemeDrawer" />
   </el-container>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox, ElColorPicker } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { useThemeStore } from '@/stores/theme'
 import {
   User,
@@ -210,23 +168,18 @@ import {
   DataBoard,
   Connection,
   Cpu,
-  Wallet,
-  List,
   Setting,
-  Document,
   Search,
   FullScreen,
-  Moon,
-  SwitchButton,
-  Close
+  SwitchButton
 } from '@element-plus/icons-vue'
-
+import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
 const isCollapse = ref(false)
 const searchKeyword = ref('')
-const showThemePanel = ref(false)
+const showThemeDrawer = ref(false)
 
 // 获取用户信息
 const userInfo = computed(() => {
@@ -245,10 +198,6 @@ const activeMenu = computed(() => route.path)
 // 当前路由信息
 const currentRoute = computed(() => route)
 
-// 主题相关计算属性
-const isDark = computed(() => themeStore.isDark)
-const tempPrimaryColor = ref(themeStore.primaryColor)
-
 // 切换侧边栏
 const toggleSidebar = () => {
   isCollapse.value = !isCollapse.value
@@ -262,24 +211,6 @@ const toggleFullscreen = () => {
     document.exitFullscreen()
   }
 }
-
-// 切换主题
-const toggleTheme = () => {
-  themeStore.toggleTheme()
-}
-
-// 确认主题色更改
-const confirmThemeChange = () => {
-  themeStore.setPrimaryColor(tempPrimaryColor.value)
-  showThemePanel.value = false
-}
-
-// 监听面板显示状态，重置临时颜色
-watch(showThemePanel, (val) => {
-  if (val) {
-    tempPrimaryColor.value = themeStore.primaryColor
-  }
-})
 
 // 初始化主题
 onMounted(() => {
@@ -616,74 +547,6 @@ const handleCommand = async (command) => {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(var(--el-color-danger-rgb), 0);
   }
-}
-
-.theme-drawer {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-
-  .drawer-header {
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--el-border-color-light);
-
-    h2 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-    }
-
-    .close-icon {
-      font-size: 20px;
-      color: var(--el-text-color-secondary);
-      cursor: pointer;
-      transition: all 0.3s;
-
-      &:hover {
-        color: var(--el-color-primary);
-        transform: rotate(90deg);
-      }
-    }
-  }
-
-  .drawer-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-
-    .setting-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .setting-label {
-        font-size: 14px;
-        color: var(--el-text-color-primary);
-      }
-    }
-  }
-
-  .drawer-footer {
-    padding: 20px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    border-top: 1px solid var(--el-border-color-light);
-  }
-}
-
-:deep(.el-drawer__body) {
-  padding: 0;
 }
 
 // 暗色主题样式覆盖

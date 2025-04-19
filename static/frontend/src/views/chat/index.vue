@@ -58,7 +58,7 @@
         <div class="footer-actions">
           <el-tooltip content="切换主题" placement="top">
             <div class="theme-toggle" @click="toggleTheme">
-              <el-icon><component :is="isDarkTheme ? 'Sunny' : 'Moon'" /></el-icon>
+              <el-icon><Setting /></el-icon>
             </div>
           </el-tooltip>
           <el-tooltip content="切换背景" placement="top">
@@ -359,10 +359,15 @@
       v-model:visible="showPresetMarket"
       @select="handlePresetSelect"
     />
+
+    <!-- Theme Drawer -->
+    <ThemeDrawer
+      v-model="showThemeDrawer"
+    />
   </div>
 </template>
 
-<script setup name="ChatPage">
+<script setup name="ChatView">
 import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
@@ -380,9 +385,7 @@ import {
   Check,
   Picture,
   HomeFilled,
-  Shop,
-  Moon,
-  Sunny
+  Shop
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -410,6 +413,7 @@ import PresetMarket from '@/components/chat/PresetMarket.vue'
 import 'github-markdown-css/github-markdown-light.css'
 import 'github-markdown-css/github-markdown-dark.css'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -722,6 +726,7 @@ const showPresetMarket = ref(false)
 // 添加响应式变量
 const streamingMessage = ref(null)
 const thoughtTime = ref(0)
+const showThemeDrawer = ref(false)
 
 // 模拟流式响应
 const simulateStreamResponse = async (content, thought) => {
@@ -882,7 +887,7 @@ public class BubbleSort {
 
 // 主题切换
 const toggleTheme = () => {
-  themeStore.toggleTheme()
+  showThemeDrawer.value = true
 }
 
 // 方法
