@@ -16,7 +16,6 @@
 
 <script>
 import { defineComponent, computed } from 'vue'
-import './style.scss'
 
 export default defineComponent({
   name: 'SvgIcon',

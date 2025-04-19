@@ -197,7 +197,7 @@
             <div class="quick-actions">
               <el-tooltip content="AI 助手市场" placement="top">
                 <div class="action-btn" @click="showPresetMarket = true">
-                  <el-icon><Shop /></el-icon>
+                  <SvgIcon icon="ai" size="30" hover click />
                 </div>
               </el-tooltip>
               <div class="feature-toggles">
@@ -207,7 +207,7 @@
                     :class="{ active: currentChat.webSearch }"
                     @click="toggleWebSearch"
                   >
-                    <el-icon><Connection /></el-icon>
+                    <SvgIcon icon="network" size="24" hover click />
                   </div>
                 </el-tooltip>
               </div>
@@ -414,6 +414,7 @@ import 'github-markdown-css/github-markdown-light.css'
 import 'github-markdown-css/github-markdown-dark.css'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
+import SvgIcon from "@/components/common/SvgIcon.vue";
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
