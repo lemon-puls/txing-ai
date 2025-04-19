@@ -58,7 +58,7 @@
         <div class="footer-actions">
           <el-tooltip content="切换主题" placement="top">
             <div class="theme-toggle" @click="toggleTheme">
-              <el-icon><Setting /></el-icon>
+              <SvgIcon icon="theme" size="20" hover click/>
             </div>
           </el-tooltip>
           <el-tooltip content="切换背景" placement="top">

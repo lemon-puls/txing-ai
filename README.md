@@ -261,6 +261,23 @@ go run cmd/main.go
     └── public      # 公共资源
 ```
 
+## 开发说明
+### SVG 图标使用
+项目封装了 SvgIcon 组件，可以直接使用，主要支持配置项：
+- `icon`：图标名称，必填
+- `size`：图标大小，默认 16px
+- `color`：图标颜色
+- `click`：是否开启点击动画，默认 false
+- `class`：自定义类名
+- `spin`：是否开启旋转动画，默认 false
+- `rotate`：旋转角度（顺时针），默认 0
+- `hover`: 是否开启鼠标悬停动画，默认 false
+
+使用示例：
+```vue
+<SvgIcon icon="theme" size="20" color="#1890ff" click/>
+```
+
 ## 🤝 贡献指南
 
 1. Fork 本仓库
