@@ -230,6 +230,11 @@
                     <el-icon><Upload /></el-icon>
                   </el-button>
                 </el-tooltip>
+                <el-tooltip content="停止生成" placement="top" v-if="isTyping">
+                  <el-button circle @click="stopGeneration">
+                    <el-icon><CircleClose /></el-icon>
+                  </el-button>
+                </el-tooltip>
                 <el-tooltip content="发送消息" placement="top">
                   <el-button type="primary" circle @click="sendMessage" class="send-button">
                     <el-icon><Position /></el-icon>
@@ -368,7 +373,7 @@
 </template>
 
 <script setup name="ChatView">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import {
@@ -385,7 +390,8 @@ import {
   Check,
   Picture,
   HomeFilled,
-  Shop
+  Shop,
+  CircleClose
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked';
@@ -415,6 +421,8 @@ import 'github-markdown-css/github-markdown-dark.css'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 import SvgIcon from "@/components/common/SvgIcon.vue";
+import wsManager from '@/utils/websocket/manager'
+import { createChatMessage, createStopMessage } from '@/utils/websocket/types'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -724,7 +732,7 @@ const showBgPatternDialog = ref(false)
 // AI 助手市场
 const showPresetMarket = ref(false)
 
-// 添加响应式变量
+// 移除未使用的变量
 const streamingMessage = ref(null)
 const thoughtTime = ref(0)
 const showThemeDrawer = ref(false)
@@ -766,7 +774,7 @@ const simulateStreamResponse = async (content, thought) => {
 
 // 发送消息
 const sendMessage = async () => {
-  if (!messageInput.value.trim()) return
+  if (!messageInput.value.trim() || !currentChat.value) return
 
   // 添加用户消息
   currentChat.value.messages.push({
@@ -776,113 +784,24 @@ const sendMessage = async () => {
   })
 
   currentChat.value.lastMessage = messageInput.value
-  const userInput = messageInput.value
+  const message = messageInput.value
   messageInput.value = ''
   await scrollToBottom()
 
-  // 模拟 AI 响应
-  if (userInput.toLowerCase().includes('java') && userInput.toLowerCase().includes('冒泡排序')) {
-    const thought = '收到用户请求实现Java版本的冒泡排序算法。我需要：\n1. 首先解释冒泡排序的基本原理\n2. 提供基础版本的实现代码\n3. 添加优化版本作为改进\n4. 补充算法的复杂度和稳定性分析\n5. 确保代码注释清晰，便于理解\n让我按照这个思路来组织回答...'
-
-    const content = `# Java实现冒泡排序
-
-冒泡排序是一种简单的排序算法，它重复地遍历要排序的列表，比较相邻的元素并交换它们的位置，直到列表排序完成。
-
-以下是Java实现冒泡排序的代码：
-
-\`\`\`java
-public class BubbleSort {
-    public static void bubbleSort(int[] arr) {
-        int n = arr.length;
-        // 外层循环控制排序轮数
-        for (int i = 0; i < n - 1; i++) {
-            // 内层循环控制每轮比较次数
-            for (int j = 0; j < n - i - 1; j++) {
-                // 如果前一个元素比后一个元素大，则交换它们
-                if (arr[j] > arr[j + 1]) {
-                    // 交换arr[j]和arr[j+1]
-                    int temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
-                }
-            }
-        }
-    }
-
-    // 优化版的冒泡排序（如果某一轮没有发生交换，说明已经有序）
-    public static void optimizedBubbleSort(int[] arr) {
-        int n = arr.length;
-        boolean swapped;
-        for (int i = 0; i < n - 1; i++) {
-            swapped = false;
-            for (int j = 0; j < n - i - 1; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    // 交换arr[j]和arr[j+1]
-                    int temp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = temp;
-                    swapped = true;
-                }
-            }
-            // 如果没有发生交换，提前结束排序
-            if (!swapped) {
-                break;
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-        int[] arr = {64, 34, 25, 12, 22, 11, 90};
-
-        System.out.println("排序前的数组:");
-        printArray(arr);
-
-        bubbleSort(arr);
-        // 或者使用优化版: optimizedBubbleSort(arr);
-
-        System.out.println("排序后的数组:");
-        printArray(arr);
-    }
-
-    // 辅助方法：打印数组
-    public static void printArray(int[] arr) {
-        for (int value : arr) {
-            System.out.print(value + " ");
-        }
-        System.out.println();
-    }
+  // 通过 WebSocket 发送消息
+  wsManager.sendMessage(
+    currentChat.value.id.toString(),
+    createChatMessage(message)
+  )
 }
-\`\`\`
 
-## 代码说明
-
-1. **基本冒泡排序**：
-   - 外层循环控制排序轮数（n-1轮）
-   - 内层循环比较相邻元素，如果顺序不对就交换
-   - 每轮结束后，最大的元素会"冒泡"到数组末尾
-
-2. **优化版冒泡排序**：
-   - 添加了\`swapped\`标志位
-   - 如果某一轮没有发生交换，说明数组已经有序，可以提前结束排序
-   - 对于基本有序的数组，能显著提高效率
-
-3. **时间复杂度**：
-   - 最坏情况：O(n²)（完全逆序）
-   - 最好情况：O(n)（已经有序，使用优化版）
-   - 平均情况：O(n²)
-
-4. **空间复杂度**：O(1)，是原地排序算法
-
-5. **稳定性**：冒泡排序是稳定的排序算法，因为相等的元素不会交换位置
-
-你可以根据需要选择基本版或优化版的实现。对于小型数组或基本有序的数组，冒泡排序是一个不错的选择。`
-
-    await simulateStreamResponse(content, thought)
-  } else {
-    // 其他普通回复的模拟流式响应...
-    const thought = '分析用户的问题，准备合适的回复...'
-    const content = '这是一个模拟的回复，包含代码示例：\n```javascript\nconsole.log("Hello World!");\n```'
-    await simulateStreamResponse(content, thought)
+// 停止生成
+const stopGeneration = () => {
+  if (currentChat.value) {
+    wsManager.sendMessage(
+      currentChat.value.id.toString(),
+      createStopMessage()
+    )
   }
 }
 
@@ -903,7 +822,7 @@ const goToHome = () => {
   router.push('/')
 }
 
-const createNewChat = () => {
+const createNewChat = async () => {
   const newChat = {
     id: Date.now(),
     title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
@@ -928,8 +847,50 @@ const createNewChat = () => {
       type: route.query.assistantType
     } : null
   }
-  chatList.value.unshift(newChat)
-  currentChat.value = newChat
+
+  try {
+    // 创建 WebSocket 连接
+    await wsManager.createConnection(newChat.id.toString(), '1') // 这里的 '1' 应该替换为实际的用户 ID
+
+    // 添加消息处理器
+    wsManager.on(newChat.id.toString(), 'message', (data) => {
+      handleWebSocketMessage(newChat.id, data)
+    })
+
+    wsManager.on(newChat.id.toString(), 'error', (error) => {
+      console.error('WebSocket error:', error)
+      ElMessage.error('连接发生错误')
+    })
+
+    wsManager.on(newChat.id.toString(), 'close', () => {
+      console.log('WebSocket connection closed')
+      ElMessage.warning('连接已关闭')
+    })
+
+    chatList.value.unshift(newChat)
+    currentChat.value = newChat
+  } catch (error) {
+    console.error('Failed to create chat:', error)
+    ElMessage.error('创建会话失败')
+  }
+}
+
+// 处理 WebSocket 消息
+const handleWebSocketMessage = (chatId, data) => {
+  if (data.type === 'chat') {
+    // 处理聊天消息
+    const chat = chatList.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.messages.push({
+        id: Date.now(),
+        role: 'assistant',
+        content: data.data.content,
+        thought_process: data.data.thought_process,
+        showThought: true
+      })
+      chat.lastMessage = data.data.content
+    }
+  }
 }
 
 const switchChat = (chat) => {
@@ -1076,6 +1037,13 @@ const handlePresetSelect = (preset) => {
   chatList.value.unshift(newChat)
   currentChat.value = newChat
 }
+
+// 在组件销毁时关闭所有连接
+onUnmounted(() => {
+  if (currentChat.value) {
+    wsManager.closeConnection(currentChat.value.id.toString())
+  }
+})
 </script>
 
 <style scoped lang="scss">
