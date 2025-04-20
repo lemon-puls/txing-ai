@@ -1,13 +1,14 @@
 package chat
 
 import (
-	"github.com/gin-gonic/gin"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	"txing-ai/internal/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 发起聊天

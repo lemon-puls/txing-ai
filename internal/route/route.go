@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
 	"txing-ai/internal/controller/user"
 	"txing-ai/internal/iface"
@@ -25,6 +26,8 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	user.Register(group.Group("/user"))
 
 	chat.Register(group.Group("/chat"))
+
+	channel.Register(group.Group("/channel"))
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
