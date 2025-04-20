@@ -173,6 +173,12 @@ API Integration
   // URL 中的版本控制
 - Swagger/OpenAPI documentation
   // Swagger/OpenAPI 文档
+- Use swaggo for API documentation
+  // 接口均要加 swag 注释，并遵循相关规范
+- 列表查询需要支持分页，使用 internal/utils/page 包下的工具函数实现分页功能
+- 接口请求 dto 要存放在 internal/dto 包下，响应 vo 要存放在 internal/vo 包下
+- 接口使用 internal/utils/httpresp.go 的工具函数返回响应
+- 增删该查接口路径：增加：/api/users，修改： /api/users/{id}，删除：/api/users/{id}，分页查询：/api/users/list 详情查询：/api/users/{id}
 
 Security
 // 安全性
