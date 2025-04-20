@@ -25,7 +25,7 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	group := router.Group("/api")
 
 	// 用户相关路由
-	user.Register(group.Group("/user"))
+	user.Register(group)
 
 	chat.Register(group.Group("/chat"))
 
