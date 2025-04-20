@@ -18,7 +18,7 @@ import (
 // @Produce json
 // @Param data body dto.CreateChannelReq true "渠道信息"
 // @Success 200 {object} utils.Response{data=vo.ChannelVO}
-// @Router /api/channel [post]
+// @Router /api/admin/channel [post]
 func Create(ctx *gin.Context) {
 	var req dto.CreateChannelReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -57,7 +57,7 @@ func Create(ctx *gin.Context) {
 // @Param id path int true "渠道ID"
 // @Param data body dto.UpdateChannelReq true "渠道信息"
 // @Success 200 {object} utils.Response{data=vo.ChannelVO}
-// @Router /api/channel/{id} [put]
+// @Router /api/admin/channel/{id} [put]
 func Update(ctx *gin.Context) {
 	var req dto.UpdateChannelReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -99,7 +99,7 @@ func Update(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "渠道ID"
 // @Success 200 {object} utils.Response
-// @Router /api/channel/{id} [delete]
+// @Router /api/admin/channel/{id} [delete]
 func Delete(ctx *gin.Context) {
 	var channel domain.Channel
 
@@ -126,7 +126,7 @@ func Delete(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "渠道ID"
 // @Success 200 {object} utils.Response{data=vo.ChannelVO}
-// @Router /api/channel/{id} [get]
+// @Router /api/admin/channel/{id} [get]
 func Get(ctx *gin.Context) {
 	var channel domain.Channel
 
@@ -152,7 +152,7 @@ func Get(ctx *gin.Context) {
 // @Param type query string false "渠道类型"
 // @Param status query bool false "状态"
 // @Success 200 {object} utils.Response
-// @Router /api/channel/list [get]
+// @Router /api/admin/channel/list [get]
 func List(ctx *gin.Context) {
 	var req dto.ListChannelReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {

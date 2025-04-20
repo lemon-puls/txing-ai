@@ -27,7 +27,7 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	chat.Register(group.Group("/chat"))
 
-	channel.Register(group.Group("/channel"))
+	channel.Register(group.Group(""))
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
