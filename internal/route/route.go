@@ -5,6 +5,7 @@ import (
 	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
 	"txing-ai/internal/controller/model"
+	"txing-ai/internal/controller/preset"
 	"txing-ai/internal/controller/user"
 	"txing-ai/internal/iface"
 	"txing-ai/static"
@@ -28,9 +29,11 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	chat.Register(group.Group("/chat"))
 
-	channel.Register(group.Group(""))
+	channel.Register(group)
 
 	model.Register(group)
+
+	preset.Register(group)
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
