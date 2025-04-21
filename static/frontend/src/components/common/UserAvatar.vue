@@ -1,5 +1,11 @@
 <template>
-  <el-dropdown trigger="click">
+  <!-- 未登录状态显示登录按钮 -->
+  <el-button v-if="!isLoggedIn" type="primary" link @click="showLoginDialog">
+    登录
+  </el-button>
+
+  <!-- 已登录状态显示头像下拉菜单 -->
+  <el-dropdown v-else trigger="click">
     <div class="user-avatar">
       <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
       <el-icon class="el-icon--right"><CaretBottom /></el-icon>
@@ -25,6 +31,9 @@
       </el-dropdown-menu>
     </template>
   </el-dropdown>
+
+  <!-- 登录弹窗 -->
+  <AuthDialog v-model="loginDialogVisible" />
 </template>
 
 <script setup>
@@ -37,10 +46,20 @@ import {
   CaretBottom,
   Monitor
 } from '@element-plus/icons-vue'
+import AuthDialog from '../AuthDialog.vue'
 
 const router = useRouter()
-// 这里可以从 store 或 API 获取用户角色信息
-const isAdmin = ref(true) // 临时写死为 true，实际应该从用户信息中获取
+// 登录状态
+const isLoggedIn = ref(false) // 实际应该从用户状态管理中获取
+const isAdmin = ref(false) // 实际应该从用户信息中获取
+
+// 登录弹窗显示状态
+const loginDialogVisible = ref(false)
+
+// 显示登录弹窗
+const showLoginDialog = () => {
+  loginDialogVisible.value = true
+}
 
 const handleCommand = (command) => {
   switch (command) {
@@ -55,6 +74,7 @@ const handleCommand = (command) => {
       break
     case 'logout':
       // 处理登出逻辑
+      isLoggedIn.value = false
       break
   }
 }
