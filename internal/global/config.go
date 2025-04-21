@@ -41,8 +41,9 @@ type CosConfig struct {
 }
 
 type AuthConfig struct {
-	JwtExpire time.Duration `mapstructure:"jwt_expire"`
-	JwtSecret string        `mapstructure:"jwt_secret"`
+	JwtSecret          string        `mapstructure:"jwt_secret"`
+	AccessTokenExpire  time.Duration `mapstructure:"access_token_expire"`
+	RefreshTokenExpire time.Duration `mapstructure:"refresh_token_expire"`
 }
 
 type SnowflakeConfig struct {
