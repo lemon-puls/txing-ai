@@ -10,9 +10,9 @@ type PresetVO struct {
 	ID          int64     `json:"id"`                                              // 主键ID
 	UserID      *int64    `json:"userId" example:"1"`                              // 用户ID
 	Avatar      string    `json:"avatar" example:"https://example.com/avatar.png"` // 预设头像
-	Name        string    `json:"name" example:"GPT助手"`                          // 预设名称
-	Description string    `json:"description" example:"一个智能的GPT助手"`         // 预设描述
-	Context     string    `json:"context" example:"你是一个智能助手..."`           // 预设上下文
+	Name        string    `json:"name" example:"GPT助手"`                            // 预设名称
+	Description string    `json:"description" example:"一个智能的GPT助手"`                // 预设描述
+	Context     string    `json:"context" example:"你是一个智能助手..."`                   // 预设上下文
 	Official    bool      `json:"official" example:"false"`                        // 是否官方预设
 	CreatedAt   time.Time `json:"createdAt"`                                       // 创建时间
 	UpdatedAt   time.Time `json:"updatedAt"`                                       // 更新时间

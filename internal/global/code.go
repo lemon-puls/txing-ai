@@ -8,6 +8,7 @@ const (
 	CodeInvalidParams
 	CodeNotFound
 	CodeNotLogin
+	CodeNotPermission
 )
 
 var MsgMap = map[Code]string{
@@ -16,6 +17,7 @@ var MsgMap = map[Code]string{
 	CodeInvalidParams:       "invalid params",
 	CodeNotFound:            "not found",
 	CodeNotLogin:            "not login",
+	CodeNotPermission:       "not permission",
 }
 
 // code to msg

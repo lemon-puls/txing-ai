@@ -1,15 +1,17 @@
-package jwt
+package utils
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v4"
 	"time"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type CustomClaims struct {
 	UserID int64 `json:"userId"`
+	Role   int8  `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -34,7 +36,7 @@ func InitJwtSecret(authConfig *global.AuthConfig) {
 	}
 }
 
-func generateToken(userId int64, expire time.Duration) (string, error) {
+func generateToken(userId int64, role int8, expire time.Duration) (string, error) {
 	if secret == "" {
 		log.Error("jwt secret is empty")
 		return "", errors.New("jwt secret is empty")
@@ -43,6 +45,7 @@ func generateToken(userId int64, expire time.Duration) (string, error) {
 	// Create the claims
 	claims := CustomClaims{
 		userId,
+		role,
 		jwt.RegisteredClaims{
 			// A usual scenario is to set the expiration time relative to the current time
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)), // 过期时间
@@ -53,16 +56,28 @@ func generateToken(userId int64, expire time.Duration) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(mySigningKey)
-	//fmt.Printf("%v %v", tokenString, err)
 	return tokenString, err
 }
 
-func AccessToken(userId int64) (string, error) {
-	return generateToken(userId, accessTokenExpire)
+func AccessToken(userId int64, role int8) (string, error) {
+	return generateToken(userId, role, accessTokenExpire)
 }
 
-func RefreshToken(userId int64) (string, error) {
-	return generateToken(userId, refreshTokenExpire)
+func RefreshToken(userId int64, role int8) (string, error) {
+	return generateToken(userId, role, refreshTokenExpire)
+}
+
+// GenerateTokenPair 生成 access token 和 refresh token
+func GenerateTokenPair(userId int64, role int8) (accessToken string, refreshToken string, err error) {
+	accessToken, err = AccessToken(userId, role)
+	if err != nil {
+		return "", "", err
+	}
+	refreshToken, err = RefreshToken(userId, role)
+	if err != nil {
+		return "", "", err
+	}
+	return accessToken, refreshToken, nil
 }
 
 func VerifyToken(tokenString string) (*CustomClaims, error) {

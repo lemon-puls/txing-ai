@@ -10,16 +10,16 @@ func GetDBFromContext(c *gin.Context) *gorm.DB {
 	return c.MustGet("db").(*gorm.DB)
 }
 
+func GetUIDFromContext(c *gin.Context) int64 {
+	return c.MustGet("userId").(int64)
+}
+
+func GetRoleFromContext(c *gin.Context) int8 {
+	return c.MustGet("role").(int8)
+}
+
 func GetRDBFromContext(c *gin.Context) *redis.Client {
 	return c.MustGet("redis").(*redis.Client)
-}
-
-func GetUserFromContext(c *gin.Context) string {
-	return c.MustGet("user").(string)
-}
-
-func GetAdminFromContext(c *gin.Context) bool {
-	return c.MustGet("admin").(bool)
 }
 
 func GetAgentFromContext(c *gin.Context) string {

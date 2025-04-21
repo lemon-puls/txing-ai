@@ -23,7 +23,11 @@ type UserVO struct {
 // LoginVO 登录响应视图对象
 type LoginVO struct {
 	UserVO
+	// access token
 	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT token
+	// refresh token
+	RefreshToken string `json:"refreshToken" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."` // JWT refresh token
+
 }
 
 // ToUserVO 将 User 转换为 UserVO
@@ -44,10 +48,11 @@ func ToUserVO(user domain.User) UserVO {
 }
 
 // ToLoginVO 将 User 和 token 转换为 LoginVO
-func ToLoginVO(user domain.User, token string) LoginVO {
+func ToLoginVO(user domain.User, token string, refreshToken string) LoginVO {
 	return LoginVO{
-		UserVO: ToUserVO(user),
-		Token:  token,
+		UserVO:       ToUserVO(user),
+		Token:        token,
+		RefreshToken: refreshToken,
 	}
 }
 

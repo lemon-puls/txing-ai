@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/controller/captcha"
 	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
 	"txing-ai/internal/controller/model"
@@ -34,6 +35,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	model.Register(group)
 
 	preset.Register(group)
+
+	// 验证码相关路由
+	captcha.Register(group.Group("/captcha"))
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

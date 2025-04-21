@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
+	"txing-ai/internal/enum"
 	"txing-ai/internal/utils"
+	"txing-ai/internal/utils/captcha"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
 
@@ -27,6 +29,12 @@ func userRegister(ctx *gin.Context) {
 		return
 	}
 
+	// 验证验证码
+	if !captcha.Verify(req.CaptchaId, req.Captcha) {
+		utils.ErrorWithMsg(ctx, "验证码错误", nil)
+		return
+	}
+
 	db := utils.GetDBFromContext(ctx)
 
 	// 检查用户名是否已存在
@@ -40,16 +48,22 @@ func userRegister(ctx *gin.Context) {
 		return
 	}
 
+	// 检查邮箱是否已存在
+	if err := db.Model(&domain.User{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
+		utils.ErrorWithMsg(ctx, "系统错误", err)
+		return
+	}
+	if count > 0 {
+		utils.ErrorWithMsg(ctx, "邮箱已存在", nil)
+		return
+	}
+
 	// 创建用户
 	user := &domain.User{
 		Username: req.Username,
-		//Password: utils.EncryptPassword(req.Password), TODO 实现加密密码
-		Password: req.Password,
+		Password: utils.EncryptPasswd(req.Password),
 		Email:    req.Email,
 		Phone:    req.Phone,
-		Gender:   req.Gender,
-		Age:      req.Age,
-		Avatar:   req.Avatar,
 		Status:   0, // 正常状态
 		Role:     0, // 普通用户
 	}
@@ -78,6 +92,12 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
+	// 验证验证码
+	if !captcha.Verify(req.CaptchaId, req.Captcha) {
+		utils.ErrorWithMsg(ctx, "验证码错误", nil)
+		return
+	}
+
 	db := utils.GetDBFromContext(ctx)
 
 	var user domain.User
@@ -86,26 +106,26 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	// TODO 实现验证密码
-	//if !utils.ValidatePassword(req.Password, user.Password) {
-	//	utils.ErrorWithMsg(ctx, "密码错误", nil)
-	//	return
-	//}
+	// 验证密码
+	if !utils.VerifyPasswd(req.Password, user.Password) {
+		utils.ErrorWithMsg(ctx, "密码错误", nil)
+		return
+	}
 
 	// 检查用户状态
-	if user.Status == 1 {
+	if user.Status == enum.UserStatusForbidden {
 		utils.ErrorWithMsg(ctx, "账号已被禁用", nil)
 		return
 	}
 
-	// TODO 实现生成token逻辑
-	//token, err := utils.GenerateToken(user.Id)
-	//if err != nil {
-	//	utils.ErrorWithMsg(ctx, "登录失败", err)
-	//	return
-	//}
+	// 生成 token
+	accessToken, refreshToken, err := utils.GenerateTokenPair(user.Id, user.Role)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "生成 token 失败", err)
+		return
+	}
 
-	utils.OkWithData(ctx, vo.ToLoginVO(user, "token"))
+	utils.OkWithData(ctx, vo.ToLoginVO(user, accessToken, refreshToken))
 }
 
 // UpdateProfile 更新个人信息
@@ -125,11 +145,11 @@ func UpdateProfile(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
-	// TODO 获取用户信息
-	//userId := utils.GetUserIdFromContext(ctx)
+	// 获取当前用户信息
+	userId := utils.GetUIDFromContext(ctx)
 
 	var user domain.User
-	if err := db.First(&user, "userId").Error; err != nil {
+	if err := db.First(&user, userId).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "用户不存在", err)
 		return
 	}
@@ -165,27 +185,27 @@ func UpdatePassword(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
-	// TODO 获取用户信息
-	//userId := utils.GetUserIdFromContext(ctx)
+	// 获取当前用户信息
+	userId := utils.GetUIDFromContext(ctx)
 
 	var user domain.User
-	if err := db.First(&user, "userId").Error; err != nil {
+	if err := db.First(&user, userId).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "用户不存在", err)
 		return
 	}
 
-	// TODO 验证旧密码
-	//if !utils.ValidatePassword(req.OldPassword, user.Password) {
-	//	utils.ErrorWithMsg(ctx, "原密码错误", nil)
-	//	return
-	//}
+	// 验证旧密码
+	if !utils.VerifyPasswd(req.OldPassword, user.Password) {
+		utils.ErrorWithMsg(ctx, "原密码错误", nil)
+		return
+	}
 
-	// TODO 更新密码
-	//user.Password = utils.EncryptPassword(req.NewPassword)
-	//if err := db.Save(&user).Error; err != nil {
-	//	utils.ErrorWithMsg(ctx, "修改密码失败", err)
-	//	return
-	//}
+	// 更新密码
+	user.Password = utils.EncryptPasswd(req.NewPassword)
+	if err := db.Save(&user).Error; err != nil {
+		utils.ErrorWithMsg(ctx, "修改密码失败", err)
+		return
+	}
 
 	utils.OkWithMsg(ctx, "修改密码成功")
 }

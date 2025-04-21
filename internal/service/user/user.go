@@ -1,4 +1,4 @@
-package user
+package userservice
 
 import (
 	"gorm.io/gorm"
@@ -7,14 +7,14 @@ import (
 	"txing-ai/internal/utils/page"
 )
 
-func ListUser(queryDto dto.UserListRequest, db *gorm.DB) *page.PageVo[domain.User] {
+func ListUser(queryDto dto.ListUserReq, db *gorm.DB) *page.PageVo[domain.User] {
 
 	var users []domain.User
 
 	query := db
 
-	if queryDto.UserName != "" {
-		query = query.Where("user_name like ?", "%"+queryDto.UserName+"%")
+	if queryDto.Username != "" {
+		query = query.Where("user_name like ?", "%"+queryDto.Username+"%")
 	}
 
 	if queryDto.Status != nil {
