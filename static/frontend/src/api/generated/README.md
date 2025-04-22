@@ -104,15 +104,8 @@ var TxingAiApi = require('txing_ai_api');
 
 
 var api = new TxingAiApi.DefaultApi()
-var page = 56; // {Number} 页码
-var limit = 56; // {Number} 每页数量
-var opts = {
-  'orderBy': "orderBy_example", // {String} 排序字段
-  'order': "order_example", // {String} 排序方式(asc/desc)
-  'userId': "userId_example", // {String} 用户ID
-  'status': 56 // {Number} 状态(0:禁用 1:启用)
-};
-api.apiUserListGet(page, limit, opts).then(function(data) {
+var id = 56; // {Number} 渠道ID
+api.apiAdminChannelIdDelete(id).then(function(data) {
   console.log('API called successfully. Returned data: ' + data);
 }, function(error) {
   console.error(error);
@@ -127,12 +120,56 @@ All URIs are relative to *http://localhost:8080*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*TxingAiApi.DefaultApi* | [**apiUserListGet**](docs/DefaultApi.md#apiUserListGet) | **GET** /api/user/list | 获取用户列表
+*TxingAiApi.DefaultApi* | [**apiAdminChannelIdDelete**](docs/DefaultApi.md#apiAdminChannelIdDelete) | **DELETE** /api/admin/channel/{id} | 删除渠道
+*TxingAiApi.DefaultApi* | [**apiAdminChannelIdGet**](docs/DefaultApi.md#apiAdminChannelIdGet) | **GET** /api/admin/channel/{id} | 获取渠道详情
+*TxingAiApi.DefaultApi* | [**apiAdminChannelIdPut**](docs/DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
+*TxingAiApi.DefaultApi* | [**apiAdminChannelListGet**](docs/DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
+*TxingAiApi.DefaultApi* | [**apiAdminChannelPost**](docs/DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
+*TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
+*TxingAiApi.DefaultApi* | [**apiAdminModelIdGet**](docs/DefaultApi.md#apiAdminModelIdGet) | **GET** /api/admin/model/{id} | 获取模型详情
+*TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
+*TxingAiApi.DefaultApi* | [**apiAdminModelListGet**](docs/DefaultApi.md#apiAdminModelListGet) | **GET** /api/admin/model/list | 获取模型列表
+*TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
+*TxingAiApi.DefaultApi* | [**apiAdminPresetIdDelete**](docs/DefaultApi.md#apiAdminPresetIdDelete) | **DELETE** /api/admin/preset/{id} | 删除预设
+*TxingAiApi.DefaultApi* | [**apiAdminPresetIdGet**](docs/DefaultApi.md#apiAdminPresetIdGet) | **GET** /api/admin/preset/{id} | 获取预设详情
+*TxingAiApi.DefaultApi* | [**apiAdminPresetIdPut**](docs/DefaultApi.md#apiAdminPresetIdPut) | **PUT** /api/admin/preset/{id} | 更新预设
+*TxingAiApi.DefaultApi* | [**apiAdminPresetListGet**](docs/DefaultApi.md#apiAdminPresetListGet) | **GET** /api/admin/preset/list | 获取预设列表
+*TxingAiApi.DefaultApi* | [**apiAdminPresetPost**](docs/DefaultApi.md#apiAdminPresetPost) | **POST** /api/admin/preset | 创建预设
+*TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
+*TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
+*TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
+*TxingAiApi.DefaultApi* | [**apiUserLoginPost**](docs/DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
+*TxingAiApi.DefaultApi* | [**apiUserLogoutPost**](docs/DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
+*TxingAiApi.DefaultApi* | [**apiUserPasswordPut**](docs/DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
+*TxingAiApi.DefaultApi* | [**apiUserProfilePut**](docs/DefaultApi.md#apiUserProfilePut) | **PUT** /api/user/profile | 更新个人信息
+*TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
+*TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 
 
 ## Documentation for Models
 
+ - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
+ - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
+ - [TxingAiApi.ApiAdminPresetPost200Response](docs/ApiAdminPresetPost200Response.md)
+ - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
+ - [TxingAiApi.ApiUserProfilePut200Response](docs/ApiUserProfilePut200Response.md)
+ - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
+ - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
+ - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
+ - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
+ - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
+ - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)
+ - [TxingAiApi.DtoUpdateChannelReq](docs/DtoUpdateChannelReq.md)
+ - [TxingAiApi.DtoUpdateModelReq](docs/DtoUpdateModelReq.md)
+ - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
+ - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
+ - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
+ - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
+ - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
+ - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
+ - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
+ - [TxingAiApi.VoUserVO](docs/VoUserVO.md)
 
 
 ## Documentation for Authorization

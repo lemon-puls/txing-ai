@@ -13,6 +13,22 @@
 
 
 import ApiClient from "../ApiClient";
+import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
+import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
+import ApiAdminPresetPost200Response from '../model/ApiAdminPresetPost200Response';
+import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
+import ApiUserProfilePut200Response from '../model/ApiUserProfilePut200Response';
+import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
+import DtoCreateModelReq from '../model/DtoCreateModelReq';
+import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
+import DtoLoginReq from '../model/DtoLoginReq';
+import DtoRegisterReq from '../model/DtoRegisterReq';
+import DtoResetPasswordReq from '../model/DtoResetPasswordReq';
+import DtoUpdateChannelReq from '../model/DtoUpdateChannelReq';
+import DtoUpdateModelReq from '../model/DtoUpdateModelReq';
+import DtoUpdatePasswordReq from '../model/DtoUpdatePasswordReq';
+import DtoUpdatePresetReq from '../model/DtoUpdatePresetReq';
+import DtoUpdateProfileReq from '../model/DtoUpdateProfileReq';
 import UtilsResponse from '../model/UtilsResponse';
 
 /**
@@ -36,27 +52,177 @@ export default class DefaultApi {
 
 
     /**
-     * 获取用户列表
-     * 获取用户列表，支持分页和条件筛选
+     * 删除渠道
+     * 删除指定渠道
+     * @param {Number} id 渠道ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminChannelIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminChannelIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/channel/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除渠道
+     * 删除指定渠道
+     * @param {Number} id 渠道ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminChannelIdDelete(id) {
+      return this.apiAdminChannelIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取渠道详情
+     * 获取指定渠道的详细信息
+     * @param {Number} id 渠道ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminChannelPost200Response} and HTTP response
+     */
+    apiAdminChannelIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminChannelIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminChannelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/channel/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取渠道详情
+     * 获取指定渠道的详细信息
+     * @param {Number} id 渠道ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminChannelPost200Response}
+     */
+    apiAdminChannelIdGet(id) {
+      return this.apiAdminChannelIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新渠道
+     * 更新渠道信息
+     * @param {Number} id 渠道ID
+     * @param {module:model/DtoUpdateChannelReq} data 渠道信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminChannelPost200Response} and HTTP response
+     */
+    apiAdminChannelIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminChannelIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminChannelIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminChannelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/channel/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新渠道
+     * 更新渠道信息
+     * @param {Number} id 渠道ID
+     * @param {module:model/DtoUpdateChannelReq} data 渠道信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminChannelPost200Response}
+     */
+    apiAdminChannelIdPut(id, data) {
+      return this.apiAdminChannelIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取渠道列表
+     * 获取渠道列表，支持分页
      * @param {Number} page 页码
      * @param {Number} limit 每页数量
      * @param {Object} opts Optional parameters
      * @param {String} [orderBy] 排序字段
      * @param {String} [order] 排序方式(asc/desc)
-     * @param {String} [userId] 用户ID
-     * @param {Number} [status] 状态(0:禁用 1:启用)
+     * @param {String} [type] 渠道类型
+     * @param {Boolean} [status] 状态
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
-    apiUserListGetWithHttpInfo(page, limit, opts) {
+    apiAdminChannelListGetWithHttpInfo(page, limit, opts) {
       opts = opts || {};
       let postBody = null;
       // verify the required parameter 'page' is set
       if (page === undefined || page === null) {
-        throw new Error("Missing the required parameter 'page' when calling apiUserListGet");
+        throw new Error("Missing the required parameter 'page' when calling apiAdminChannelListGet");
       }
       // verify the required parameter 'limit' is set
       if (limit === undefined || limit === null) {
-        throw new Error("Missing the required parameter 'limit' when calling apiUserListGet");
+        throw new Error("Missing the required parameter 'limit' when calling apiAdminChannelListGet");
       }
 
       let pathParams = {
@@ -66,7 +232,7 @@ export default class DefaultApi {
         'limit': limit,
         'order_by': opts['orderBy'],
         'order': opts['order'],
-        'userId': opts['userId'],
+        'type': opts['type'],
         'status': opts['status']
       };
       let headerParams = {
@@ -79,7 +245,654 @@ export default class DefaultApi {
       let accepts = ['application/json'];
       let returnType = UtilsResponse;
       return this.apiClient.callApi(
-        '/api/user/list', 'GET',
+        '/api/admin/channel/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取渠道列表
+     * 获取渠道列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.orderBy 排序字段
+     * @param {String} opts.order 排序方式(asc/desc)
+     * @param {String} opts.type 渠道类型
+     * @param {Boolean} opts.status 状态
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminChannelListGet(page, limit, opts) {
+      return this.apiAdminChannelListGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建渠道
+     * 创建新的渠道
+     * @param {module:model/DtoCreateChannelReq} data 渠道信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminChannelPost200Response} and HTTP response
+     */
+    apiAdminChannelPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminChannelPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminChannelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/channel', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建渠道
+     * 创建新的渠道
+     * @param {module:model/DtoCreateChannelReq} data 渠道信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminChannelPost200Response}
+     */
+    apiAdminChannelPost(data) {
+      return this.apiAdminChannelPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除模型
+     * 删除指定模型
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminModelIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminModelIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/model/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除模型
+     * 删除指定模型
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminModelIdDelete(id) {
+      return this.apiAdminModelIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取模型详情
+     * 获取指定模型的详细信息
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminModelPost200Response} and HTTP response
+     */
+    apiAdminModelIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminModelIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminModelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/model/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取模型详情
+     * 获取指定模型的详细信息
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminModelPost200Response}
+     */
+    apiAdminModelIdGet(id) {
+      return this.apiAdminModelIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新模型
+     * 更新模型信息
+     * @param {Number} id 模型ID
+     * @param {module:model/DtoUpdateModelReq} data 模型信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminModelPost200Response} and HTTP response
+     */
+    apiAdminModelIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminModelIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminModelIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminModelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/model/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新模型
+     * 更新模型信息
+     * @param {Number} id 模型ID
+     * @param {module:model/DtoUpdateModelReq} data 模型信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminModelPost200Response}
+     */
+    apiAdminModelIdPut(id, data) {
+      return this.apiAdminModelIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取模型列表
+     * 获取模型列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [orderBy] 排序字段
+     * @param {String} [order] 排序方式(asc/desc)
+     * @param {String} [tag] 标签
+     * @param {Boolean} [_default] 是否默认
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminModelListGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiAdminModelListGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiAdminModelListGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'order_by': opts['orderBy'],
+        'order': opts['order'],
+        'tag': opts['tag'],
+        'default': opts['_default']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/model/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取模型列表
+     * 获取模型列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.orderBy 排序字段
+     * @param {String} opts.order 排序方式(asc/desc)
+     * @param {String} opts.tag 标签
+     * @param {Boolean} opts._default 是否默认
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminModelListGet(page, limit, opts) {
+      return this.apiAdminModelListGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建模型
+     * 创建新的模型
+     * @param {module:model/DtoCreateModelReq} data 模型信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminModelPost200Response} and HTTP response
+     */
+    apiAdminModelPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminModelPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminModelPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/model', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建模型
+     * 创建新的模型
+     * @param {module:model/DtoCreateModelReq} data 模型信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminModelPost200Response}
+     */
+    apiAdminModelPost(data) {
+      return this.apiAdminModelPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除预设
+     * 删除指定预设
+     * @param {Number} id 预设ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminPresetIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminPresetIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/preset/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除预设
+     * 删除指定预设
+     * @param {Number} id 预设ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminPresetIdDelete(id) {
+      return this.apiAdminPresetIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取预设详情
+     * 获取指定预设的详细信息
+     * @param {Number} id 预设ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminPresetPost200Response} and HTTP response
+     */
+    apiAdminPresetIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminPresetIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminPresetPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/preset/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取预设详情
+     * 获取指定预设的详细信息
+     * @param {Number} id 预设ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminPresetPost200Response}
+     */
+    apiAdminPresetIdGet(id) {
+      return this.apiAdminPresetIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新预设
+     * 更新预设信息
+     * @param {Number} id 预设ID
+     * @param {module:model/DtoUpdatePresetReq} data 预设信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminPresetPost200Response} and HTTP response
+     */
+    apiAdminPresetIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminPresetIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminPresetIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminPresetPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/preset/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新预设
+     * 更新预设信息
+     * @param {Number} id 预设ID
+     * @param {module:model/DtoUpdatePresetReq} data 预设信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminPresetPost200Response}
+     */
+    apiAdminPresetIdPut(id, data) {
+      return this.apiAdminPresetIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取预设列表
+     * 获取预设列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [orderBy] 排序字段
+     * @param {String} [order] 排序方式(asc/desc)
+     * @param {Boolean} [official] 是否官方预设
+     * @param {Number} [userId] 用户ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminPresetListGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiAdminPresetListGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiAdminPresetListGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'order_by': opts['orderBy'],
+        'order': opts['order'],
+        'official': opts['official'],
+        'user_id': opts['userId']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/preset/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取预设列表
+     * 获取预设列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.orderBy 排序字段
+     * @param {String} opts.order 排序方式(asc/desc)
+     * @param {Boolean} opts.official 是否官方预设
+     * @param {Number} opts.userId 用户ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminPresetListGet(page, limit, opts) {
+      return this.apiAdminPresetListGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建预设
+     * 创建新的预设
+     * @param {module:model/DtoCreatePresetReq} data 预设信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminPresetPost200Response} and HTTP response
+     */
+    apiAdminPresetPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminPresetPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminPresetPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/preset', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建预设
+     * 创建新的预设
+     * @param {module:model/DtoCreatePresetReq} data 预设信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminPresetPost200Response}
+     */
+    apiAdminPresetPost(data) {
+      return this.apiAdminPresetPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取用户列表
+     * 获取用户列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [orderBy] 排序字段
+     * @param {String} [order] 排序方式(asc/desc)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminUserListGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiAdminUserListGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiAdminUserListGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'order_by': opts['orderBy'],
+        'order': opts['order']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/user/list', 'GET',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, null
       );
@@ -87,18 +900,381 @@ export default class DefaultApi {
 
     /**
      * 获取用户列表
-     * 获取用户列表，支持分页和条件筛选
+     * 获取用户列表，支持分页
      * @param {Number} page 页码
      * @param {Number} limit 每页数量
      * @param {Object} opts Optional parameters
      * @param {String} opts.orderBy 排序字段
      * @param {String} opts.order 排序方式(asc/desc)
-     * @param {String} opts.userId 用户ID
-     * @param {Number} opts.status 状态(0:禁用 1:启用)
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
-    apiUserListGet(page, limit, opts) {
-      return this.apiUserListGetWithHttpInfo(page, limit, opts)
+    apiAdminUserListGet(page, limit, opts) {
+      return this.apiAdminUserListGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 切换用户状态
+     * 启用或禁用指定用户
+     * @param {Number} id 用户ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminUserStatusIdPutWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminUserStatusIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/user/status/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 切换用户状态
+     * 启用或禁用指定用户
+     * @param {Number} id 用户ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminUserStatusIdPut(id) {
+      return this.apiAdminUserStatusIdPutWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 生成验证码
+     * 生成图片验证码
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiCaptchaGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/captcha', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 生成验证码
+     * 生成图片验证码
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiCaptchaGet() {
+      return this.apiCaptchaGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 用户登录
+     * 用户登录并返回token
+     * @param {module:model/DtoLoginReq} data 登录信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserLoginPost200Response} and HTTP response
+     */
+    apiUserLoginPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiUserLoginPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiUserLoginPost200Response;
+      return this.apiClient.callApi(
+        '/api/user/login', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 用户登录
+     * 用户登录并返回token
+     * @param {module:model/DtoLoginReq} data 登录信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserLoginPost200Response}
+     */
+    apiUserLoginPost(data) {
+      return this.apiUserLoginPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 退出登录
+     * 清除用户登录状态
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiUserLogoutPostWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/user/logout', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 退出登录
+     * 清除用户登录状态
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiUserLogoutPost() {
+      return this.apiUserLogoutPostWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 修改密码
+     * 修改当前登录用户的密码
+     * @param {module:model/DtoUpdatePasswordReq} data 密码信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiUserPasswordPutWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiUserPasswordPut");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/user/password', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 修改密码
+     * 修改当前登录用户的密码
+     * @param {module:model/DtoUpdatePasswordReq} data 密码信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiUserPasswordPut(data) {
+      return this.apiUserPasswordPutWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新个人信息
+     * 更新当前登录用户的个人信息
+     * @param {module:model/DtoUpdateProfileReq} data 个人信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserProfilePut200Response} and HTTP response
+     */
+    apiUserProfilePutWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiUserProfilePut");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiUserProfilePut200Response;
+      return this.apiClient.callApi(
+        '/api/user/profile', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新个人信息
+     * 更新当前登录用户的个人信息
+     * @param {module:model/DtoUpdateProfileReq} data 个人信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserProfilePut200Response}
+     */
+    apiUserProfilePut(data) {
+      return this.apiUserProfilePutWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 用户注册
+     * 新用户注册
+     * @param {module:model/DtoRegisterReq} data 注册信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserProfilePut200Response} and HTTP response
+     */
+    apiUserRegisterPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiUserRegisterPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiUserProfilePut200Response;
+      return this.apiClient.callApi(
+        '/api/user/register', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 用户注册
+     * 新用户注册
+     * @param {module:model/DtoRegisterReq} data 注册信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserProfilePut200Response}
+     */
+    apiUserRegisterPost(data) {
+      return this.apiUserRegisterPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 重置密码
+     * 通过邮箱重置密码
+     * @param {module:model/DtoResetPasswordReq} data 重置密码信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiUserResetPasswordPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiUserResetPasswordPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/user/reset-password', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 重置密码
+     * 通过邮箱重置密码
+     * @param {module:model/DtoResetPasswordReq} data 重置密码信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiUserResetPasswordPost(data) {
+      return this.apiUserResetPasswordPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });
