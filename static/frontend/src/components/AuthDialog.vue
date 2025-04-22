@@ -1,15 +1,16 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { 
+import {
   User,
   Lock,
   Message,
   Key
 } from '@element-plus/icons-vue'
+import {defaultApi} from "@/api/index.js";
 
 // 弹窗显示状态
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
@@ -25,8 +26,30 @@ const closeDialog = () => {
 
 // 当前激活标签页
 const activeTab = ref('login')
-// 验证码图片（模拟数据）
-const captchaImage = ref('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAA...')
+// 验证码相关数据
+const captchaImage = ref('')
+const captchaId = ref('')
+
+// 获取验证码
+const getCaptcha = async () => {
+  try {
+    const res = await defaultApi.apiCaptchaGet()
+    console.log('获取验证码成功:', res)
+    if (res.code === 0) {
+      captchaImage.value = res.data.image
+      captchaId.value = res.data.id
+    }
+  } catch (error) {
+    console.error('获取验证码失败:', error)
+  }
+}
+
+// 监听弹窗显示状态，显示时获取验证码
+watch(() => props.modelValue, (newVal) => {
+  if (newVal) {
+    getCaptcha()
+  }
+})
 
 // 表单数据
 const form = ref({
@@ -62,7 +85,7 @@ const handleSubmit = () => {
   <div class="auth-wrapper" v-show="modelValue">
     <!-- 玻璃拟态背景 -->
     <div class="auth-backdrop" @click.self="closeDialog"></div>
-    
+
     <!-- 弹窗主体 -->
     <Transition name="zoom">
       <div class="auth-dialog" v-show="modelValue">
@@ -79,12 +102,12 @@ const handleSubmit = () => {
         <el-tabs v-model="activeTab" class="modern-tabs">
           <el-tab-pane label="登录" name="login">
             <!-- 登录表单 -->
-            <el-form 
+            <el-form
               @submit.prevent="handleSubmit"
               class="modern-form"
             >
               <el-form-item>
-                <el-input 
+                <el-input
                   v-model="form.username"
                   placeholder="用户名"
                   :prefix-icon="User"
@@ -102,15 +125,17 @@ const handleSubmit = () => {
               </el-form-item>
 
               <div class="captcha-group">
-                <el-input 
+                <el-input
                   v-model="form.captcha"
                   placeholder="验证码"
                   :prefix-icon="Key"
                 />
-                <img 
-                  :src="captchaImage" 
+                <img
+                  :src="captchaImage"
                   class="captcha-image"
                   alt="验证码"
+                  @click="getCaptcha"
+                  title="点击刷新验证码"
                 />
               </div>
 
@@ -123,12 +148,12 @@ const handleSubmit = () => {
 
           <el-tab-pane label="注册" name="register">
             <!-- 注册表单 -->
-            <el-form 
+            <el-form
               @submit.prevent="handleSubmit"
               class="modern-form"
             >
               <el-form-item>
-                <el-input 
+                <el-input
                   v-model="form.username"
                   placeholder="用户名"
                   :prefix-icon="User"
@@ -164,15 +189,17 @@ const handleSubmit = () => {
               </el-form-item>
 
               <div class="captcha-group">
-                <el-input 
+                <el-input
                   v-model="form.captcha"
                   placeholder="验证码"
                   :prefix-icon="Key"
                 />
-                <img 
-                  :src="captchaImage" 
+                <img
+                  :src="captchaImage"
                   class="captcha-image"
                   alt="验证码"
+                  @click="getCaptcha"
+                  title="点击刷新验证码"
                 />
               </div>
             </el-form>
@@ -181,8 +208,8 @@ const handleSubmit = () => {
 
         <!-- 操作按钮 -->
         <div class="dialog-footer">
-          <el-button 
-            type="primary" 
+          <el-button
+            type="primary"
             @click="handleSubmit"
             class="submit-button"
           >
@@ -232,7 +259,7 @@ const handleSubmit = () => {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 24px;
   padding: 32px;
-  box-shadow: 
+  box-shadow:
     0 0 30px rgba(0, 0, 0, 0.1),
     0 0 60px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -295,7 +322,7 @@ const handleSubmit = () => {
   :deep(.el-tabs__item) {
     font-size: 16px;
     color: #666;
-    
+
     &.is-active {
       color: #00A7E1;
       font-weight: 600;
@@ -336,6 +363,7 @@ const handleSubmit = () => {
 
   &:hover {
     transform: scale(1.05);
+    opacity: 0.8;
   }
 }
 
@@ -348,7 +376,7 @@ const handleSubmit = () => {
 
 .forget-btn {
   color: #00A7E1;
-  
+
   &:hover {
     color: #5BE49B;
   }
@@ -363,10 +391,10 @@ const handleSubmit = () => {
   letter-spacing: 2px;
   background: linear-gradient(135deg, #5BE49B, #00A7E1);
   border: none;
-  
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 167, 225, 0.3);
   }
 }
-</style> 
+</style>
