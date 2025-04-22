@@ -68,6 +68,9 @@ class VoLoginVO {
             if (data.hasOwnProperty('phone')) {
                 obj['phone'] = ApiClient.convertToType(data['phone'], 'String');
             }
+            if (data.hasOwnProperty('refreshToken')) {
+                obj['refreshToken'] = ApiClient.convertToType(data['refreshToken'], 'String');
+            }
             if (data.hasOwnProperty('role')) {
                 obj['role'] = ApiClient.convertToType(data['role'], 'Number');
             }
@@ -108,6 +111,10 @@ class VoLoginVO {
         // ensure the json data is a string
         if (data['phone'] && !(typeof data['phone'] === 'string' || data['phone'] instanceof String)) {
             throw new Error("Expected the field `phone` to be a primitive type in the JSON string but got " + data['phone']);
+        }
+        // ensure the json data is a string
+        if (data['refreshToken'] && !(typeof data['refreshToken'] === 'string' || data['refreshToken'] instanceof String)) {
+            throw new Error("Expected the field `refreshToken` to be a primitive type in the JSON string but got " + data['refreshToken']);
         }
         // ensure the json data is a string
         if (data['token'] && !(typeof data['token'] === 'string' || data['token'] instanceof String)) {
@@ -173,6 +180,12 @@ VoLoginVO.prototype['id'] = undefined;
 VoLoginVO.prototype['phone'] = undefined;
 
 /**
+ * refresh token
+ * @member {String} refreshToken
+ */
+VoLoginVO.prototype['refreshToken'] = undefined;
+
+/**
  * 角色(0:普通用户 1:超管)
  * @member {Number} role
  */
@@ -185,7 +198,7 @@ VoLoginVO.prototype['role'] = undefined;
 VoLoginVO.prototype['status'] = undefined;
 
 /**
- * JWT token
+ * access token
  * @member {String} token
  */
 VoLoginVO.prototype['token'] = undefined;

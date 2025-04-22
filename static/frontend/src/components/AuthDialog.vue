@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   User,
@@ -8,6 +8,10 @@ import {
   Key
 } from '@element-plus/icons-vue'
 import {defaultApi} from "@/api/index.js";
+import { useUserStore } from '@/stores/user'
+
+// 获取 user store
+const userStore = useUserStore()
 
 // 弹窗显示状态
 const props = defineProps({
@@ -17,15 +21,83 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'login-success'])
 
-// 监听内部状态变化并同步到父组件
-const closeDialog = () => {
-  emit('update:modelValue', false)
+// 表单数据
+const form = ref({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  captcha: ''
+})
+
+// 登录表单校验规则
+const loginRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 4, message: '验证码长度为 4 位', trigger: 'blur' }
+  ]
 }
+
+// 注册表单校验规则
+const registerRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== form.value.password) {
+          callback(new Error('两次输入密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 4, message: '验证码长度为 4 位', trigger: 'blur' }
+  ]
+}
+
+// 计算当前使用的校验规则
+const rules = computed(() => {
+  return activeTab.value === 'login' ? loginRules : registerRules
+})
+
+// 表单引用
+const formRef = ref(null)
+
+// 加载状态
+const loading = ref(false)
+
+// 记住我选项
+const rememberMe = ref(false)
 
 // 当前激活标签页
 const activeTab = ref('login')
+
 // 验证码相关数据
 const captchaImage = ref('')
 const captchaId = ref('')
@@ -38,9 +110,12 @@ const getCaptcha = async () => {
     if (res.code === 0) {
       captchaImage.value = res.data.image
       captchaId.value = res.data.id
+    } else {
+      ElMessage.error(res.msg || '获取验证码失败')
     }
   } catch (error) {
     console.error('获取验证码失败:', error)
+    ElMessage.error('获取验证码失败')
   }
 }
 
@@ -48,35 +123,90 @@ const getCaptcha = async () => {
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     getCaptcha()
+    resetForm()
   }
 })
 
-// 表单数据
-const form = ref({
-  username: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-  captcha: ''
-})
+// 重置表单
+const resetForm = () => {
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
+  form.value = {
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    captcha: ''
+  }
+}
 
-// 记住我选项
-const rememberMe = ref(false)
+// 关闭弹窗
+const closeDialog = () => {
+  emit('update:modelValue', false)
+  resetForm()
+}
 
 // 提交处理
-const handleSubmit = () => {
-  if (activeTab.value === 'login') {
-    // 登录逻辑
-    ElMessage.success('模拟登录成功')
-  } else {
-    // 注册逻辑
-    if (form.value.password !== form.value.confirmPassword) {
-      ElMessage.error('两次密码输入不一致')
-      return
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  try {
+    // 表单验证
+    await formRef.value.validate()
+
+    loading.value = true
+
+    if (activeTab.value === 'login') {
+      // 登录请求
+      const loginData = {
+        username: form.value.username,
+        password: form.value.password,
+        captchaId: captchaId.value,
+        captcha: form.value.captcha,
+        rememberMe: rememberMe.value
+      }
+
+      const res = await defaultApi.apiUserLoginPost(loginData)
+      if (res.code === 0) {
+        // 保存用户信息和 token
+        userStore.login(res.data)
+        ElMessage.success('登录成功')
+        emit('login-success', res.data)
+        closeDialog()
+      } else {
+        ElMessage.error(res.msg || '登录失败')
+        getCaptcha() // 刷新验证码
+      }
+    } else {
+      // 注册请求
+      const registerData = {
+        username: form.value.username,
+        email: form.value.email,
+        password: form.value.password,
+        captchaId: captchaId.value,
+        captcha: form.value.captcha
+      }
+
+      const res = await defaultApi.apiUserRegisterPost(registerData)
+      if (res.code === 0) {
+        ElMessage.success('注册成功，请登录')
+        activeTab.value = 'login'
+        resetForm()
+        getCaptcha()
+      } else {
+        ElMessage.error(res.msg || '注册失败')
+        getCaptcha() // 刷新验证码
+      }
     }
-    ElMessage.success('模拟注册成功')
+  } catch (error) {
+    console.error('表单提交失败:', error)
+    if (error.message) {
+      ElMessage.error(error.message)
+    }
+  } finally {
+    loading.value = false
   }
-  closeDialog()
 }
 </script>
 
@@ -103,10 +233,13 @@ const handleSubmit = () => {
           <el-tab-pane label="登录" name="login">
             <!-- 登录表单 -->
             <el-form
+              ref="formRef"
+              :model="form"
+              :rules="rules"
               @submit.prevent="handleSubmit"
               class="modern-form"
             >
-              <el-form-item>
+              <el-form-item prop="username">
                 <el-input
                   v-model="form.username"
                   placeholder="用户名"
@@ -114,7 +247,7 @@ const handleSubmit = () => {
                 />
               </el-form-item>
 
-              <el-form-item>
+              <el-form-item prop="password">
                 <el-input
                   v-model="form.password"
                   type="password"
@@ -125,11 +258,13 @@ const handleSubmit = () => {
               </el-form-item>
 
               <div class="captcha-group">
-                <el-input
-                  v-model="form.captcha"
-                  placeholder="验证码"
-                  :prefix-icon="Key"
-                />
+                <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+                  <el-input
+                    v-model="form.captcha"
+                    placeholder="验证码"
+                    :prefix-icon="Key"
+                  />
+                </el-form-item>
                 <img
                   :src="captchaImage"
                   class="captcha-image"
@@ -149,10 +284,13 @@ const handleSubmit = () => {
           <el-tab-pane label="注册" name="register">
             <!-- 注册表单 -->
             <el-form
+              ref="formRef"
+              :model="form"
+              :rules="rules"
               @submit.prevent="handleSubmit"
               class="modern-form"
             >
-              <el-form-item>
+              <el-form-item prop="username">
                 <el-input
                   v-model="form.username"
                   placeholder="用户名"
@@ -160,7 +298,7 @@ const handleSubmit = () => {
                 />
               </el-form-item>
 
-              <el-form-item>
+              <el-form-item prop="email">
                 <el-input
                   v-model="form.email"
                   placeholder="邮箱"
@@ -168,7 +306,7 @@ const handleSubmit = () => {
                 />
               </el-form-item>
 
-              <el-form-item>
+              <el-form-item prop="password">
                 <el-input
                   v-model="form.password"
                   type="password"
@@ -178,7 +316,7 @@ const handleSubmit = () => {
                 />
               </el-form-item>
 
-              <el-form-item>
+              <el-form-item prop="confirmPassword">
                 <el-input
                   v-model="form.confirmPassword"
                   type="password"
@@ -189,11 +327,13 @@ const handleSubmit = () => {
               </el-form-item>
 
               <div class="captcha-group">
-                <el-input
-                  v-model="form.captcha"
-                  placeholder="验证码"
-                  :prefix-icon="Key"
-                />
+                <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+                  <el-input
+                    v-model="form.captcha"
+                    placeholder="验证码"
+                    :prefix-icon="Key"
+                  />
+                </el-form-item>
                 <img
                   :src="captchaImage"
                   class="captcha-image"
@@ -212,6 +352,7 @@ const handleSubmit = () => {
             type="primary"
             @click="handleSubmit"
             class="submit-button"
+            :loading="loading"
           >
             {{ activeTab === 'login' ? '登 录' : '注 册' }}
           </el-button>

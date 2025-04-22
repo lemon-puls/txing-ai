@@ -1,13 +1,13 @@
 <template>
   <!-- 未登录状态显示登录按钮 -->
-  <el-button v-if="!isLoggedIn" type="primary" link @click="showLoginDialog">
+  <el-button v-if="!userStore.isLoggedIn" type="primary" link @click="showLoginDialog">
     登录
   </el-button>
 
   <!-- 已登录状态显示头像下拉菜单 -->
   <el-dropdown v-else trigger="click">
     <div class="user-avatar">
-      <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+      <el-avatar :size="32" :src="userStore.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
       <el-icon class="el-icon--right"><CaretBottom /></el-icon>
     </div>
     <template #dropdown>
@@ -20,7 +20,7 @@
           <el-icon><Setting /></el-icon>
           <span>设置</span>
         </el-dropdown-item>
-        <el-dropdown-item v-if="isAdmin" @click="handleCommand('admin')" divided>
+        <el-dropdown-item v-if="userStore.isAdmin" @click="handleCommand('admin')" divided>
           <el-icon><Monitor /></el-icon>
           <span>管理后台</span>
         </el-dropdown-item>
@@ -33,7 +33,10 @@
   </el-dropdown>
 
   <!-- 登录弹窗 -->
-  <AuthDialog v-model="loginDialogVisible" />
+  <AuthDialog 
+    v-model="loginDialogVisible"
+    @login-success="handleLoginSuccess"
+  />
 </template>
 
 <script setup>
@@ -47,11 +50,10 @@ import {
   Monitor
 } from '@element-plus/icons-vue'
 import AuthDialog from '../AuthDialog.vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-// 登录状态
-const isLoggedIn = ref(false) // 实际应该从用户状态管理中获取
-const isAdmin = ref(false) // 实际应该从用户信息中获取
+const userStore = useUserStore()
 
 // 登录弹窗显示状态
 const loginDialogVisible = ref(false)
@@ -74,9 +76,14 @@ const handleCommand = (command) => {
       break
     case 'logout':
       // 处理登出逻辑
-      isLoggedIn.value = false
+      userStore.logout()
       break
   }
+}
+
+// 登录成功回调
+const handleLoginSuccess = () => {
+  loginDialogVisible.value = false
 }
 </script>
 

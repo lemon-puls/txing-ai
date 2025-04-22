@@ -40,7 +40,7 @@ class DtoRegisterReq {
      */
     static initialize(obj, captcha, captchaId, email, password, username) { 
         obj['captcha'] = captcha;
-        obj['captcha_id'] = captchaId;
+        obj['captchaId'] = captchaId;
         obj['email'] = email;
         obj['password'] = password;
         obj['username'] = username;
@@ -60,8 +60,8 @@ class DtoRegisterReq {
             if (data.hasOwnProperty('captcha')) {
                 obj['captcha'] = ApiClient.convertToType(data['captcha'], 'String');
             }
-            if (data.hasOwnProperty('captcha_id')) {
-                obj['captcha_id'] = ApiClient.convertToType(data['captcha_id'], 'String');
+            if (data.hasOwnProperty('captchaId')) {
+                obj['captchaId'] = ApiClient.convertToType(data['captchaId'], 'String');
             }
             if (data.hasOwnProperty('email')) {
                 obj['email'] = ApiClient.convertToType(data['email'], 'String');
@@ -96,8 +96,8 @@ class DtoRegisterReq {
             throw new Error("Expected the field `captcha` to be a primitive type in the JSON string but got " + data['captcha']);
         }
         // ensure the json data is a string
-        if (data['captcha_id'] && !(typeof data['captcha_id'] === 'string' || data['captcha_id'] instanceof String)) {
-            throw new Error("Expected the field `captcha_id` to be a primitive type in the JSON string but got " + data['captcha_id']);
+        if (data['captchaId'] && !(typeof data['captchaId'] === 'string' || data['captchaId'] instanceof String)) {
+            throw new Error("Expected the field `captchaId` to be a primitive type in the JSON string but got " + data['captchaId']);
         }
         // ensure the json data is a string
         if (data['email'] && !(typeof data['email'] === 'string' || data['email'] instanceof String)) {
@@ -122,7 +122,7 @@ class DtoRegisterReq {
 
 }
 
-DtoRegisterReq.RequiredProperties = ["captcha", "captcha_id", "email", "password", "username"];
+DtoRegisterReq.RequiredProperties = ["captcha", "captchaId", "email", "password", "username"];
 
 /**
  * 验证码 Captcha
@@ -132,9 +132,9 @@ DtoRegisterReq.prototype['captcha'] = undefined;
 
 /**
  * 验证码ID Captcha ID
- * @member {String} captcha_id
+ * @member {String} captchaId
  */
-DtoRegisterReq.prototype['captcha_id'] = undefined;
+DtoRegisterReq.prototype['captchaId'] = undefined;
 
 /**
  * 邮箱 Email

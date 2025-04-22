@@ -22,12 +22,14 @@ class DtoLoginReq {
     /**
      * Constructs a new <code>DtoLoginReq</code>.
      * @alias module:model/DtoLoginReq
+     * @param captcha {String} 验证码 Captcha
+     * @param captchaId {String} 验证码ID Captcha ID
      * @param password {String} 密码 Password
      * @param username {String} 用户名 Username
      */
-    constructor(password, username) { 
+    constructor(captcha, captchaId, password, username) { 
         
-        DtoLoginReq.initialize(this, password, username);
+        DtoLoginReq.initialize(this, captcha, captchaId, password, username);
     }
 
     /**
@@ -35,7 +37,9 @@ class DtoLoginReq {
      * This method is used by the constructors of any subclasses, in order to implement multiple inheritance (mix-ins).
      * Only for internal use.
      */
-    static initialize(obj, password, username) { 
+    static initialize(obj, captcha, captchaId, password, username) { 
+        obj['captcha'] = captcha;
+        obj['captchaId'] = captchaId;
         obj['password'] = password;
         obj['username'] = username;
     }
@@ -51,6 +55,12 @@ class DtoLoginReq {
         if (data) {
             obj = obj || new DtoLoginReq();
 
+            if (data.hasOwnProperty('captcha')) {
+                obj['captcha'] = ApiClient.convertToType(data['captcha'], 'String');
+            }
+            if (data.hasOwnProperty('captchaId')) {
+                obj['captchaId'] = ApiClient.convertToType(data['captchaId'], 'String');
+            }
             if (data.hasOwnProperty('password')) {
                 obj['password'] = ApiClient.convertToType(data['password'], 'String');
             }
@@ -74,6 +84,14 @@ class DtoLoginReq {
             }
         }
         // ensure the json data is a string
+        if (data['captcha'] && !(typeof data['captcha'] === 'string' || data['captcha'] instanceof String)) {
+            throw new Error("Expected the field `captcha` to be a primitive type in the JSON string but got " + data['captcha']);
+        }
+        // ensure the json data is a string
+        if (data['captchaId'] && !(typeof data['captchaId'] === 'string' || data['captchaId'] instanceof String)) {
+            throw new Error("Expected the field `captchaId` to be a primitive type in the JSON string but got " + data['captchaId']);
+        }
+        // ensure the json data is a string
         if (data['password'] && !(typeof data['password'] === 'string' || data['password'] instanceof String)) {
             throw new Error("Expected the field `password` to be a primitive type in the JSON string but got " + data['password']);
         }
@@ -88,7 +106,19 @@ class DtoLoginReq {
 
 }
 
-DtoLoginReq.RequiredProperties = ["password", "username"];
+DtoLoginReq.RequiredProperties = ["captcha", "captchaId", "password", "username"];
+
+/**
+ * 验证码 Captcha
+ * @member {String} captcha
+ */
+DtoLoginReq.prototype['captcha'] = undefined;
+
+/**
+ * 验证码ID Captcha ID
+ * @member {String} captchaId
+ */
+DtoLoginReq.prototype['captchaId'] = undefined;
 
 /**
  * 密码 Password

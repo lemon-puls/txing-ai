@@ -9,7 +9,7 @@ type RegisterReq struct {
 	Password  string `json:"password" binding:"required,min=6,max=32" example:"password123"` // 密码 Password
 	Email     string `json:"email" binding:"required,email" example:"john@example.com"`      // 邮箱 Email
 	Captcha   string `json:"captcha" binding:"required,len=4" example:"1234"`                // 验证码 Captcha
-	CaptchaId string `json:"captcha_id" binding:"required" example:"abc123"`                 // 验证码ID Captcha ID
+	CaptchaId string `json:"captchaId" binding:"required" example:"abc123"`                  // 验证码ID Captcha ID
 	Phone     string `json:"phone" example:"13800138000"`                                    // 手机号 Phone number
 }
 
@@ -19,7 +19,7 @@ type LoginReq struct {
 	Username  string `json:"username" binding:"required" example:"johndoe"`     // 用户名 Username
 	Password  string `json:"password" binding:"required" example:"password123"` // 密码 Password
 	Captcha   string `json:"captcha" binding:"required,len=4" example:"1234"`   // 验证码 Captcha
-	CaptchaId string `json:"captcha_id" binding:"required" example:"abc123"`    // 验证码ID Captcha ID
+	CaptchaId string `json:"captchaId" binding:"required" example:"abc123"`     // 验证码ID Captcha ID
 }
 
 // UpdateProfileReq 更新个人信息请求

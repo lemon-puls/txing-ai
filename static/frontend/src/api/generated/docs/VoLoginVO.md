@@ -11,9 +11,10 @@ Name | Type | Description | Notes
 **gender** | **Number** | 性别(0:未知 1:男 2:女) | [optional] 
 **id** | **Number** | 主键ID | [optional] 
 **phone** | **String** | 手机号 | [optional] 
+**refreshToken** | **String** | refresh token | [optional] 
 **role** | **Number** | 角色(0:普通用户 1:超管) | [optional] 
 **status** | **Number** | 状态(0:正常 1:禁用) | [optional] 
-**token** | **String** | JWT token | [optional] 
+**token** | **String** | access token | [optional] 
 **updatedAt** | **String** | 更新时间 | [optional] 
 **username** | **String** | 用户名 | [optional] 
 
