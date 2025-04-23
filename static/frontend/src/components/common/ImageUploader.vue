@@ -69,6 +69,26 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  // 是否开启压缩
+  enableCompress: {
+    type: Boolean,
+    default: true
+  },
+  // 压缩质量 (0-1)
+  compressQuality: {
+    type: Number,
+    default: 0.8
+  },
+  // 压缩后的最大宽度（像素）
+  maxWidth: {
+    type: Number,
+    default: 1920
+  },
+  // 压缩后的最大高度（像素）
+  maxHeight: {
+    type: Number,
+    default: 1920
+  },
   // 是否开启裁剪功能
   enableCrop: {
     type: Boolean,
@@ -124,6 +144,49 @@ const cropperImage = ref('')
 const cropperRef = ref(null)
 const uploading = ref(false)
 
+// 压缩图片
+const compressImage = async (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target.result
+      img.onload = () => {
+        // 计算压缩后的尺寸
+        let width = img.width
+        let height = img.height
+        
+        if (width > props.maxWidth || height > props.maxHeight) {
+          const ratio = Math.min(props.maxWidth / width, props.maxHeight / height)
+          width = Math.floor(width * ratio)
+          height = Math.floor(height * ratio)
+        }
+
+        // 创建 canvas 进行压缩
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        canvas.width = width
+        canvas.height = height
+        
+        // 绘制图片
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // 转换为 blob
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob)
+          },
+          'image/jpeg',
+          props.compressQuality
+        )
+      }
+    }
+  })
+}
+
 // 处理文件选择
 const handleFileChange = async (file) => {
   if (!file) return
@@ -154,8 +217,14 @@ const handleFileChange = async (file) => {
     try {
       uploading.value = true
       
+      // 处理图片文件
+      let uploadFile = file.raw
+      if (props.enableCompress) {
+        uploadFile = await compressImage(file.raw)
+      }
+      
       // 生成随机文件名
-      const fileExt = file.raw.name.split('.').pop() || 'png'
+      const fileExt = props.enableCompress ? 'jpg' : (file.raw.name.split('.').pop() || 'png')
       const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
 
       // 获取预签名 URL
@@ -171,9 +240,9 @@ const handleFileChange = async (file) => {
       // 上传文件到预签名 URL
       const response = await fetch(res.data.url, {
         method: 'PUT',
-        body: file.raw,
+        body: uploadFile,
         headers: {
-          'Content-Type': file.raw.type
+          'Content-Type': props.enableCompress ? 'image/jpeg' : file.raw.type
         }
       })
 
@@ -220,8 +289,14 @@ const handleCropImage = async () => {
     // 将 base64 转换为 Blob
     const blob = await fetch(base64Data).then(res => res.blob())
 
+    // 处理图片文件
+    let uploadFile = blob
+    if (props.enableCompress) {
+      uploadFile = await compressImage(blob)
+    }
+
     // 生成随机文件名
-    const fileExt = 'png'
+    const fileExt = props.enableCompress ? 'jpg' : 'png'
     const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
 
     try {
@@ -238,9 +313,9 @@ const handleCropImage = async () => {
       // 上传文件到预签名 URL
       const response = await fetch(res.data.url, {
         method: 'PUT',
-        body: blob,
+        body: uploadFile,
         headers: {
-          'Content-Type': 'image/png'
+          'Content-Type': props.enableCompress ? 'image/jpeg' : 'image/png'
         }
       })
 
@@ -257,10 +332,6 @@ const handleCropImage = async () => {
       if (res1.code !== 0) {
         throw new Error(res1.msg || '获取访问地址失败')
       }
-
-      // 处理返回的 URL（移除签名参数）
-      // const urlObj = new URL(res1.data.url)
-      // const finalUrl = `${urlObj.origin}${urlObj.pathname}`
 
       // 更新 v-model
       emit('update:modelValue', res1.data.url)

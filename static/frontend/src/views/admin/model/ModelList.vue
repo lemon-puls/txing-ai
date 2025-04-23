@@ -112,9 +112,13 @@
             v-model="modelForm.avatar"
             :circle="true"
             :fixed="true"
+            :enable-compress="true"
+            :compress-quality="0.5"
+            :max-width="1080"
+            :max-height="1080"
             :crop-width="200"
             :crop-height="200"
-            :enable-crop="false"
+            :enable-crop="true"
             placeholder="点击上传头像"
             @success="(url) => {
               console.log('Upload success:', url)
