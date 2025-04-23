@@ -138,6 +138,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
+*TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 *TxingAiApi.DefaultApi* | [**apiUserLoginPost**](docs/DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 *TxingAiApi.DefaultApi* | [**apiUserLogoutPost**](docs/DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
 *TxingAiApi.DefaultApi* | [**apiUserPasswordPut**](docs/DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
@@ -151,11 +152,13 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
  - [TxingAiApi.ApiAdminPresetPost200Response](docs/ApiAdminPresetPost200Response.md)
+ - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
  - [TxingAiApi.ApiUserProfilePut200Response](docs/ApiUserProfilePut200Response.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
  - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
+ - [TxingAiApi.DtoGetPresignedURLReq](docs/DtoGetPresignedURLReq.md)
  - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
  - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
  - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)
@@ -166,6 +169,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
  - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
+ - [TxingAiApi.VoGetPresignedURLVO](docs/VoGetPresignedURLVO.md)
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
  - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
  - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)

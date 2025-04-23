@@ -13,7 +13,7 @@ import (
 
 // @Summary 获取预签名URL
 // @Description 获取文件上传或下载的预签名URL
-// @Tags COS
+// @Tags 对象存储相关
 // @Accept json
 // @Produce json
 // @Param data body dto.GetPresignedURLReq true "请求参数"

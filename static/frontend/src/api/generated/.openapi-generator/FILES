@@ -5,12 +5,14 @@ README.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
 docs/ApiAdminPresetPost200Response.md
+docs/ApiCosPresignedUrlPost200Response.md
 docs/ApiUserLoginPost200Response.md
 docs/ApiUserProfilePut200Response.md
 docs/DefaultApi.md
 docs/DtoCreateChannelReq.md
 docs/DtoCreateModelReq.md
 docs/DtoCreatePresetReq.md
+docs/DtoGetPresignedURLReq.md
 docs/DtoLoginReq.md
 docs/DtoRegisterReq.md
 docs/DtoResetPasswordReq.md
@@ -21,6 +23,7 @@ docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
 docs/UtilsResponse.md
 docs/VoChannelVO.md
+docs/VoGetPresignedURLVO.md
 docs/VoLoginVO.md
 docs/VoModelVO.md
 docs/VoPresetVO.md
@@ -34,11 +37,13 @@ src/index.js
 src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
 src/model/ApiAdminPresetPost200Response.js
+src/model/ApiCosPresignedUrlPost200Response.js
 src/model/ApiUserLoginPost200Response.js
 src/model/ApiUserProfilePut200Response.js
 src/model/DtoCreateChannelReq.js
 src/model/DtoCreateModelReq.js
 src/model/DtoCreatePresetReq.js
+src/model/DtoGetPresignedURLReq.js
 src/model/DtoLoginReq.js
 src/model/DtoRegisterReq.js
 src/model/DtoResetPasswordReq.js
@@ -49,6 +54,7 @@ src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
 src/model/UtilsResponse.js
 src/model/VoChannelVO.js
+src/model/VoGetPresignedURLVO.js
 src/model/VoLoginVO.js
 src/model/VoModelVO.js
 src/model/VoPresetVO.js

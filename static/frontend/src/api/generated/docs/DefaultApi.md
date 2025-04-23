@@ -22,6 +22,7 @@ Method | HTTP request | Description
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
+[**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 [**apiUserLoginPost**](DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 [**apiUserLogoutPost**](DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
 [**apiUserPasswordPut**](DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
@@ -866,6 +867,50 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiCosPresignedUrlPost
+
+> ApiCosPresignedUrlPost200Response apiCosPresignedUrlPost(data)
+
+获取预签名URL
+
+获取文件上传或下载的预签名URL
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoGetPresignedURLReq(); // DtoGetPresignedURLReq | 请求参数
+apiInstance.apiCosPresignedUrlPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoGetPresignedURLReq**](DtoGetPresignedURLReq.md)| 请求参数 | 
+
+### Return type
+
+[**ApiCosPresignedUrlPost200Response**](ApiCosPresignedUrlPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 

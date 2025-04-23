@@ -16,11 +16,13 @@ import ApiClient from "../ApiClient";
 import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
 import ApiAdminPresetPost200Response from '../model/ApiAdminPresetPost200Response';
+import ApiCosPresignedUrlPost200Response from '../model/ApiCosPresignedUrlPost200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
 import ApiUserProfilePut200Response from '../model/ApiUserProfilePut200Response';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
 import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
+import DtoGetPresignedURLReq from '../model/DtoGetPresignedURLReq';
 import DtoLoginReq from '../model/DtoLoginReq';
 import DtoRegisterReq from '../model/DtoRegisterReq';
 import DtoResetPasswordReq from '../model/DtoResetPasswordReq';
@@ -999,6 +1001,53 @@ export default class DefaultApi {
      */
     apiCaptchaGet() {
       return this.apiCaptchaGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取预签名URL
+     * 获取文件上传或下载的预签名URL
+     * @param {module:model/DtoGetPresignedURLReq} data 请求参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiCosPresignedUrlPost200Response} and HTTP response
+     */
+    apiCosPresignedUrlPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiCosPresignedUrlPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiCosPresignedUrlPost200Response;
+      return this.apiClient.callApi(
+        '/api/cos/presigned-url', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取预签名URL
+     * 获取文件上传或下载的预签名URL
+     * @param {module:model/DtoGetPresignedURLReq} data 请求参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiCosPresignedUrlPost200Response}
+     */
+    apiCosPresignedUrlPost(data) {
+      return this.apiCosPresignedUrlPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

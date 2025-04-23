@@ -202,6 +202,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, ArrowUp, Edit, Delete, Plus } from '@element-plus/icons-vue'
 import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
 import 'vue-cropper/dist/index.css'
+import {defaultApi} from "@/api/index.js";
 
 // 搜索表单
 const searchForm = ref({
@@ -351,11 +352,23 @@ const handleSubmit = async () => {
   if (!modelFormRef.value) return
   await modelFormRef.value.validate(async (valid) => {
     if (valid) {
+      // 处理头像 URL
+      let avatar = modelForm.value.avatar
+      if (avatar) {
+        // 从完整 URL 中移除查询参数
+        // 例如从 https://static.ai.txing.vip/1745426167657-466.png?q-sign-algorithm=sha1&...
+        // 转换为 https://static.ai.txing.vip/1745426167657-466.png
+        const urlObj = new URL(avatar)
+        avatar = `${urlObj.origin}${urlObj.pathname}`
+      }
+
       // 实际使用 formData
       const formData = {
         ...modelForm.value,
-        tag: modelForm.value.tags.join(',')
+        tag: modelForm.value.tags.join(','),
+        avatar: avatar // 使用处理后的 URL
       }
+
       console.log('Submit data:', formData) // 临时调试
       // TODO: 调用保存API
       ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
@@ -381,7 +394,7 @@ const handleCurrentChange = (page) => {
 // 处理头像变更
 const handleAvatarChange = (file) => {
   if (!file) return
-  
+
   // 验证文件类型和大小
   const isImage = file.raw.type.startsWith('image/')
   const isLt2M = file.raw.size / 1024 / 1024 < 2
@@ -405,13 +418,76 @@ const handleAvatarChange = (file) => {
 }
 
 // 处理图片裁剪
-const handleCropImage = () => {
+const handleCropImage = async () => {
   if (!cropperRef.value) return
-  
-  cropperRef.value.getCropData((data) => {
-    modelForm.value.avatar = data
-    cropperVisible.value = false
-  })
+
+  try {
+    // 获取裁剪后的图片数据
+    const base64Data = await new Promise((resolve) => {
+      cropperRef.value.getCropData((data) => resolve(data))
+    })
+
+
+    // 将 base64 转换为 Blob
+    const blob = await fetch(base64Data).then(res => res.blob())
+
+    // 生成随机文件名
+    const fileExt = 'png'
+    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
+
+    try {
+      // 获取预签名 URL
+      const res = await defaultApi.apiCosPresignedUrlPost({
+        type: 'upload',
+        key: fileName
+      })
+
+      if (res.code !== 0) {
+        ElMessage.error('获取预签名URL失败：' + res.msg)
+        return
+      }
+
+      let presignedData = res.data
+
+      // 上传文件到预签名 URL
+      const response = await fetch(presignedData.url, {
+        method: 'PUT',
+        body: blob,
+        headers: {
+          'Content-Type': 'image/png'
+        }
+      })
+
+      if (!response.ok) {
+        console.error('上传失败:', response)
+        throw new Error('上传失败')
+      }
+
+      // 获取待签名下载 URL，用于显示图片
+      const res1 = await defaultApi.apiCosPresignedUrlPost({
+        key: fileName,
+        type: 'download'
+      })
+      if (res1.code !== 0) {
+        ElMessage.error('获取预签名URL失败：' + res1.msg)
+        return
+      }
+      presignedData = res1.data
+
+      // 设置头像 URL
+      modelForm.value.avatar = presignedData.url // 或者使用完整的访问 URL
+
+      // 关闭裁剪对话框
+      cropperVisible.value = false
+      ElMessage.success('头像上传成功')
+    } catch (error) {
+      console.error('上传失败:', error)
+      ElMessage.error('头像上传失败，请重试')
+    }
+  } catch (error) {
+    console.error('裁剪失败:', error)
+    ElMessage.error('图片裁剪失败，请重试')
+  }
 }
 
 // 页面加载时获取数据
@@ -626,7 +702,7 @@ onMounted(() => {
 .cropper-container {
   height: 500px;
   background: #262626;
-  
+
   :deep(.vue-cropper) {
     height: 100%;
     width: 100%;

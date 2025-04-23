@@ -16,11 +16,13 @@ import ApiClient from './ApiClient';
 import ApiAdminChannelPost200Response from './model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from './model/ApiAdminModelPost200Response';
 import ApiAdminPresetPost200Response from './model/ApiAdminPresetPost200Response';
+import ApiCosPresignedUrlPost200Response from './model/ApiCosPresignedUrlPost200Response';
 import ApiUserLoginPost200Response from './model/ApiUserLoginPost200Response';
 import ApiUserProfilePut200Response from './model/ApiUserProfilePut200Response';
 import DtoCreateChannelReq from './model/DtoCreateChannelReq';
 import DtoCreateModelReq from './model/DtoCreateModelReq';
 import DtoCreatePresetReq from './model/DtoCreatePresetReq';
+import DtoGetPresignedURLReq from './model/DtoGetPresignedURLReq';
 import DtoLoginReq from './model/DtoLoginReq';
 import DtoRegisterReq from './model/DtoRegisterReq';
 import DtoResetPasswordReq from './model/DtoResetPasswordReq';
@@ -31,6 +33,7 @@ import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
 import UtilsResponse from './model/UtilsResponse';
 import VoChannelVO from './model/VoChannelVO';
+import VoGetPresignedURLVO from './model/VoGetPresignedURLVO';
 import VoLoginVO from './model/VoLoginVO';
 import VoModelVO from './model/VoModelVO';
 import VoPresetVO from './model/VoPresetVO';
@@ -95,6 +98,12 @@ export {
     ApiAdminPresetPost200Response,
 
     /**
+     * The ApiCosPresignedUrlPost200Response model constructor.
+     * @property {module:model/ApiCosPresignedUrlPost200Response}
+     */
+    ApiCosPresignedUrlPost200Response,
+
+    /**
      * The ApiUserLoginPost200Response model constructor.
      * @property {module:model/ApiUserLoginPost200Response}
      */
@@ -123,6 +132,12 @@ export {
      * @property {module:model/DtoCreatePresetReq}
      */
     DtoCreatePresetReq,
+
+    /**
+     * The DtoGetPresignedURLReq model constructor.
+     * @property {module:model/DtoGetPresignedURLReq}
+     */
+    DtoGetPresignedURLReq,
 
     /**
      * The DtoLoginReq model constructor.
@@ -183,6 +198,12 @@ export {
      * @property {module:model/VoChannelVO}
      */
     VoChannelVO,
+
+    /**
+     * The VoGetPresignedURLVO model constructor.
+     * @property {module:model/VoGetPresignedURLVO}
+     */
+    VoGetPresignedURLVO,
 
     /**
      * The VoLoginVO model constructor.
