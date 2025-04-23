@@ -114,6 +114,7 @@
             :fixed="true"
             :crop-width="200"
             :crop-height="200"
+            :enable-crop="false"
             placeholder="点击上传头像"
             @success="(url) => {
               console.log('Upload success:', url)

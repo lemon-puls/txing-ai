@@ -69,6 +69,11 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  // 是否开启裁剪功能
+  enableCrop: {
+    type: Boolean,
+    default: true
+  },
   // 是否为圆形裁剪
   circle: {
     type: Boolean,
@@ -120,7 +125,7 @@ const cropperRef = ref(null)
 const uploading = ref(false)
 
 // 处理文件选择
-const handleFileChange = (file) => {
+const handleFileChange = async (file) => {
   if (!file) return
 
   // 验证文件类型和大小
@@ -136,12 +141,67 @@ const handleFileChange = (file) => {
     return
   }
 
-  // 读取文件并显示裁剪对话框
-  const reader = new FileReader()
-  reader.readAsDataURL(file.raw)
-  reader.onload = (e) => {
-    cropperImage.value = e.target.result
-    cropperVisible.value = true
+  if (props.enableCrop) {
+    // 开启裁剪功能，显示裁剪对话框
+    const reader = new FileReader()
+    reader.readAsDataURL(file.raw)
+    reader.onload = (e) => {
+      cropperImage.value = e.target.result
+      cropperVisible.value = true
+    }
+  } else {
+    // 不开启裁剪功能，直接上传
+    try {
+      uploading.value = true
+      
+      // 生成随机文件名
+      const fileExt = file.raw.name.split('.').pop() || 'png'
+      const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
+
+      // 获取预签名 URL
+      const res = await defaultApi.apiCosPresignedUrlPost({
+        type: 'upload',
+        key: fileName
+      })
+
+      if (res.code !== 0) {
+        throw new Error(res.msg || '获取上传地址失败')
+      }
+
+      // 上传文件到预签名 URL
+      const response = await fetch(res.data.url, {
+        method: 'PUT',
+        body: file.raw,
+        headers: {
+          'Content-Type': file.raw.type
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('上传失败')
+      }
+
+      // 获取待签名下载 URL
+      const res1 = await defaultApi.apiCosPresignedUrlPost({
+        key: fileName,
+        type: 'download'
+      })
+
+      if (res1.code !== 0) {
+        throw new Error(res1.msg || '获取访问地址失败')
+      }
+
+      // 更新 v-model
+      emit('update:modelValue', res1.data.url)
+      emit('success', res1.data.url)
+      ElMessage.success('上传成功')
+    } catch (error) {
+      console.error('上传失败:', error)
+      emit('error', error)
+      ElMessage.error(error.message || '上传失败，请重试')
+    } finally {
+      uploading.value = false
+    }
   }
 }
 
