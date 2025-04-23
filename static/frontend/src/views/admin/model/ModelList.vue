@@ -108,18 +108,18 @@
         label-width="100px"
       >
         <el-form-item label="模型头像" prop="avatar" class="avatar-uploader">
-          <el-upload
-            class="avatar-upload"
-            :show-file-list="false"
-            :auto-upload="false"
-            :on-change="handleAvatarChange"
-            accept="image/*"
-          >
-            <div class="avatar-wrapper">
-              <img v-if="modelForm.avatar" :src="modelForm.avatar" class="avatar-image">
-              <el-icon v-else class="avatar-icon"><Plus /></el-icon>
-            </div>
-          </el-upload>
+          <ImageUploader
+            v-model="modelForm.avatar"
+            :circle="true"
+            :fixed="true"
+            :crop-width="200"
+            :crop-height="200"
+            placeholder="点击上传头像"
+            @success="(url) => {
+              console.log('Upload success:', url)
+            }"
+            @error="(error) => ElMessage.error(error.message || '上传失败')"
+          />
         </el-form-item>
         <el-form-item label="模型名称" prop="name">
           <el-input v-model="modelForm.name" placeholder="请输入模型名称" />
@@ -158,51 +158,14 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
-
-    <!-- 图片裁剪对话框 -->
-    <el-dialog
-      v-model="cropperVisible"
-      title="裁剪头像"
-      width="600px"
-      append-to-body
-      :close-on-click-modal="false"
-      destroy-on-close
-    >
-      <div class="cropper-container">
-        <VueCropper
-          ref="cropperRef"
-          :img="cropperImage"
-          :outputSize="1"
-          outputType="png"
-          :info="true"
-          :full="true"
-          :canMove="true"
-          :canMoveBox="true"
-          :original="false"
-          :autoCrop="true"
-          :autoCropWidth="200"
-          :autoCropHeight="200"
-          :fixedBox="true"
-          :fixed="true"
-          :fixedNumber="[1, 1]"
-          :centerBox="true"
-        />
-      </div>
-      <template #footer>
-        <el-button @click="cropperVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCropImage">确认</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, Edit, Delete, Plus } from '@element-plus/icons-vue'
-import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
-import 'vue-cropper/dist/index.css'
-import {defaultApi} from "@/api/index.js";
+import { ArrowDown, ArrowUp, Edit, Delete } from '@element-plus/icons-vue'
+import ImageUploader from '@/components/common/ImageUploader.vue'
 
 // 搜索表单
 const searchForm = ref({
@@ -241,11 +204,6 @@ const modelRules = {
     { max: 500, message: '描述不能超过500个字符', trigger: 'blur' }
   ]
 }
-
-// 裁剪相关
-const cropperVisible = ref(false)
-const cropperImage = ref('')
-const cropperRef = ref(null)
 
 // 加载模型列表
 const loadModels = async () => {
@@ -389,105 +347,6 @@ const handleSizeChange = (size) => {
 const handleCurrentChange = (page) => {
   currentPage.value = page
   loadModels()
-}
-
-// 处理头像变更
-const handleAvatarChange = (file) => {
-  if (!file) return
-
-  // 验证文件类型和大小
-  const isImage = file.raw.type.startsWith('image/')
-  const isLt2M = file.raw.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('请上传图片文件！')
-    return
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB！')
-    return
-  }
-
-  // 读取文件并显示裁剪对话框
-  const reader = new FileReader()
-  reader.readAsDataURL(file.raw)
-  reader.onload = (e) => {
-    cropperImage.value = e.target.result
-    cropperVisible.value = true
-  }
-}
-
-// 处理图片裁剪
-const handleCropImage = async () => {
-  if (!cropperRef.value) return
-
-  try {
-    // 获取裁剪后的图片数据
-    const base64Data = await new Promise((resolve) => {
-      cropperRef.value.getCropData((data) => resolve(data))
-    })
-
-
-    // 将 base64 转换为 Blob
-    const blob = await fetch(base64Data).then(res => res.blob())
-
-    // 生成随机文件名
-    const fileExt = 'png'
-    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
-
-    try {
-      // 获取预签名 URL
-      const res = await defaultApi.apiCosPresignedUrlPost({
-        type: 'upload',
-        key: fileName
-      })
-
-      if (res.code !== 0) {
-        ElMessage.error('获取预签名URL失败：' + res.msg)
-        return
-      }
-
-      let presignedData = res.data
-
-      // 上传文件到预签名 URL
-      const response = await fetch(presignedData.url, {
-        method: 'PUT',
-        body: blob,
-        headers: {
-          'Content-Type': 'image/png'
-        }
-      })
-
-      if (!response.ok) {
-        console.error('上传失败:', response)
-        throw new Error('上传失败')
-      }
-
-      // 获取待签名下载 URL，用于显示图片
-      const res1 = await defaultApi.apiCosPresignedUrlPost({
-        key: fileName,
-        type: 'download'
-      })
-      if (res1.code !== 0) {
-        ElMessage.error('获取预签名URL失败：' + res1.msg)
-        return
-      }
-      presignedData = res1.data
-
-      // 设置头像 URL
-      modelForm.value.avatar = presignedData.url // 或者使用完整的访问 URL
-
-      // 关闭裁剪对话框
-      cropperVisible.value = false
-      ElMessage.success('头像上传成功')
-    } catch (error) {
-      console.error('上传失败:', error)
-      ElMessage.error('头像上传失败，请重试')
-    }
-  } catch (error) {
-    console.error('裁剪失败:', error)
-    ElMessage.error('图片裁剪失败，请重试')
-  }
 }
 
 // 页面加载时获取数据
@@ -665,83 +524,6 @@ onMounted(() => {
   :deep(.el-upload) {
     width: 100%;
     text-align: center;
-  }
-}
-
-.avatar-wrapper {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto;
-  border: 2px dashed var(--el-border-color);
-  border-radius: 50%;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  &:hover {
-    border-color: var(--el-color-primary);
-    transform: translateY(-2px);
-  }
-
-  .avatar-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .avatar-icon {
-    font-size: 30px;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.cropper-container {
-  height: 500px;
-  background: #262626;
-
-  :deep(.vue-cropper) {
-    height: 100%;
-    width: 100%;
-
-    .cropper-view-box,
-    .cropper-face {
-      border-radius: 50%;
-    }
-
-    .cropper-dashed {
-      display: none;
-    }
-
-    .cropper-view-box {
-      outline: 1px solid #fff;
-      box-shadow: 0 0 0 1px #fff;
-    }
-
-    .cropper-face {
-      background-color: transparent !important;
-    }
-
-    .cropper-point {
-      width: 8px !important;
-      height: 8px !important;
-      opacity: 1 !important;
-      background-color: #fff !important;
-      border-radius: 50%;
-
-      &.point-se {
-        width: 8px !important;
-        height: 8px !important;
-      }
-    }
-
-    .cropper-line {
-      background: #fff;
-      opacity: 0.3;
-    }
   }
 }
 </style>
