@@ -14,6 +14,10 @@ func GetUIDFromContext(c *gin.Context) int64 {
 	return c.MustGet("userId").(int64)
 }
 
+func GetCosClientFromContext(c *gin.Context) *COSClient {
+	return c.MustGet("cos").(*COSClient)
+}
+
 func GetRoleFromContext(c *gin.Context) int8 {
 	return c.MustGet("role").(int8)
 }

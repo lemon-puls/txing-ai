@@ -5,6 +5,7 @@ import (
 	"txing-ai/internal/controller/captcha"
 	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
+	"txing-ai/internal/controller/cos"
 	"txing-ai/internal/controller/model"
 	"txing-ai/internal/controller/preset"
 	"txing-ai/internal/controller/user"
@@ -38,6 +39,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	// 验证码相关路由
 	captcha.Register(group.Group("/captcha"))
+
+	// COS 相关路由
+	cos.Register(group.Group("/cos"))
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

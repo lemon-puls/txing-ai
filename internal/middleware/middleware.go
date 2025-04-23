@@ -6,11 +6,12 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"time"
+	"txing-ai/internal/utils"
 )
 
-func RegisterMiddleware(app *gin.Engine, db *gorm.DB, redis *redis.Client) {
+func RegisterMiddleware(app *gin.Engine, db *gorm.DB, redis *redis.Client, cosClient *utils.COSClient) {
 
-	app.Use(BuiltinMiddleWare(db, redis))
+	app.Use(BuiltinMiddleWare(db, redis, cosClient))
 
 	app.Use(RecoveryWithZap(zap.L(), false))
 

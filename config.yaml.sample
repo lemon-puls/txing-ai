@@ -40,3 +40,12 @@ mysql:
   database: "txing_ai"
   max_open_conns: 200
   max_idle_conns: 50
+
+cos:
+  access_key: ""
+  secret_key: ""
+  #  地域
+  region: ""
+  # 存储桶名称
+  bucket: ""
+  base_url: "https://www.example.com"

@@ -69,8 +69,15 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	// 初始化 captcha 验证码 store
 	captcha.InitStore(redisClient)
 
+	// 初始化 COS 客户端
+	cosClient, err := utils.NewCOSClient(appConfig.CosConfig)
+	if err != nil {
+		log.Error("cos client init error", zap.Error(err))
+		panic(err)
+	}
+
 	// 注册全局中间（局部中间件在具体的路由处注册）
-	middleware.RegisterMiddleware(engine, db, redisClient)
+	middleware.RegisterMiddleware(engine, db, redisClient, cosClient)
 	// 注册路由
 	route.Register(engine, resProvider)
 

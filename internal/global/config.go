@@ -38,6 +38,8 @@ type CosConfig struct {
 	SecretKey string `mapstructure:"secret_key"`
 	Region    string `mapstructure:"region"`
 	Bucket    string `mapstructure:"bucket"`
+	// 自定义域名 baseurl
+	BaseURL string `mapstructure:"base_url"`
 }
 
 type AuthConfig struct {
