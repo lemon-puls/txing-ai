@@ -404,18 +404,17 @@ onMounted(() => {
   width: 100%;
   min-height: 100vh;
   background-color: var(--el-bg-color-page);
-  position: static; // 改为静态定位
-  overflow-y: auto; // 允许垂直滚动
+  position: static;
+  overflow-y: auto;
 
-  // 背景效果
   &::before {
     content: '';
-    position: fixed; // 背景固定在视口
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 0;
+    z-index: -1; // 设置为低层级避免影响弹窗
     pointer-events: none;
     background:
       radial-gradient(circle at 0% 0%, rgba(var(--el-color-primary-rgb), 0.1) 0%, transparent 50%),

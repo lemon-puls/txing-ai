@@ -7,7 +7,7 @@ import {
   Message,
   Key
 } from '@element-plus/icons-vue'
-import {defaultApi} from "@/api/index.js";
+import { defaultApi } from "@/api/index.js";
 import { useUserStore } from '@/stores/user'
 
 // 获取 user store
@@ -211,158 +211,196 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <!-- 炫酷的弹窗容器 -->
-  <div class="auth-wrapper" v-show="modelValue">
-    <!-- 玻璃拟态背景 -->
-    <div class="auth-backdrop" @click.self="closeDialog"></div>
+  <!-- 使用 Teleport 将弹窗内容传送到 body 元素上 -->
+  <Teleport to="body">
+    <div class="auth-wrapper" v-show="modelValue">
+      <!-- 玻璃拟态背景 -->
+      <div class="auth-backdrop" @click.self="closeDialog"></div>
 
-    <!-- 弹窗主体 -->
-    <Transition name="zoom">
-      <div class="auth-dialog" v-show="modelValue">
-        <!-- Logo 区域 -->
-        <div class="logo-container">
-          <div class="logo-text">
-            <span class="gradient-text">Txing</span>
-            <span class="ai-text">AI</span>
+      <!-- 弹窗主体 -->
+      <Transition name="zoom">
+        <div class="auth-dialog" v-show="modelValue">
+          <!-- Logo 区域 -->
+          <div class="logo-container">
+            <div class="logo-text">
+              <span class="gradient-text">Txing</span>
+              <span class="ai-text">AI</span>
+            </div>
+            <div class="slogan">智能助手，助你远航</div>
           </div>
-          <div class="slogan">智能助手，助你远航</div>
-        </div>
 
-        <!-- 标签页切换 -->
-        <el-tabs v-model="activeTab" class="modern-tabs">
-          <el-tab-pane label="登录" name="login">
-            <!-- 登录表单 -->
-            <el-form
-              ref="formRef"
-              :model="form"
-              :rules="rules"
-              @submit.prevent="handleSubmit"
-              class="modern-form"
-            >
-              <el-form-item prop="username">
-                <el-input
-                  v-model="form.username"
-                  placeholder="用户名"
-                  :prefix-icon="User"
-                />
-              </el-form-item>
-
-              <el-form-item prop="password">
-                <el-input
-                  v-model="form.password"
-                  type="password"
-                  placeholder="密码"
-                  show-password
-                  :prefix-icon="Lock"
-                />
-              </el-form-item>
-
-              <div class="captcha-group">
-                <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+          <!-- 标签页切换 -->
+          <el-tabs v-model="activeTab" class="modern-tabs">
+            <el-tab-pane label="登录" name="login">
+              <!-- 登录表单 -->
+              <el-form
+                ref="formRef"
+                :model="form"
+                :rules="rules"
+                @submit.prevent="handleSubmit"
+                class="modern-form"
+              >
+                <el-form-item prop="username">
                   <el-input
-                    v-model="form.captcha"
-                    placeholder="验证码"
-                    :prefix-icon="Key"
+                    v-model="form.username"
+                    placeholder="用户名"
+                    :prefix-icon="User"
                   />
                 </el-form-item>
-                <img
-                  :src="captchaImage"
-                  class="captcha-image"
-                  alt="验证码"
-                  @click="getCaptcha"
-                  title="点击刷新验证码"
-                />
-              </div>
 
-              <div class="form-footer">
-                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-                <el-button type="text" class="forget-btn">忘记密码？</el-button>
-              </div>
-            </el-form>
-          </el-tab-pane>
-
-          <el-tab-pane label="注册" name="register">
-            <!-- 注册表单 -->
-            <el-form
-              ref="formRef"
-              :model="form"
-              :rules="rules"
-              @submit.prevent="handleSubmit"
-              class="modern-form"
-            >
-              <el-form-item prop="username">
-                <el-input
-                  v-model="form.username"
-                  placeholder="用户名"
-                  :prefix-icon="User"
-                />
-              </el-form-item>
-
-              <el-form-item prop="email">
-                <el-input
-                  v-model="form.email"
-                  placeholder="邮箱"
-                  :prefix-icon="Message"
-                />
-              </el-form-item>
-
-              <el-form-item prop="password">
-                <el-input
-                  v-model="form.password"
-                  type="password"
-                  placeholder="密码"
-                  show-password
-                  :prefix-icon="Lock"
-                />
-              </el-form-item>
-
-              <el-form-item prop="confirmPassword">
-                <el-input
-                  v-model="form.confirmPassword"
-                  type="password"
-                  placeholder="确认密码"
-                  show-password
-                  :prefix-icon="Lock"
-                />
-              </el-form-item>
-
-              <div class="captcha-group">
-                <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+                <el-form-item prop="password">
                   <el-input
-                    v-model="form.captcha"
-                    placeholder="验证码"
-                    :prefix-icon="Key"
+                    v-model="form.password"
+                    type="password"
+                    placeholder="密码"
+                    show-password
+                    :prefix-icon="Lock"
                   />
                 </el-form-item>
-                <img
-                  :src="captchaImage"
-                  class="captcha-image"
-                  alt="验证码"
-                  @click="getCaptcha"
-                  title="点击刷新验证码"
-                />
-              </div>
-            </el-form>
-          </el-tab-pane>
-        </el-tabs>
 
-        <!-- 操作按钮 -->
-        <div class="dialog-footer">
-          <el-button
-            type="primary"
-            @click="handleSubmit"
-            class="submit-button"
-            :loading="loading"
-          >
-            {{ activeTab === 'login' ? '登 录' : '注 册' }}
-          </el-button>
+                <div class="captcha-group">
+                  <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+                    <el-input
+                      v-model="form.captcha"
+                      placeholder="验证码"
+                      :prefix-icon="Key"
+                    />
+                  </el-form-item>
+                  <img
+                    :src="captchaImage"
+                    class="captcha-image"
+                    alt="验证码"
+                    @click="getCaptcha"
+                    title="点击刷新验证码"
+                  />
+                </div>
+
+                <div class="form-footer">
+                  <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                  <el-button type="text" class="forget-btn">忘记密码？</el-button>
+                </div>
+              </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="注册" name="register">
+              <!-- 注册表单 -->
+              <el-form
+                ref="formRef"
+                :model="form"
+                :rules="rules"
+                @submit.prevent="handleSubmit"
+                class="modern-form"
+              >
+                <el-form-item prop="username">
+                  <el-input
+                    v-model="form.username"
+                    placeholder="用户名"
+                    :prefix-icon="User"
+                  />
+                </el-form-item>
+
+                <el-form-item prop="email">
+                  <el-input
+                    v-model="form.email"
+                    placeholder="邮箱"
+                    :prefix-icon="Message"
+                  />
+                </el-form-item>
+
+                <el-form-item prop="password">
+                  <el-input
+                    v-model="form.password"
+                    type="password"
+                    placeholder="密码"
+                    show-password
+                    :prefix-icon="Lock"
+                  />
+                </el-form-item>
+
+                <el-form-item prop="confirmPassword">
+                  <el-input
+                    v-model="form.confirmPassword"
+                    type="password"
+                    placeholder="确认密码"
+                    show-password
+                    :prefix-icon="Lock"
+                  />
+                </el-form-item>
+
+                <div class="captcha-group">
+                  <el-form-item prop="captcha" style="margin-bottom: 0; flex: 1;">
+                    <el-input
+                      v-model="form.captcha"
+                      placeholder="验证码"
+                      :prefix-icon="Key"
+                    />
+                  </el-form-item>
+                  <img
+                    :src="captchaImage"
+                    class="captcha-image"
+                    alt="验证码"
+                    @click="getCaptcha"
+                    title="点击刷新验证码"
+                  />
+                </div>
+              </el-form>
+            </el-tab-pane>
+          </el-tabs>
+
+          <!-- 操作按钮 -->
+          <div class="dialog-footer">
+            <el-button
+              type="primary"
+              @click="handleSubmit"
+              class="submit-button"
+              :loading="loading"
+            >
+              {{ activeTab === 'login' ? '登 录' : '注 册' }}
+            </el-button>
+          </div>
         </div>
-      </div>
-    </Transition>
-  </div>
+      </Transition>
+    </div>
+  </Teleport>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
+.auth-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999999;
+}
+
+.auth-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  z-index: -1;
+}
+
+.auth-dialog {
+  width: 400px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--el-bg-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  padding: 24px;
+  position: relative;
+  z-index: 2;
+}
+
 /* 炫酷的弹窗动画 */
 .zoom-enter-active,
 .zoom-leave-active {
@@ -372,53 +410,6 @@ const handleSubmit = async () => {
 .zoom-leave-to {
   opacity: 0;
   transform: scale(0.9);
-}
-
-.auth-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.auth-backdrop {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(10px);
-}
-
-.auth-dialog {
-  position: relative;
-  width: 400px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow:
-    0 0 30px rgba(0, 0, 0, 0.1),
-    0 0 60px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 200px;
-    background: linear-gradient(
-      135deg,
-      rgba(91, 228, 155, 0.1),
-      rgba(0, 167, 225, 0.1)
-    );
-    z-index: 0;
-  }
 }
 
 .logo-container {
@@ -536,6 +527,24 @@ const handleSubmit = async () => {
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 167, 225, 0.3);
+  }
+}
+
+/* 全局样式，确保弹窗层级和位置 */
+.auth-dialog {
+  .el-dialog {
+    margin-top: 15vh !important;
+  }
+  
+  .el-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2000 !important;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow: auto;
   }
 }
 </style>
