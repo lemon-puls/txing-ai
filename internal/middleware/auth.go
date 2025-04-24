@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"strings"
 	"txing-ai/internal/enum"
 	"txing-ai/internal/global"
@@ -19,7 +20,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		token := ctx.Request.Header.Get(TokenKey)
 		if token == "" {
 			log.Error("Token is missing")
-			utils.ErrorWithCode(ctx, global.CodeNotLogin, nil)
+			utils.ErrorWithHttpCode(ctx, http.StatusUnauthorized, global.CodeNotLogin, nil)
 			ctx.Abort()
 			return
 		}
@@ -27,7 +28,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		parts := strings.SplitN(token, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			log.Error("Token format is invalid")
-			utils.ErrorWithCode(ctx, global.CodeNotLogin, nil)
+			utils.ErrorWithHttpCode(ctx, http.StatusUnauthorized, global.CodeNotLogin, nil)
 			ctx.Abort()
 			return
 		}
@@ -35,7 +36,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims, err := utils.VerifyToken(parts[1])
 		if err != nil {
 			log.Error("Token is invalid")
-			utils.ErrorWithCode(ctx, global.CodeNotLogin, nil)
+			utils.ErrorWithHttpCode(ctx, http.StatusUnauthorized, global.CodeNotLogin, nil)
 			ctx.Abort()
 			return
 		}
@@ -60,7 +61,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		if strings.HasPrefix(ctx.Request.URL.Path, "/api/admin") {
 			if claims.Role != enum.UserTypeSuper {
 				log.Error("User is not admin, cannot access admin api")
-				utils.ErrorWithCode(ctx, global.CodeNotPermission, nil)
+				utils.ErrorWithHttpCode(ctx, http.StatusForbidden, global.CodeNotPermission, nil)
 				ctx.Abort()
 				return
 			}

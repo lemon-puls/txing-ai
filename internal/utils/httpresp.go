@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"net/http"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Response struct {
@@ -119,5 +120,28 @@ func OkWithData(ctx *gin.Context, data interface{}) {
 		Code: global.CodeSuccess,
 		Msg:  global.Code(global.CodeSuccess).ToMsg(),
 		Data: data,
+	})
+}
+
+// ErrorWithHttpCode 返回指定 HTTP 状态码的错误响应
+// Returns an error response with specified HTTP status code
+func ErrorWithHttpCode(ctx *gin.Context, httpCode int, code global.Code, err error) {
+	fields := []zap.Field{
+		zap.String("uri:", ctx.Request.RequestURI),
+		zap.Int("code:", int(code)),
+		zap.String("msg:", code.ToMsg()),
+		zap.Int("httpCode:", httpCode),
+	}
+
+	if err != nil {
+		fields = append(fields, zap.Error(err))
+	}
+
+	log.Error("return error", fields...)
+
+	response(ctx, httpCode, &Response{
+		Code: int(code),
+		Msg:  code.ToMsg(),
+		Data: nil,
 	})
 }
