@@ -154,14 +154,34 @@ func UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	user.Email = req.Email
-	user.Phone = req.Phone
-	user.Gender = req.Gender
-	user.Age = req.Age
-	user.Avatar = req.Avatar
+	// 只更新有值的字段
+	updates := make(map[string]interface{})
 
-	if err := db.Save(&user).Error; err != nil {
+	if req.Email != "" {
+		updates["email"] = req.Email
+	}
+	if req.Phone != "" {
+		updates["phone"] = req.Phone
+	}
+	if req.Gender > 0 {
+		updates["gender"] = req.Gender
+	}
+	if req.Age > 0 {
+		updates["age"] = req.Age
+	}
+	if req.Avatar != "" {
+		updates["avatar"] = req.Avatar
+	}
+
+	// 使用 Updates 方法只更新有变化的字段
+	if err := db.Model(&user).Updates(updates).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "更新失败", err)
+		return
+	}
+
+	// 重新查询最新的用户信息
+	if err := db.First(&user, userId).Error; err != nil {
+		utils.ErrorWithMsg(ctx, "获取更新后的用户信息失败", err)
 		return
 	}
 
