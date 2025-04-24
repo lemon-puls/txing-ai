@@ -42,6 +42,15 @@ const router = createRouter({
             title: '智能对话',
             icon: 'chat'
           }
+        },
+        {
+          path: '/profile',
+          name: 'Profile',
+          component: () => import('@/views/profile/index.vue'),
+          meta: {
+            requiresAuth: true,
+            title: '个人中心'
+          }
         }
       ]
     },
