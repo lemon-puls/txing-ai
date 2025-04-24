@@ -2,9 +2,12 @@ package user
 
 import (
 	"fmt"
+	"strings"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/enum"
+	"txing-ai/internal/global"
+	userservice "txing-ai/internal/service/user"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/captcha"
 	"txing-ai/internal/utils/page"
@@ -357,4 +360,38 @@ func ToggleUserStatus(ctx *gin.Context) {
 		statusMsg = "禁用"
 	}
 	utils.OkWithMsg(ctx, fmt.Sprintf("用户%s成功", statusMsg))
+}
+
+// RefreshToken : 刷新访问令牌
+// @Summary 刷新访问令牌
+// @Description 使用刷新令牌获取新的访问令牌
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 刷新令牌"
+// @Success 200 {object} utils.Response{data=vo.TokenPair} "成功响应"
+// @Router /api/user/refresh [post]
+func RefreshToken(ctx *gin.Context) {
+	// 从请求头获取刷新令牌
+	token := ctx.Request.Header.Get("Authorization")
+	if token == "" {
+		utils.ErrorWithCode(ctx, global.CodeNotLogin, nil)
+		return
+	}
+
+	parts := strings.SplitN(token, " ", 2)
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		utils.ErrorWithCode(ctx, global.CodeNotLogin, nil)
+		return
+	}
+
+	db := utils.GetDBFromContext(ctx)
+
+	// 调用业务层处理刷新token
+	tokens, err := userservice.RefreshToken(token, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "刷新token失败", err)
+		return
+	}
+	utils.OkWithData(ctx, tokens)
 }

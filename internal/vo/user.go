@@ -30,6 +30,11 @@ type LoginVO struct {
 
 }
 
+type TokenPair struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 // ToUserVO 将 User 转换为 UserVO
 func ToUserVO(user domain.User) UserVO {
 	return UserVO{

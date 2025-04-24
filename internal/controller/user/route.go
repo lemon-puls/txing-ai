@@ -15,6 +15,7 @@ func Register(r *gin.RouterGroup) {
 		userGroup.POST("/register", userRegister)
 		userGroup.POST("/login", Login)
 		userGroup.POST("/logout", Logout)
+		userGroup.GET("/refresh", RefreshToken)
 		// 用户登录路由
 		// User login route
 		userGroup.PUT("/profile", UpdateProfile)
