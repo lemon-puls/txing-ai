@@ -139,10 +139,12 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+*TxingAiApi.DefaultApi* | [**apiUserInfoGet**](docs/DefaultApi.md#apiUserInfoGet) | **GET** /api/user/info | 获取当前用户信息
 *TxingAiApi.DefaultApi* | [**apiUserLoginPost**](docs/DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 *TxingAiApi.DefaultApi* | [**apiUserLogoutPost**](docs/DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
 *TxingAiApi.DefaultApi* | [**apiUserPasswordPut**](docs/DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
 *TxingAiApi.DefaultApi* | [**apiUserProfilePut**](docs/DefaultApi.md#apiUserProfilePut) | **PUT** /api/user/profile | 更新个人信息
+*TxingAiApi.DefaultApi* | [**apiUserRefreshPost**](docs/DefaultApi.md#apiUserRefreshPost) | **POST** /api/user/refresh | 刷新访问令牌
 *TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 *TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 
@@ -153,8 +155,9 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
  - [TxingAiApi.ApiAdminPresetPost200Response](docs/ApiAdminPresetPost200Response.md)
  - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
+ - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
- - [TxingAiApi.ApiUserProfilePut200Response](docs/ApiUserProfilePut200Response.md)
+ - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
  - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
@@ -173,6 +176,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
  - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
  - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
+ - [TxingAiApi.VoTokenPair](docs/VoTokenPair.md)
  - [TxingAiApi.VoUserVO](docs/VoUserVO.md)
 
 

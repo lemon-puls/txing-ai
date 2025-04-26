@@ -17,8 +17,9 @@ import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Respo
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
 import ApiAdminPresetPost200Response from '../model/ApiAdminPresetPost200Response';
 import ApiCosPresignedUrlPost200Response from '../model/ApiCosPresignedUrlPost200Response';
+import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
-import ApiUserProfilePut200Response from '../model/ApiUserProfilePut200Response';
+import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Response';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
 import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
@@ -1055,6 +1056,54 @@ export default class DefaultApi {
 
 
     /**
+     * 获取当前用户信息
+     * 获取当前登录用户的详细信息
+     * @param {String} authorization Bearer 访问令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserInfoGet200Response} and HTTP response
+     */
+    apiUserInfoGetWithHttpInfo(authorization) {
+      let postBody = null;
+      // verify the required parameter 'authorization' is set
+      if (authorization === undefined || authorization === null) {
+        throw new Error("Missing the required parameter 'authorization' when calling apiUserInfoGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+        'Authorization': authorization
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiUserInfoGet200Response;
+      return this.apiClient.callApi(
+        '/api/user/info', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取当前用户信息
+     * 获取当前登录用户的详细信息
+     * @param {String} authorization Bearer 访问令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserInfoGet200Response}
+     */
+    apiUserInfoGet(authorization) {
+      return this.apiUserInfoGetWithHttpInfo(authorization)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
      * 用户登录
      * 用户登录并返回token
      * @param {module:model/DtoLoginReq} data 登录信息
@@ -1193,7 +1242,7 @@ export default class DefaultApi {
      * 更新个人信息
      * 更新当前登录用户的个人信息
      * @param {module:model/DtoUpdateProfileReq} data 个人信息
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserProfilePut200Response} and HTTP response
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserInfoGet200Response} and HTTP response
      */
     apiUserProfilePutWithHttpInfo(data) {
       let postBody = data;
@@ -1214,7 +1263,7 @@ export default class DefaultApi {
       let authNames = [];
       let contentTypes = ['application/json'];
       let accepts = ['application/json'];
-      let returnType = ApiUserProfilePut200Response;
+      let returnType = ApiUserInfoGet200Response;
       return this.apiClient.callApi(
         '/api/user/profile', 'PUT',
         pathParams, queryParams, headerParams, formParams, postBody,
@@ -1226,7 +1275,7 @@ export default class DefaultApi {
      * 更新个人信息
      * 更新当前登录用户的个人信息
      * @param {module:model/DtoUpdateProfileReq} data 个人信息
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserProfilePut200Response}
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserInfoGet200Response}
      */
     apiUserProfilePut(data) {
       return this.apiUserProfilePutWithHttpInfo(data)
@@ -1237,10 +1286,58 @@ export default class DefaultApi {
 
 
     /**
+     * 刷新访问令牌
+     * 使用刷新令牌获取新的访问令牌
+     * @param {String} authorization Bearer 刷新令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserRefreshPost200Response} and HTTP response
+     */
+    apiUserRefreshPostWithHttpInfo(authorization) {
+      let postBody = null;
+      // verify the required parameter 'authorization' is set
+      if (authorization === undefined || authorization === null) {
+        throw new Error("Missing the required parameter 'authorization' when calling apiUserRefreshPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+        'Authorization': authorization
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiUserRefreshPost200Response;
+      return this.apiClient.callApi(
+        '/api/user/refresh', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 刷新访问令牌
+     * 使用刷新令牌获取新的访问令牌
+     * @param {String} authorization Bearer 刷新令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserRefreshPost200Response}
+     */
+    apiUserRefreshPost(authorization) {
+      return this.apiUserRefreshPostWithHttpInfo(authorization)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
      * 用户注册
      * 新用户注册
      * @param {module:model/DtoRegisterReq} data 注册信息
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserProfilePut200Response} and HTTP response
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiUserInfoGet200Response} and HTTP response
      */
     apiUserRegisterPostWithHttpInfo(data) {
       let postBody = data;
@@ -1261,7 +1358,7 @@ export default class DefaultApi {
       let authNames = [];
       let contentTypes = ['application/json'];
       let accepts = ['application/json'];
-      let returnType = ApiUserProfilePut200Response;
+      let returnType = ApiUserInfoGet200Response;
       return this.apiClient.callApi(
         '/api/user/register', 'POST',
         pathParams, queryParams, headerParams, formParams, postBody,
@@ -1273,7 +1370,7 @@ export default class DefaultApi {
      * 用户注册
      * 新用户注册
      * @param {module:model/DtoRegisterReq} data 注册信息
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserProfilePut200Response}
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiUserInfoGet200Response}
      */
     apiUserRegisterPost(data) {
       return this.apiUserRegisterPostWithHttpInfo(data)

@@ -6,8 +6,9 @@ docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
 docs/ApiAdminPresetPost200Response.md
 docs/ApiCosPresignedUrlPost200Response.md
+docs/ApiUserInfoGet200Response.md
 docs/ApiUserLoginPost200Response.md
-docs/ApiUserProfilePut200Response.md
+docs/ApiUserRefreshPost200Response.md
 docs/DefaultApi.md
 docs/DtoCreateChannelReq.md
 docs/DtoCreateModelReq.md
@@ -27,6 +28,7 @@ docs/VoGetPresignedURLVO.md
 docs/VoLoginVO.md
 docs/VoModelVO.md
 docs/VoPresetVO.md
+docs/VoTokenPair.md
 docs/VoUserVO.md
 git_push.sh
 mocha.opts
@@ -38,8 +40,9 @@ src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
 src/model/ApiAdminPresetPost200Response.js
 src/model/ApiCosPresignedUrlPost200Response.js
+src/model/ApiUserInfoGet200Response.js
 src/model/ApiUserLoginPost200Response.js
-src/model/ApiUserProfilePut200Response.js
+src/model/ApiUserRefreshPost200Response.js
 src/model/DtoCreateChannelReq.js
 src/model/DtoCreateModelReq.js
 src/model/DtoCreatePresetReq.js
@@ -58,4 +61,8 @@ src/model/VoGetPresignedURLVO.js
 src/model/VoLoginVO.js
 src/model/VoModelVO.js
 src/model/VoPresetVO.js
+src/model/VoTokenPair.js
 src/model/VoUserVO.js
+test/model/ApiUserInfoGet200Response.spec.js
+test/model/ApiUserRefreshPost200Response.spec.js
+test/model/VoTokenPair.spec.js

@@ -23,10 +23,12 @@ Method | HTTP request | Description
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+[**apiUserInfoGet**](DefaultApi.md#apiUserInfoGet) | **GET** /api/user/info | 获取当前用户信息
 [**apiUserLoginPost**](DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 [**apiUserLogoutPost**](DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
 [**apiUserPasswordPut**](DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
 [**apiUserProfilePut**](DefaultApi.md#apiUserProfilePut) | **PUT** /api/user/profile | 更新个人信息
+[**apiUserRefreshPost**](DefaultApi.md#apiUserRefreshPost) | **POST** /api/user/refresh | 刷新访问令牌
 [**apiUserRegisterPost**](DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 [**apiUserResetPasswordPost**](DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 
@@ -914,6 +916,50 @@ No authorization required
 - **Accept**: application/json
 
 
+## apiUserInfoGet
+
+> ApiUserInfoGet200Response apiUserInfoGet(authorization)
+
+获取当前用户信息
+
+获取当前登录用户的详细信息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let authorization = "authorization_example"; // String | Bearer 访问令牌
+apiInstance.apiUserInfoGet(authorization).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **authorization** | **String**| Bearer 访问令牌 | 
+
+### Return type
+
+[**ApiUserInfoGet200Response**](ApiUserInfoGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## apiUserLoginPost
 
 > ApiUserLoginPost200Response apiUserLoginPost(data)
@@ -1044,7 +1090,7 @@ No authorization required
 
 ## apiUserProfilePut
 
-> ApiUserProfilePut200Response apiUserProfilePut(data)
+> ApiUserInfoGet200Response apiUserProfilePut(data)
 
 更新个人信息
 
@@ -1074,7 +1120,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ApiUserProfilePut200Response**](ApiUserProfilePut200Response.md)
+[**ApiUserInfoGet200Response**](ApiUserInfoGet200Response.md)
 
 ### Authorization
 
@@ -1086,9 +1132,53 @@ No authorization required
 - **Accept**: application/json
 
 
+## apiUserRefreshPost
+
+> ApiUserRefreshPost200Response apiUserRefreshPost(authorization)
+
+刷新访问令牌
+
+使用刷新令牌获取新的访问令牌
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let authorization = "authorization_example"; // String | Bearer 刷新令牌
+apiInstance.apiUserRefreshPost(authorization).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **authorization** | **String**| Bearer 刷新令牌 | 
+
+### Return type
+
+[**ApiUserRefreshPost200Response**](ApiUserRefreshPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## apiUserRegisterPost
 
-> ApiUserProfilePut200Response apiUserRegisterPost(data)
+> ApiUserInfoGet200Response apiUserRegisterPost(data)
 
 用户注册
 
@@ -1118,7 +1208,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**ApiUserProfilePut200Response**](ApiUserProfilePut200Response.md)
+[**ApiUserInfoGet200Response**](ApiUserInfoGet200Response.md)
 
 ### Authorization
 

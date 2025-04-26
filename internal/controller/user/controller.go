@@ -395,3 +395,26 @@ func RefreshToken(ctx *gin.Context) {
 	}
 	utils.OkWithData(ctx, tokens)
 }
+
+// GetCurrentUser 获取当前用户信息
+// @Summary 获取当前用户信息
+// @Description 获取当前登录用户的详细信息
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 访问令牌"
+// @Success 200 {object} utils.Response{data=vo.UserVO}
+// @Router /api/user/info [get]
+func GetCurrentUser(ctx *gin.Context) {
+	db := utils.GetDBFromContext(ctx)
+	// 获取当前用户ID
+	userId := utils.GetUIDFromContext(ctx)
+
+	var user domain.User
+	if err := db.First(&user, userId).Error; err != nil {
+		utils.ErrorWithMsg(ctx, "获取用户信息失败", err)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToUserVO(user))
+}
