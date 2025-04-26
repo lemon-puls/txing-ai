@@ -39,9 +39,9 @@ func GetPresignedURL(ctx *gin.Context) {
 
 	switch req.Type {
 	case "upload":
-		url, err = cosClient.GenerateUploadPresignedURL(req.Key, time.Duration(expire)*time.Second)
+		url, err = cosClient.GenerateUploadPresignedURL(req.Key)
 	case "download":
-		url, err = cosClient.GenerateDownloadPresignedURL(req.Key, time.Duration(expire)*time.Second)
+		url, err = cosClient.GenerateDownloadPresignedURL(req.Key)
 	default:
 		utils.ErrorWithCode(ctx, http.StatusBadRequest, nil)
 		return

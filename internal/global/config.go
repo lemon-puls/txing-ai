@@ -40,6 +40,8 @@ type CosConfig struct {
 	Bucket    string `mapstructure:"bucket"`
 	// 自定义域名 baseurl
 	BaseURL string `mapstructure:"base_url"`
+	// 预签名URL有效期 单位秒
+	SignExpire time.Duration `mapstructure:"sign_expire"`
 }
 
 type AuthConfig struct {

@@ -3,7 +3,6 @@ package user
 import (
 	"fmt"
 	"strings"
-	"time"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/enum"
@@ -418,7 +417,7 @@ func GetCurrentUser(ctx *gin.Context) {
 	}
 
 	// 转换头像路径 为预签名URL 有效时间 10 分钟
-	user.Avatar, _ = cosClient.GenerateDownloadPresignedURL(user.Avatar, 10*time.Minute)
+	user.Avatar, _ = cosClient.GenerateDownloadPresignedURL(user.Avatar)
 
 	utils.OkWithData(ctx, vo.ToUserVO(user))
 }

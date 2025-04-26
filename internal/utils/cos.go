@@ -134,7 +134,7 @@ func NewCOSClient(config *global.CosConfig) (*COSClient, error) {
 }
 
 // 生成文件上传预签名URL
-func (c *COSClient) GenerateUploadPresignedURL(key string, expire time.Duration) (string, error) {
+func (c *COSClient) GenerateUploadPresignedURL(key string) (string, error) {
 	ctx := context.Background()
 
 	// 获取临时密钥
@@ -154,7 +154,8 @@ func (c *COSClient) GenerateUploadPresignedURL(key string, expire time.Duration)
 
 	// 方法2 通过 tag 设置 x-cos-security-token
 	// 获取预签名
-	presignedURL, err := c.client.Object.GetPresignedURL(ctx, http.MethodPut, key, c.config.AccessKey, c.config.SecretKey, expire, nil)
+	presignedURL, err := c.client.Object.GetPresignedURL(ctx, http.MethodPut, key, c.config.AccessKey,
+		c.config.SecretKey, c.config.SignExpire*time.Second, nil)
 	if err != nil {
 		log.Error("GetPresignedURL failed", zap.Error(err))
 		return "", err
@@ -169,7 +170,7 @@ type URLToken struct {
 }
 
 // 生成文件下载预签名URL
-func (c *COSClient) GenerateDownloadPresignedURL(key string, expire time.Duration) (string, error) {
+func (c *COSClient) GenerateDownloadPresignedURL(key string) (string, error) {
 	ctx := context.Background()
 
 	// 获取临时密钥
@@ -190,7 +191,7 @@ func (c *COSClient) GenerateDownloadPresignedURL(key string, expire time.Duratio
 		key,
 		c.config.AccessKey, // TODO 经测试发现，这里若使用临时密钥，当使用的是自定义域名时，会出现签名错误问题，而使用子账号密钥则不会出现此问题，后面再进一步排查原因。
 		c.config.SecretKey,
-		expire,
+		c.config.SignExpire*time.Second,
 		nil,
 	)
 	if err != nil {

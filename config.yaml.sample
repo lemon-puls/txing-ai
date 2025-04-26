@@ -49,3 +49,5 @@ cos:
   # 存储桶名称
   bucket: ""
   base_url: "https://www.example.com"
+  # 预签名 url 过期时间 单位：秒
+  sign_expire: 600
