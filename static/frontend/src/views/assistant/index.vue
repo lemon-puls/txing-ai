@@ -39,52 +39,34 @@
             :prefix-icon="Search"
             clearable
             @keyup.enter="handleSearch"
+            :loading="loading"
           />
         </div>
       </div>
     </div>
 
     <!-- 分类导航 -->
-    <div class="category-nav">
+    <div class="tag-nav">
       <div
-        v-for="category in categories"
-        :key="category.id"
-        class="category-item"
-        :class="{ active: currentCategory === category.id }"
-        @click="selectCategory(category.id)"
+        v-for="tag in tags"
+        :key="tag.id"
+        class="tag-item"
+        :class="{ active: currentCategory === tag.id }"
+        @click="selectCategory(tag.id)"
       >
-        <el-icon><component :is="category.icon" /></el-icon>
-        <span>{{ category.name }}</span>
+        <el-icon><component :is="tag.icon" /></el-icon>
+        <span>{{ tag.name }}</span>
       </div>
     </div>
 
     <!-- AI助手列表 -->
     <div class="assistants-grid">
-<!--      <el-card-->
-<!--        v-for="assistant in filteredAssistants"-->
-<!--        :key="assistant.id"-->
-<!--        class="assistant-card"-->
-<!--        shadow="hover"-->
-<!--      >-->
-<!--        <div class="assistant-header">-->
-<!--          <el-avatar :src="assistant.avatar" :size="40" />-->
-<!--          <div class="assistant-info">-->
-<!--            <h3>{{ assistant.name }}</h3>-->
-<!--            <p>{{ assistant.description }}</p>-->
-<!--          </div>-->
-<!--          <el-button-->
-<!--            type="primary"-->
-<!--            size="small"-->
-<!--            class="use-btn"-->
-<!--            @click="useAssistant(assistant)"-->
-<!--          >-->
-<!--            使用-->
-<!--          </el-button>-->
-<!--        </div>-->
-<!--      </el-card>-->
-
-
+      <el-empty
+        v-if="filteredAssistants.length === 0"
+        description="暂无数据"
+      />
       <div
+        v-else
         v-for="preset in filteredAssistants"
         :key="preset.id"
         class="preset-card"
@@ -96,27 +78,81 @@
             </el-avatar>
           </div>
           <div class="preset-info">
-            <div class="preset-name-row">
-              <h3 class="preset-name">{{ preset.name }}</h3>
-              <div class="preset-type" :class="preset.type">
-                {{ preset.type === 'official' ? '官方' : '社区' }}
+            <div class="preset-header">
+              <div class="preset-name-row">
+                <h3 class="preset-name">{{ preset.name }}</h3>
+                <el-tag
+                  v-if="preset.type === 'official'"
+                  class="preset-type official-tag"
+                  effect="dark"
+                  size="small"
+                >
+                  <el-icon class="tag-icon"><Star /></el-icon>
+                  官方
+                </el-tag>
+                <el-tag
+                  v-else
+                  class="preset-type community-tag"
+                  type="primary"
+                  effect="plain"
+                  size="small"
+                >
+                  <el-icon class="tag-icon"><User /></el-icon>
+                  社区
+                </el-tag>
+              </div>
+              <div class="preset-categories">
+                <div
+                  v-show="preset.tags"
+                  v-for="tag in preset.tags?.split(',')"
+                  :key="tag"
+                  class="category-dot"
+                  :class="getTagType(tag)"
+                  :title="getTagName(tag)"
+                >
+                  <el-icon class="category-icon"><component :is="getTagIcon(tag)" /></el-icon>
+                </div>
               </div>
             </div>
             <p class="preset-description">{{ preset.description }}</p>
           </div>
         </div>
         <div class="preset-actions">
-          <el-button
-            type="primary"
-            class="use-button"
-            @click.stop="useAssistant(preset)"
-          >
-            <span class="button-content">
-              <el-icon><ArrowRight /></el-icon>
-              使用
-            </span>
-            <span class="button-background"></span>
-          </el-button>
+          <div class="action-wrapper">
+            <template v-if="preset.userId === userStore.userId">
+              <div class="action-icons">
+                <el-tooltip content="编辑" placement="top">
+                  <el-button
+                    class="icon-button edit-button"
+                    circle
+                    @click.stop="editAssistant(preset)"
+                  >
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button
+                    class="icon-button delete-button"
+                    circle
+                    @click.stop="deleteAssistant(preset)"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </el-tooltip>
+              </div>
+            </template>
+            <el-button
+              type="primary"
+              class="use-button"
+              @click.stop="useAssistant(preset)"
+            >
+              <span class="button-content">
+                <el-icon><ArrowRight /></el-icon>
+                使用
+              </span>
+              <span class="button-background"></span>
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -125,6 +161,13 @@
     <create-assistant-dialog
       v-model:visible="createDialogVisible"
       @created="handleAssistantCreated"
+    />
+
+    <!-- 编辑助手弹窗 -->
+    <create-assistant-dialog
+      v-model:visible="editDialogVisible"
+      :edit-data="currentEditAssistant"
+      @updated="handleAssistantUpdated"
     />
   </div>
 </template>
@@ -135,13 +178,25 @@ import {
   Search,
   Plus,
   Timer,
-  ArrowRight
+  ArrowRight,
+  Tools,
+  Edit,
+  Monitor,
+  Reading,
+  House,
+  More,
+  Star,
+  User,
+  Delete
 } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { defaultApi } from '@/api'
 import bgImage from '@/assets/images/header-bg.jpg'
 import { useRouter } from 'vue-router'
 import CreateAssistantDialog from '@/components/assistant/CreateAssistantDialog.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { useThemeStore } from '@/stores/theme'
+import {useUserStore} from "@/stores/user.js";
 
 defineOptions({
   name: 'AssistantList'
@@ -149,6 +204,7 @@ defineOptions({
 
 const router = useRouter()
 const themeStore = useThemeStore()
+const userStore = useUserStore();
 
 // 存储进入页面时的主题状态
 const previousThemeState = ref(null)
@@ -164,6 +220,7 @@ onMounted(() => {
   if (themeStore.isDark) {
     themeStore.toggleTheme()
   }
+  loadAssistants()
 })
 
 // 在组件卸载前恢复原来的主题
@@ -184,11 +241,10 @@ const createDialogVisible = ref(false)
 // 搜索关键词
 const searchQuery = ref('')
 
-// 当前选中的分类
-const currentCategory = ref('all')
-
-// 分类数据
-const categories = [
+// 标签数据
+const tags = [
+  { id: 'all', name: '全部', icon: 'Grid' },
+  { id: 'my', name: '我的助手', icon: 'User' },
   { id: 'popular', name: '热门推荐', icon: 'Star' },
   { id: 'tools', name: '实用工具', icon: 'Tools' },
   { id: 'writing', name: '文案创作', icon: 'Edit' },
@@ -198,56 +254,55 @@ const categories = [
   { id: 'other', name: '其他', icon: 'More' }
 ]
 
-// 助手数据（模拟数据）
-const assistants = [
-  {
-    id: 1,
-    name: '鱼聪明 AI 助手',
-    description: '您的专属大脑，双语对话帮手',
-    avatar: 'https://placeholder.co/100',
-    category: 'all',
-    type: 'official'
-  },
-  {
-    id: 2,
-    name: 'Midjourney 提示词生成器',
-    description: 'midjourney 提示词自动生成',
-    avatar: 'https://placeholder.co/100',
-    category: 'tools',
-    type: 'official'
-  },
-  {
-    id: 3,
-    name: '小红书文案写手',
-    description: '帮您写出爆款小红书文案',
-    avatar: 'https://placeholder.co/100',
-    category: 'writing',
-    type: 'community'
-  },
-  // 更多助手数据...
-]
+// 助手数据
+const assistants = ref([])
+const loading = ref(false)
+
+// 当前选中的标签
+const currentCategory = ref('all')
+
+// 加载助手列表
+const loadAssistants = async () => {
+  try {
+    loading.value = true
+    const response = await defaultApi.apiPresetListGet(1, 999, {
+      orderBy: 'id',
+      order: 'desc',
+      name: searchQuery.value || undefined,
+      tags: currentCategory.value === 'all' || currentCategory.value === 'my' ? undefined : currentCategory.value,
+      userId: currentCategory.value === 'my' ? userStore.userId : undefined
+    })
+
+    if (response.code === 0 && response.data) {
+      assistants.value = response.data.records.map(preset => ({
+        ...preset,
+        type: preset.official ? 'official' : 'community'
+      }))
+    } else {
+      ElMessage.error(response.msg || '获取助手列表失败')
+    }
+  } catch (error) {
+    console.error('Load assistants error:', error)
+    ElMessage.error(error.body?.msg || '获取助手列表失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 // 根据搜索和分类过滤助手
 const filteredAssistants = computed(() => {
-  return assistants.filter(assistant => {
-    const matchesSearch = searchQuery.value === '' ||
-      assistant.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      assistant.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-
-    const matchesCategory = currentCategory.value === 'all' ||
-      assistant.category === currentCategory.value
-
-    return matchesSearch && matchesCategory
-  })
+  return assistants.value
 })
 
-// 方法
+// 处理搜索
 const handleSearch = () => {
-  console.log('搜索:', searchQuery.value)
+  loadAssistants()
 }
 
-const selectCategory = (categoryId) => {
-  currentCategory.value = categoryId
+// 选择标签
+const selectCategory = (tagId) => {
+  currentCategory.value = tagId
+  loadAssistants()
 }
 
 const startChat = () => {
@@ -264,7 +319,7 @@ const createAssistant = () => {
 }
 
 const handleAssistantCreated = () => {
-  // TODO: 刷新助手列表
+  loadAssistants()
 }
 
 const useAssistant = (preset) => {
@@ -279,6 +334,79 @@ const useAssistant = (preset) => {
       assistantType: preset.type
     }
   })
+}
+
+// 获取标签图标
+const getTagIcon = (tagId) => {
+  const iconMap = {
+    tools: Tools,
+    writing: Edit,
+    coding: Monitor,
+    learning: Reading,
+    life: House,
+    other: More
+  }
+  return iconMap[tagId] || More
+}
+
+// 获取标签名称
+const getTagName = (tagId) => {
+  const tag = tags.find(t => t.id === tagId)
+  return tag ? tag.name : tagId
+}
+
+// 获取标签类型
+const getTagType = (tagId) => {
+  const typeMap = {
+    tools: 'warning',
+    writing: 'success',
+    coding: 'primary',
+    learning: 'info',
+    life: 'danger',
+    other: ''
+  }
+  return typeMap[tagId] || ''
+}
+
+// 编辑助手相关
+const editDialogVisible = ref(false)
+const currentEditAssistant = ref(null)
+
+const editAssistant = (preset) => {
+  currentEditAssistant.value = { ...preset }
+  editDialogVisible.value = true
+}
+
+const handleAssistantUpdated = () => {
+  loadAssistants()
+}
+
+// 删除助手
+const deleteAssistant = async (preset) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这个助手吗？删除后无法恢复。',
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const response = await defaultApi.apiPresetIdDelete(preset.id)
+    if (response.code === 0) {
+      ElMessage.success('删除成功')
+      loadAssistants()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Delete assistant error:', error)
+      ElMessage.error(error.body?.msg || '删除失败')
+    }
+  }
 }
 </script>
 
@@ -482,7 +610,7 @@ const useAssistant = (preset) => {
   }
 }
 
-.category-nav {
+.tag-nav {
   display: flex;
   justify-content: center;
   padding: 20px;
@@ -507,7 +635,7 @@ const useAssistant = (preset) => {
     );
   }
 
-  .category-item {
+  .tag-item {
     display: flex;
     align-items: center;
     padding: 10px 20px;
@@ -606,12 +734,70 @@ const useAssistant = (preset) => {
   .preset-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .preset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
 
     .preset-name-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 4px;
+      flex: 1;
+      min-width: 0;
+
+      .preset-type {
+        flex-shrink: 0;
+        font-size: 12px;
+        padding: 0 8px;
+        height: 22px;
+        line-height: 20px;
+        border-radius: 11px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 500;
+
+        .tag-icon {
+          font-size: 12px;
+          margin-right: 2px;
+        }
+
+        &.official-tag {
+          background: linear-gradient(135deg, #ff9500, #ff3852);
+          border: none;
+          color: white;
+          padding: 0 10px;
+          box-shadow: 0 2px 8px rgba(255, 56, 82, 0.25);
+
+          .tag-icon {
+            animation: starRotate 4s linear infinite;
+          }
+        }
+
+        &.community-tag {
+          background: rgba(64, 158, 255, 0.1);
+          border-color: var(--el-color-primary);
+          color: var(--el-color-primary);
+          font-weight: 500;
+          padding: 0 10px;
+
+          &:hover {
+            background: var(--el-color-primary);
+            color: white;
+          }
+
+          .tag-icon {
+            animation: iconBounce 2s ease-in-out infinite;
+          }
+        }
+      }
     }
 
     .preset-name {
@@ -624,20 +810,51 @@ const useAssistant = (preset) => {
       text-overflow: ellipsis;
     }
 
-    .preset-type {
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 10px;
-      color: white;
-      font-weight: 500;
-      flex-shrink: 0;
+    .preset-categories {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin-top: 2px;
 
-      &.official {
-        background: linear-gradient(135deg, #2B5EFF, #1E88E5);
-      }
+      .category-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        background: var(--el-color-primary);
+        color: white;
 
-      &.community {
-        background: linear-gradient(135deg, #03A9F4, #1E88E5);
+        &:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.1);
+        }
+
+        .category-icon {
+          font-size: 14px;
+        }
+
+        &.warning {
+          background: var(--el-color-warning);
+        }
+
+        &.success {
+          background: var(--el-color-success);
+        }
+
+        &.danger {
+          background: var(--el-color-danger);
+        }
+
+        &.info {
+          background: var(--el-color-info);
+        }
+
+        &.primary {
+          background: var(--el-color-primary);
+        }
       }
     }
 
@@ -657,8 +874,64 @@ const useAssistant = (preset) => {
   .preset-actions {
     margin-top: auto;
 
+    .action-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      
+      .action-icons {
+        display: flex;
+        gap: 8px;
+
+        .icon-button {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: 1px solid var(--el-border-color-lighter);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: var(--el-bg-color);
+          opacity: 0.8;
+
+          .el-icon {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+          }
+
+          &:hover {
+            transform: translateY(-2px);
+            opacity: 1;
+            border-color: transparent;
+
+            .el-icon {
+              transform: scale(1.1);
+            }
+          }
+
+          &.edit-button {
+            color: var(--el-color-primary);
+
+            &:hover {
+              background: var(--el-color-primary-light-9);
+              color: var(--el-color-primary);
+              box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.2);
+            }
+          }
+
+          &.delete-button {
+            color: var(--el-color-danger);
+
+            &:hover {
+              background: var(--el-color-danger-light-9);
+              color: var(--el-color-danger);
+              box-shadow: 0 4px 12px rgba(var(--el-color-danger-rgb), 0.2);
+            }
+          }
+        }
+      }
+    }
+
     .use-button {
-      width: 100%;
+      flex: 1;
       border: none;
       background: transparent;
       position: relative;
@@ -697,7 +970,6 @@ const useAssistant = (preset) => {
       }
     }
   }
-
 }
 
 @keyframes backgroundShift {
@@ -750,7 +1022,16 @@ const useAssistant = (preset) => {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes starRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -771,10 +1052,10 @@ const useAssistant = (preset) => {
     }
   }
 
-  .category-nav {
+  .tag-nav {
     padding: 15px 10px;
 
-    .category-item {
+    .tag-item {
       padding: 8px 16px;
       font-size: 14px;
     }
@@ -784,5 +1065,10 @@ const useAssistant = (preset) => {
     padding: 20px 10px;
     gap: 20px;
   }
+}
+
+.el-empty {
+  grid-column: 1 / -1;
+  margin: 40px 0;
 }
 </style>

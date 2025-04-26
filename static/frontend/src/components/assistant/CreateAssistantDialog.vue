@@ -14,9 +14,11 @@
         <div class="header-content">
           <div class="title-section">
             <div class="icon-wrapper">
-              <el-icon class="dialog-icon"><Plus /></el-icon>
+              <el-icon class="dialog-icon">
+                <component :is="editData ? Edit : Plus" />
+              </el-icon>
             </div>
-            <h2 class="dialog-title">创建助手</h2>
+            <h2 class="dialog-title">{{ editData ? '编辑助手' : '创建助手' }}</h2>
           </div>
           <el-button class="close-btn" @click="close">
             <el-icon><Close /></el-icon>
@@ -81,26 +83,35 @@
           />
         </el-form-item>
 
-        <el-form-item label="助手类型" prop="category" class="category-item">
-          <el-select v-model="form.category" placeholder="选择助手类型">
+        <el-form-item label="助手类型" prop="tags" class="tag-item">
+          <el-select
+            v-model="form.tags"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            :max-collapse-tags="3"
+            placeholder="选择助手类型（最多3个）"
+            :multiple-limit="3"
+            class="tag-select"
+          >
             <el-option
-              v-for="category in categories"
-              :key="category.id"
-              :label="category.name"
-              :value="category.id"
+              v-for="tag in tags"
+              :key="tag.id"
+              :label="tag.name"
+              :value="tag.id"
             >
               <div class="category-option">
-                <el-icon><component :is="getCategoryIcon(category.id)" /></el-icon>
-                <span>{{ category.name }}</span>
+                <el-icon><component :is="getTagsIcon(tag.id)" /></el-icon>
+                <span>{{ tag.name }}</span>
               </div>
             </el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="系统提示词" prop="systemPrompt" class="prompt-item">
+        <el-form-item label="系统提示词" prop="context" class="prompt-item">
           <div class="prompt-wrapper">
             <el-input
-              v-model="form.systemPrompt"
+              v-model="form.context"
               type="textarea"
               placeholder="设置助手的系统提示词，定义助手的行为和专业领域"
               :rows="6"
@@ -129,7 +140,7 @@
         </el-button>
         <el-button type="primary" @click="submitForm(formRef)" class="submit-btn">
           <el-icon><Check /></el-icon>
-          创建助手
+          {{ editData ? '保存修改' : '创建助手' }}
         </el-button>
       </div>
     </template>
@@ -137,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import {
   Plus,
   Edit,
@@ -153,6 +164,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import ImageUploader from '../common/ImageUploader.vue'
+import { defaultApi } from '@/api/index.js'
 
 defineOptions({
   name: 'CreateAssistantDialog'
@@ -162,10 +174,19 @@ const props = defineProps({
   visible: {
     type: Boolean,
     required: true
+  },
+  editData: {
+    type: Object,
+    default: null
   }
 })
 
-const emit = defineEmits(['update:visible', 'created'])
+// 定义所有的 emits，并添加验证
+const emit = defineEmits({
+  'update:visible': (value) => typeof value === 'boolean',
+  'created': () => true,
+  'updated': () => true
+})
 
 const dialogVisible = computed({
   get: () => props.visible,
@@ -179,9 +200,43 @@ const form = reactive({
   name: '',
   avatar: '',
   description: '',
-  category: '',
-  systemPrompt: ''
+  tags: [],
+  context: ''
 })
+
+// 重置表单
+const resetForm = () => {
+  form.name = ''
+  form.avatar = ''
+  form.description = ''
+  form.tags = []
+  form.context = ''
+}
+
+// 处理关闭
+const handleClose = () => {
+  dialogVisible.value = false
+  resetForm()
+}
+
+// 监听编辑数据变化
+watch(
+  () => props.editData,
+  (newVal) => {
+    if (newVal) {
+      // 填充表单数据
+      form.name = newVal.name
+      form.avatar = newVal.avatar
+      form.description = newVal.description
+      form.tags = newVal.tags ? newVal.tags.split(',') : []
+      form.context = newVal.context
+    } else {
+      // 重置表单
+      resetForm()
+    }
+  },
+  { immediate: true }
+)
 
 // 表单验证规则
 const rules = {
@@ -193,17 +248,27 @@ const rules = {
     { required: true, message: '请输入助手描述', trigger: 'blur' },
     { max: 200, message: '描述不能超过 200 个字符', trigger: 'blur' }
   ],
-  category: [
-    { required: true, message: '请选择助手类型', trigger: 'change' }
+  tags: [
+    { required: true, message: '请至少选择一个助手类型', trigger: 'change' },
+    {
+      validator: (rule, value, callback) => {
+        if (value && value.length > 3) {
+          callback(new Error('最多只能选择3个类型'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
   ],
-  systemPrompt: [
+  context: [
     { required: true, message: '请输入系统提示词', trigger: 'blur' },
     { max: 2000, message: '系统提示词不能超过 2000 个字符', trigger: 'blur' }
   ]
 }
 
 // 分类数据
-const categories = [
+const tags = [
   { id: 'tools', name: '实用工具' },
   { id: 'writing', name: '文案创作' },
   { id: 'coding', name: '编码专家' },
@@ -213,7 +278,7 @@ const categories = [
 ]
 
 // 获取分类图标
-const getCategoryIcon = (categoryId) => {
+const getTagsIcon = (tagId) => {
   const iconMap = {
     tools: Tools,
     writing: EditIcon,
@@ -222,11 +287,11 @@ const getCategoryIcon = (categoryId) => {
     life: House,
     other: More
   }
-  return iconMap[categoryId] || More
+  return iconMap[tagId] || More
 }
 
 // 处理头像上传成功
-const handleAvatarSuccess = (url) => {
+const handleAvatarSuccess = async (url) => {
   form.avatar = url
 }
 
@@ -235,32 +300,46 @@ const handleAvatarError = (error) => {
   ElMessage.error('头像上传失败：' + error.message)
 }
 
-// 关闭弹窗
-const handleClose = () => {
-  dialogVisible.value = false
-  formRef.value?.resetFields()
-  Object.assign(form, {
-    name: '',
-    avatar: '',
-    description: '',
-    category: '',
-    systemPrompt: ''
-  })
-}
-
 // 提交表单
 const submitForm = async (formEl) => {
   if (!formEl) return
 
-  await formEl.validate((valid) => {
+  await formEl.validate(async (valid) => {
     if (valid) {
-      // TODO: 调用创建助手的 API
-      ElMessage.success('助手创建成功！')
-      emit('created')
-      handleClose()
+      try {
+        const params = {
+          name: form.name,
+          avatar: form.avatar,
+          description: form.description,
+          tags: form.tags.join(','),
+          context: form.context
+        }
+
+        let response
+        if (props.editData) {
+          // 更新助手
+          response = await defaultApi.apiPresetIdPut(props.editData.id, params)
+        } else {
+          // 创建助手
+          response = await defaultApi.apiPresetPost(params)
+        }
+
+        if (response.code === 0) {
+          ElMessage.success(props.editData ? '助手更新成功' : '助手创建成功')
+          dialogVisible.value = false
+          resetForm()
+          emit(props.editData ? 'updated' : 'created')
+        } else {
+          ElMessage.error(response.msg || (props.editData ? '更新失败' : '创建失败'))
+        }
+      } catch (error) {
+        console.error(props.editData ? 'Update assistant error:' : 'Create assistant error:', error)
+        ElMessage.error(error.body?.msg || (props.editData ? '更新失败' : '创建失败'))
+      }
     }
   })
 }
+
 </script>
 
 <style lang="scss" scoped>
@@ -377,7 +456,7 @@ const submitForm = async (formEl) => {
     justify-content: center;
     align-items: center;
     padding: 0;
-    
+
     :deep(.el-form-item__content) {
       margin: 0 !important;
       justify-content: center;
@@ -388,7 +467,7 @@ const submitForm = async (formEl) => {
     grid-column: 1;
   }
 
-  .category-item,
+  .tag-item,
   .prompt-item {
     grid-column: 1 / span 2;
   }
@@ -402,10 +481,37 @@ const submitForm = async (formEl) => {
   }
 }
 
+.tag-select {
+  :deep(.el-select__tags) {
+    max-width: calc(100% - 30px);
+  }
+
+  :deep(.el-select__tags-text) {
+    max-width: 100px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :deep(.el-tag) {
+    max-width: 120px;
+    display: inline-flex;
+    align-items: center;
+
+    .el-tag__content {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
 .category-option {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 4px 0;
 
   .el-icon {
     font-size: 16px;
@@ -488,4 +594,4 @@ const submitForm = async (formEl) => {
     transform: scale(1);
   }
 }
-</style> 
+</style>
