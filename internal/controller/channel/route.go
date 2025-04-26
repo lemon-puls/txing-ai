@@ -2,12 +2,18 @@ package channel
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/middleware"
 )
 
 func Register(router gin.IRouter) {
-	router.POST("/admin/channel", Create)
-	router.PUT("/admin/channel/:id", Update)
-	router.DELETE("/admin/channel/:id", Delete)
-	router.GET("/admin/channel/:id", Get)
-	router.GET("/admin/channel/list", List)
+
+	groupRouter := router.Use(middleware.AuthMiddleware())
+	{
+		groupRouter.POST("/admin/channel", Create)
+		groupRouter.PUT("/admin/channel/:id", Update)
+		groupRouter.DELETE("/admin/channel/:id", Delete)
+		groupRouter.GET("/admin/channel/:id", Get)
+		groupRouter.GET("/admin/channel/list", List)
+	}
+
 }
