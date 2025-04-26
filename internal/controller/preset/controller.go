@@ -1,8 +1,12 @@
 package preset
 
 import (
+	"go.uber.org/zap"
+	"net/http"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
+	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
@@ -29,9 +33,16 @@ func Create(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	userId := utils.GetUIDFromContext(ctx)
+	isAdmin := utils.GetIsAdminFromContext(ctx)
+
+	// 非管理员只能创建非官方（社区）预设
+	if !isAdmin {
+		req.Official = false
+	}
 
 	preset := &domain.Preset{
-		UserID:      req.UserID,
+		UserID:      &userId,
 		Avatar:      utils.ConvertObjectPath(req.Avatar),
 		Name:        req.Name,
 		Description: req.Description,
@@ -66,6 +77,8 @@ func Update(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	userId := utils.GetUIDFromContext(ctx)
+	isAdmin := utils.GetIsAdminFromContext(ctx)
 
 	var preset domain.Preset
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
@@ -73,9 +86,12 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	if req.UserID != nil {
-		preset.UserID = req.UserID
+	if preset.UserID != nil && *preset.UserID != userId {
+		log.Error("当前用户无权限修改该预设", zap.Int64("userId", userId), zap.Int64("preset.UserID", *preset.UserID))
+		utils.ErrorWithHttpCode(ctx, http.StatusForbidden, global.CodeNotPermission, nil)
+		return
 	}
+
 	if req.Avatar != "" {
 		preset.Avatar = utils.ConvertObjectPath(req.Avatar)
 	}
@@ -91,7 +107,7 @@ func Update(ctx *gin.Context) {
 	if req.Tags != "" {
 		preset.Tags = req.Tags
 	}
-	if req.Official != nil {
+	if req.Official != nil && isAdmin {
 		preset.Official = *req.Official
 	}
 
@@ -116,9 +132,17 @@ func Delete(ctx *gin.Context) {
 	var preset domain.Preset
 
 	db := utils.GetDBFromContext(ctx)
+	userId := utils.GetUIDFromContext(ctx)
 
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "预设不存在", err)
+		return
+	}
+
+	// 权限校验
+	if preset.UserID != nil && *preset.UserID != userId {
+		log.Error("当前用户无权限删除该预设", zap.Int64("userId", userId), zap.Int64("preset.UserID", *preset.UserID))
+		utils.ErrorWithHttpCode(ctx, http.StatusForbidden, global.CodeNotPermission, nil)
 		return
 	}
 

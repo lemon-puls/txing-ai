@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"txing-ai/internal/enum"
 )
 
 func GetDBFromContext(c *gin.Context) *gorm.DB {
@@ -20,6 +21,10 @@ func GetCosClientFromContext(c *gin.Context) *COSClient {
 
 func GetRoleFromContext(c *gin.Context) int8 {
 	return c.MustGet("role").(int8)
+}
+
+func GetIsAdminFromContext(c *gin.Context) bool {
+	return c.MustGet("role").(int8) == enum.UserTypeSuper
 }
 
 func GetRDBFromContext(c *gin.Context) *redis.Client {
