@@ -390,7 +390,7 @@ func RefreshToken(ctx *gin.Context) {
 	// 调用业务层处理刷新token
 	tokens, err := userservice.RefreshToken(token, db)
 	if err != nil {
-		utils.ErrorWithMsg(ctx, "刷新token失败", err)
+		utils.ErrorWithMsg(ctx, err.Error(), err)
 		return
 	}
 	utils.OkWithData(ctx, tokens)

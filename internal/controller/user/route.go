@@ -2,6 +2,7 @@ package user
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/middleware"
 )
 
 // Routes 初始化用户相关路由
@@ -14,19 +15,19 @@ func Register(r *gin.RouterGroup) {
 	{
 		userGroup.POST("/register", userRegister)
 		userGroup.POST("/login", Login)
-		userGroup.POST("/logout", Logout)
-		userGroup.GET("/refresh", RefreshToken)
-		userGroup.GET("/info", GetCurrentUser)
+		userGroup.POST("/logout", middleware.AuthMiddleware(), Logout)
+		userGroup.POST("/refresh", RefreshToken)
+		userGroup.GET("/info", middleware.AuthMiddleware(), GetCurrentUser)
 		// 用户登录路由
 		// User login route
-		userGroup.PUT("/profile", UpdateProfile)
-		userGroup.PUT("/password", UpdatePassword)
-		userGroup.POST("/reset-password", ResetPassword)
+		userGroup.PUT("/profile", middleware.AuthMiddleware(), UpdateProfile)
+		userGroup.PUT("/password", middleware.AuthMiddleware(), UpdatePassword)
+		userGroup.POST("/reset-password", middleware.AuthMiddleware(), ResetPassword)
 	}
 
 	// 管理员路由组
 	// Admin route group
-	adminGroup := r.Group("/admin/user")
+	adminGroup := r.Group("/admin/user", middleware.AuthMiddleware())
 	{
 		adminGroup.GET("/list", List)
 		adminGroup.PUT("/status/:id", ToggleUserStatus)

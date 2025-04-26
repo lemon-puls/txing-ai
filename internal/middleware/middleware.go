@@ -11,9 +11,10 @@ import (
 
 func RegisterMiddleware(app *gin.Engine, db *gorm.DB, redis *redis.Client, cosClient *utils.COSClient) {
 
+	app.Use(LoggerWithZap(zap.L(), time.DateTime, false))
+
 	app.Use(BuiltinMiddleWare(db, redis, cosClient))
 
 	app.Use(RecoveryWithZap(zap.L(), false))
 
-	app.Use(LoggerWithZap(zap.L(), time.DateTime, false))
 }

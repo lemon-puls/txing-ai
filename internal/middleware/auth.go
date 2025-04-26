@@ -12,7 +12,7 @@ import (
 
 const TokenKey = "Authorization"
 
-// 登陆检验中间件
+// 认证鉴权中间件
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Token 格式： Authorization: Bearer <token>
