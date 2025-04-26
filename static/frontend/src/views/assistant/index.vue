@@ -189,7 +189,6 @@ const currentCategory = ref('all')
 
 // 分类数据
 const categories = [
-  { id: 'all', name: '我的助手', icon: 'User' },
   { id: 'popular', name: '热门推荐', icon: 'Star' },
   { id: 'tools', name: '实用工具', icon: 'Tools' },
   { id: 'writing', name: '文案创作', icon: 'Edit' },

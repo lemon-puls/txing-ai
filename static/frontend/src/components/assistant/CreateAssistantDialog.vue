@@ -47,25 +47,27 @@
           </el-input>
         </el-form-item>
 
-        <el-form-item label="助手头像" prop="avatar" class="avatar-item">
-          <el-upload
-            class="avatar-uploader"
-            action="#"
-            :show-file-list="false"
-            :auto-upload="false"
-            :on-change="handleAvatarChange"
+        <el-form-item prop="avatar" class="avatar-item">
+          <el-tooltip
+            content="点击上传助手头像"
+            placement="top"
+            :show-after="500"
           >
-            <div class="avatar-container" :class="{ 'has-avatar': form.avatar }">
-              <img v-if="form.avatar" :src="form.avatar" class="avatar" />
-              <div v-else class="avatar-uploader-icon">
-                <el-icon><Plus /></el-icon>
-                <span class="upload-text">上传头像</span>
-              </div>
-              <div class="avatar-hover-mask">
-                <el-icon><Camera /></el-icon>
-              </div>
+            <div>
+              <ImageUploader
+                v-model="form.avatar"
+                :circle="false"
+                :width="120"
+                :height="120"
+                :crop-width="200"
+                :crop-height="200"
+                :fixed="true"
+                placeholder="上传头像"
+                @success="handleAvatarSuccess"
+                @error="handleAvatarError"
+              />
             </div>
-          </el-upload>
+          </el-tooltip>
         </el-form-item>
 
         <el-form-item label="助手描述" prop="description" class="description-item">
@@ -139,7 +141,6 @@ import { ref, reactive, computed } from 'vue'
 import {
   Plus,
   Edit,
-  Camera,
   Close,
   Check,
   QuestionFilled,
@@ -151,6 +152,7 @@ import {
   More
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import ImageUploader from '../common/ImageUploader.vue'
 
 defineOptions({
   name: 'CreateAssistantDialog'
@@ -223,22 +225,14 @@ const getCategoryIcon = (categoryId) => {
   return iconMap[categoryId] || More
 }
 
-// 处理头像上传
-const handleAvatarChange = (file) => {
-  const isImage = file.raw.type.startsWith('image/')
-  const isLt2M = file.raw.size / 1024 / 1024 < 2
+// 处理头像上传成功
+const handleAvatarSuccess = (url) => {
+  form.avatar = url
+}
 
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件！')
-    return
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB！')
-    return
-  }
-
-  // 创建本地预览URL
-  form.avatar = URL.createObjectURL(file.raw)
+// 处理头像上传错误
+const handleAvatarError = (error) => {
+  ElMessage.error('头像上传失败：' + error.message)
 }
 
 // 关闭弹窗
@@ -379,6 +373,15 @@ const submitForm = async (formEl) => {
   .avatar-item {
     grid-column: 2;
     grid-row: 1 / span 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    
+    :deep(.el-form-item__content) {
+      margin: 0 !important;
+      justify-content: center;
+    }
   }
 
   .description-item {
@@ -396,66 +399,6 @@ const submitForm = async (formEl) => {
     .el-input {
       width: 100%;
     }
-  }
-}
-
-.avatar-container {
-  width: 120px;
-  height: 120px;
-  border-radius: 16px;
-  overflow: hidden;
-  position: relative;
-  background: var(--el-fill-color-lighter);
-  transition: all 0.3s;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-
-    .avatar-hover-mask {
-      opacity: 1;
-    }
-  }
-
-  &.has-avatar {
-    .avatar {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  .avatar-uploader-icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--el-text-color-secondary);
-    font-size: 24px;
-    gap: 8px;
-
-    .upload-text {
-      font-size: 14px;
-    }
-  }
-
-  .avatar-hover-mask {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 24px;
-    opacity: 0;
-    transition: all 0.3s;
   }
 }
 
