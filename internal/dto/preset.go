@@ -9,6 +9,7 @@ type CreatePresetReq struct {
 	Name        string `json:"name" binding:"required" example:"GPT助手"`         // 预设名称
 	Description string `json:"description" example:"一个智能的GPT助手"`                // 预设描述
 	Context     string `json:"context" example:"你是一个智能助手,能够帮助用户解决各种问题..."`      // 预设上下文
+	Tags        string `json:"tags" example:"popular,tools"`                    // 预设标签
 	Official    bool   `json:"official" example:"false"`                        // 是否官方预设
 }
 
@@ -19,6 +20,7 @@ type UpdatePresetReq struct {
 	Name        string `json:"name" example:"GPT助手"`                            // 预设名称
 	Description string `json:"description" example:"一个智能的GPT助手"`                // 预设描述
 	Context     string `json:"context" example:"你是一个智能助手,能够帮助用户解决各种问题..."`      // 预设上下文
+	Tags        string `json:"tags" example:"popular,tools"`                    // 预设标签
 	Official    *bool  `json:"official" example:"false"`                        // 是否官方预设
 }
 
@@ -28,4 +30,5 @@ type ListPresetReq struct {
 	Official *bool  `form:"official"`           // 是否官方预设
 	UserID   *int64 `form:"userId" example:"1"` // 用户ID
 	Name     string `form:"name"`               // 预设名称
+	Tags     string `form:"tags"`               // 预设标签
 }

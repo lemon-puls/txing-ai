@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **id** | **Number** | 主键ID | [optional] 
 **name** | **String** | 预设名称 | [optional] 
 **official** | **Boolean** | 是否官方预设 | [optional] 
+**tags** | **String** | 预设标签 | [optional] 
 **updatedAt** | **String** | 更新时间 | [optional] 
 **userId** | **Number** | 用户ID | [optional] 
 

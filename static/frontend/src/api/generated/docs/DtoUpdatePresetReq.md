@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **description** | **String** | 预设描述 | [optional] 
 **name** | **String** | 预设名称 | [optional] 
 **official** | **Boolean** | 是否官方预设 | [optional] 
+**tags** | **String** | 预设标签 | [optional] 
 **userId** | **Number** | 用户ID | [optional] 
 
 

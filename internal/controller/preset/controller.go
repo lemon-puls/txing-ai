@@ -1,12 +1,13 @@
 package preset
 
 import (
-	"github.com/samber/lo"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
+
+	"github.com/samber/lo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -35,6 +36,7 @@ func Create(ctx *gin.Context) {
 		Name:        req.Name,
 		Description: req.Description,
 		Context:     req.Context,
+		Tags:        req.Tags,
 		Official:    req.Official,
 	}
 
@@ -85,6 +87,9 @@ func Update(ctx *gin.Context) {
 	}
 	if req.Context != "" {
 		preset.Context = req.Context
+	}
+	if req.Tags != "" {
+		preset.Tags = req.Tags
 	}
 	if req.Official != nil {
 		preset.Official = *req.Official
@@ -163,6 +168,7 @@ func Get(ctx *gin.Context) {
 // @Param official query bool false "是否官方预设"
 // @Param user_id query int false "用户ID"
 // @Param name query string false "预设名称"
+// @Param tags query string false "预设标签"
 // @Success 200 {object} utils.Response
 // @Router /api/admin/preset/list [get]
 func List(ctx *gin.Context) {
@@ -185,6 +191,9 @@ func List(ctx *gin.Context) {
 	}
 	if req.Name != "" {
 		query = query.Where("name like ?", "%"+req.Name+"%")
+	}
+	if req.Tags != "" {
+		query = query.Where("tags like ?", "%"+req.Tags+"%")
 	}
 
 	var presets []domain.Preset

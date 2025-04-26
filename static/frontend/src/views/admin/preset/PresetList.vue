@@ -12,6 +12,11 @@
             <el-option :value="false" label="社区助手" />
           </el-select>
         </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="searchForm.tags" placeholder="请选择标签" clearable multiple>
+            <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
@@ -35,6 +40,15 @@
                 <h3>{{ preset.name }}</h3>
                 <el-tag v-if="preset.official" type="success" effect="dark">官方</el-tag>
                 <el-tag v-else type="primary" effect="dark">社区</el-tag>
+                <el-tag
+                  v-for="tag in preset.tags"
+                  :key="tag"
+                  :type="getTagType(tag)"
+                  effect="light"
+                  size="small"
+                >
+                  {{ getTagLabel(tag) }}
+                </el-tag>
               </div>
               <div class="preset-description">{{ preset.description || '暂无描述' }}</div>
             </div>
@@ -90,6 +104,11 @@
               </el-form-item>
               <el-form-item label="官方助手">
                 <el-switch v-model="preset.official" />
+              </el-form-item>
+              <el-form-item label="标签">
+                <el-select v-model="preset.tags" placeholder="请选择标签" multiple>
+                  <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value" />
+                </el-select>
               </el-form-item>
               <div class="form-actions">
                 <el-button type="primary" @click="handleSave(preset)">保存</el-button>
@@ -158,6 +177,11 @@
         <el-form-item label="官方助手" prop="official">
           <el-switch v-model="presetForm.official" />
         </el-form-item>
+        <el-form-item label="标签" prop="tags">
+          <el-select v-model="presetForm.tags" placeholder="请选择标签" multiple>
+            <el-option v-for="tag in tagOptions" :key="tag.value" :label="tag.label" :value="tag.value" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -214,8 +238,20 @@ import { defaultApi } from '@/api/index.js'
 // 搜索表单
 const searchForm = ref({
   name: '',
-  official: ''
+  official: '',
+  tags: ''
 })
+
+// 标签选项
+const tagOptions = [
+  { value: 'popular', label: '热门推荐' },
+  { value: 'tools', label: '实用工具' },
+  { value: 'writing', label: '文案创作' },
+  { value: 'coding', label: '编码专家' },
+  { value: 'learning', label: '知识学习' },
+  { value: 'life', label: '生活指南' },
+  { value: 'other', label: '其他' }
+]
 
 // 分页数据
 const currentPage = ref(1)
@@ -234,7 +270,8 @@ const presetForm = ref({
   description: '',
   context: '',
   avatar: '',
-  official: false
+  official: false,
+  tags: []
 })
 
 // 裁剪相关
@@ -254,6 +291,19 @@ const presetRules = {
   ],
   context: [
     { required: true, message: '请输入上下文设定', trigger: 'blur' }
+  ],
+  tags: [
+    { required: true, message: '请选择标签', trigger: 'change' },
+    {
+      validator: (rule, value, callback) => {
+        if (value && value.length > 3) {
+          callback(new Error('最多选择3个标签'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -267,13 +317,15 @@ const loadPresets = async () => {
         orderBy: 'id',
         order: 'desc',
         official: searchForm.value.official === '' ? undefined : searchForm.value.official,
-        name: searchForm.value.name === '' ? undefined : searchForm.value.name
+        name: searchForm.value.name === '' ? undefined : searchForm.value.name,
+        tags: searchForm.value.tags ? searchForm.value.tags.join(',') : undefined
       }
     )
     if (response.code === 0 && response.data) {
       presets.value = response.data.records.map(preset => ({
         ...preset,
-        isExpanded: false
+        isExpanded: false,
+        tags: preset.tags ? preset.tags.split(',') : []
       }))
       total.value = response.data.total || 0
       currentPage.value = response.data.page || 1
@@ -297,7 +349,8 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.value = {
     name: '',
-    official: ''
+    official: '',
+    tags: ''
   }
   currentPage.value = 1
   loadPresets()
@@ -316,7 +369,18 @@ const handleAdd = () => {
     description: '',
     context: '',
     avatar: '',
-    official: false
+    official: false,
+    tags: []
+  }
+  dialogVisible.value = true
+}
+
+// 编辑助手
+const handleEdit = (preset) => {
+  dialogType.value = 'edit'
+  presetForm.value = {
+    ...preset,
+    tags: preset.tags || []
   }
   dialogVisible.value = true
 }
@@ -336,7 +400,8 @@ const handleSave = async (preset) => {
       description: preset.description,
       context: preset.context,
       avatar: avatar,
-      official: preset.official
+      official: preset.official,
+      tags: Array.isArray(preset.tags) ? preset.tags.join(',') : preset.tags
     }
 
     const response = await defaultApi.apiAdminPresetIdPut(preset.id, formData)
@@ -399,7 +464,8 @@ const handleSubmit = async () => {
           description: presetForm.value.description,
           context: presetForm.value.context,
           avatar: avatar,
-          official: presetForm.value.official
+          official: presetForm.value.official,
+          tags: presetForm.value.tags.join(',')
         }
 
         let response
@@ -481,6 +547,26 @@ const handleCropImage = () => {
     }
     cropperVisible.value = false
   })
+}
+
+// 获取标签类型
+const getTagType = (tag) => {
+  const typeMap = {
+    popular: 'danger',
+    tools: 'warning',
+    writing: 'success',
+    coding: 'info',
+    learning: 'primary',
+    life: 'warning',
+    other: 'info'
+  }
+  return typeMap[tag] || 'info'
+}
+
+// 获取标签显示文本
+const getTagLabel = (tag) => {
+  const tagOption = tagOptions.find(option => option.value === tag)
+  return tagOption ? tagOption.label : tag
 }
 
 // 页面加载时获取数据
@@ -568,13 +654,18 @@ onMounted(() => {
   .preset-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
     margin-bottom: 8px;
 
     h3 {
       margin: 0;
       font-size: 18px;
       line-height: 1.4;
+    }
+
+    :deep(.el-tag) {
+      margin-right: 4px;
     }
   }
 

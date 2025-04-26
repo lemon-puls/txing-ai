@@ -62,6 +62,9 @@ class DtoUpdatePresetReq {
             if (data.hasOwnProperty('official')) {
                 obj['official'] = ApiClient.convertToType(data['official'], 'Boolean');
             }
+            if (data.hasOwnProperty('tags')) {
+                obj['tags'] = ApiClient.convertToType(data['tags'], 'String');
+            }
             if (data.hasOwnProperty('userId')) {
                 obj['userId'] = ApiClient.convertToType(data['userId'], 'Number');
             }
@@ -90,6 +93,10 @@ class DtoUpdatePresetReq {
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
+        }
+        // ensure the json data is a string
+        if (data['tags'] && !(typeof data['tags'] === 'string' || data['tags'] instanceof String)) {
+            throw new Error("Expected the field `tags` to be a primitive type in the JSON string but got " + data['tags']);
         }
 
         return true;
@@ -129,6 +136,12 @@ DtoUpdatePresetReq.prototype['name'] = undefined;
  * @member {Boolean} official
  */
 DtoUpdatePresetReq.prototype['official'] = undefined;
+
+/**
+ * 预设标签
+ * @member {String} tags
+ */
+DtoUpdatePresetReq.prototype['tags'] = undefined;
 
 /**
  * 用户ID

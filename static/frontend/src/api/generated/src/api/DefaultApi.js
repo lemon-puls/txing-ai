@@ -752,6 +752,7 @@ export default class DefaultApi {
      * @param {Boolean} [official] 是否官方预设
      * @param {Number} [userId] 用户ID
      * @param {String} [name] 预设名称
+     * @param {String} [tags] 预设标签
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
     apiAdminPresetListGetWithHttpInfo(page, limit, opts) {
@@ -775,7 +776,8 @@ export default class DefaultApi {
         'order': opts['order'],
         'official': opts['official'],
         'user_id': opts['userId'],
-        'name': opts['name']
+        'name': opts['name'],
+        'tags': opts['tags']
       };
       let headerParams = {
       };
@@ -804,6 +806,7 @@ export default class DefaultApi {
      * @param {Boolean} opts.official 是否官方预设
      * @param {Number} opts.userId 用户ID
      * @param {String} opts.name 预设名称
+     * @param {String} opts.tags 预设标签
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
     apiAdminPresetListGet(page, limit, opts) {

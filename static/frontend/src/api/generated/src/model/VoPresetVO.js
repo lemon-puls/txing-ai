@@ -68,6 +68,9 @@ class VoPresetVO {
             if (data.hasOwnProperty('official')) {
                 obj['official'] = ApiClient.convertToType(data['official'], 'Boolean');
             }
+            if (data.hasOwnProperty('tags')) {
+                obj['tags'] = ApiClient.convertToType(data['tags'], 'String');
+            }
             if (data.hasOwnProperty('updatedAt')) {
                 obj['updatedAt'] = ApiClient.convertToType(data['updatedAt'], 'String');
             }
@@ -103,6 +106,10 @@ class VoPresetVO {
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
+        }
+        // ensure the json data is a string
+        if (data['tags'] && !(typeof data['tags'] === 'string' || data['tags'] instanceof String)) {
+            throw new Error("Expected the field `tags` to be a primitive type in the JSON string but got " + data['tags']);
         }
         // ensure the json data is a string
         if (data['updatedAt'] && !(typeof data['updatedAt'] === 'string' || data['updatedAt'] instanceof String)) {
@@ -158,6 +165,12 @@ VoPresetVO.prototype['name'] = undefined;
  * @member {Boolean} official
  */
 VoPresetVO.prototype['official'] = undefined;
+
+/**
+ * 预设标签
+ * @member {String} tags
+ */
+VoPresetVO.prototype['tags'] = undefined;
 
 /**
  * 更新时间
