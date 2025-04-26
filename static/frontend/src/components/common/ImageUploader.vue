@@ -7,7 +7,15 @@
       :on-change="handleFileChange"
       accept="image/*"
     >
-      <div class="upload-area" :class="{ 'is-circle': circle }">
+      <div
+        class="upload-area"
+        :class="{ 'is-circle': circle }"
+        :style="{
+          width: typeof width === 'number' ? `${width}px` : width,
+          height: typeof height === 'number' ? `${height}px` : height,
+          borderRadius: circle ? '50%' : (typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius)
+        }"
+      >
         <img v-if="modelValue" :src="modelValue" class="preview-image">
         <div v-else class="upload-placeholder">
           <el-icon class="upload-icon"><Plus /></el-icon>
@@ -68,6 +76,21 @@ const props = defineProps({
   modelValue: {
     type: String,
     default: ''
+  },
+  // 上传框宽度
+  width: {
+    type: [String, Number],
+    default: 200
+  },
+  // 上传框高度
+  height: {
+    type: [String, Number],
+    default: 200
+  },
+  // 边框圆角大小 当 circle 为 true 时会被忽略，自动设置为 50%
+  borderRadius: {
+    type: [String, Number],
+    default: 8
   },
   // 是否开启压缩
   enableCompress: {
@@ -156,7 +179,7 @@ const compressImage = async (file) => {
         // 计算压缩后的尺寸
         let width = img.width
         let height = img.height
-        
+
         if (width > props.maxWidth || height > props.maxHeight) {
           const ratio = Math.min(props.maxWidth / width, props.maxHeight / height)
           width = Math.floor(width * ratio)
@@ -168,12 +191,12 @@ const compressImage = async (file) => {
         const ctx = canvas.getContext('2d')
         canvas.width = width
         canvas.height = height
-        
+
         // 绘制图片
         ctx.fillStyle = '#fff'
         ctx.fillRect(0, 0, canvas.width, canvas.height)
         ctx.drawImage(img, 0, 0, width, height)
-        
+
         // 转换为 blob
         canvas.toBlob(
           (blob) => {
@@ -216,13 +239,13 @@ const handleFileChange = async (file) => {
     // 不开启裁剪功能，直接上传
     try {
       uploading.value = true
-      
+
       // 处理图片文件
       let uploadFile = file.raw
       if (props.enableCompress) {
         uploadFile = await compressImage(file.raw)
       }
-      
+
       // 生成随机文件名
       const fileExt = props.enableCompress ? 'jpg' : (file.raw.name.split('.').pop() || 'png')
       const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
@@ -365,10 +388,7 @@ const handleCropImage = async () => {
 }
 
 .upload-area {
-  width: 200px;
-  height: 200px;
   border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
@@ -378,8 +398,6 @@ const handleCropImage = async () => {
   align-items: center;
 
   &.is-circle {
-    border-radius: 50%;
-
     .preview-image {
       border-radius: 50%;
     }
