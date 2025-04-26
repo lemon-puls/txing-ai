@@ -30,40 +30,71 @@
         <el-table-column
           prop="id"
           label="ID"
+          width="80"
         />
+        <el-table-column label="头像" width="80">
+          <template #default="{ row }">
+            <el-avatar :size="40" :src="row.avatar">
+              {{ row.userName?.charAt(0)?.toUpperCase() }}
+            </el-avatar>
+          </template>
+        </el-table-column>
         <el-table-column
-          prop="userId"
-          label="用户ID"
-        />
-        <el-table-column
-          prop="userName"
+          prop="username"
           label="用户名"
-        />
-        <el-table-column
-          prop="phone"
-          label="手机号码"
         />
         <el-table-column
           prop="email"
           label="邮箱"
         />
         <el-table-column
-          prop="status"
-          label="状态"
+          prop="phone"
+          label="手机号码"
+        />
+        <el-table-column
+          prop="age"
+          label="年龄"
+          width="80"
+        />
+        <el-table-column
+          prop="gender"
+          label="性别"
+          width="100"
         >
           <template #default="{ row }">
-            <el-tag :type="row.status === 0 ? 'success' : 'danger'">
-              {{ row.status === 0 ? '正常' : '禁用' }}
+            <el-tag
+              :type="row.gender === 1 ? 'primary' : 'danger'"
+              size="small"
+              effect="dark"
+              class="gender-tag"
+            >
+              <el-icon class="gender-icon">
+                <Male v-if="row.gender === 1" />
+                <Female v-else />
+              </el-icon>
+              <span>{{ row.gender === 1 ? '男' : '女' }}</span>
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column
-          prop="gender"
-          label="性别"
+          prop="role"
+          label="角色"
+          width="100"
         >
           <template #default="{ row }">
-            <el-tag :type="row.gender === 0 ? 'success' : 'danger'">
-              {{ row.gender === 0 ? '男' : '女' }}
+            <el-tag :type="row.role === 1 ? 'warning' : 'info'" size="small">
+              {{ row.role === 1 ? '超级管理员' : '普通用户' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="status"
+          label="状态"
+          width="80"
+        >
+          <template #default="{ row }">
+            <el-tag :type="row.status === 0 ? 'success' : 'danger'" size="small">
+              {{ row.status === 0 ? '正常' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -77,6 +108,7 @@
               link
               :type="row.status === 0 ? 'danger' : 'success'"
               @click="handleToggleStatus(row)"
+              :disabled="row.id === userStore.userId"
             >
               {{ row.status === 0 ? '禁用' : '启用' }}
             </el-button>
@@ -102,8 +134,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Male, Female } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api/index.js'
+import { useUserStore } from '@/stores/user'
 
 // 搜索表单数据
 const searchForm = ref({
@@ -119,12 +153,16 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+// 用户商店
+const userStore = useUserStore()
+
 // 加载用户列表
 const loadUsers = async () => {
   loading.value = true
   try {
-    const response = await defaultApi.apiUserListGet(currentPage.value, pageSize.value, {
-      ...searchForm.value
+    const response = await defaultApi.apiAdminUserListGet(currentPage.value, pageSize.value, {
+      username: searchForm.value.userName,
+      status: searchForm.value.status
     })
     if (response.code === 0 && response.data) {
       users.value = response.data.records || []
@@ -135,23 +173,53 @@ const loadUsers = async () => {
       ElMessage.error(response.msg || '获取用户列表失败')
     }
   } catch (error) {
-    ElMessage.error(error.body.msg || '获取用户列表失败')
+    ElMessage.error(error.body?.msg || '获取用户列表失败')
     console.error(error)
   } finally {
     loading.value = false
   }
 }
 
+// 切换用户状态
+const handleToggleStatus = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要${row.status === 0 ? '禁用' : '启用'}该用户吗？`,
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    const response = await defaultApi.apiAdminUserStatusIdPut(row.id)
+
+    if (response.code === 0) {
+      ElMessage.success(`${row.status === 0 ? '禁用' : '启用'}成功`)
+      await loadUsers()
+    } else {
+      ElMessage.error(response.msg || `${row.status === 0 ? '禁用' : '启用'}失败`)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.body?.msg || `${row.status === 0 ? '禁用' : '启用'}失败`)
+      console.error(error)
+    }
+  }
+}
+
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
+  console.log(searchForm.value)
   loadUsers()
 }
 
 // 重置搜索
 const handleReset = () => {
   searchForm.value = {
-    userId: '',
+    userName: '',
     status: undefined
   }
   currentPage.value = 1
@@ -170,7 +238,6 @@ const handleSizeChange = (size) => {
   currentPage.value = 1
   loadUsers()
 }
-
 
 // 页面加载时获取数据
 onMounted(async () => {
@@ -358,5 +425,28 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.gender-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  transition: all 0.3s;
+  border: none;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.2);
+  }
+
+  .gender-icon {
+    font-size: 14px;
+  }
+
+  span {
+    margin-left: 2px;
+  }
 }
 </style>

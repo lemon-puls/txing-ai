@@ -754,7 +754,9 @@ let page = 56; // Number | 页码
 let limit = 56; // Number | 每页数量
 let opts = {
   'orderBy': "orderBy_example", // String | 排序字段
-  'order': "order_example" // String | 排序方式(asc/desc)
+  'order': "order_example", // String | 排序方式(asc/desc)
+  'username': "username_example", // String | 用户名
+  'status': 56 // Number | 状态(0:启用, 1:禁用)
 };
 apiInstance.apiAdminUserListGet(page, limit, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -773,6 +775,8 @@ Name | Type | Description  | Notes
  **limit** | **Number**| 每页数量 | 
  **orderBy** | **String**| 排序字段 | [optional] 
  **order** | **String**| 排序方式(asc/desc) | [optional] 
+ **username** | **String**| 用户名 | [optional] 
+ **status** | **Number**| 状态(0:启用, 1:禁用) | [optional] 
 
 ### Return type
 

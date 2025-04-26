@@ -14,6 +14,7 @@ import (
 	"txing-ai/internal/vo"
 
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 )
 
 // Register 用户注册
@@ -288,6 +289,8 @@ func Logout(ctx *gin.Context) {
 // @Param limit query int true "每页数量" minimum(1)
 // @Param order_by query string false "排序字段"
 // @Param order query string false "排序方式(asc/desc)"
+// @Param username query string false "用户名"
+// @Param status query int false "状态(0:启用, 1:禁用)"
 // @Success 200 {object} utils.Response
 // @Router /api/admin/user/list [get]
 func List(ctx *gin.Context) {
@@ -319,6 +322,16 @@ func List(ctx *gin.Context) {
 
 	// 转换为 VO
 	userVOs := vo.ToUserVOs(users)
+
+	// 使用 lo 包遍历进行头像URL预签名
+	cosClient := utils.GetCosClientFromContext(ctx)
+	userVOs = lo.Map(userVOs, func(user vo.UserVO, _ int) vo.UserVO {
+		if user.Avatar != "" {
+			user.Avatar, _ = cosClient.GenerateDownloadPresignedURL(user.Avatar)
+		}
+		return user
+	})
+
 	convert := page.Convert(pageVo, userVOs)
 
 	utils.OkWithData(ctx, convert)

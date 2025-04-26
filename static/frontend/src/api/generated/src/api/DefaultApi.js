@@ -863,6 +863,8 @@ export default class DefaultApi {
      * @param {Object} opts Optional parameters
      * @param {String} [orderBy] 排序字段
      * @param {String} [order] 排序方式(asc/desc)
+     * @param {String} [username] 用户名
+     * @param {Number} [status] 状态(0:启用, 1:禁用)
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
     apiAdminUserListGetWithHttpInfo(page, limit, opts) {
@@ -883,7 +885,9 @@ export default class DefaultApi {
         'page': page,
         'limit': limit,
         'order_by': opts['orderBy'],
-        'order': opts['order']
+        'order': opts['order'],
+        'username': opts['username'],
+        'status': opts['status']
       };
       let headerParams = {
       };
@@ -909,6 +913,8 @@ export default class DefaultApi {
      * @param {Object} opts Optional parameters
      * @param {String} opts.orderBy 排序字段
      * @param {String} opts.order 排序方式(asc/desc)
+     * @param {String} opts.username 用户名
+     * @param {Number} opts.status 状态(0:启用, 1:禁用)
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
     apiAdminUserListGet(page, limit, opts) {
