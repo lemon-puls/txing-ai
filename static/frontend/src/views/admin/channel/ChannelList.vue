@@ -26,10 +26,19 @@
           <div class="channel-basic-info">
             <div class="channel-title">
               <h3>{{ channel.name }}</h3>
-              <el-tag :type="!channel.status ? 'danger' : 'success'" effect="dark">
-                {{ !channel.status ? '已停用' : '已启用' }}
-              </el-tag>
-              <el-tag type="warning">{{ channel.type }}</el-tag>
+              <el-tooltip
+                :content="!channel.status ? '已停用' : '已启用'"
+                placement="top"
+              >
+                <el-icon
+                  class="status-icon"
+                  :class="{ 'is-active': channel.status }"
+                >
+                  <CircleCheck v-if="channel.status" />
+                  <CircleClose v-else />
+                </el-icon>
+              </el-tooltip>
+              <el-tag type="warning" size="small">{{ channel.type }}</el-tag>
             </div>
             <div class="channel-models">
               <el-tag
@@ -274,7 +283,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
@@ -585,13 +594,27 @@ onMounted(() => {
   .channel-title {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 12px;
 
     h3 {
       margin: 0;
       font-size: 18px;
       line-height: 1.4;
+    }
+
+    .status-icon {
+      font-size: 16px;
+      color: var(--el-text-color-secondary);
+      transition: all 0.3s;
+      
+      &.is-active {
+        color: var(--el-color-success);
+      }
+      
+      &:not(.is-active) {
+        color: var(--el-color-danger);
+      }
     }
   }
 
