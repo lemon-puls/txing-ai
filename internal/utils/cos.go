@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"time"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -263,10 +264,56 @@ func (c *COSClient) GetObjectSize(key string) (int64, error) {
 	return resp.ContentLength, nil
 }
 
-// 将文件路径转换为存储至数据库中的路径
+// ConvertObjectPath 将文件路径转换为存储至数据库中的路径
 // 例如：https://www.example.com/exampleobject/1745647348066-761.jpg?q-sign-algorithm=sha1&q-ak=AKIDc6MDsKXWGm38z432-7823gGhv9D4jANM7e094m
 // 转换为：exampleobject/1745647348066-761.jpg
 func ConvertObjectPath(path string) string {
+	if path == "" {
+		return ""
+	}
 	u, _ := url.Parse(path)
 	return u.Path[1:]
+}
+
+// ConvertSliceFieldToPresignedURL 将切片中每个元素的指定字段转换为预签名URL
+// slice: 要处理的切片
+// fieldName: 要转换的字段名
+// client: COS客户端实例
+func ConvertSliceFieldToPresignedURL[T any](slice []T, fieldName string, client *COSClient) []T {
+	if len(slice) == 0 {
+		return slice
+	}
+
+	// 使用反射获取字段
+	for i := range slice {
+		item := &slice[i]
+		v := reflect.ValueOf(item).Elem()
+
+		// 获取字段
+		field := v.FieldByName(fieldName)
+		if !field.IsValid() || field.Kind() != reflect.String {
+			continue
+		}
+
+		// 获取字段值
+		value := field.String()
+		if value == "" {
+			continue
+		}
+
+		// 生成预签名URL
+		presignedURL, err := client.GenerateDownloadPresignedURL(value)
+		if err != nil {
+			log.Error("generate presigned url failed",
+				zap.String("field", fieldName),
+				zap.String("value", value),
+				zap.Error(err))
+			continue
+		}
+
+		// 设置新值
+		field.SetString(presignedURL)
+	}
+
+	return slice
 }

@@ -22,11 +22,10 @@ class DtoUpdateModelReq {
     /**
      * Constructs a new <code>DtoUpdateModelReq</code>.
      * @alias module:model/DtoUpdateModelReq
-     * @param name {String} 模型名称
      */
-    constructor(name) { 
+    constructor() { 
         
-        DtoUpdateModelReq.initialize(this, name);
+        DtoUpdateModelReq.initialize(this);
     }
 
     /**
@@ -34,8 +33,7 @@ class DtoUpdateModelReq {
      * This method is used by the constructors of any subclasses, in order to implement multiple inheritance (mix-ins).
      * Only for internal use.
      */
-    static initialize(obj, name) { 
-        obj['name'] = name;
+    static initialize(obj) { 
     }
 
     /**
@@ -77,12 +75,6 @@ class DtoUpdateModelReq {
      * @return {boolean} to indicate whether the JSON data is valid with respect to <code>DtoUpdateModelReq</code>.
      */
     static validateJSON(data) {
-        // check to make sure all required properties are present in the JSON string
-        for (const property of DtoUpdateModelReq.RequiredProperties) {
-            if (!data.hasOwnProperty(property)) {
-                throw new Error("The required field `" + property + "` is not found in the JSON data: " + JSON.stringify(data));
-            }
-        }
         // ensure the json data is a string
         if (data['avatar'] && !(typeof data['avatar'] === 'string' || data['avatar'] instanceof String)) {
             throw new Error("Expected the field `avatar` to be a primitive type in the JSON string but got " + data['avatar']);
@@ -106,7 +98,7 @@ class DtoUpdateModelReq {
 
 }
 
-DtoUpdateModelReq.RequiredProperties = ["name"];
+
 
 /**
  * 模型头像

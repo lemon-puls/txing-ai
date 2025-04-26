@@ -7,6 +7,8 @@ import (
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
 
+	"github.com/samber/lo"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +35,7 @@ func Create(ctx *gin.Context) {
 		Description: req.Description,
 		Default:     req.Default,
 		HighContext: req.HighContext,
-		Avatar:      req.Avatar,
+		Avatar:      utils.ConvertObjectPath(req.Avatar),
 		Tag:         req.Tag,
 	}
 
@@ -70,12 +72,24 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	model.Name = req.Name
-	model.Description = req.Description
-	model.Default = req.Default
-	model.HighContext = req.HighContext
-	model.Avatar = req.Avatar
-	model.Tag = req.Tag
+	if req.Name != "" {
+		model.Name = req.Name
+	}
+	if req.Description != "" {
+		model.Description = req.Description
+	}
+	if req.Default != nil {
+		model.Default = *req.Default
+	}
+	if req.HighContext != nil {
+		model.HighContext = *req.HighContext
+	}
+	if req.Avatar != "" {
+		model.Avatar = utils.ConvertObjectPath(req.Avatar)
+	}
+	if req.Tag != "" {
+		model.Tag = req.Tag
+	}
 
 	if err := db.Save(&model).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "更新模型失败", err)
@@ -130,6 +144,11 @@ func Get(ctx *gin.Context) {
 		return
 	}
 
+	if model.Avatar != "" {
+		cosClient := utils.GetCosClientFromContext(ctx)
+		model.Avatar, _ = cosClient.GenerateDownloadPresignedURL(model.Avatar)
+	}
+
 	utils.OkWithData(ctx, vo.ToModelVO(model))
 }
 
@@ -145,6 +164,7 @@ func Get(ctx *gin.Context) {
 // @Param order query string false "排序方式(asc/desc)"
 // @Param tag query string false "标签"
 // @Param default query bool false "是否默认"
+// @Param name query string false "模型名称"
 // @Success 200 {object} utils.Response
 // @Router /api/admin/model/list [get]
 func List(ctx *gin.Context) {
@@ -155,6 +175,7 @@ func List(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Model{})
@@ -163,6 +184,9 @@ func List(ctx *gin.Context) {
 	}
 	if req.Default != nil {
 		query = query.Where("default = ?", *req.Default)
+	}
+	if req.Name != "" {
+		query = query.Where("name LIKE ?", "%"+req.Name+"%")
 	}
 
 	var models []domain.Model
@@ -176,6 +200,13 @@ func List(ctx *gin.Context) {
 
 	// 转换为 VO
 	modelVOs := vo.ToModelVOs(models)
+	modelVOs = lo.Map(modelVOs, func(modelVO vo.ModelVO, _ int) vo.ModelVO {
+		if modelVO.Avatar != "" {
+			modelVO.Avatar, _ = cosClient.GenerateDownloadPresignedURL(modelVO.Avatar)
+		}
+		return modelVO
+	})
+
 	convert := page.Convert(pageVo, modelVOs)
 
 	utils.OkWithData(ctx, convert)

@@ -171,6 +171,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, ArrowUp, Edit, Delete } from '@element-plus/icons-vue'
 import ImageUploader from '@/components/common/ImageUploader.vue'
+import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
 const searchForm = ref({
@@ -212,31 +213,32 @@ const modelRules = {
 
 // 加载模型列表
 const loadModels = async () => {
-  // TODO: 调用API获取模型列表
-  // 模拟数据
-  models.value = [
-    {
-      id: 1,
-      name: 'GPT-4',
-      description: '最新的大语言模型，具有强大的理解和生成能力',
-      avatar: '',
-      default: true,
-      high_context: true,
-      tag: '通用,对话,创意',
-      isExpanded: false
-    },
-    {
-      id: 2,
-      name: 'Code Assistant',
-      description: '专门用于代码生成和代码审查的模型',
-      avatar: '',
-      default: false,
-      high_context: false,
-      tag: '编程',
-      isExpanded: false
+  try {
+    const response = await defaultApi.apiAdminModelListGet(
+      currentPage.value,
+      pageSize.value,
+      {
+        orderBy: 'id',
+        order: 'desc',
+        tag: searchForm.value.tag || undefined,
+        name: searchForm.value.name || undefined
+      }
+    )
+    if (response.code === 0 && response.data) {
+      models.value = response.data.records.map(model => ({
+        ...model,
+        isExpanded: false
+      }))
+      total.value = response.data.total || 0
+      currentPage.value = response.data.page || 1
+      pageSize.value = response.data.limit || 8
+    } else {
+      ElMessage.error(response.msg || '获取模型列表失败')
     }
-  ]
-  total.value = 100
+  } catch (error) {
+    console.error('Load models error:', error)
+    ElMessage.error(error.body?.msg || '获取模型列表失败')
+  }
 }
 
 // 搜索
@@ -295,19 +297,38 @@ const handleDelete = async (model) => {
         type: 'warning'
       }
     )
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-    loadModels()
-  } catch {
-    // 取消删除
+    
+    const response = await defaultApi.apiAdminModelIdDelete(model.id)
+    if (response.code === 0) {
+      ElMessage.success('删除成功')
+      await loadModels()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.body?.msg || '删除失败')
+    }
   }
 }
 
 // 设置默认模型
 const handleSetDefault = async (model) => {
-  // TODO: 调用API设置默认模型
-  ElMessage.success(`已${model.default ? '设置' : '取消'}为默认模型`)
-  loadModels()
+  try {
+    const response = await defaultApi.apiAdminModelIdPut(model.id, {
+      default: model.default
+    })
+    if (response.code === 0) {
+      ElMessage.success(`已${model.default ? '设置' : '取消'}为默认模型`)
+      await loadModels()
+    } else {
+      model.default = !model.default // 恢复状态
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    model.default = !model.default // 恢复状态
+    ElMessage.error(error.body?.msg || '操作失败')
+  }
 }
 
 // 提交表单
@@ -315,28 +336,41 @@ const handleSubmit = async () => {
   if (!modelFormRef.value) return
   await modelFormRef.value.validate(async (valid) => {
     if (valid) {
-      // 处理头像 URL
-      let avatar = modelForm.value.avatar
-      if (avatar) {
-        // 从完整 URL 中移除查询参数
-        // 例如从 https://static.ai.txing.vip/1745426167657-466.png?q-sign-algorithm=sha1&...
-        // 转换为 https://static.ai.txing.vip/1745426167657-466.png
-        const urlObj = new URL(avatar)
-        avatar = `${urlObj.origin}${urlObj.pathname}`
-      }
+      try {
+        // 处理头像 URL
+        let avatar = modelForm.value.avatar
+        if (avatar) {
+          const urlObj = new URL(avatar)
+          avatar = `${urlObj.origin}${urlObj.pathname}`
+        }
 
-      // 实际使用 formData
-      const formData = {
-        ...modelForm.value,
-        tag: modelForm.value.tags.join(','),
-        avatar: avatar // 使用处理后的 URL
-      }
+        // 构建请求数据
+        const formData = {
+          name: modelForm.value.name,
+          description: modelForm.value.description,
+          avatar: avatar,
+          tag: modelForm.value.tags.join(','),
+          high_context: modelForm.value.high_context
+        }
 
-      console.log('Submit data:', formData) // 临时调试
-      // TODO: 调用保存API
-      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-      dialogVisible.value = false
-      loadModels()
+        let response
+        if (dialogType.value === 'add') {
+          response = await defaultApi.apiAdminModelPost(formData)
+        } else {
+          response = await defaultApi.apiAdminModelIdPut(modelForm.value.id, formData)
+        }
+
+        if (response.code === 0) {
+          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+          dialogVisible.value = false
+          await loadModels()
+        } else {
+          ElMessage.error(response.msg || '操作失败')
+        }
+      } catch (error) {
+        console.error('Submit error:', error)
+        ElMessage.error(error.body?.msg || '操作失败')
+      }
     }
   })
 }

@@ -481,6 +481,7 @@ export default class DefaultApi {
      * @param {String} [order] 排序方式(asc/desc)
      * @param {String} [tag] 标签
      * @param {Boolean} [_default] 是否默认
+     * @param {String} [name] 模型名称
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
     apiAdminModelListGetWithHttpInfo(page, limit, opts) {
@@ -503,7 +504,8 @@ export default class DefaultApi {
         'order_by': opts['orderBy'],
         'order': opts['order'],
         'tag': opts['tag'],
-        'default': opts['_default']
+        'default': opts['_default'],
+        'name': opts['name']
       };
       let headerParams = {
       };
@@ -531,6 +533,7 @@ export default class DefaultApi {
      * @param {String} opts.order 排序方式(asc/desc)
      * @param {String} opts.tag 标签
      * @param {Boolean} opts._default 是否默认
+     * @param {String} opts.name 模型名称
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
     apiAdminModelListGet(page, limit, opts) {

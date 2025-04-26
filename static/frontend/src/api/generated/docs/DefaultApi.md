@@ -422,7 +422,8 @@ let opts = {
   'orderBy': "orderBy_example", // String | 排序字段
   'order': "order_example", // String | 排序方式(asc/desc)
   'tag': "tag_example", // String | 标签
-  '_default': true // Boolean | 是否默认
+  '_default': true, // Boolean | 是否默认
+  'name': "name_example" // String | 模型名称
 };
 apiInstance.apiAdminModelListGet(page, limit, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -443,6 +444,7 @@ Name | Type | Description  | Notes
  **order** | **String**| 排序方式(asc/desc) | [optional] 
  **tag** | **String**| 标签 | [optional] 
  **_default** | **Boolean**| 是否默认 | [optional] 
+ **name** | **String**| 模型名称 | [optional] 
 
 ### Return type
 

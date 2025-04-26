@@ -3,8 +3,9 @@ package global
 import (
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 
 	"github.com/spf13/viper"
 )
@@ -25,6 +26,7 @@ type AppConfig struct {
 	*AuthConfig      `mapstructure:"auth"`
 	*CosConfig       `mapstructure:"cos"`
 	*AmapConfig      `mapstructure:"amap"`
+	*AWSConfig       `mapstructure:"aws"`
 }
 
 type ServerConfig struct {
@@ -83,6 +85,15 @@ type MysqlConfig struct {
 type AmapConfig struct {
 	Key      string `mapstructure:"key"`
 	RegeoURL string `mapstructure:"regeo_url"`
+}
+
+type AWSConfig struct {
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	Region    string `mapstructure:"region"`
+	Bucket    string `mapstructure:"bucket"`
+	// 预签名URL有效期 单位秒
+	SignExpire time.Duration `mapstructure:"sign_expire"`
 }
 
 func LoadConfig() *AppConfig {
