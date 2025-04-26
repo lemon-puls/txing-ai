@@ -77,7 +77,7 @@ apiClient.callApi = async function (...args) {
             // const refreshData = refreshResponse.response.body
             if (refreshResponse.code === 0) {
               // 更新token
-              const {token: newToken, refreshToken: newRefreshToken} = refreshResponse.data
+              const {accessToken: newToken, refreshToken: newRefreshToken} = refreshResponse.data
               localStorage.setItem('token', newToken)
               localStorage.setItem('refreshToken', newRefreshToken)
 

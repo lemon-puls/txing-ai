@@ -200,6 +200,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { User, Timer } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { defaultApi } from '@/api'
 import bgImage from '@/assets/images/header-bg.jpg'
 import ImageUploader from '@/components/common/ImageUploader.vue'
 
@@ -282,15 +283,15 @@ const passwordRules = {
 // 获取用户信息
 const getUserInfo = async () => {
   try {
-    const response = await fetch('/api/v1/users/profile')
-    const data = await response.json()
-    if (data.code === 0) {
-      Object.assign(userInfo, data.data)
-      Object.assign(editForm, data.data)
+    const res = await defaultApi.apiUserInfoGet()
+    if (res.code === 0) {
+      Object.assign(userInfo, res.data)
+      Object.assign(editForm, res.data)
       // 同步到 store
-      userStore.setUserInfo(data.data)
+      userStore.setUserInfo(res.data)
     }
-  } catch {
+  } catch (error) {
+    console.error(error)
     ElMessage.error('获取用户信息失败')
   }
 }
@@ -314,22 +315,22 @@ const saveUserInfo = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const response = await fetch('/api/v1/users/profile', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(editForm)
+        const res = await defaultApi.apiUserProfilePut({
+          email: editForm.email,
+          phone: editForm.phone,
+          gender: editForm.gender,
+          age: editForm.age,
+          avatar: editForm.avatar
         })
-        const data = await response.json()
-        if (data.code === 0) {
+        if (res.code === 0) {
           ElMessage.success('保存成功')
           Object.assign(userInfo, editForm)
           // 同步到 store
           userStore.setUserInfo(editForm)
           isEditing.value = false
         }
-      } catch {
+      } catch (error) {
+        console.error(error)
         ElMessage.error('保存失败')
       }
     }
@@ -343,22 +344,20 @@ const handleChangePassword = async () => {
   await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const response = await fetch('/api/v1/users/password', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            oldPassword: passwordForm.oldPassword,
-            newPassword: passwordForm.newPassword
-          })
+        const res = await defaultApi.apiUserPasswordPut({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
         })
-        const data = await response.json()
-        if (data.code === 0) {
+        if (res.code === 0) {
           ElMessage.success('密码修改成功')
           changePasswordVisible.value = false
+          // 清空表单
+          passwordForm.oldPassword = ''
+          passwordForm.newPassword = ''
+          passwordForm.confirmPassword = ''
         }
-      } catch {
+      } catch (error) {
+        console.error(error)
         ElMessage.error('密码修改失败')
       }
     }
@@ -366,13 +365,24 @@ const handleChangePassword = async () => {
 }
 
 // 处理头像更新
-const handleAvatarSuccess = (url) => {
-  userInfo.avatar = url
-  // 同步到 store
-  userStore.setUserInfo({
-    ...userStore.userInfo,
-    avatar: url
-  })
+const handleAvatarSuccess = async (url) => {
+  try {
+    const res = await defaultApi.apiUserProfilePut({
+      avatar: url
+    })
+    if (res.code === 0) {
+      userInfo.avatar = url
+      // 同步到 store
+      userStore.setUserInfo({
+        ...userStore.userInfo,
+        avatar: url
+      })
+      ElMessage.success('头像更新成功')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('头像更新失败')
+  }
 }
 
 // 格式化日期
