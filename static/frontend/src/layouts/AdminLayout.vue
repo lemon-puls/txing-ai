@@ -99,6 +99,9 @@
 
           <!-- 快捷操作 -->
           <div class="quick-actions">
+            <el-tooltip content="返回主页" placement="bottom">
+              <el-icon class="action-icon" @click="goToHome"><HomeFilled /></el-icon>
+            </el-tooltip>
             <el-tooltip content="全屏" placement="bottom">
               <el-icon class="action-icon" @click="toggleFullscreen"><FullScreen /></el-icon>
             </el-tooltip>
@@ -171,7 +174,8 @@ import {
   Setting,
   Search,
   FullScreen,
-  SwitchButton
+  SwitchButton,
+  HomeFilled
 } from '@element-plus/icons-vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()
@@ -242,6 +246,11 @@ const handleCommand = async (command) => {
       }
       break
   }
+}
+
+// 返回主页
+const goToHome = () => {
+  router.push('/')
 }
 </script>
 
