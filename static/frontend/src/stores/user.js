@@ -30,10 +30,15 @@ export const useUserStore = defineStore('user', {
     setToken(token, refreshToken) {
       this.token = token
       this.refreshToken = refreshToken
+      localStorage.setItem('token', token)
+      localStorage.setItem('refreshToken', refreshToken)
     },
     clearToken() {
       this.token = null
       this.refreshToken = null
+      // localStorage.removeItem('user-store')
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
     },
     login(data) {
       this.setUserInfo({
@@ -47,6 +52,7 @@ export const useUserStore = defineStore('user', {
       this.setToken(data.token, data.refreshToken)
     },
     logout() {
+      console.log('logout')
       this.clearUserInfo()
       this.clearToken()
     }
@@ -54,6 +60,6 @@ export const useUserStore = defineStore('user', {
   persist: {
     key: 'user-store',
     storage: localStorage,
-    paths: ['token', 'refreshToken', 'userInfo']
+    paths: ['token', 'refreshToken', 'userInfo'],
   }
 })
