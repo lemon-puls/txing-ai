@@ -14,15 +14,15 @@ Method | HTTP request | Description
 [**apiAdminModelIdPut**](DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 [**apiAdminModelListGet**](DefaultApi.md#apiAdminModelListGet) | **GET** /api/admin/model/list | 获取模型列表
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
-[**apiAdminPresetIdDelete**](DefaultApi.md#apiAdminPresetIdDelete) | **DELETE** /api/admin/preset/{id} | 删除预设
-[**apiAdminPresetIdGet**](DefaultApi.md#apiAdminPresetIdGet) | **GET** /api/admin/preset/{id} | 获取预设详情
-[**apiAdminPresetIdPut**](DefaultApi.md#apiAdminPresetIdPut) | **PUT** /api/admin/preset/{id} | 更新预设
-[**apiAdminPresetListGet**](DefaultApi.md#apiAdminPresetListGet) | **GET** /api/admin/preset/list | 获取预设列表
-[**apiAdminPresetPost**](DefaultApi.md#apiAdminPresetPost) | **POST** /api/admin/preset | 创建预设
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+[**apiPresetIdDelete**](DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
+[**apiPresetIdGet**](DefaultApi.md#apiPresetIdGet) | **GET** /api/preset/{id} | 获取预设详情
+[**apiPresetIdPut**](DefaultApi.md#apiPresetIdPut) | **PUT** /api/preset/{id} | 更新预设
+[**apiPresetListGet**](DefaultApi.md#apiPresetListGet) | **GET** /api/preset/list | 获取预设列表
+[**apiPresetPost**](DefaultApi.md#apiPresetPost) | **POST** /api/preset | 创建预设
 [**apiUserInfoGet**](DefaultApi.md#apiUserInfoGet) | **GET** /api/user/info | 获取当前用户信息
 [**apiUserLoginPost**](DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 [**apiUserLogoutPost**](DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
@@ -506,244 +506,6 @@ No authorization required
 - **Accept**: application/json
 
 
-## apiAdminPresetIdDelete
-
-> UtilsResponse apiAdminPresetIdDelete(id)
-
-删除预设
-
-删除指定预设
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let id = 56; // Number | 预设ID
-apiInstance.apiAdminPresetIdDelete(id).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **Number**| 预设ID | 
-
-### Return type
-
-[**UtilsResponse**](UtilsResponse.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-
-## apiAdminPresetIdGet
-
-> ApiAdminPresetPost200Response apiAdminPresetIdGet(id)
-
-获取预设详情
-
-获取指定预设的详细信息
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let id = 56; // Number | 预设ID
-apiInstance.apiAdminPresetIdGet(id).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **Number**| 预设ID | 
-
-### Return type
-
-[**ApiAdminPresetPost200Response**](ApiAdminPresetPost200Response.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-
-## apiAdminPresetIdPut
-
-> ApiAdminPresetPost200Response apiAdminPresetIdPut(id, data)
-
-更新预设
-
-更新预设信息
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let id = 56; // Number | 预设ID
-let data = new TxingAiApi.DtoUpdatePresetReq(); // DtoUpdatePresetReq | 预设信息
-apiInstance.apiAdminPresetIdPut(id, data).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **Number**| 预设ID | 
- **data** | [**DtoUpdatePresetReq**](DtoUpdatePresetReq.md)| 预设信息 | 
-
-### Return type
-
-[**ApiAdminPresetPost200Response**](ApiAdminPresetPost200Response.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: application/json
-
-
-## apiAdminPresetListGet
-
-> UtilsResponse apiAdminPresetListGet(page, limit, opts)
-
-获取预设列表
-
-获取预设列表，支持分页
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let page = 56; // Number | 页码
-let limit = 56; // Number | 每页数量
-let opts = {
-  'orderBy': "orderBy_example", // String | 排序字段
-  'order': "order_example", // String | 排序方式(asc/desc)
-  'official': true, // Boolean | 是否官方预设
-  'userId': 56, // Number | 用户ID
-  'name': "name_example", // String | 预设名称
-  'tags': "tags_example" // String | 预设标签
-};
-apiInstance.apiAdminPresetListGet(page, limit, opts).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **page** | **Number**| 页码 | 
- **limit** | **Number**| 每页数量 | 
- **orderBy** | **String**| 排序字段 | [optional] 
- **order** | **String**| 排序方式(asc/desc) | [optional] 
- **official** | **Boolean**| 是否官方预设 | [optional] 
- **userId** | **Number**| 用户ID | [optional] 
- **name** | **String**| 预设名称 | [optional] 
- **tags** | **String**| 预设标签 | [optional] 
-
-### Return type
-
-[**UtilsResponse**](UtilsResponse.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-
-## apiAdminPresetPost
-
-> ApiAdminPresetPost200Response apiAdminPresetPost(data)
-
-创建预设
-
-创建新的预设
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let data = new TxingAiApi.DtoCreatePresetReq(); // DtoCreatePresetReq | 预设信息
-apiInstance.apiAdminPresetPost(data).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **data** | [**DtoCreatePresetReq**](DtoCreatePresetReq.md)| 预设信息 | 
-
-### Return type
-
-[**ApiAdminPresetPost200Response**](ApiAdminPresetPost200Response.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: application/json
-
-
 ## apiAdminUserListGet
 
 > UtilsResponse apiAdminUserListGet(page, limit, opts)
@@ -917,6 +679,244 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ApiCosPresignedUrlPost200Response**](ApiCosPresignedUrlPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiPresetIdDelete
+
+> UtilsResponse apiPresetIdDelete(id)
+
+删除预设
+
+删除指定预设
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 预设ID
+apiInstance.apiPresetIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 预设ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiPresetIdGet
+
+> ApiPresetPost200Response apiPresetIdGet(id)
+
+获取预设详情
+
+获取指定预设的详细信息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 预设ID
+apiInstance.apiPresetIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 预设ID | 
+
+### Return type
+
+[**ApiPresetPost200Response**](ApiPresetPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiPresetIdPut
+
+> ApiPresetPost200Response apiPresetIdPut(id, data)
+
+更新预设
+
+更新预设信息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 预设ID
+let data = new TxingAiApi.DtoUpdatePresetReq(); // DtoUpdatePresetReq | 预设信息
+apiInstance.apiPresetIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 预设ID | 
+ **data** | [**DtoUpdatePresetReq**](DtoUpdatePresetReq.md)| 预设信息 | 
+
+### Return type
+
+[**ApiPresetPost200Response**](ApiPresetPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiPresetListGet
+
+> UtilsResponse apiPresetListGet(page, limit, opts)
+
+获取预设列表
+
+获取预设列表，支持分页
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example", // String | 排序方式(asc/desc)
+  'official': true, // Boolean | 是否官方预设
+  'userId': 56, // Number | 用户ID
+  'name': "name_example", // String | 预设名称
+  'tags': "tags_example" // String | 预设标签
+};
+apiInstance.apiPresetListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式(asc/desc) | [optional] 
+ **official** | **Boolean**| 是否官方预设 | [optional] 
+ **userId** | **Number**| 用户ID | [optional] 
+ **name** | **String**| 预设名称 | [optional] 
+ **tags** | **String**| 预设标签 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiPresetPost
+
+> ApiPresetPost200Response apiPresetPost(data)
+
+创建预设
+
+创建新的预设
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreatePresetReq(); // DtoCreatePresetReq | 预设信息
+apiInstance.apiPresetPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreatePresetReq**](DtoCreatePresetReq.md)| 预设信息 | 
+
+### Return type
+
+[**ApiPresetPost200Response**](ApiPresetPost200Response.md)
 
 ### Authorization
 

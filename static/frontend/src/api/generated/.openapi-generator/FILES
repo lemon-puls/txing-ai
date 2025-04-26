@@ -4,8 +4,8 @@
 README.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
-docs/ApiAdminPresetPost200Response.md
 docs/ApiCosPresignedUrlPost200Response.md
+docs/ApiPresetPost200Response.md
 docs/ApiUserInfoGet200Response.md
 docs/ApiUserLoginPost200Response.md
 docs/ApiUserRefreshPost200Response.md
@@ -38,8 +38,8 @@ src/api/DefaultApi.js
 src/index.js
 src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
-src/model/ApiAdminPresetPost200Response.js
 src/model/ApiCosPresignedUrlPost200Response.js
+src/model/ApiPresetPost200Response.js
 src/model/ApiUserInfoGet200Response.js
 src/model/ApiUserLoginPost200Response.js
 src/model/ApiUserRefreshPost200Response.js
@@ -63,3 +63,4 @@ src/model/VoModelVO.js
 src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
+test/model/ApiPresetPost200Response.spec.js

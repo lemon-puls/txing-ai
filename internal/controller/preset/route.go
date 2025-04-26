@@ -7,13 +7,12 @@ import (
 
 func Register(router gin.IRouter) {
 
-	groupRouter := router.Use(middleware.AuthMiddleware())
-	{
-		groupRouter.POST("/admin/preset", Create)
-		groupRouter.PUT("/admin/preset/:id", Update)
-		groupRouter.DELETE("/admin/preset/:id", Delete)
-		groupRouter.GET("/admin/preset/:id", Get)
-		groupRouter.GET("/admin/preset/list", List)
-	}
+	router.Use(middleware.AuthMiddleware())
+
+	router.POST("/preset", Create)
+	router.PUT("/preset/:id", Update)
+	router.DELETE("/preset/:id", Delete)
+	router.GET("/preset/:id", Get)
+	router.GET("/preset/list", List)
 
 }

@@ -15,8 +15,8 @@
 import ApiClient from './ApiClient';
 import ApiAdminChannelPost200Response from './model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from './model/ApiAdminModelPost200Response';
-import ApiAdminPresetPost200Response from './model/ApiAdminPresetPost200Response';
 import ApiCosPresignedUrlPost200Response from './model/ApiCosPresignedUrlPost200Response';
+import ApiPresetPost200Response from './model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from './model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from './model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from './model/ApiUserRefreshPost200Response';
@@ -94,16 +94,16 @@ export {
     ApiAdminModelPost200Response,
 
     /**
-     * The ApiAdminPresetPost200Response model constructor.
-     * @property {module:model/ApiAdminPresetPost200Response}
-     */
-    ApiAdminPresetPost200Response,
-
-    /**
      * The ApiCosPresignedUrlPost200Response model constructor.
      * @property {module:model/ApiCosPresignedUrlPost200Response}
      */
     ApiCosPresignedUrlPost200Response,
+
+    /**
+     * The ApiPresetPost200Response model constructor.
+     * @property {module:model/ApiPresetPost200Response}
+     */
+    ApiPresetPost200Response,
 
     /**
      * The ApiUserInfoGet200Response model constructor.

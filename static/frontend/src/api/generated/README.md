@@ -130,15 +130,15 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelListGet**](docs/DefaultApi.md#apiAdminModelListGet) | **GET** /api/admin/model/list | 获取模型列表
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
-*TxingAiApi.DefaultApi* | [**apiAdminPresetIdDelete**](docs/DefaultApi.md#apiAdminPresetIdDelete) | **DELETE** /api/admin/preset/{id} | 删除预设
-*TxingAiApi.DefaultApi* | [**apiAdminPresetIdGet**](docs/DefaultApi.md#apiAdminPresetIdGet) | **GET** /api/admin/preset/{id} | 获取预设详情
-*TxingAiApi.DefaultApi* | [**apiAdminPresetIdPut**](docs/DefaultApi.md#apiAdminPresetIdPut) | **PUT** /api/admin/preset/{id} | 更新预设
-*TxingAiApi.DefaultApi* | [**apiAdminPresetListGet**](docs/DefaultApi.md#apiAdminPresetListGet) | **GET** /api/admin/preset/list | 获取预设列表
-*TxingAiApi.DefaultApi* | [**apiAdminPresetPost**](docs/DefaultApi.md#apiAdminPresetPost) | **POST** /api/admin/preset | 创建预设
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+*TxingAiApi.DefaultApi* | [**apiPresetIdDelete**](docs/DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
+*TxingAiApi.DefaultApi* | [**apiPresetIdGet**](docs/DefaultApi.md#apiPresetIdGet) | **GET** /api/preset/{id} | 获取预设详情
+*TxingAiApi.DefaultApi* | [**apiPresetIdPut**](docs/DefaultApi.md#apiPresetIdPut) | **PUT** /api/preset/{id} | 更新预设
+*TxingAiApi.DefaultApi* | [**apiPresetListGet**](docs/DefaultApi.md#apiPresetListGet) | **GET** /api/preset/list | 获取预设列表
+*TxingAiApi.DefaultApi* | [**apiPresetPost**](docs/DefaultApi.md#apiPresetPost) | **POST** /api/preset | 创建预设
 *TxingAiApi.DefaultApi* | [**apiUserInfoGet**](docs/DefaultApi.md#apiUserInfoGet) | **GET** /api/user/info | 获取当前用户信息
 *TxingAiApi.DefaultApi* | [**apiUserLoginPost**](docs/DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
 *TxingAiApi.DefaultApi* | [**apiUserLogoutPost**](docs/DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
@@ -153,8 +153,8 @@ Class | Method | HTTP request | Description
 
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
- - [TxingAiApi.ApiAdminPresetPost200Response](docs/ApiAdminPresetPost200Response.md)
  - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
+ - [TxingAiApi.ApiPresetPost200Response](docs/ApiPresetPost200Response.md)
  - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
  - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)

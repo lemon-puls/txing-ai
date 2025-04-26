@@ -20,7 +20,7 @@ import (
 // @Produce json
 // @Param data body dto.CreatePresetReq true "预设信息"
 // @Success 200 {object} utils.Response{data=vo.PresetVO}
-// @Router /api/admin/preset [post]
+// @Router /api/preset [post]
 func Create(ctx *gin.Context) {
 	var req dto.CreatePresetReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -57,7 +57,7 @@ func Create(ctx *gin.Context) {
 // @Param id path int true "预设ID"
 // @Param data body dto.UpdatePresetReq true "预设信息"
 // @Success 200 {object} utils.Response{data=vo.PresetVO}
-// @Router /api/admin/preset/{id} [put]
+// @Router /api/preset/{id} [put]
 func Update(ctx *gin.Context) {
 	var req dto.UpdatePresetReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -111,7 +111,7 @@ func Update(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "预设ID"
 // @Success 200 {object} utils.Response
-// @Router /api/admin/preset/{id} [delete]
+// @Router /api/preset/{id} [delete]
 func Delete(ctx *gin.Context) {
 	var preset domain.Preset
 
@@ -138,7 +138,7 @@ func Delete(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "预设ID"
 // @Success 200 {object} utils.Response{data=vo.PresetVO}
-// @Router /api/admin/preset/{id} [get]
+// @Router /api/preset/{id} [get]
 func Get(ctx *gin.Context) {
 	var preset domain.Preset
 
@@ -170,7 +170,7 @@ func Get(ctx *gin.Context) {
 // @Param name query string false "预设名称"
 // @Param tags query string false "预设标签"
 // @Success 200 {object} utils.Response
-// @Router /api/admin/preset/list [get]
+// @Router /api/preset/list [get]
 func List(ctx *gin.Context) {
 	var req dto.ListPresetReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
