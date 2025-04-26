@@ -918,7 +918,7 @@ No authorization required
 
 ## apiUserInfoGet
 
-> ApiUserInfoGet200Response apiUserInfoGet(authorization)
+> ApiUserInfoGet200Response apiUserInfoGet()
 
 获取当前用户信息
 
@@ -930,8 +930,7 @@ No authorization required
 import TxingAiApi from 'txing_ai_api';
 
 let apiInstance = new TxingAiApi.DefaultApi();
-let authorization = "authorization_example"; // String | Bearer 访问令牌
-apiInstance.apiUserInfoGet(authorization).then((data) => {
+apiInstance.apiUserInfoGet().then((data) => {
   console.log('API called successfully. Returned data: ' + data);
 }, (error) => {
   console.error(error);
@@ -941,10 +940,7 @@ apiInstance.apiUserInfoGet(authorization).then((data) => {
 
 ### Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **authorization** | **String**| Bearer 访问令牌 | 
+This endpoint does not need any parameter.
 
 ### Return type
 
