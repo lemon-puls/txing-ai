@@ -26,7 +26,9 @@
         <div class="preset-header" @click="toggleExpand(preset)">
           <div class="preset-basic-info">
             <div class="preset-avatar">
-              <el-avatar :size="48" :src="preset.avatar">{{ preset.name.charAt(0) }}</el-avatar>
+              <el-avatar :size="48" :src="preset.avatar" @error="() => true">
+                {{ preset.name.charAt(0) }}
+              </el-avatar>
             </div>
             <div class="preset-info">
               <div class="preset-title">
@@ -57,18 +59,15 @@
               class="preset-form"
             >
               <el-form-item label="助手头像" class="avatar-uploader">
-                <el-upload
-                  class="avatar-upload"
-                  :show-file-list="false"
-                  :auto-upload="false"
-                  :on-change="(file) => handleAvatarChange(file, preset)"
-                  accept="image/*"
-                >
-                  <div class="avatar-wrapper">
-                    <img v-if="preset.avatar" :src="preset.avatar" class="avatar-image">
-                    <el-icon v-else class="avatar-icon"><Plus /></el-icon>
-                  </div>
-                </el-upload>
+                <ImageUploader
+                  v-model="preset.avatar"
+                  :circle="true"
+                  :crop-width="200"
+                  :crop-height="200"
+                  placeholder="上传头像"
+                  @change="(file) => handleAvatarChange(file, preset)"
+                  @success="() => handleUpdatePreset(preset)"
+                />
               </el-form-item>
               <el-form-item label="助手名称">
                 <el-input v-model="preset.name" placeholder="请输入助手名称" />
@@ -128,18 +127,14 @@
         label-width="100px"
       >
         <el-form-item label="助手头像" prop="avatar" class="avatar-uploader">
-          <el-upload
-            class="avatar-upload"
-            :show-file-list="false"
-            :auto-upload="false"
-            :on-change="handleDialogAvatarChange"
-            accept="image/*"
-          >
-            <div class="avatar-wrapper">
-              <img v-if="presetForm.avatar" :src="presetForm.avatar" class="avatar-image">
-              <el-icon v-else class="avatar-icon"><Plus /></el-icon>
-            </div>
-          </el-upload>
+          <ImageUploader
+            v-model="presetForm.avatar"
+            :circle="true"
+            :crop-width="200"
+            :crop-height="200"
+            placeholder="上传头像"
+            @success="handleAvatarUploaded"
+          />
         </el-form-item>
         <el-form-item label="助手名称" prop="name">
           <el-input v-model="presetForm.name" placeholder="请输入助手名称" />
@@ -210,9 +205,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, Plus } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
 import 'vue-cropper/dist/index.css'
+import ImageUploader from "@/components/common/ImageUploader.vue"
+import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
 const searchForm = ref({
@@ -262,29 +259,32 @@ const presetRules = {
 
 // 加载助手列表
 const loadPresets = async () => {
-  // TODO: 调用API获取助手列表
-  // 模拟数据
-  presets.value = [
-    {
-      id: 1,
-      name: '编程助手',
-      description: '专业的代码编写和问题解答助手',
-      context: '你是一个专业的程序员，擅长解答各种编程问题...',
-      avatar: '',
-      official: true,
-      isExpanded: false
-    },
-    {
-      id: 2,
-      name: '写作助手',
-      description: '帮助改进文章结构和表达的助手',
-      context: '你是一个专业的文字工作者，擅长文章创作和润色...',
-      avatar: '',
-      official: true,
-      isExpanded: false
+  try {
+    const response = await defaultApi.apiAdminPresetListGet(
+      currentPage.value,
+      pageSize.value,
+      {
+        orderBy: 'id',
+        order: 'desc',
+        official: searchForm.value.official === '' ? undefined : searchForm.value.official,
+        name: searchForm.value.name === '' ? undefined : searchForm.value.name
+      }
+    )
+    if (response.code === 0 && response.data) {
+      presets.value = response.data.records.map(preset => ({
+        ...preset,
+        isExpanded: false
+      }))
+      total.value = response.data.total || 0
+      currentPage.value = response.data.page || 1
+      pageSize.value = response.data.limit || 10
+    } else {
+      ElMessage.error(response.msg || '获取助手列表失败')
     }
-  ]
-  total.value = 100
+  } catch (error) {
+    console.error('Load presets error:', error)
+    ElMessage.error(error.body?.msg || '获取助手列表失败')
+  }
 }
 
 // 搜索
@@ -323,9 +323,33 @@ const handleAdd = () => {
 
 // 保存助手
 const handleSave = async (preset) => {
-  // TODO: 调用保存API
-  ElMessage.success('保存成功')
-  loadPresets()
+  try {
+    // 处理头像 URL
+    let avatar = preset.avatar
+    if (avatar) {
+      const urlObj = new URL(avatar)
+      avatar = `${urlObj.origin}${urlObj.pathname}`
+    }
+
+    const formData = {
+      name: preset.name,
+      description: preset.description,
+      context: preset.context,
+      avatar: avatar,
+      official: preset.official
+    }
+
+    const response = await defaultApi.apiAdminPresetIdPut(preset.id, formData)
+    if (response.code === 0) {
+      ElMessage.success('保存成功')
+      await loadPresets()
+    } else {
+      ElMessage.error(response.msg || '保存失败')
+    }
+  } catch (error) {
+    console.error('Save preset error:', error)
+    ElMessage.error(error.body?.msg || '保存失败')
+  }
 }
 
 // 删除助手
@@ -340,11 +364,19 @@ const handleDelete = async (preset) => {
         type: 'warning'
       }
     )
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-    loadPresets()
-  } catch {
-    // 取消删除
+
+    const response = await defaultApi.apiAdminPresetIdDelete(preset.id)
+    if (response.code === 0) {
+      ElMessage.success('删除成功')
+      await loadPresets()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Delete preset error:', error)
+      ElMessage.error(error.body?.msg || '删除失败')
+    }
   }
 }
 
@@ -353,12 +385,69 @@ const handleSubmit = async () => {
   if (!presetFormRef.value) return
   await presetFormRef.value.validate(async (valid) => {
     if (valid) {
-      // TODO: 调用保存API
-      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-      dialogVisible.value = false
-      loadPresets()
+      try {
+        // 处理头像 URL
+        let avatar = presetForm.value.avatar
+        if (avatar) {
+          const urlObj = new URL(avatar)
+          avatar = `${urlObj.origin}${urlObj.pathname}`
+        }
+
+        // 构建请求数据
+        const formData = {
+          name: presetForm.value.name,
+          description: presetForm.value.description,
+          context: presetForm.value.context,
+          avatar: avatar,
+          official: presetForm.value.official
+        }
+
+        let response
+        if (dialogType.value === 'add') {
+          response = await defaultApi.apiAdminPresetPost(formData)
+        } else {
+          response = await defaultApi.apiAdminPresetIdPut(presetForm.value.id, formData)
+        }
+
+        if (response.code === 0) {
+          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+          dialogVisible.value = false
+          await loadPresets()
+        } else {
+          ElMessage.error(response.msg || '操作失败')
+        }
+      } catch (error) {
+        console.error('Submit error:', error)
+        ElMessage.error(error.body?.msg || '操作失败')
+      }
     }
   })
+}
+
+// 更新助手头像
+const handleUpdatePreset = async (preset) => {
+  try {
+    // 处理头像 URL
+    let avatar = preset.avatar
+    if (avatar) {
+      const urlObj = new URL(avatar)
+      avatar = `${urlObj.origin}${urlObj.pathname}`
+    }
+
+    const response = await defaultApi.apiAdminPresetIdPut(preset.id, {
+      avatar: avatar
+    })
+
+    if (response.code === 0) {
+      ElMessage.success('头像更新成功')
+      await loadPresets()
+    } else {
+      ElMessage.error(response.msg || '头像更新失败')
+    }
+  } catch (error) {
+    console.error('Update avatar error:', error)
+    ElMessage.error(error.body?.msg || '头像更新失败')
+  }
 }
 
 // 分页大小变化
@@ -374,41 +463,10 @@ const handleCurrentChange = (page) => {
   loadPresets()
 }
 
-// 处理头像变更（列表中）
-const handleAvatarChange = (file, preset) => {
-  if (!file) return
-  handleImageUpload(file, preset)
-}
 
 // 处理头像变更（对话框中）
-const handleDialogAvatarChange = (file) => {
-  if (!file) return
-  handleImageUpload(file)
-}
-
-// 处理图片上传
-const handleImageUpload = (file, preset = null) => {
-  // 验证文件类型和大小
-  const isImage = file.raw.type.startsWith('image/')
-  const isLt2M = file.raw.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('请上传图片文件！')
-    return
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB！')
-    return
-  }
-
-  // 读取文件并显示裁剪对话框
-  const reader = new FileReader()
-  reader.readAsDataURL(file.raw)
-  reader.onload = (e) => {
-    cropperImage.value = e.target.result
-    currentPreset.value = preset
-    cropperVisible.value = true
-  }
+const handleAvatarUploaded = (url) => {
+  presetForm.value.avatar = url
 }
 
 // 处理图片裁剪

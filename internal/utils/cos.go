@@ -172,6 +172,11 @@ type URLToken struct {
 
 // 生成文件下载预签名URL
 func (c *COSClient) GenerateDownloadPresignedURL(key string) (string, error) {
+
+	if key == "" {
+		return "", fmt.Errorf("key is empty")
+	}
+
 	ctx := context.Background()
 
 	// 获取临时密钥

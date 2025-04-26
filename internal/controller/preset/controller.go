@@ -1,6 +1,7 @@
 package preset
 
 import (
+	"github.com/samber/lo"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/utils"
@@ -30,7 +31,7 @@ func Create(ctx *gin.Context) {
 
 	preset := &domain.Preset{
 		UserID:      req.UserID,
-		Avatar:      req.Avatar,
+		Avatar:      utils.ConvertObjectPath(req.Avatar),
 		Name:        req.Name,
 		Description: req.Description,
 		Context:     req.Context,
@@ -70,12 +71,24 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	preset.UserID = req.UserID
-	preset.Avatar = req.Avatar
-	preset.Name = req.Name
-	preset.Description = req.Description
-	preset.Context = req.Context
-	preset.Official = req.Official
+	if req.UserID != nil {
+		preset.UserID = req.UserID
+	}
+	if req.Avatar != "" {
+		preset.Avatar = utils.ConvertObjectPath(req.Avatar)
+	}
+	if req.Name != "" {
+		preset.Name = req.Name
+	}
+	if req.Description != "" {
+		preset.Description = req.Description
+	}
+	if req.Context != "" {
+		preset.Context = req.Context
+	}
+	if req.Official != nil {
+		preset.Official = *req.Official
+	}
 
 	if err := db.Save(&preset).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "更新预设失败", err)
@@ -125,10 +138,14 @@ func Get(ctx *gin.Context) {
 	var preset domain.Preset
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
+
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "预设不存在", err)
 		return
 	}
+
+	preset.Avatar, _ = cosClient.GenerateDownloadPresignedURL(preset.Avatar)
 
 	utils.OkWithData(ctx, vo.ToPresetVO(preset))
 }
@@ -145,6 +162,7 @@ func Get(ctx *gin.Context) {
 // @Param order query string false "排序方式(asc/desc)"
 // @Param official query bool false "是否官方预设"
 // @Param user_id query int false "用户ID"
+// @Param name query string false "预设名称"
 // @Success 200 {object} utils.Response
 // @Router /api/admin/preset/list [get]
 func List(ctx *gin.Context) {
@@ -155,6 +173,7 @@ func List(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Preset{})
@@ -163,6 +182,9 @@ func List(ctx *gin.Context) {
 	}
 	if req.UserID != nil {
 		query = query.Where("user_id = ?", *req.UserID)
+	}
+	if req.Name != "" {
+		query = query.Where("name like ?", "%"+req.Name+"%")
 	}
 
 	var presets []domain.Preset
@@ -176,6 +198,12 @@ func List(ctx *gin.Context) {
 
 	// 转换为 VO
 	presetVOs := vo.ToPresetVOs(presets)
+
+	presetVOs = lo.Map(presetVOs, func(presetVO vo.PresetVO, _ int) vo.PresetVO {
+		presetVO.Avatar, _ = cosClient.GenerateDownloadPresignedURL(presetVO.Avatar)
+		return presetVO
+	})
+
 	convert := page.Convert(pageVo, presetVOs)
 
 	utils.OkWithData(ctx, convert)

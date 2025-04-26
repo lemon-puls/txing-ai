@@ -658,7 +658,8 @@ let opts = {
   'orderBy': "orderBy_example", // String | 排序字段
   'order': "order_example", // String | 排序方式(asc/desc)
   'official': true, // Boolean | 是否官方预设
-  'userId': 56 // Number | 用户ID
+  'userId': 56, // Number | 用户ID
+  'name': "name_example" // String | 预设名称
 };
 apiInstance.apiAdminPresetListGet(page, limit, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -679,6 +680,7 @@ Name | Type | Description  | Notes
  **order** | **String**| 排序方式(asc/desc) | [optional] 
  **official** | **Boolean**| 是否官方预设 | [optional] 
  **userId** | **Number**| 用户ID | [optional] 
+ **name** | **String**| 预设名称 | [optional] 
 
 ### Return type
 
