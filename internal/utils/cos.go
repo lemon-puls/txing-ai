@@ -261,3 +261,11 @@ func (c *COSClient) GetObjectSize(key string) (int64, error) {
 
 	return resp.ContentLength, nil
 }
+
+// 将文件路径转换为存储至数据库中的路径
+// 例如：https://www.example.com/exampleobject/1745647348066-761.jpg?q-sign-algorithm=sha1&q-ak=AKIDc6MDsKXWGm38z432-7823gGhv9D4jANM7e094m
+// 转换为：exampleobject/1745647348066-761.jpg
+func ConvertObjectPath(path string) string {
+	u, _ := url.Parse(path)
+	return u.Path[1:]
+}

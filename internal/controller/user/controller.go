@@ -3,6 +3,7 @@ package user
 import (
 	"fmt"
 	"strings"
+	"time"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/enum"
@@ -173,7 +174,7 @@ func UpdateProfile(ctx *gin.Context) {
 		updates["age"] = req.Age
 	}
 	if req.Avatar != "" {
-		updates["avatar"] = req.Avatar
+		updates["avatar"] = utils.ConvertObjectPath(req.Avatar)
 	}
 
 	// 使用 Updates 方法只更新有变化的字段
@@ -388,7 +389,7 @@ func RefreshToken(ctx *gin.Context) {
 	db := utils.GetDBFromContext(ctx)
 
 	// 调用业务层处理刷新token
-	tokens, err := userservice.RefreshToken(token, db)
+	tokens, err := userservice.RefreshToken(parts[1], db)
 	if err != nil {
 		utils.ErrorWithMsg(ctx, err.Error(), err)
 		return
@@ -402,11 +403,11 @@ func RefreshToken(ctx *gin.Context) {
 // @Tags 用户管理
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer 访问令牌"
 // @Success 200 {object} utils.Response{data=vo.UserVO}
 // @Router /api/user/info [get]
 func GetCurrentUser(ctx *gin.Context) {
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 	// 获取当前用户ID
 	userId := utils.GetUIDFromContext(ctx)
 
@@ -415,6 +416,9 @@ func GetCurrentUser(ctx *gin.Context) {
 		utils.ErrorWithMsg(ctx, "获取用户信息失败", err)
 		return
 	}
+
+	// 转换头像路径 为预签名URL 有效时间 10 分钟
+	user.Avatar, _ = cosClient.GenerateDownloadPresignedURL(user.Avatar, 10*time.Minute)
 
 	utils.OkWithData(ctx, vo.ToUserVO(user))
 }
