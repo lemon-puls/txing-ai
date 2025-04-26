@@ -26,8 +26,8 @@
           <div class="channel-basic-info">
             <div class="channel-title">
               <h3>{{ channel.name }}</h3>
-              <el-tag :type="channel.status ? 'danger' : 'success'" effect="dark">
-                {{ channel.status ? '已停用' : '已启用' }}
+              <el-tag :type="!channel.status ? 'danger' : 'success'" effect="dark">
+                {{ !channel.status ? '已停用' : '已启用' }}
               </el-tag>
               <el-tag type="warning">{{ channel.type }}</el-tag>
             </div>
@@ -99,8 +99,8 @@
                   <el-form-item label="启用状态">
                     <el-switch
                       v-model="channel.status"
-                      :active-value="false"
-                      :inactive-value="true"
+                      :active-value="true"
+                      :inactive-value="false"
                       active-text="启用"
                       inactive-text="停用"
                     />
@@ -256,8 +256,8 @@
         <el-form-item label="启用状态" prop="status">
           <el-switch
             v-model="channelForm.status"
-            :active-value="false"
-            :inactive-value="true"
+            :active-value="true"
+            :inactive-value="false"
             active-text="启用"
             inactive-text="停用"
           />
@@ -275,6 +275,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
 const searchForm = ref({
@@ -329,37 +330,33 @@ const channelRules = {
 
 // 加载渠道列表
 const loadChannels = async () => {
-  // TODO: 调用API获取渠道列表
-  // 模拟数据
-  channels.value = [
-    {
-      id: 1,
-      name: '火星引擎-1',
-      type: '火星引擎',
-      priority: 1,
-      weight: 100,
-      models: ['deepseekr1'],
-      retry: 3,
-      secret: 'key1\nkey2',
-      endpoint: 'https://api.xinghuo.com',
-      status: false,
-      isExpanded: false
-    },
-    {
-      id: 2,
-      name: '通义千问-1',
-      type: '通义千问',
-      priority: 2,
-      weight: 80,
-      models: ['qwen-turbo', 'qwen-plus'],
-      retry: 3,
-      secret: 'key1',
-      endpoint: 'https://api.qianwen.com',
-      status: false,
-      isExpanded: false
+  try {
+    const response = await defaultApi.apiAdminChannelListGet(
+      currentPage.value,
+      pageSize.value,
+      {
+        orderBy: 'id',
+        order: 'desc',
+        type: searchForm.value.type || undefined,
+        name: searchForm.value.name || undefined
+      }
+    )
+    if (response.code === 0 && response.data) {
+      channels.value = response.data.records.map(channel => ({
+        ...channel,
+        isExpanded: false,
+        models: channel.models ? channel.models : []
+      }))
+      total.value = response.data.total || 0
+      currentPage.value = response.data.page || 1
+      pageSize.value = response.data.limit || 10
+    } else {
+      ElMessage.error(response.msg || '获取渠道列表失败')
     }
-  ]
-  total.value = 100
+  } catch (error) {
+    console.error('Load channels error:', error)
+    ElMessage.error(error.body?.msg || '获取渠道列表失败')
+  }
 }
 
 // 搜索
@@ -402,9 +399,30 @@ const handleAdd = () => {
 
 // 保存渠道
 const handleSave = async (channel) => {
-  // TODO: 调用保存API
-  ElMessage.success('保存成功')
-  loadChannels()
+  try {
+    const formData = {
+      name: channel.name,
+      type: channel.type,
+      priority: channel.priority,
+      weight: channel.weight,
+      retry: channel.retry,
+      models: channel.models,
+      secret: channel.secret,
+      endpoint: channel.endpoint,
+      status: channel.status
+    }
+
+    const response = await defaultApi.apiAdminChannelIdPut(channel.id, formData)
+    if (response.code === 0) {
+      ElMessage.success('保存成功')
+      await loadChannels()
+    } else {
+      ElMessage.error(response.msg || '保存失败')
+    }
+  } catch (error) {
+    console.error('Save channel error:', error)
+    ElMessage.error(error.body?.msg || '保存失败')
+  }
 }
 
 // 删除渠道
@@ -419,11 +437,19 @@ const handleDelete = async (channel) => {
         type: 'warning'
       }
     )
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-    loadChannels()
-  } catch {
-    // 取消删除
+
+    const response = await defaultApi.apiAdminChannelIdDelete(channel.id)
+    if (response.code === 0) {
+      ElMessage.success('删除成功')
+      await loadChannels()
+    } else {
+      ElMessage.error(response.msg || '删除失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Delete channel error:', error)
+      ElMessage.error(error.body?.msg || '删除失败')
+    }
   }
 }
 
@@ -432,10 +458,37 @@ const handleSubmit = async () => {
   if (!channelFormRef.value) return
   await channelFormRef.value.validate(async (valid) => {
     if (valid) {
-      // TODO: 调用保存API
-      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-      dialogVisible.value = false
-      loadChannels()
+      try {
+        const formData = {
+          name: channelForm.value.name,
+          type: channelForm.value.type,
+          priority: channelForm.value.priority,
+          weight: channelForm.value.weight,
+          retry: channelForm.value.retry,
+          models: channelForm.value.models,
+          secret: channelForm.value.secret,
+          endpoint: channelForm.value.endpoint,
+          status: channelForm.value.status
+        }
+
+        let response
+        if (dialogType.value === 'add') {
+          response = await defaultApi.apiAdminChannelPost(formData)
+        } else {
+          response = await defaultApi.apiAdminChannelIdPut(channelForm.value.id, formData)
+        }
+
+        if (response.code === 0) {
+          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+          dialogVisible.value = false
+          await loadChannels()
+        } else {
+          ElMessage.error(response.msg || '操作失败')
+        }
+      } catch (error) {
+        console.error('Submit error:', error)
+        ElMessage.error(error.body?.msg || '操作失败')
+      }
     }
   })
 }
@@ -600,7 +653,7 @@ onMounted(() => {
       height: 100%;
       top: 1px;
       background: var(--el-fill-color-light);
-      
+
       &:hover {
         color: var(--el-color-primary);
         background: var(--el-fill-color);
@@ -618,4 +671,4 @@ onMounted(() => {
     }
   }
 }
-</style> 
+</style>

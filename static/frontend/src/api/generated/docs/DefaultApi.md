@@ -188,7 +188,8 @@ let opts = {
   'orderBy': "orderBy_example", // String | 排序字段
   'order': "order_example", // String | 排序方式(asc/desc)
   'type': "type_example", // String | 渠道类型
-  'status': true // Boolean | 状态
+  'status': true, // Boolean | 状态
+  'name': "name_example" // String | 渠道名称
 };
 apiInstance.apiAdminChannelListGet(page, limit, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -209,6 +210,7 @@ Name | Type | Description  | Notes
  **order** | **String**| 排序方式(asc/desc) | [optional] 
  **type** | **String**| 渠道类型 | [optional] 
  **status** | **Boolean**| 状态 | [optional] 
+ **name** | **String**| 渠道名称 | [optional] 
 
 ### Return type
 

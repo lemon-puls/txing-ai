@@ -151,6 +151,7 @@ func Get(ctx *gin.Context) {
 // @Param order query string false "排序方式(asc/desc)"
 // @Param type query string false "渠道类型"
 // @Param status query bool false "状态"
+// @Param name query string false "渠道名称"
 // @Success 200 {object} utils.Response
 // @Router /api/admin/channel/list [get]
 func List(ctx *gin.Context) {
@@ -169,6 +170,9 @@ func List(ctx *gin.Context) {
 	}
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
+	}
+	if req.Name != "" {
+		query = query.Where("name like ?", "%"+req.Name+"%")
 	}
 
 	var channels []domain.Channel

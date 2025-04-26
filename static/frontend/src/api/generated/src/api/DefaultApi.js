@@ -214,6 +214,7 @@ export default class DefaultApi {
      * @param {String} [order] 排序方式(asc/desc)
      * @param {String} [type] 渠道类型
      * @param {Boolean} [status] 状态
+     * @param {String} [name] 渠道名称
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
     apiAdminChannelListGetWithHttpInfo(page, limit, opts) {
@@ -236,7 +237,8 @@ export default class DefaultApi {
         'order_by': opts['orderBy'],
         'order': opts['order'],
         'type': opts['type'],
-        'status': opts['status']
+        'status': opts['status'],
+        'name': opts['name']
       };
       let headerParams = {
       };
@@ -264,6 +266,7 @@ export default class DefaultApi {
      * @param {String} opts.order 排序方式(asc/desc)
      * @param {String} opts.type 渠道类型
      * @param {Boolean} opts.status 状态
+     * @param {String} opts.name 渠道名称
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
     apiAdminChannelListGet(page, limit, opts) {

@@ -16,7 +16,7 @@ type Channel struct {
 	Retry    int      `gorm:"type:int;default:3;comment:重试次数" json:"retry"`
 	Secret   string   `gorm:"type:varchar(255);comment:密钥" json:"secret"`
 	Endpoint string   `gorm:"type:varchar(255);not null;comment:服务地址" json:"endpoint"`
-	Status   bool     `gorm:"type:int;default:0;comment:启用状态(0: 正常 1: 停用)" json:"status"`
+	Status   bool     `gorm:"type:int;default:1;comment:启用状态(0: 禁用 1: 启用)" json:"status"`
 }
 
 func (c *Channel) GetId() int64 {

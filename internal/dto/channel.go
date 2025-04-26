@@ -36,4 +36,5 @@ type ListChannelReq struct {
 	page.PageRequest
 	Type   string `form:"type"`   // 渠道类型 Channel type
 	Status *bool  `form:"status"` // 启用状态 Enable status
+	Name   string `form:"name"`   // 渠道名称 Channel name
 }
