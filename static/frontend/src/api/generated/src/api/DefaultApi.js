@@ -373,54 +373,6 @@ export default class DefaultApi {
 
 
     /**
-     * 获取模型详情
-     * 获取指定模型的详细信息
-     * @param {Number} id 模型ID
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminModelPost200Response} and HTTP response
-     */
-    apiAdminModelIdGetWithHttpInfo(id) {
-      let postBody = null;
-      // verify the required parameter 'id' is set
-      if (id === undefined || id === null) {
-        throw new Error("Missing the required parameter 'id' when calling apiAdminModelIdGet");
-      }
-
-      let pathParams = {
-        'id': id
-      };
-      let queryParams = {
-      };
-      let headerParams = {
-      };
-      let formParams = {
-      };
-
-      let authNames = [];
-      let contentTypes = [];
-      let accepts = ['application/json'];
-      let returnType = ApiAdminModelPost200Response;
-      return this.apiClient.callApi(
-        '/api/admin/model/{id}', 'GET',
-        pathParams, queryParams, headerParams, formParams, postBody,
-        authNames, contentTypes, accepts, returnType, null
-      );
-    }
-
-    /**
-     * 获取模型详情
-     * 获取指定模型的详细信息
-     * @param {Number} id 模型ID
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminModelPost200Response}
-     */
-    apiAdminModelIdGet(id) {
-      return this.apiAdminModelIdGetWithHttpInfo(id)
-        .then(function(response_and_data) {
-          return response_and_data.data;
-        });
-    }
-
-
-    /**
      * 更新模型
      * 更新模型信息
      * @param {Number} id 模型ID
@@ -468,79 +420,6 @@ export default class DefaultApi {
      */
     apiAdminModelIdPut(id, data) {
       return this.apiAdminModelIdPutWithHttpInfo(id, data)
-        .then(function(response_and_data) {
-          return response_and_data.data;
-        });
-    }
-
-
-    /**
-     * 获取模型列表
-     * 获取模型列表，支持分页
-     * @param {Number} page 页码
-     * @param {Number} limit 每页数量
-     * @param {Object} opts Optional parameters
-     * @param {String} [orderBy] 排序字段
-     * @param {String} [order] 排序方式(asc/desc)
-     * @param {String} [tag] 标签
-     * @param {Boolean} [_default] 是否默认
-     * @param {String} [name] 模型名称
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
-     */
-    apiAdminModelListGetWithHttpInfo(page, limit, opts) {
-      opts = opts || {};
-      let postBody = null;
-      // verify the required parameter 'page' is set
-      if (page === undefined || page === null) {
-        throw new Error("Missing the required parameter 'page' when calling apiAdminModelListGet");
-      }
-      // verify the required parameter 'limit' is set
-      if (limit === undefined || limit === null) {
-        throw new Error("Missing the required parameter 'limit' when calling apiAdminModelListGet");
-      }
-
-      let pathParams = {
-      };
-      let queryParams = {
-        'page': page,
-        'limit': limit,
-        'order_by': opts['orderBy'],
-        'order': opts['order'],
-        'tag': opts['tag'],
-        'default': opts['_default'],
-        'name': opts['name']
-      };
-      let headerParams = {
-      };
-      let formParams = {
-      };
-
-      let authNames = [];
-      let contentTypes = [];
-      let accepts = ['application/json'];
-      let returnType = UtilsResponse;
-      return this.apiClient.callApi(
-        '/api/admin/model/list', 'GET',
-        pathParams, queryParams, headerParams, formParams, postBody,
-        authNames, contentTypes, accepts, returnType, null
-      );
-    }
-
-    /**
-     * 获取模型列表
-     * 获取模型列表，支持分页
-     * @param {Number} page 页码
-     * @param {Number} limit 每页数量
-     * @param {Object} opts Optional parameters
-     * @param {String} opts.orderBy 排序字段
-     * @param {String} opts.order 排序方式(asc/desc)
-     * @param {String} opts.tag 标签
-     * @param {Boolean} opts._default 是否默认
-     * @param {String} opts.name 模型名称
-     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
-     */
-    apiAdminModelListGet(page, limit, opts) {
-      return this.apiAdminModelListGetWithHttpInfo(page, limit, opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });
@@ -794,6 +673,127 @@ export default class DefaultApi {
      */
     apiCosPresignedUrlPost(data) {
       return this.apiCosPresignedUrlPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取模型详情
+     * 获取指定模型的详细信息
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminModelPost200Response} and HTTP response
+     */
+    apiModelIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiModelIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminModelPost200Response;
+      return this.apiClient.callApi(
+        '/api/model/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取模型详情
+     * 获取指定模型的详细信息
+     * @param {Number} id 模型ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminModelPost200Response}
+     */
+    apiModelIdGet(id) {
+      return this.apiModelIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取模型列表
+     * 获取模型列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [orderBy] 排序字段
+     * @param {String} [order] 排序方式(asc/desc)
+     * @param {String} [tag] 标签
+     * @param {Boolean} [_default] 是否默认
+     * @param {String} [name] 模型名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiModelListGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiModelListGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiModelListGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'order_by': opts['orderBy'],
+        'order': opts['order'],
+        'tag': opts['tag'],
+        'default': opts['_default'],
+        'name': opts['name']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/model/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取模型列表
+     * 获取模型列表，支持分页
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.orderBy 排序字段
+     * @param {String} opts.order 排序方式(asc/desc)
+     * @param {String} opts.tag 标签
+     * @param {Boolean} opts._default 是否默认
+     * @param {String} opts.name 模型名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiModelListGet(page, limit, opts) {
+      return this.apiModelListGetWithHttpInfo(page, limit, opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

@@ -134,7 +134,7 @@ func Delete(ctx *gin.Context) {
 // @Produce json
 // @Param id path int true "模型ID"
 // @Success 200 {object} utils.Response{data=vo.ModelVO}
-// @Router /api/admin/model/{id} [get]
+// @Router /api/model/{id} [get]
 func Get(ctx *gin.Context) {
 	var model domain.Model
 
@@ -166,7 +166,7 @@ func Get(ctx *gin.Context) {
 // @Param default query bool false "是否默认"
 // @Param name query string false "模型名称"
 // @Success 200 {object} utils.Response
-// @Router /api/admin/model/list [get]
+// @Router /api/model/list [get]
 func List(ctx *gin.Context) {
 	var req dto.ListModelReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {

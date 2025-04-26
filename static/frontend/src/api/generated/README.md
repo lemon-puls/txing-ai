@@ -126,14 +126,14 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminChannelListGet**](docs/DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
 *TxingAiApi.DefaultApi* | [**apiAdminChannelPost**](docs/DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
-*TxingAiApi.DefaultApi* | [**apiAdminModelIdGet**](docs/DefaultApi.md#apiAdminModelIdGet) | **GET** /api/admin/model/{id} | 获取模型详情
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
-*TxingAiApi.DefaultApi* | [**apiAdminModelListGet**](docs/DefaultApi.md#apiAdminModelListGet) | **GET** /api/admin/model/list | 获取模型列表
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+*TxingAiApi.DefaultApi* | [**apiModelIdGet**](docs/DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
+*TxingAiApi.DefaultApi* | [**apiModelListGet**](docs/DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
 *TxingAiApi.DefaultApi* | [**apiPresetIdDelete**](docs/DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
 *TxingAiApi.DefaultApi* | [**apiPresetIdGet**](docs/DefaultApi.md#apiPresetIdGet) | **GET** /api/preset/{id} | 获取预设详情
 *TxingAiApi.DefaultApi* | [**apiPresetIdPut**](docs/DefaultApi.md#apiPresetIdPut) | **PUT** /api/preset/{id} | 更新预设

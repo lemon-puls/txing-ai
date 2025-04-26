@@ -214,7 +214,7 @@ const modelRules = {
 // 加载模型列表
 const loadModels = async () => {
   try {
-    const response = await defaultApi.apiAdminModelListGet(
+    const response = await defaultApi.apiModelListGet(
       currentPage.value,
       pageSize.value,
       {
@@ -297,7 +297,7 @@ const handleDelete = async (model) => {
         type: 'warning'
       }
     )
-    
+
     const response = await defaultApi.apiAdminModelIdDelete(model.id)
     if (response.code === 0) {
       ElMessage.success('删除成功')

@@ -310,7 +310,7 @@ const presetRules = {
 // 加载助手列表
 const loadPresets = async () => {
   try {
-    const response = await defaultApi.apiAdminPresetListGet(
+    const response = await defaultApi.apiPresetListGet(
       currentPage.value,
       pageSize.value,
       {

@@ -10,14 +10,14 @@ Method | HTTP request | Description
 [**apiAdminChannelListGet**](DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
 [**apiAdminChannelPost**](DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
 [**apiAdminModelIdDelete**](DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
-[**apiAdminModelIdGet**](DefaultApi.md#apiAdminModelIdGet) | **GET** /api/admin/model/{id} | 获取模型详情
 [**apiAdminModelIdPut**](DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
-[**apiAdminModelListGet**](DefaultApi.md#apiAdminModelListGet) | **GET** /api/admin/model/list | 获取模型列表
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+[**apiModelIdGet**](DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
+[**apiModelListGet**](DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
 [**apiPresetIdDelete**](DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
 [**apiPresetIdGet**](DefaultApi.md#apiPresetIdGet) | **GET** /api/preset/{id} | 获取预设详情
 [**apiPresetIdPut**](DefaultApi.md#apiPresetIdPut) | **PUT** /api/preset/{id} | 更新预设
@@ -314,50 +314,6 @@ No authorization required
 - **Accept**: application/json
 
 
-## apiAdminModelIdGet
-
-> ApiAdminModelPost200Response apiAdminModelIdGet(id)
-
-获取模型详情
-
-获取指定模型的详细信息
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let id = 56; // Number | 模型ID
-apiInstance.apiAdminModelIdGet(id).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **Number**| 模型ID | 
-
-### Return type
-
-[**ApiAdminModelPost200Response**](ApiAdminModelPost200Response.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-
 ## apiAdminModelIdPut
 
 > ApiAdminModelPost200Response apiAdminModelIdPut(id, data)
@@ -401,64 +357,6 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json
-
-
-## apiAdminModelListGet
-
-> UtilsResponse apiAdminModelListGet(page, limit, opts)
-
-获取模型列表
-
-获取模型列表，支持分页
-
-### Example
-
-```javascript
-import TxingAiApi from 'txing_ai_api';
-
-let apiInstance = new TxingAiApi.DefaultApi();
-let page = 56; // Number | 页码
-let limit = 56; // Number | 每页数量
-let opts = {
-  'orderBy': "orderBy_example", // String | 排序字段
-  'order': "order_example", // String | 排序方式(asc/desc)
-  'tag': "tag_example", // String | 标签
-  '_default': true, // Boolean | 是否默认
-  'name': "name_example" // String | 模型名称
-};
-apiInstance.apiAdminModelListGet(page, limit, opts).then((data) => {
-  console.log('API called successfully. Returned data: ' + data);
-}, (error) => {
-  console.error(error);
-});
-
-```
-
-### Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **page** | **Number**| 页码 | 
- **limit** | **Number**| 每页数量 | 
- **orderBy** | **String**| 排序字段 | [optional] 
- **order** | **String**| 排序方式(asc/desc) | [optional] 
- **tag** | **String**| 标签 | [optional] 
- **_default** | **Boolean**| 是否默认 | [optional] 
- **name** | **String**| 模型名称 | [optional] 
-
-### Return type
-
-[**UtilsResponse**](UtilsResponse.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
 - **Accept**: application/json
 
 
@@ -687,6 +585,108 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiModelIdGet
+
+> ApiAdminModelPost200Response apiModelIdGet(id)
+
+获取模型详情
+
+获取指定模型的详细信息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 模型ID
+apiInstance.apiModelIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 模型ID | 
+
+### Return type
+
+[**ApiAdminModelPost200Response**](ApiAdminModelPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiModelListGet
+
+> UtilsResponse apiModelListGet(page, limit, opts)
+
+获取模型列表
+
+获取模型列表，支持分页
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example", // String | 排序方式(asc/desc)
+  'tag': "tag_example", // String | 标签
+  '_default': true, // Boolean | 是否默认
+  'name': "name_example" // String | 模型名称
+};
+apiInstance.apiModelListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式(asc/desc) | [optional] 
+ **tag** | **String**| 标签 | [optional] 
+ **_default** | **Boolean**| 是否默认 | [optional] 
+ **name** | **String**| 模型名称 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 
