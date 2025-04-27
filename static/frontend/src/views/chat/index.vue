@@ -31,7 +31,12 @@
           >
             <div class="chat-item-content">
               <div class="chat-icon-wrapper">
-                <el-icon class="chat-icon"><ChatRound /></el-icon>
+                <el-avatar
+                  :size="40"
+                  :src="chat.avatar"
+                >
+                  {{ chat.title?.charAt(0) }}
+                </el-avatar>
               </div>
               <div class="chat-info">
                 <div class="chat-title">{{ chat.title }}</div>
@@ -386,19 +391,16 @@ import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import {
   Plus,
-  ChatRound,
   Setting,
   ArrowRight,
   CopyDocument,
   RefreshRight,
   Upload,
   Position,
-  Connection,
   ArrowDown,
   Check,
   Picture,
   HomeFilled,
-  Shop,
   CircleClose
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -727,20 +729,6 @@ const loadModels = async () => {
   }
 }
 
-// 获取模型图标
-const getModelIcon = (tag) => {
-  if (!tag) return 'ChatRound'
-  const firstTag = tag.split(',')[0]
-  const iconMap = {
-    '通用': 'ChatRound',
-    '对话': 'ChatDotRound',
-    '编程': 'Monitor',
-    '创意': 'Magic',
-    '分析': 'DataAnalysis'
-  }
-  return iconMap[firstTag] || 'ChatRound'
-}
-
 // 背景相关
 const bgPatterns = [
   { label: '渐变青绿', value: '1' },
@@ -854,6 +842,7 @@ const createNewChat = async () => {
     webSearch: false,
     temperature: 1,
     lastMessage: route.query.assistantDescription || '你好！我是 AI 助手，有什么我可以帮你的吗？',
+    avatar: route.query.assistantAvatar || aiAvatar,
     messages: [
       {
         id: 1,
@@ -969,6 +958,13 @@ const selectModel = (model) => {
   currentChat.value.avatar = model.avatar;
   currentChat.value.title = model.label;
 
+  // 更新当前会话在列表中的头像
+  const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
+  if (chatInList) {
+    chatInList.avatar = model.avatar;
+    chatInList.title = model.label;
+  }
+
   // 更新当前模型显示名称
   const modelDisplay = document.querySelector('.model-name');
   if (modelDisplay) {
@@ -1069,6 +1065,7 @@ const handlePresetSelect = (preset) => {
     webSearch: false,
     temperature: 1,
     lastMessage: preset.description,
+    avatar: preset.avatar || aiAvatar,
     messages: [
       {
         id: 1,
@@ -1280,11 +1277,12 @@ const saveChatsToLocalStorage = () => {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    background: linear-gradient(135deg, #4158D0, #C850C0);
+    overflow: hidden;
 
-    .chat-icon {
-      font-size: 20px;
-      color: white;
+    .el-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px !important;
     }
   }
 
