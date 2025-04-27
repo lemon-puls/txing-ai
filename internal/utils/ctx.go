@@ -15,6 +15,15 @@ func GetUIDFromContext(c *gin.Context) int64 {
 	return c.MustGet("userId").(int64)
 }
 
+// 从 context 中获取 userId， 允许为空
+func GetUIDFromContextAllowEmpty(c *gin.Context) (int64, bool) {
+	uid, ok := c.Get("userId")
+	if ok {
+		return uid.(int64), true
+	}
+	return -1, false
+}
+
 func GetCosClientFromContext(c *gin.Context) *COSClient {
 	return c.MustGet("cos").(*COSClient)
 }

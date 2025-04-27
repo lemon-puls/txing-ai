@@ -19,10 +19,20 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 是否带了 Token
 		token := ctx.Request.Header.Get(TokenKey)
 		if token == "" {
-			log.Error("Token is missing")
-			utils.ErrorWithHttpCode(ctx, http.StatusUnauthorized, global.CodeNotLogin, nil)
-			ctx.Abort()
-			return
+			// 尝试从 query 中获取 token
+			token = ctx.Query(TokenKey)
+			if token == "" {
+				log.Error("Token is missing")
+				// 如果是路径包含 /chat/ws，直接放行
+				if strings.Contains(ctx.Request.URL.Path, "/chat/ws") {
+					log.Info("Websocket connection, allow have no token")
+					ctx.Next()
+					return
+				}
+				utils.ErrorWithHttpCode(ctx, http.StatusUnauthorized, global.CodeNotLogin, nil)
+				ctx.Abort()
+				return
+			}
 		}
 		// Token 格式是否正确
 		parts := strings.SplitN(token, " ", 2)
