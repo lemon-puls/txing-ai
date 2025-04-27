@@ -168,29 +168,37 @@
                 <template #reference>
                   <div class="current-model">
                     <div class="model-icon">
-                      <el-icon><ChatRound /></el-icon>
+                      <el-avatar :size="24" :src="currentChat.avatar">
+                        {{ currentChat.title?.charAt(0) }}
+                      </el-avatar>
                     </div>
-                    <span class="model-name">{{ currentChat.model }}</span>
+                    <span class="model-name">{{ currentChat.title }}</span>
                     <el-icon class="arrow-icon"><ArrowDown /></el-icon>
                   </div>
                 </template>
                 <div class="model-list">
-                  <div
-                    v-for="model in availableModels"
-                    :key="model.value"
-                    class="model-item"
-                    :class="{ active: currentChat.model === model.value }"
-                    @click="selectModel(model)"
-                  >
-                    <div class="model-item-icon" :class="model.type">
-                      <el-icon><component :is="model.icon" /></el-icon>
+                  <el-empty v-if="availableModels.length === 0 && !loadingModels" description="暂无可用模型" />
+                  <el-skeleton v-else-if="loadingModels" :rows="3" animated />
+                  <template v-else>
+                    <div
+                      v-for="model in availableModels"
+                      :key="model.value"
+                      class="model-item"
+                      :class="{ active: currentChat.model === model.value }"
+                      @click="selectModel(model)"
+                    >
+                      <div class="model-item-icon" :class="model.type">
+                        <el-avatar :size="24" :src="model.avatar">
+                          {{ model.label.charAt(0) }}
+                        </el-avatar>
+                      </div>
+                      <div class="model-item-info">
+                        <div class="model-item-name">{{ model.label }}</div>
+                        <div class="model-item-desc">{{ model.description }}</div>
+                      </div>
+                      <el-icon v-if="currentChat.model === model.value"><Check /></el-icon>
                     </div>
-                    <div class="model-item-info">
-                      <div class="model-item-name">{{ model.label }}</div>
-                      <div class="model-item-desc">{{ model.description }}</div>
-                    </div>
-                    <el-icon v-if="currentChat.model === model.value"><Check /></el-icon>
-                  </div>
+                  </template>
                 </div>
               </el-popover>
             </div>
@@ -423,6 +431,7 @@ import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
 import { createChatMessage, createStopMessage } from '@/utils/websocket/types'
+import { defaultApi } from '@/api'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -679,43 +688,58 @@ const userAvatar = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bc
 const aiAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
 // 可用模型列表
-const availableModels = [
-  {
-    label: 'Deepseek-R1',
-    value: 'deepseek-r1',
-    type: 'deepseek',
-    icon: 'ChatRound',
-    description: '强大的代码理解和生成能力'
-  },
-  {
-    label: 'GPT-4 Turbo',
-    value: 'gpt-4-turbo',
-    type: 'gpt',
-    icon: 'ChatRound',
-    description: '最新的 GPT-4 模型，支持更长上下文'
-  },
-  {
-    label: 'GPT-4',
-    value: 'gpt-4',
-    type: 'gpt',
-    icon: 'ChatRound',
-    description: '强大的推理和分析能力'
-  },
-  {
-    label: 'GPT-3.5 Turbo',
-    value: 'gpt-3.5-turbo',
-    type: 'gpt',
-    icon: 'ChatRound',
-    description: '快速响应，性价比高'
-  },
-  {
-    label: 'Claude 2',
-    value: 'claude-2',
-    type: 'claude',
-    icon: 'ChatRound',
-    description: '优秀的写作和分析能力'
+const availableModels = ref([])
+const loadingModels = ref(false)
+
+// 加载模型列表
+const loadModels = async () => {
+  try {
+    loadingModels.value = true
+    const response = await defaultApi.apiModelListGet(1, 999, {
+      orderBy: 'id',
+      order: 'desc'
+    })
+
+    if (response.code === 0 && response.data) {
+      availableModels.value = response.data.records.map(model => ({
+        value: model.id,
+        label: model.name,
+        description: model.description,
+        type: model.tag ? model.tag.split(',')[0] : 'default',
+        avatar: model.avatar,
+        high_context: model.high_context,
+        default: model.default
+      }))
+
+      // 找到默认模型并自动选中
+      const defaultModel = availableModels.value.find(model => model.default)
+      if (defaultModel) {
+        selectModel(defaultModel)
+      }
+    } else {
+      ElMessage.error(response.msg || '获取模型列表失败')
+    }
+  } catch (error) {
+    console.error('Load models error:', error)
+    ElMessage.error(error.body?.msg || '获取模型列表失败')
+  } finally {
+    loadingModels.value = false
   }
-]
+}
+
+// 获取模型图标
+const getModelIcon = (tag) => {
+  if (!tag) return 'ChatRound'
+  const firstTag = tag.split(',')[0]
+  const iconMap = {
+    '通用': 'ChatRound',
+    '对话': 'ChatDotRound',
+    '编程': 'Monitor',
+    '创意': 'Magic',
+    '分析': 'DataAnalysis'
+  }
+  return iconMap[firstTag] || 'ChatRound'
+}
 
 // 背景相关
 const bgPatterns = [
@@ -941,7 +965,18 @@ const saveSettings = () => {
 
 // 选择模型
 const selectModel = (model) => {
-  currentChat.value.model = model.value
+  currentChat.value.model = model.value;
+  currentChat.value.avatar = model.avatar;
+  currentChat.value.title = model.label;
+
+  // 更新当前模型显示名称
+  const modelDisplay = document.querySelector('.model-name');
+  if (modelDisplay) {
+    modelDisplay.textContent = model.label;
+  }
+
+  // 保存到本地存储
+  saveChatsToLocalStorage();
 }
 
 // 切换联网搜索
@@ -976,6 +1011,14 @@ onMounted(() => {
 
   // 初始化主题
   themeStore.initTheme()
+
+  loadModels()
+
+  // 在 onMounted 中加载本地存储的聊天记录
+  const savedChats = localStorage.getItem('chats')
+  if (savedChats) {
+    chatList.value = JSON.parse(savedChats)
+  }
 })
 
 // 添加输入框高度相关的状态和方法
@@ -1044,6 +1087,10 @@ onUnmounted(() => {
     wsManager.closeConnection(currentChat.value.id.toString())
   }
 })
+
+const saveChatsToLocalStorage = () => {
+  localStorage.setItem('chats', JSON.stringify(chatList.value));
+}
 </script>
 
 <style scoped lang="scss">
@@ -1605,16 +1652,6 @@ onUnmounted(() => {
           line-height: 1.6;
         }
       }
-
-      code:not(pre code) {
-        font-family: 'JetBrains Mono', 'Fira Code', monospace;
-        font-size: 13px;
-        padding: 0.2em 0.4em;
-        border-radius: 4px;
-        background-color: rgba(var(--el-color-primary-rgb), 0.1);
-        color: var(--el-color-primary);
-        font-weight: 500;
-      }
     }
   }
 
@@ -1749,7 +1786,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     border: 1px solid var(--border-color);
@@ -1766,9 +1803,13 @@ onUnmounted(() => {
       justify-content: center;
       width: 24px;
       height: 24px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #4158D0, #C850C0);
+      border-radius: 8px;
+      //background: linear-gradient(135deg, #4158D0, #C850C0);
       color: white;
+
+      .el-avatar {
+        border-radius: 8px !important;
+      }
     }
 
     .model-name {
@@ -1789,62 +1830,90 @@ onUnmounted(() => {
 }
 
 .model-list {
-  .model-item {
+  .el-empty {
+    padding: 24px;
+  }
+
+  .el-skeleton {
+    padding: 16px;
+  }
+}
+
+.model-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: var(--el-color-primary-light-9);
+  }
+
+  &.active {
+    background: var(--el-color-primary-light-8);
+  }
+
+  .model-item-icon {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    cursor: pointer;
-    border-radius: 6px;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--el-fill-color-light);
     transition: all 0.3s ease;
 
-    &:hover {
-      background: var(--el-color-primary-light-9);
-    }
-
-    &.active {
-      background: var(--el-color-primary-light-8);
-    }
-
-    .model-item-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+    .el-avatar {
+      width: 100%;
+      height: 100%;
+      font-size: 14px;
+      background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
       color: white;
-
-      &.gpt {
-        background: linear-gradient(135deg, #4158D0, #C850C0);
-      }
-
-      &.claude {
-        background: linear-gradient(135deg, #FF4B2B, #FF416C);
-      }
-
-      &.deepseek {
-        background: linear-gradient(135deg, #11998e, #38ef7d);
-      }
+      font-weight: 500;
+      overflow: initial;
+      border-radius: 8px;
     }
 
-    .model-item-info {
-      flex: 1;
-      min-width: 0;
+    &.通用 .el-avatar {
+      background: linear-gradient(135deg, #409EFF, #2B5EFF);
+    }
+    &.对话 .el-avatar {
+      background: linear-gradient(135deg, #67C23A, #409EFF);
+    }
+    &.编程 .el-avatar {
+      background: linear-gradient(135deg, #E6A23C, #F56C6C);
+    }
+    &.创意 .el-avatar {
+      background: linear-gradient(135deg, #9C27B0, #E6A23C);
+    }
+    &.分析 .el-avatar {
+      background: linear-gradient(135deg, #F56C6C, #9C27B0);
+    }
+    &.default .el-avatar {
+      background: linear-gradient(135deg, #909399, #606266);
+    }
+  }
 
-      .model-item-name {
-        font-size: 14px;
-        font-weight: 500;
-        margin-bottom: 2px;
-      }
+  .model-item-info {
+    flex: 1;
+    min-width: 0;
 
-      .model-item-desc {
-        font-size: 12px;
-        color: var(--text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    .model-item-name {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .model-item-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }
