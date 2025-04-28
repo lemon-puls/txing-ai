@@ -10,25 +10,51 @@ export const MessageType = {
 /**
  * 创建聊天消息
  * @param {string} content - 消息内容
- * @returns {object} 消息对象
+ * @param {object} options - 可选参数
+ * @returns {object} 符合后端要求的消息对象
  */
-export function createChatMessage(content) {
-  return {
-    type: MessageType.CHAT,
-    data: {
-      content
-    }
-  }
+export function createChatMessage(content, options = {}) {
+  const {
+    model,
+    enableWeb = false,
+    context = 1,
+    maxTokens,
+    temperature,
+    topP,
+    topK,
+    presencePenalty,
+    frequencyPenalty,
+    repetitionPenalty
+  } = options;
+
+  const message = {
+    type: "chat",
+    content: content,
+    model: model || "gpt-3.5-turbo", // 默认模型
+    context: context,
+    enableWeb: enableWeb
+  };
+
+  // 添加可选参数
+  if (maxTokens !== undefined) message.max_tokens = maxTokens;
+  if (temperature !== undefined) message.temperature = temperature;
+  if (topP !== undefined) message.top_p = topP;
+  if (topK !== undefined) message.top_k = topK;
+  if (presencePenalty !== undefined) message.presence_penalty = presencePenalty;
+  if (frequencyPenalty !== undefined) message.frequency_penalty = frequencyPenalty;
+  if (repetitionPenalty !== undefined) message.repetition_penalty = repetitionPenalty;
+
+  return message;
 }
 
 /**
  * 创建停止生成消息
- * @returns {object} 消息对象
+ * @returns {object} 停止生成消息对象
  */
 export function createStopMessage() {
   return {
-    type: MessageType.STOP
-  }
+    type: "stop"
+  };
 }
 
 /**

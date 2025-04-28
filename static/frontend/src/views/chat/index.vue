@@ -9,12 +9,16 @@
       <div class="action-buttons">
         <el-tooltip content="返回首页" placement="right">
           <el-button circle class="home-button" @click="goToHome">
-            <el-icon><HomeFilled /></el-icon>
+            <el-icon>
+              <HomeFilled/>
+            </el-icon>
           </el-button>
         </el-tooltip>
         <el-tooltip content="新建会话" placement="right">
           <el-button type="primary" circle class="new-chat-button" @click="createNewChat">
-            <el-icon><Plus class="icon-bounce" /></el-icon>
+            <el-icon>
+              <Plus class="icon-bounce"/>
+            </el-icon>
           </el-button>
         </el-tooltip>
       </div>
@@ -45,7 +49,9 @@
             </div>
             <div class="chat-actions">
               <el-dropdown trigger="hover" @command="handleChatAction($event, chat)">
-                <el-icon><More /></el-icon>
+                <el-icon>
+                  <More/>
+                </el-icon>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="rename">重命名</el-dropdown-item>
@@ -68,12 +74,16 @@
           </el-tooltip>
           <el-tooltip content="切换背景" placement="top">
             <div class="bg-toggle" @click="showBgPatternSelector">
-              <el-icon><Picture /></el-icon>
+              <el-icon>
+                <Picture/>
+              </el-icon>
             </div>
           </el-tooltip>
         </div>
         <div class="sidebar-toggle" @click="toggleSidebar">
-          <el-icon><Fold /></el-icon>
+          <el-icon>
+            <Fold/>
+          </el-icon>
         </div>
       </div>
     </div>
@@ -86,7 +96,9 @@
         :class="{ show: isSidebarCollapsed }"
         @click="toggleSidebar"
       >
-        <el-icon><Fold class="expand-icon" /></el-icon>
+        <el-icon>
+          <Fold class="expand-icon"/>
+        </el-icon>
       </div>
 
       <template v-if="currentChat">
@@ -94,15 +106,17 @@
         <div class="chat-header">
           <div class="chat-title">
             <span>{{ currentChat.title }}</span>
-<!--            <el-tag size="small" effect="plain" class="ml-2 model-tag">{{ currentChat.model }}</el-tag>-->
+            <!--            <el-tag size="small" effect="plain" class="ml-2 model-tag">{{ currentChat.model }}</el-tag>-->
           </div>
           <div class="chat-settings">
             <el-tooltip content="模型设置" placement="bottom">
               <el-button circle @click="showSettings = true">
-                <el-icon><Setting /></el-icon>
+                <el-icon>
+                  <Setting/>
+                </el-icon>
               </el-button>
             </el-tooltip>
-            <UserAvatar />
+            <UserAvatar/>
           </div>
         </div>
 
@@ -127,8 +141,12 @@
                 <!-- 添加思考过程组件 -->
                 <div v-if="message.thought_process" class="thought-process">
                   <div class="thought-header" @click="toggleThought(message)">
-                    <el-icon :class="{ 'is-fold': !message.showThought }"><ArrowRight /></el-icon>
-                    <span>已深度思考 (用时{{ message === streamingMessage ? Math.floor(thoughtTime / 1000) : 6 }}秒)</span>
+                    <el-icon :class="{ 'is-fold': !message.showThought }">
+                      <ArrowRight/>
+                    </el-icon>
+                    <span>已深度思考 (用时{{
+                        message === streamingMessage ? Math.floor(thoughtTime / 1000) : 6
+                      }}秒)</span>
                   </div>
                   <div v-show="message.showThought" class="thought-content">
                     {{ message.thought_process }}
@@ -138,11 +156,16 @@
                 <div class="message-actions">
                   <el-button-group>
                     <el-button text size="small" @click="copyMessage(message)">
-                      <template #icon><CopyDocument /></template>
+                      <template #icon>
+                        <CopyDocument/>
+                      </template>
                       复制
                     </el-button>
-                    <el-button text size="small" @click="regenerateMessage(message)" v-if="message.role === 'assistant'">
-                      <template #icon><RefreshRight /></template>
+                    <el-button text size="small" @click="regenerateMessage(message)"
+                               v-if="message.role === 'assistant'">
+                      <template #icon>
+                        <RefreshRight/>
+                      </template>
                       重新生成
                     </el-button>
                   </el-button-group>
@@ -178,12 +201,14 @@
                       </el-avatar>
                     </div>
                     <span class="model-name">{{ currentChat.title }}</span>
-                    <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+                    <el-icon class="arrow-icon">
+                      <ArrowDown/>
+                    </el-icon>
                   </div>
                 </template>
                 <div class="model-list">
-                  <el-empty v-if="availableModels.length === 0 && !loadingModels" description="暂无可用模型" />
-                  <el-skeleton v-else-if="loadingModels" :rows="3" animated />
+                  <el-empty v-if="availableModels.length === 0 && !loadingModels" description="暂无可用模型"/>
+                  <el-skeleton v-else-if="loadingModels" :rows="3" animated/>
                   <template v-else>
                     <div
                       v-for="model in availableModels"
@@ -201,7 +226,9 @@
                         <div class="model-item-name">{{ model.label }}</div>
                         <div class="model-item-desc">{{ model.description }}</div>
                       </div>
-                      <el-icon v-if="currentChat.model === model.value"><Check /></el-icon>
+                      <el-icon v-if="currentChat.model === model.value">
+                        <Check/>
+                      </el-icon>
                     </div>
                   </template>
                 </div>
@@ -210,7 +237,7 @@
             <div class="quick-actions">
               <el-tooltip content="AI 助手市场" placement="top">
                 <div class="action-btn" @click="showPresetMarket = true">
-                  <SvgIcon icon="ai" size="30" hover click />
+                  <SvgIcon icon="ai" size="30" hover click/>
                 </div>
               </el-tooltip>
               <div class="feature-toggles">
@@ -220,7 +247,7 @@
                     :class="{ active: currentChat.webSearch }"
                     @click="toggleWebSearch"
                   >
-                    <SvgIcon icon="network" size="24" hover click />
+                    <SvgIcon icon="network" size="24" hover click/>
                   </div>
                 </el-tooltip>
               </div>
@@ -240,17 +267,23 @@
               <el-button-group>
                 <el-tooltip content="上传文件" placement="top">
                   <el-button circle>
-                    <el-icon><Upload /></el-icon>
+                    <el-icon>
+                      <Upload/>
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="停止生成" placement="top" v-if="isTyping">
                   <el-button circle @click="stopGeneration">
-                    <el-icon><CircleClose /></el-icon>
+                    <el-icon>
+                      <CircleClose/>
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
                 <el-tooltip content="发送消息" placement="top">
                   <el-button type="primary" circle @click="sendMessage" class="send-button">
-                    <el-icon><Position /></el-icon>
+                    <el-icon>
+                      <Position/>
+                    </el-icon>
                   </el-button>
                 </el-tooltip>
               </el-button-group>
@@ -263,7 +296,9 @@
       <div v-else class="chat-empty">
         <el-empty description="选择或创建一个会话开始聊天">
           <el-button type="primary" @click="createNewChat" class="create-button">
-            <template #icon><Plus /></template>
+            <template #icon>
+              <Plus/>
+            </template>
             新建会话
           </el-button>
         </el-empty>
@@ -386,25 +421,25 @@
 </template>
 
 <script setup name="ChatView">
-import { ref, nextTick, onMounted, computed, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useThemeStore } from '@/stores/theme'
+import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useThemeStore} from '@/stores/theme'
 import {
-  Plus,
-  Setting,
-  ArrowRight,
-  CopyDocument,
-  RefreshRight,
-  Upload,
-  Position,
   ArrowDown,
+  ArrowRight,
   Check,
-  Picture,
+  CircleClose,
+  CopyDocument,
   HomeFilled,
-  CircleClose
+  Picture,
+  Plus,
+  Position,
+  RefreshRight,
+  Setting,
+  Upload
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { marked } from 'marked';
+import {ElMessage} from 'element-plus'
+import {marked} from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -432,8 +467,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
-import { createChatMessage, createStopMessage } from '@/utils/websocket/types'
-import { defaultApi } from '@/api'
+import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
+import {defaultApi} from '@/api'
+import {useUserStore} from "@/stores/user.js";
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -457,7 +493,7 @@ hljs.registerLanguage('dockerfile', dockerfile)
 
 // 配置 marked
 marked.setOptions({
-  highlight: function(code, lang) {
+  highlight: function (code, lang) {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(lang, code).value;
@@ -491,10 +527,10 @@ const renderMessage = (content) => {
 
       let highlightedCode;
       try {
-        highlightedCode = hljs.highlight(codeStr, { language: validLang }).value;
+        highlightedCode = hljs.highlight(codeStr, {language: validLang}).value;
       } catch (err) {
         console.warn('Language highlight error:', err);
-        highlightedCode = hljs.highlight(codeStr, { language: 'plaintext' }).value;
+        highlightedCode = hljs.highlight(codeStr, {language: 'plaintext'}).value;
       }
 
       // 生成唯一ID用于复制功能
@@ -532,7 +568,7 @@ const renderMessage = (content) => {
       `.trim();
     };
 
-    marked.use({ renderer });
+    marked.use({renderer});
     const rendered = marked(String(content || ''));
     return `<div class="markdown-body">${rendered}</div>`;
   } catch (err) {
@@ -543,6 +579,7 @@ const renderMessage = (content) => {
 
 // 使用主题 store
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 
 // 状态
 const isDarkTheme = computed(() => themeStore.isDark)
@@ -731,12 +768,12 @@ const loadModels = async () => {
 
 // 背景相关
 const bgPatterns = [
-  { label: '渐变青绿', value: '1' },
-  { label: '渐变橙粉', value: '2' },
-  { label: '渐变紫蓝', value: '3' },
-  { label: '渐变粉红', value: '4' },
-  { label: '渐变紫粉', value: '5' },
-  { label: '无背景', value: 'none' }
+  {label: '渐变青绿', value: '1'},
+  {label: '渐变橙粉', value: '2'},
+  {label: '渐变紫蓝', value: '3'},
+  {label: '渐变粉红', value: '4'},
+  {label: '渐变紫粉', value: '5'},
+  {label: '无背景', value: 'none'}
 ]
 const currentBgPattern = ref('none')
 const showBgPatternDialog = ref(false)
@@ -748,41 +785,6 @@ const showPresetMarket = ref(false)
 const streamingMessage = ref(null)
 const thoughtTime = ref(0)
 const showThemeDrawer = ref(false)
-
-// 模拟流式响应
-const simulateStreamResponse = async (content, thought) => {
-  isTyping.value = true
-  streamingMessage.value = {
-    id: Date.now(),
-    role: 'assistant',
-    content: '',
-    thought_process: '',
-    showThought: true
-  }
-  currentChat.value.messages.push(streamingMessage.value)
-  await scrollToBottom()
-
-  // 首先流式显示思考过程
-  const thoughtChars = thought.split('')
-  for (let char of thoughtChars) {
-    streamingMessage.value.thought_process += char
-    thoughtTime.value += 50 + Math.random() * 50
-    await new Promise(resolve => setTimeout(resolve, 30 + Math.random() * 20))
-    await scrollToBottom()
-  }
-
-  // 然后流式显示回复内容
-  const chars = content.split('')
-  for (let char of chars) {
-    streamingMessage.value.content += char
-    await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 30))
-    await scrollToBottom()
-  }
-
-  isTyping.value = false
-  streamingMessage.value = null
-  thoughtTime.value = 0
-}
 
 // 发送消息
 const sendMessage = async () => {
@@ -800,11 +802,118 @@ const sendMessage = async () => {
   messageInput.value = ''
   await scrollToBottom()
 
-  // 通过 WebSocket 发送消息
-  wsManager.sendMessage(
-    currentChat.value.id.toString(),
-    createChatMessage(message)
-  )
+  // 设置正在输入状态
+  isTyping.value = true
+
+  try {
+    // 准备消息选项
+    const options = {
+      model: availableModels.value.find(m => m.value === currentChat.value.model)?.label || currentChat.value.model.toString(),
+      enableWeb: currentChat.value.webSearch,
+      context: 1,
+      maxTokens: currentChat.value.maxTokens,
+      temperature: currentChat.value.temperature,
+      topP: currentChat.value.topP,
+      topK: currentChat.value.topK,
+      presencePenalty: currentChat.value.presencePenalty,
+      frequencyPenalty: currentChat.value.frequencyPenalty,
+      repetitionPenalty: currentChat.value.repetitionPenalty
+    }
+
+    // 确定使用哪个连接ID发送消息
+    // 如果是新会话(没有真实ID)，则使用"-1"
+    const connectionId = currentChat.value.id.toString()
+
+    // 通过 WebSocket 发送消息
+    wsManager.sendMessage(
+      connectionId,
+      createChatMessage(message, options)
+    )
+
+    // 第一次发送后标记已经不是新会话
+    // if (!currentChat.value.realId) {
+    //   currentChat.value.realId = false
+    // }
+  } catch (error) {
+    console.error('Failed to send message:', error)
+    ElMessage.error('发送消息失败')
+    isTyping.value = false
+  }
+}
+
+// 处理 WebSocket 消息
+const handleWebSocketMessage = (chatId, data) => {
+  // 查找对应的聊天会话
+  // 注意：chatId 可能是临时ID "-1"，或者是之前赋予的前端生成的ID
+  let chat = null
+
+  // 如果有会话ID，优先使用它查找
+  if (data.conversationId) {
+    const actualChatId = parseInt(data.conversationId.toString())
+    chat = chatList.value.find(c => c.id === actualChatId)
+  }
+
+  // 如果没找到，使用传入的chatId查找
+  if (!chat) {
+    chat = chatList.value.find(c => c.id.toString() === chatId.toString())
+  }
+
+  if (!chat) {
+    console.error(`Cannot find chat for ID ${chatId}`)
+    return
+  }
+
+  if (data.type === 'chat') {
+    // 完整的消息响应
+    isTyping.value = false
+
+    // 如果存在流式消息，则更新它而不是创建新消息
+    if (streamingMessage.value) {
+      streamingMessage.value.content = data.data.content
+      streamingMessage.value.thought_process = data.data.thought_process
+      streamingMessage.value = null
+    } else {
+      chat.messages.push({
+        id: Date.now(),
+        role: 'assistant',
+        content: data.data.content,
+        thought_process: data.data.thought_process,
+        showThought: true
+      })
+    }
+
+    chat.lastMessage = data.data.content.substring(0, 50) + (data.data.content.length > 50 ? '...' : '')
+    scrollToBottom()
+  } else if (data.type === 'stream') {
+    // 流式响应更新
+    if (!streamingMessage.value) {
+      // 创建新的流式消息
+      streamingMessage.value = {
+        id: Date.now(),
+        role: 'assistant',
+        content: '',
+        thought_process: '',
+        showThought: true
+      }
+      chat.messages.push(streamingMessage.value)
+    }
+
+    // 更新流式消息内容
+    streamingMessage.value.content = data.data.partial_content
+    streamingMessage.value.thought_process = data.data.partial_reasoning
+
+    // 更新思考时间
+    if (data.data.reasoning_content) {
+      thoughtTime.value += 50
+    }
+
+    scrollToBottom()
+  } else if (data.type === 'error') {
+    // 错误消息
+    ElMessage.error(data.data?.message || '接收消息出错')
+    isTyping.value = false
+    streamingMessage.value = null
+  }
 }
 
 // 停止生成
@@ -837,10 +946,18 @@ const goToHome = () => {
 const createNewChat = async () => {
   const newChat = {
     id: Date.now(),
+    // 标记这是一个还没有真实ID的新会话
+    realId: false,
     title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
     model: 'gpt-3.5-turbo',
     webSearch: false,
+    maxTokens: 2048,
     temperature: 1,
+    topP: 0.7,
+    topK: 50,
+    presencePenalty: 0,
+    frequencyPenalty: 0,
+    repetitionPenalty: 1,
     lastMessage: route.query.assistantDescription || '你好！我是 AI 助手，有什么我可以帮你的吗？',
     avatar: route.query.assistantAvatar || aiAvatar,
     messages: [
@@ -862,20 +979,56 @@ const createNewChat = async () => {
   }
 
   try {
-    // 创建 WebSocket 连接
-    await wsManager.createConnection(newChat.id.toString(), '1') // 这里的 '1' 应该替换为实际的用户 ID
+    // 获取用户ID (如果登录的话)
+    const userId = userStore.userId || '0'
+
+    // 创建 WebSocket 连接，对于新会话，传递 -1 作为会话ID
+    await wsManager.createConnection(newChat.id, userId)
 
     // 添加消息处理器
-    wsManager.on(newChat.id.toString(), 'message', (data) => {
+    wsManager.on(newChat.id, 'message', (data) => {
+      // 如果收到的消息包含会话ID，更新当前会话ID
+      if (data.conversationId) {
+        const actualChatId = data.conversationId.toString()
+
+        // 如果这是第一条消息，且ID与当前不同，需要更新会话ID
+        if (newChat.realId === false && newChat.id.toString() !== actualChatId) {
+          // 更新会话对象的ID
+          console.log(`Updating chat ID from ${newChat.id} to ${actualChatId}`)
+          let oldId = newChat.id
+          newChat.id = parseInt(actualChatId)
+          newChat.realId = true
+
+          // 更新聊天列表中的ID
+          const chatIndex = chatList.value.findIndex(c => c.id === oldId)
+          if (chatIndex !== -1) {
+            chatList.value[chatIndex].id = newChat.id
+            chatList.value[chatIndex].realId = true
+          }
+
+          // 更新当前聊天的ID
+          if (currentChat.value && currentChat.value.id === oldId) {
+            currentChat.value.id = newChat.id
+            currentChat.value.realId = true
+          }
+
+          // 更新连接映射
+          wsManager.updateConnectionId(oldId, actualChatId)
+
+          // 保存到本地存储
+          saveChatsToLocalStorage()
+        }
+      }
+
       handleWebSocketMessage(newChat.id, data)
     })
 
-    wsManager.on(newChat.id.toString(), 'error', (error) => {
+    wsManager.on("-1", 'error', (error) => {
       console.error('WebSocket error:', error)
       ElMessage.error('连接发生错误')
     })
 
-    wsManager.on(newChat.id.toString(), 'close', () => {
+    wsManager.on("-1", 'close', () => {
       console.log('WebSocket connection closed')
       ElMessage.warning('连接已关闭')
     })
@@ -885,24 +1038,6 @@ const createNewChat = async () => {
   } catch (error) {
     console.error('Failed to create chat:', error)
     ElMessage.error('创建会话失败')
-  }
-}
-
-// 处理 WebSocket 消息
-const handleWebSocketMessage = (chatId, data) => {
-  if (data.type === 'chat') {
-    // 处理聊天消息
-    const chat = chatList.value.find(c => c.id === chatId)
-    if (chat) {
-      chat.messages.push({
-        id: Date.now(),
-        role: 'assistant',
-        content: data.data.content,
-        thought_process: data.data.thought_process,
-        showThought: true
-      })
-      chat.lastMessage = data.data.content
-    }
   }
 }
 
@@ -1086,7 +1221,7 @@ onUnmounted(() => {
 })
 
 const saveChatsToLocalStorage = () => {
-  localStorage.setItem('chats', JSON.stringify(chatList.value));
+  localStorage.setItem('chats', JSON.stringify(chatList.value))
 }
 </script>
 
@@ -1879,18 +2014,23 @@ const saveChatsToLocalStorage = () => {
     &.通用 .el-avatar {
       background: linear-gradient(135deg, #409EFF, #2B5EFF);
     }
+
     &.对话 .el-avatar {
       background: linear-gradient(135deg, #67C23A, #409EFF);
     }
+
     &.编程 .el-avatar {
       background: linear-gradient(135deg, #E6A23C, #F56C6C);
     }
+
     &.创意 .el-avatar {
       background: linear-gradient(135deg, #9C27B0, #E6A23C);
     }
+
     &.分析 .el-avatar {
       background: linear-gradient(135deg, #F56C6C, #9C27B0);
     }
+
     &.default .el-avatar {
       background: linear-gradient(135deg, #909399, #606266);
     }
@@ -2149,6 +2289,7 @@ const saveChatsToLocalStorage = () => {
       &.pattern-none {
         background: var(--bg-secondary);
         border: 1px dashed var(--border-color);
+
         .pattern-name {
           color: var(--text-primary);
           text-shadow: none;
