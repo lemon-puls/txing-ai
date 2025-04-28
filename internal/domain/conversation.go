@@ -1,11 +1,14 @@
 package domain
 
 import (
+	"encoding/json"
 	"errors"
-	"gorm.io/gorm"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Conversation struct {
@@ -115,6 +118,14 @@ func (c *Conversation) getContextLength() int {
 }
 
 func (c *Conversation) updateOrCreate(db *gorm.DB) error {
+	// 消息转换为 json 字符串
+	jsonBytes, err := json.Marshal(c.FormattedMessage)
+	if err != nil {
+		log.Error("json.Marshal failed", zap.Error(err))
+		return err
+	}
+	c.Message = string(jsonBytes)
+
 	// 执行新增或更新操作
 	tx := db.Save(c)
 	if tx.Error != nil {
