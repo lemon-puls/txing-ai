@@ -208,16 +208,6 @@ class WebSocketManager {
     if (conn && conn.ws.readyState === WebSocket.OPEN) {
       conn.ws.send(JSON.stringify(data))
     } else {
-      // 如果指定的连接不可用，检查是否有其他可能的连接
-      if (chatId !== "-1" && this.connections.has("-1")) {
-        console.log(`Connection ${chatId} not available, trying with temporary ID "-1"`)
-        const tempConn = this.connections.get("-1")
-        if (tempConn && tempConn.ws.readyState === WebSocket.OPEN) {
-          tempConn.ws.send(JSON.stringify(data))
-          return
-        }
-      }
-
       // 记录连接状态以帮助调试
       if (conn) {
         console.error(`Cannot send message: connection ${chatId} is not in OPEN state (state: ${conn.ws.readyState})`)
