@@ -1,179 +1,94 @@
 /**
- * WebSocket 连接管理器
+ * WebSocket 连接管理器 (使用 Web Worker)
  */
 class WebSocketManager {
   constructor() {
-    // 存储所有的 WebSocket 连接
-    this.connections = new Map()
-    // 每个用户的最大连接数
-    this.maxConnections = 5
-    // 连接创建时间记录
-    this.connectionTimes = new Map()
+    // 存储所有的回调处理器
+    this.handlers = new Map()
+    // 初始化 Worker
+    this.initWorker()
+  }
+
+  /**
+   * 初始化 Web Worker
+   */
+  initWorker() {
+    // 创建 worker
+    this.worker = new Worker(new URL('./worker.js', import.meta.url))
+
+    // 设置 worker 消息处理
+    this.worker.onmessage = (e) => {
+      const { type, chatId, data, error, oldId, newId } = e.data
+
+      switch (type) {
+        case 'message':
+          this.triggerHandlers(chatId, 'message', data)
+          break
+
+        case 'error':
+          console.error(`WebSocket error for chat ${chatId}:`, error)
+          this.triggerHandlers(chatId, 'error', error)
+          break
+
+        case 'close':
+          console.log(`WebSocket connection closed for chat ${chatId}`)
+          this.triggerHandlers(chatId, 'close')
+          break
+
+        case 'open':
+          console.log(`WebSocket connection established for chat ${chatId}`)
+          break
+          
+        case 'idUpdated':
+          console.log(`WebSocket connection ID updated from ${oldId} to ${newId}`)
+          break
+
+        default:
+          console.warn(`Unknown message type from worker: ${type}`)
+      }
+    }
   }
 
   /**
    * 创建新的 WebSocket 连接
    * @param {string} chatId - 会话ID
    * @param {string} userId - 用户ID
-   * @returns {Promise<WebSocket>}
+   * @returns {Promise<void>}
    */
   async createConnection(chatId, userId) {
-    // 检查是否超过最大连接数
-    if (this.getUserConnectionCount(userId) >= this.maxConnections) {
-      // 移除最早的连接
-      this.removeOldestConnection(userId)
-    }
-
     try {
       // 获取 token
       const token = localStorage.getItem('accessToken') || ''
 
-      // 创建 WebSocket 连接，添加身份验证参数
-      const ws = new WebSocket(`ws://localhost:8080/api/chat/ws?Authorization=${token}&id=${chatId}`)
-
-      // 记录连接时间
-      this.connectionTimes.set(chatId, Date.now())
-
-
-      console.log(`WebSocket connection created for chat ${chatId} with user ${userId}`)
-      // 存储连接
-      this.connections.set(chatId, {
-        ws,
+      // 通过 worker 创建连接
+      this.worker.postMessage({
+        action: 'createConnection',
+        chatId,
         userId,
-        handlers: {
+        token
+      })
+
+      console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
+      
+      // 初始化此聊天ID的处理器集合
+      if (!this.handlers.has(chatId)) {
+        this.handlers.set(chatId, {
           message: new Set(),
           error: new Set(),
           close: new Set()
-        },
-        // 存储可能的部分消息
-        partialMessage: {
-          content: '',
-          reasoningContent: ''
-        }
-      })
-
-      // 设置基本事件处理
-      ws.onopen = () => {
-        console.log(`WebSocket connection established for chat ${chatId}`)
+        })
       }
-
-      ws.onerror = (error) => {
-        console.error(`WebSocket error for chat ${chatId}:`, error)
-        this.triggerHandlers(chatId, 'error', error)
-      }
-
-      ws.onclose = () => {
-        console.log(`WebSocket connection closed for chat ${chatId}`)
-        this.triggerHandlers(chatId, 'close')
-        this.removeConnection(chatId)
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-
-          // 处理流式响应
-          if (data.conversationId) {
-            const conn = this.connections.get(chatId)
-            if (conn) {
-              // 累加内容
-              conn.partialMessage.content += data.content || ''
-              conn.partialMessage.reasoningContent += data.reasoning_content || ''
-
-              // 如果是最后一条消息，则触发完整消息事件
-              if (data.end) {
-                const completeMessage = {
-                  type: 'chat',
-                  data: {
-                    content: conn.partialMessage.content,
-                    thought_process: conn.partialMessage.reasoningContent
-                  }
-                }
-                this.triggerHandlers(chatId, 'message', completeMessage)
-
-                // 重置部分消息
-                conn.partialMessage = {
-                  content: '',
-                  reasoningContent: ''
-                }
-              } else {
-                // 非最终消息，触发流式更新事件
-                const streamUpdate = {
-                  type: 'stream',
-                  data: {
-                    content: data.content,
-                    reasoning_content: data.reasoning_content,
-                    partial_content: conn.partialMessage.content,
-                    partial_reasoning: conn.partialMessage.reasoningContent
-                  }
-                }
-                this.triggerHandlers(chatId, 'message', streamUpdate)
-              }
-            }
-          } else {
-            // 非流式消息直接触发
-            this.triggerHandlers(chatId, 'message', data)
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error, event.data)
-        }
-      }
-
-      // 等待连接建立
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('WebSocket connection timeout'))
-        }, 5000)
-
-        ws.onopen = () => {
-          clearTimeout(timeout)
+      
+      // 为了保持与原接口兼容，返回一个模拟的Promise
+      return new Promise((resolve) => {
+        // 模拟异步操作，实际上worker已经开始创建连接
+        setTimeout(() => {
           resolve()
-        }
+        }, 100)
       })
-
-      return ws
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       throw error
-    }
-  }
-
-  /**
-   * 获取用户的连接数量
-   * @param {string} userId - 用户ID
-   * @returns {number}
-   */
-  getUserConnectionCount(userId) {
-    let count = 0
-    for (const conn of this.connections.values()) {
-      if (conn.userId === userId) {
-        count++
-      }
-    }
-    return count
-  }
-
-  /**
-   * 移除最早的连接
-   * @param {string} userId - 用户ID
-   */
-  removeOldestConnection(userId) {
-    let oldestTime = Infinity
-    let oldestChatId = null
-
-    // 查找该用户最早的连接
-    for (const [chatId, conn] of this.connections.entries()) {
-      if (conn.userId === userId) {
-        const time = this.connectionTimes.get(chatId)
-        if (time < oldestTime) {
-          oldestTime = time
-          oldestChatId = chatId
-        }
-      }
-    }
-
-    if (oldestChatId) {
-      this.closeConnection(oldestChatId)
     }
   }
 
@@ -182,20 +97,13 @@ class WebSocketManager {
    * @param {string} chatId - 会话ID
    */
   closeConnection(chatId) {
-    const conn = this.connections.get(chatId)
-    if (conn) {
-      conn.ws.close()
-      this.removeConnection(chatId)
-    }
-  }
-
-  /**
-   * 移除连接记录
-   * @param {string} chatId - 会话ID
-   */
-  removeConnection(chatId) {
-    this.connections.delete(chatId)
-    this.connectionTimes.delete(chatId)
+    this.worker.postMessage({
+      action: 'closeConnection',
+      chatId
+    })
+    
+    // 清理处理器
+    this.handlers.delete(chatId)
   }
 
   /**
@@ -204,17 +112,11 @@ class WebSocketManager {
    * @param {object} data - 要发送的数据
    */
   sendMessage(chatId, data) {
-    const conn = this.connections.get(Number(chatId))
-    if (conn && conn.ws.readyState === WebSocket.OPEN) {
-      conn.ws.send(JSON.stringify(data))
-    } else {
-      // 记录连接状态以帮助调试
-      if (conn) {
-        console.error(`Cannot send message: connection ${chatId} is not in OPEN state (state: ${conn.ws.readyState})`)
-      } else {
-        console.error(`Cannot send message: connection ${chatId} is not available. Available connections: ${Array.from(this.connections.keys()).join(', ')}`)
-      }
-    }
+    this.worker.postMessage({
+      action: 'sendMessage',
+      chatId,
+      data
+    })
   }
 
   /**
@@ -224,9 +126,17 @@ class WebSocketManager {
    * @param {Function} handler - 处理函数
    */
   on(chatId, event, handler) {
-    const conn = this.connections.get(chatId)
-    if (conn && conn.handlers[event]) {
-      conn.handlers[event].add(handler)
+    if (!this.handlers.has(chatId)) {
+      this.handlers.set(chatId, {
+        message: new Set(),
+        error: new Set(),
+        close: new Set()
+      })
+    }
+    
+    const chatHandlers = this.handlers.get(chatId)
+    if (chatHandlers && chatHandlers[event]) {
+      chatHandlers[event].add(handler)
     }
   }
 
@@ -237,9 +147,9 @@ class WebSocketManager {
    * @param {Function} handler - 处理函数
    */
   off(chatId, event, handler) {
-    const conn = this.connections.get(chatId)
-    if (conn && conn.handlers[event]) {
-      conn.handlers[event].delete(handler)
+    const chatHandlers = this.handlers.get(chatId)
+    if (chatHandlers && chatHandlers[event]) {
+      chatHandlers[event].delete(handler)
     }
   }
 
@@ -250,9 +160,9 @@ class WebSocketManager {
    * @param {*} data - 事件数据
    */
   triggerHandlers(chatId, event, data) {
-    const conn = this.connections.get(chatId)
-    if (conn && conn.handlers[event]) {
-      conn.handlers[event].forEach(handler => handler(data))
+    const chatHandlers = this.handlers.get(chatId)
+    if (chatHandlers && chatHandlers[event]) {
+      chatHandlers[event].forEach(handler => handler(data))
     }
   }
 
@@ -262,32 +172,28 @@ class WebSocketManager {
    * @param {string} newId - 新ID
    */
   updateConnectionId(oldId, newId) {
-    const conn = this.connections.get(oldId)
-    if (conn) {
-      // 保存连接到新ID
-      this.connections.set(newId, conn)
-
+    // 更新 worker 中的连接 ID
+    this.worker.postMessage({
+      action: 'updateConnectionId',
+      oldId,
+      newId
+    })
+    
+    // 更新处理器集合的 ID
+    const handlers = this.handlers.get(oldId)
+    if (handlers) {
+      this.handlers.set(newId, handlers)
+      this.handlers.delete(oldId)
+      
       // 记录事件处理器数量
-      for (const event of Object.keys(conn.handlers)) {
-        const count = conn.handlers[event].size
+      for (const event of Object.keys(handlers)) {
+        const count = handlers[event].size
         if (count > 0) {
           console.log(`Transferring ${count} ${event} handlers from ${oldId} to ${newId}`)
         }
       }
-
-      // 移除旧连接
-      this.connections.delete(oldId)
-
-      // 更新连接时间
-      const time = this.connectionTimes.get(oldId)
-      if (time) {
-        this.connectionTimes.set(newId, time)
-        this.connectionTimes.delete(oldId)
-      }
-
-      console.log(`WebSocket connection ID updated from ${oldId} to ${newId}`)
     } else {
-      console.error(`Cannot update connection ID: connection ${oldId} not found`)
+      console.error(`Cannot update handlers for ID: handlers for ${oldId} not found`)
     }
   }
 }

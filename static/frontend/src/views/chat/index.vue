@@ -713,7 +713,7 @@ const sendMessage = async () => {
 // 处理 WebSocket 消息
 const handleWebSocketMessage = (chatId, data) => {
   // 查找对应的聊天会话
-  // 注意：chatId 可能是临时ID "-1"，或者是之前赋予的前端生成的ID
+  // 注意：chatId 可能是临时ID，或者是之前赋予的前端生成的ID
   let chat = null
 
   // 如果有会话ID，优先使用它查找
@@ -851,7 +851,7 @@ const createNewChat = async () => {
     // 获取用户ID (如果登录的话)
     const userId = userStore.userId || '0'
 
-    // 创建 WebSocket 连接，对于新会话，传递 -1 作为会话ID
+    // 创建 WebSocket 连接
     await wsManager.createConnection(newChat.id, userId)
 
     // 添加消息处理器
@@ -892,12 +892,12 @@ const createNewChat = async () => {
       handleWebSocketMessage(newChat.id, data)
     })
 
-    wsManager.on("-1", 'error', (error) => {
+    wsManager.on(newChat.id, 'error', (error) => {
       console.error('WebSocket error:', error)
       ElMessage.error('连接发生错误')
     })
 
-    wsManager.on("-1", 'close', () => {
+    wsManager.on(newChat.id, 'close', () => {
       console.log('WebSocket connection closed')
       ElMessage.warning('连接已关闭')
     })
@@ -1084,9 +1084,17 @@ const handlePresetSelect = (preset) => {
 
 // 在组件销毁时关闭所有连接
 onUnmounted(() => {
+  // 关闭当前聊天的连接
   if (currentChat.value) {
     wsManager.closeConnection(currentChat.value.id.toString())
   }
+  
+  // 关闭所有聊天的连接
+  chatList.value.forEach(chat => {
+    if (chat.id !== currentChat.value?.id) {
+      wsManager.closeConnection(chat.id.toString())
+    }
+  })
 })
 
 const saveChatsToLocalStorage = () => {
