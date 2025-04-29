@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"github.com/jinzhu/copier"
 	"strconv"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -12,6 +11,8 @@ import (
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
+
+	"github.com/jinzhu/copier"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -97,11 +98,10 @@ func Chat(c *gin.Context) {
 // @Failure 400 {object} utils.Response "请求参数错误"
 // @Failure 401 {object} utils.Response "未授权"
 // @Failure 500 {object} utils.Response "服务器内部错误"
-// @Router /api/chat/conversation/list [get]
+// @Router /api/chat/conversation/list [post]
 func GetConversationList(c *gin.Context) {
 	// 获取当前用户ID
-	//userId := utils.GetUIDFromContext(c)
-	userId := -1
+	userId := utils.GetUIDFromContext(c)
 
 	// 解析分页参数
 	var req dto.ConversationListRequest
@@ -125,7 +125,7 @@ func GetConversationList(c *gin.Context) {
 			db.Where("user_id = ?", userId)
 		},
 		func(t *domain.Conversation) interface{} {
-			return &t.CreateTime
+			return &t.UpdateTime
 		},
 	)
 
@@ -153,7 +153,7 @@ func GetConversationList(c *gin.Context) {
 func GetConversationDetail(c *gin.Context) {
 	// 获取当前用户ID
 	userId := utils.GetUIDFromContext(c)
-	//userId := int64(-1)
+
 	// 获取会话ID
 	id := c.Param("id")
 	conversationId, err := strconv.ParseInt(id, 10, 64)
@@ -170,8 +170,15 @@ func GetConversationDetail(c *gin.Context) {
 		return
 	}
 
+	// 检查会话是否存在
+	if entity == nil {
+		utils.ErrorWithCode(c, global.CodeNotFound, nil)
+		return
+	}
+
+	// 检查权限
 	if entity.UserID != userId {
-		utils.ErrorWithCode(c, global.CodeNotPermission, err)
+		utils.ErrorWithCode(c, global.CodeNotPermission, nil)
 		return
 	}
 

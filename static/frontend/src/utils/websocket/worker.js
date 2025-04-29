@@ -46,7 +46,7 @@ function closeConnection(chatId) {
     }
     connections.delete(chatId);
     connectionTimes.delete(chatId);
-    
+
     // 通知主线程连接已关闭
     self.postMessage({
       type: 'close',
@@ -64,12 +64,15 @@ async function createConnection(chatId, userId, token) {
   }
 
   try {
+    // token 添加前缀
+    token = `Bearer ${token}`;
+
     // 创建 WebSocket 连接，添加身份验证参数
     const ws = new WebSocket(`ws://localhost:8080/api/chat/ws?Authorization=${token}&id=${chatId}`);
-    
+
     // 记录连接时间
     connectionTimes.set(chatId, Date.now());
-    
+
     // 存储连接
     connections.set(chatId, {
       ws,
@@ -109,7 +112,7 @@ async function createConnection(chatId, userId, token) {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // 处理流式响应
         if (data.conversationId) {
           const conn = connections.get(chatId);
@@ -210,18 +213,19 @@ async function createConnection(chatId, userId, token) {
 function sendMessage(chatId, data) {
   const conn = connections.get(Number(chatId));
   if (conn && conn.ws && conn.ws.readyState === WebSocket.OPEN) {
+    console.log('Sending message:', data);
     conn.ws.send(JSON.stringify(data));
   } else {
     // 记录连接状态以帮助调试
     let connectionKeys = Array.from(connections.keys());
     let errorMessage = '';
-    
+
     if (conn) {
       errorMessage = `Cannot send message: connection ${chatId} is not in OPEN state (state: ${conn.ws ? conn.ws.readyState : 'undefined'})`;
     } else {
       errorMessage = `Cannot send message: connection ${chatId} is not available. Available connections: ${connectionKeys.join(', ')}`;
     }
-    
+
     self.postMessage({
       type: 'error',
       chatId: chatId,
@@ -236,17 +240,17 @@ function updateConnectionId(oldId, newId) {
   if (conn) {
     // 保存连接到新ID
     connections.set(newId, conn);
-    
+
     // 移除旧连接记录
     connections.delete(oldId);
-    
+
     // 更新连接时间
     const time = connectionTimes.get(oldId);
     if (time) {
       connectionTimes.set(newId, time);
       connectionTimes.delete(oldId);
     }
-    
+
     self.postMessage({
       type: 'idUpdated',
       oldId: oldId,
@@ -264,28 +268,28 @@ function updateConnectionId(oldId, newId) {
 // 处理来自主线程的消息
 self.onmessage = function(e) {
   const { action, chatId, userId, data, token, oldId, newId } = e.data;
-  
+
   switch (action) {
     case 'createConnection':
       createConnection(chatId, userId, token);
       break;
-      
+
     case 'sendMessage':
       sendMessage(chatId, data);
       break;
-      
+
     case 'closeConnection':
       closeConnection(chatId);
       break;
-      
+
     case 'updateConnectionId':
       updateConnectionId(oldId, newId);
       break;
-      
+
     default:
       self.postMessage({
         type: 'error',
         error: `Unknown action: ${action}`
       });
   }
-}; 
+};

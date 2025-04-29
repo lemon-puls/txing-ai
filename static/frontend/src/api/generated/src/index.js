@@ -15,6 +15,7 @@
 import ApiClient from './ApiClient';
 import ApiAdminChannelPost200Response from './model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from './model/ApiAdminModelPost200Response';
+import ApiChatConversationsIdGet200Response from './model/ApiChatConversationsIdGet200Response';
 import ApiCosPresignedUrlPost200Response from './model/ApiCosPresignedUrlPost200Response';
 import ApiPresetPost200Response from './model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from './model/ApiUserInfoGet200Response';
@@ -32,8 +33,10 @@ import DtoUpdateModelReq from './model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
+import GlobalMessage from './model/GlobalMessage';
 import UtilsResponse from './model/UtilsResponse';
 import VoChannelVO from './model/VoChannelVO';
+import VoConversationDetailVO from './model/VoConversationDetailVO';
 import VoGetPresignedURLVO from './model/VoGetPresignedURLVO';
 import VoLoginVO from './model/VoLoginVO';
 import VoModelVO from './model/VoModelVO';
@@ -92,6 +95,12 @@ export {
      * @property {module:model/ApiAdminModelPost200Response}
      */
     ApiAdminModelPost200Response,
+
+    /**
+     * The ApiChatConversationsIdGet200Response model constructor.
+     * @property {module:model/ApiChatConversationsIdGet200Response}
+     */
+    ApiChatConversationsIdGet200Response,
 
     /**
      * The ApiCosPresignedUrlPost200Response model constructor.
@@ -196,6 +205,12 @@ export {
     DtoUpdateProfileReq,
 
     /**
+     * The GlobalMessage model constructor.
+     * @property {module:model/GlobalMessage}
+     */
+    GlobalMessage,
+
+    /**
      * The UtilsResponse model constructor.
      * @property {module:model/UtilsResponse}
      */
@@ -206,6 +221,12 @@ export {
      * @property {module:model/VoChannelVO}
      */
     VoChannelVO,
+
+    /**
+     * The VoConversationDetailVO model constructor.
+     * @property {module:model/VoConversationDetailVO}
+     */
+    VoConversationDetailVO,
 
     /**
      * The VoGetPresignedURLVO model constructor.

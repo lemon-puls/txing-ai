@@ -468,8 +468,9 @@ import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
-import {defaultApi} from '@/api'
+import {defaultApi} from "@/api/index.js";
 import {useUserStore} from "@/stores/user.js";
+import { useConversationStore } from '@/stores/conversation'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -655,9 +656,15 @@ const streamingMessage = ref(null)
 const thoughtTime = ref(0)
 const showThemeDrawer = ref(false)
 
+// 获取 store 实例
+const conversationStore = useConversationStore()
+
 // 发送消息
 const sendMessage = async () => {
-  if (!messageInput.value.trim() || !currentChat.value) return
+  if (!messageInput.value.trim() || !currentChat.value) {
+    console.warn('Message input is empty or current chat is not selected')
+    return
+  }
 
   // 添加用户消息
   currentChat.value.messages.push({
@@ -692,6 +699,8 @@ const sendMessage = async () => {
     // 确定使用哪个连接ID发送消息
     // 如果是新会话(没有真实ID)，则使用"-1"
     const connectionId = currentChat.value.id.toString()
+
+    console.log('Sending message:', message, options)
 
     // 通过 WebSocket 发送消息
     wsManager.sendMessage(
@@ -813,41 +822,12 @@ const goToHome = () => {
 }
 
 const createNewChat = async () => {
-  const newChat = {
-    id: Date.now(),
-    // 标记这是一个还没有真实ID的新会话
-    realId: false,
-    title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
-    model: 'gpt-3.5-turbo',
-    webSearch: false,
-    maxTokens: 2048,
-    temperature: 1,
-    topP: 0.7,
-    topK: 50,
-    presencePenalty: 0,
-    frequencyPenalty: 0,
-    repetitionPenalty: 1,
-    lastMessage: route.query.assistantDescription || '你好！我是 AI 助手，有什么我可以帮你的吗？',
-    avatar: route.query.assistantAvatar || aiAvatar,
-    messages: [
-      {
-        id: 1,
-        role: 'assistant',
-        content: route.query.assistantDescription
-          ? `你好！我是 ${route.query.assistantName}，${route.query.assistantDescription}`
-          : '你好！我是 AI 助手，有什么我可以帮你的吗？'
-      }
-    ],
-    assistant: route.query.assistantId ? {
-      id: route.query.assistantId,
-      name: route.query.assistantName,
-      avatar: route.query.assistantAvatar,
-      description: route.query.assistantDescription,
-      type: route.query.assistantType
-    } : null
-  }
-
   try {
+    // 创建新会话
+    const newChat = conversationStore.createNewConversation(
+      route.query.assistantId ? route.query.assistantId : 'gpt-3.5-turbo'
+    )
+
     // 获取用户ID (如果登录的话)
     const userId = userStore.userId || '0'
 
@@ -861,7 +841,7 @@ const createNewChat = async () => {
         const actualChatId = data.conversationId.toString()
 
         // 如果这是第一条消息，且ID与当前不同，需要更新会话ID
-        if (newChat.realId === false && newChat.id.toString() !== actualChatId) {
+        if (!newChat.realId && newChat.id.toString() !== actualChatId) {
           // 更新会话对象的ID
           console.log(`Updating chat ID from ${newChat.id} to ${actualChatId}`)
           let oldId = newChat.id
@@ -883,9 +863,6 @@ const createNewChat = async () => {
 
           // 更新连接映射
           wsManager.updateConnectionId(oldId, actualChatId)
-
-          // 保存到本地存储
-          saveChatsToLocalStorage()
         }
       }
 
@@ -902,7 +879,8 @@ const createNewChat = async () => {
       ElMessage.warning('连接已关闭')
     })
 
-    chatList.value.unshift(newChat)
+    // 更新视图
+    chatList.value = [...conversationStore.conversations]
     currentChat.value = newChat
   } catch (error) {
     console.error('Failed to create chat:', error)
@@ -910,19 +888,34 @@ const createNewChat = async () => {
   }
 }
 
-const switchChat = (chat) => {
-  currentChat.value = chat
-  scrollToBottom()
+const switchChat = async (chat) => {
+  try {
+    // 加载会话详情
+    const chatDetail = await conversationStore.loadConversationDetail(chat.id)
+    if (chatDetail) {
+      currentChat.value = chatDetail
+      await scrollToBottom()
+    }
+  } catch (error) {
+    console.error('Failed to switch chat:', error)
+    ElMessage.error('切换会话失败')
+  }
 }
 
-const handleChatAction = (command, chat) => {
+const handleChatAction = async (command, chat) => {
   if (command === 'delete') {
-    const index = chatList.value.findIndex(c => c.id === chat.id)
-    if (index > -1) {
-      chatList.value.splice(index, 1)
+    try {
+      // 删除会话
+      conversationStore.deleteConversation(chat.id)
+
+      // 更新视图
+      chatList.value = [...conversationStore.conversations]
       if (currentChat.value?.id === chat.id) {
-        currentChat.value = chatList.value[0]
+        currentChat.value = conversationStore.currentConversation
       }
+    } catch (error) {
+      console.error('Failed to delete chat:', error)
+      ElMessage.error('删除会话失败')
     }
   }
 }
@@ -994,14 +987,18 @@ const toggleThought = (message) => {
 }
 
 // 监听系统主题变化
-onMounted(() => {
+onMounted(async () => {
   hljs.highlightAll()
+
+  // 加载会话列表
+  await conversationStore.loadConversations()
+  chatList.value = [...conversationStore.conversations]
 
   // 检查是否需要创建新对话
   if (route.query.newChat === 'true') {
     createNewChat()
-  } else {
-    currentChat.value = chatList.value[0]
+  } else if (conversationStore.currentConversation) {
+    currentChat.value = conversationStore.currentConversation
   }
 
   const savedPattern = localStorage.getItem('chatBgPattern')
@@ -1012,13 +1009,8 @@ onMounted(() => {
   // 初始化主题
   themeStore.initTheme()
 
+  // 加载模型列表
   loadModels()
-
-  // 在 onMounted 中加载本地存储的聊天记录
-  const savedChats = localStorage.getItem('chats')
-  if (savedChats) {
-    chatList.value = JSON.parse(savedChats)
-  }
 })
 
 // 添加输入框高度相关的状态和方法
@@ -1088,13 +1080,16 @@ onUnmounted(() => {
   if (currentChat.value) {
     wsManager.closeConnection(currentChat.value.id.toString())
   }
-  
+
   // 关闭所有聊天的连接
   chatList.value.forEach(chat => {
     if (chat.id !== currentChat.value?.id) {
       wsManager.closeConnection(chat.id.toString())
     }
   })
+
+  // 保存会话状态
+  conversationStore.saveConversations()
 })
 
 const saveChatsToLocalStorage = () => {

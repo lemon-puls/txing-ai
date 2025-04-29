@@ -4,6 +4,7 @@
 README.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
+docs/ApiChatConversationsIdGet200Response.md
 docs/ApiCosPresignedUrlPost200Response.md
 docs/ApiPresetPost200Response.md
 docs/ApiUserInfoGet200Response.md
@@ -22,8 +23,10 @@ docs/DtoUpdateModelReq.md
 docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
+docs/GlobalMessage.md
 docs/UtilsResponse.md
 docs/VoChannelVO.md
+docs/VoConversationDetailVO.md
 docs/VoGetPresignedURLVO.md
 docs/VoLoginVO.md
 docs/VoModelVO.md
@@ -38,6 +41,7 @@ src/api/DefaultApi.js
 src/index.js
 src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
+src/model/ApiChatConversationsIdGet200Response.js
 src/model/ApiCosPresignedUrlPost200Response.js
 src/model/ApiPresetPost200Response.js
 src/model/ApiUserInfoGet200Response.js
@@ -55,8 +59,10 @@ src/model/DtoUpdateModelReq.js
 src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
+src/model/GlobalMessage.js
 src/model/UtilsResponse.js
 src/model/VoChannelVO.js
+src/model/VoConversationDetailVO.js
 src/model/VoGetPresignedURLVO.js
 src/model/VoLoginVO.js
 src/model/VoModelVO.js
