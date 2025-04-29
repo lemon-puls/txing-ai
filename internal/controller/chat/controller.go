@@ -1,15 +1,18 @@
 package chat
 
 import (
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"strconv"
+	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	"txing-ai/internal/utils"
-
-	"github.com/gin-gonic/gin"
+	"txing-ai/internal/utils/page"
+	"txing-ai/internal/vo"
 )
 
 // @Summary 建立聊天 WebSocket 连接
@@ -79,4 +82,57 @@ func Chat(c *gin.Context) {
 		}
 		return nil
 	})
+}
+
+// @Summary 获取会话列表
+// @Description 获取当前用户的会话列表，使用游标分页
+// @Tags 聊天会话
+// @Accept json
+// @Produce json
+// @Param body body dto.ConversationListRequest true "查询条件"
+// @Success 200 {object} utils.Response "成功"
+// @Failure 400 {object} utils.Response "请求参数错误"
+// @Failure 401 {object} utils.Response "未授权"
+// @Failure 500 {object} utils.Response "服务器内部错误"
+// @Router /api/chat/conversation/list [post]
+func GetConversationList(c *gin.Context) {
+	// 获取当前用户ID
+	userId := utils.GetUIDFromContext(c)
+	//userId := -1
+
+	// 解析分页参数
+	var req dto.ConversationListRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
+		return
+	}
+
+	// 设置默认分页大小
+	if req.PageSize <= 0 {
+		req.PageSize = 20
+	}
+
+	db := utils.GetDBFromContext(c)
+
+	// 使用游标分页查询
+	result, err := page.GetCursorPageByMySQL[domain.Conversation](
+		db,
+		req.CursorPageBaseRequest,
+		func(db *gorm.DB) {
+			db.Where("user_id = ?", userId)
+		},
+		func(t *domain.Conversation) interface{} {
+			return &t.UpdateTime
+		},
+	)
+
+	// 封装为 vo
+	convertedCursorPageVo, err := page.ConvertCursorPageVO[domain.Conversation, vo.ConversationSimpleVO](result)
+	if err != nil {
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	utils.OkWithData(c, convertedCursorPageVo)
+	return
 }

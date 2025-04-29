@@ -1,11 +1,14 @@
 package chat
 
 import (
-	"github.com/gin-gonic/gin"
 	"txing-ai/internal/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Register(router gin.IRouter) {
-	// 获取用户列表
+	// WebSocket 连接
 	router.GET("/ws", middleware.AuthMiddleware(), Chat)
+	// 获取会话列表
+	router.POST("/conversation/list", middleware.AuthMiddleware(), GetConversationList)
 }
