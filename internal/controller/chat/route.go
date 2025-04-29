@@ -11,4 +11,7 @@ func Register(router gin.IRouter) {
 	router.GET("/ws", middleware.AuthMiddleware(), Chat)
 	// 获取会话列表
 	router.POST("/conversation/list", middleware.AuthMiddleware(), GetConversationList)
+
+	// 获取会话详情
+	router.GET("/conversations/:id", middleware.AuthMiddleware(), GetConversationDetail)
 }

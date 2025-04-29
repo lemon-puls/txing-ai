@@ -1,8 +1,7 @@
 package chat
 
 import (
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+	"github.com/jinzhu/copier"
 	"strconv"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -13,6 +12,9 @@ import (
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // @Summary 建立聊天 WebSocket 连接
@@ -89,20 +91,21 @@ func Chat(c *gin.Context) {
 // @Tags 聊天会话
 // @Accept json
 // @Produce json
-// @Param body body dto.ConversationListRequest true "查询条件"
+// @Param cursor query string false "游标"
+// @Param pageSize query int false "每页大小" default(20)
 // @Success 200 {object} utils.Response "成功"
 // @Failure 400 {object} utils.Response "请求参数错误"
 // @Failure 401 {object} utils.Response "未授权"
 // @Failure 500 {object} utils.Response "服务器内部错误"
-// @Router /api/chat/conversation/list [post]
+// @Router /api/chat/conversation/list [get]
 func GetConversationList(c *gin.Context) {
 	// 获取当前用户ID
-	userId := utils.GetUIDFromContext(c)
-	//userId := -1
+	//userId := utils.GetUIDFromContext(c)
+	userId := -1
 
 	// 解析分页参数
 	var req dto.ConversationListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
 		return
 	}
@@ -122,17 +125,61 @@ func GetConversationList(c *gin.Context) {
 			db.Where("user_id = ?", userId)
 		},
 		func(t *domain.Conversation) interface{} {
-			return &t.UpdateTime
+			return &t.CreateTime
 		},
 	)
 
-	// 封装为 vo
-	convertedCursorPageVo, err := page.ConvertCursorPageVO[domain.Conversation, vo.ConversationSimpleVO](result)
 	if err != nil {
 		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
 		return
 	}
 
-	utils.OkWithData(c, convertedCursorPageVo)
+	utils.OkWithData(c, result)
 	return
+}
+
+// @Summary 获取会话详情
+// @Description 获取指定会话的详细信息，包括基本信息和消息列表
+// @Tags 聊天会话
+// @Accept json
+// @Produce json
+// @Param id path int true "会话ID"
+// @Success 200 {object} utils.Response{data=vo.ConversationDetailVO} "成功"
+// @Failure 400 {object} utils.Response "请求参数错误"
+// @Failure 401 {object} utils.Response "未授权"
+// @Failure 404 {object} utils.Response "会话不存在"
+// @Failure 500 {object} utils.Response "服务器内部错误"
+// @Router /api/chat/conversations/{id} [get]
+func GetConversationDetail(c *gin.Context) {
+	// 获取当前用户ID
+	userId := utils.GetUIDFromContext(c)
+	//userId := int64(-1)
+	// 获取会话ID
+	id := c.Param("id")
+	conversationId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+
+	entity, err := conversation.QueryConversationById(db, conversationId)
+	if err != nil {
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	if entity.UserID != userId {
+		utils.ErrorWithCode(c, global.CodeNotPermission, err)
+		return
+	}
+
+	// 字段复制
+	result := &vo.ConversationDetailVO{}
+	copier.Copy(result, entity)
+
+	result.Messages = entity.FormattedMessage
+
+	utils.OkWithData(c, result)
 }
