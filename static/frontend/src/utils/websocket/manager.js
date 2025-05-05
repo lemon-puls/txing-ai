@@ -38,7 +38,7 @@ class WebSocketManager {
         case 'open':
           console.log(`WebSocket connection established for chat ${chatId}`)
           break
-          
+
         case 'idUpdated':
           console.log(`WebSocket connection ID updated from ${oldId} to ${newId}`)
           break
@@ -58,7 +58,7 @@ class WebSocketManager {
   async createConnection(chatId, userId) {
     try {
       // 获取 token
-      const token = localStorage.getItem('accessToken') || ''
+      const token = localStorage.getItem('token') || ''
 
       // 通过 worker 创建连接
       this.worker.postMessage({
@@ -69,7 +69,7 @@ class WebSocketManager {
       })
 
       console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
-      
+
       // 初始化此聊天ID的处理器集合
       if (!this.handlers.has(chatId)) {
         this.handlers.set(chatId, {
@@ -78,7 +78,7 @@ class WebSocketManager {
           close: new Set()
         })
       }
-      
+
       // 为了保持与原接口兼容，返回一个模拟的Promise
       return new Promise((resolve) => {
         // 模拟异步操作，实际上worker已经开始创建连接
@@ -101,7 +101,7 @@ class WebSocketManager {
       action: 'closeConnection',
       chatId
     })
-    
+
     // 清理处理器
     this.handlers.delete(chatId)
   }
@@ -133,7 +133,7 @@ class WebSocketManager {
         close: new Set()
       })
     }
-    
+
     const chatHandlers = this.handlers.get(chatId)
     if (chatHandlers && chatHandlers[event]) {
       chatHandlers[event].add(handler)
@@ -178,13 +178,13 @@ class WebSocketManager {
       oldId,
       newId
     })
-    
+
     // 更新处理器集合的 ID
     const handlers = this.handlers.get(oldId)
     if (handlers) {
       this.handlers.set(newId, handlers)
       this.handlers.delete(oldId)
-      
+
       // 记录事件处理器数量
       for (const event of Object.keys(handlers)) {
         const count = handlers[event].size

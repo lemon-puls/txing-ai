@@ -1088,7 +1088,7 @@ onUnmounted(() => {
   if (currentChat.value) {
     wsManager.closeConnection(currentChat.value.id.toString())
   }
-  
+
   // 关闭所有聊天的连接
   chatList.value.forEach(chat => {
     if (chat.id !== currentChat.value?.id) {
