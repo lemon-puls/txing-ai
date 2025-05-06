@@ -801,6 +801,54 @@ const goToHome = () => {
   router.push('/')
 }
 
+async function NewChatConnection(newChat, userId) {
+
+  console.log("New chat connection", newChat.id, userId);
+  // 创建 WebSocket 连接
+  let b = await wsManager.createConnection(newChat.id, userId);
+  if (!b) {
+    return;
+  }
+
+  // 添加消息处理器
+  wsManager.on(newChat.id, 'message', (data) => {
+    // 如果收到的消息包含会话ID，更新当前会话ID
+    if (data.conversationId) {
+      const actualChatId = data.conversationId.toString()
+
+      // 如果这是第一条消息，且ID与当前不同，需要更新会话ID
+      if (newChat.realId === false && newChat.id.toString() !== actualChatId) {
+        // 更新会话对象的ID
+        console.log(`Updating chat ID from ${newChat.id} to ${actualChatId}`)
+        let oldId = newChat.id
+        newChat.id = parseInt(actualChatId)
+        newChat.realId = true
+
+        // 更新会话ID
+        conversationStore.updateConversationId(oldId, newChat.id)
+
+        // 更新连接映射
+        wsManager.updateConnectionId(oldId, actualChatId)
+
+        // 保存到本地存储
+        conversationStore.saveToLocalStorage()
+      }
+    }
+
+    handleWebSocketMessage(newChat.id, data)
+  })
+
+  wsManager.on(newChat.id, 'error', (error) => {
+    console.error('WebSocket error:', error)
+    ElMessage.error('连接发生错误')
+  })
+
+  wsManager.on(newChat.id, 'close', () => {
+    console.log('WebSocket connection closed')
+    ElMessage.warning('连接已关闭')
+  })
+}
+
 const createNewChat = async () => {
   const newChat = {
     id: "tmp-" + Date.now(),
@@ -839,47 +887,7 @@ const createNewChat = async () => {
   try {
     // 获取用户ID (如果登录的话)
     const userId = userStore.userId || '0'
-
-    // 创建 WebSocket 连接
-    await wsManager.createConnection(newChat.id, userId)
-
-    // 添加消息处理器
-    wsManager.on(newChat.id, 'message', (data) => {
-      // 如果收到的消息包含会话ID，更新当前会话ID
-      if (data.conversationId) {
-        const actualChatId = data.conversationId.toString()
-
-        // 如果这是第一条消息，且ID与当前不同，需要更新会话ID
-        if (newChat.realId === false && newChat.id.toString() !== actualChatId) {
-          // 更新会话对象的ID
-          console.log(`Updating chat ID from ${newChat.id} to ${actualChatId}`)
-          let oldId = newChat.id
-          newChat.id = parseInt(actualChatId)
-          newChat.realId = true
-
-          // 更新会话ID
-          conversationStore.updateConversationId(oldId, newChat.id)
-
-          // 更新连接映射
-          wsManager.updateConnectionId(oldId, actualChatId)
-
-          // 保存到本地存储
-          conversationStore.saveToLocalStorage()
-        }
-      }
-
-      handleWebSocketMessage(newChat.id, data)
-    })
-
-    wsManager.on(newChat.id, 'error', (error) => {
-      console.error('WebSocket error:', error)
-      ElMessage.error('连接发生错误')
-    })
-
-    wsManager.on(newChat.id, 'close', () => {
-      console.log('WebSocket connection closed')
-      ElMessage.warning('连接已关闭')
-    })
+    await NewChatConnection(newChat, userId);
 
     // 保存新会话到 store
     await conversationStore.addConversation(newChat)
@@ -892,6 +900,9 @@ const createNewChat = async () => {
 const switchChat = async (chat) => {
   try {
     await conversationStore.loadConversationDetail(chat.id)
+
+    await NewChatConnection(chat, userStore.userId || '0')
+
     await scrollToBottom()
   } catch (error) {
     console.error('Failed to switch chat:', error)

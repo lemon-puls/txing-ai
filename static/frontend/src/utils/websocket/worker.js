@@ -22,7 +22,7 @@ function removeOldestConnection(userId) {
   // 查找该用户最早的连接
   for (const [chatId, conn] of connections.entries()) {
     if (conn.userId === userId) {
-      const time = connectionTimes.get(chatId);
+      const time = connectionTimes.get(chatId.toString());
       if (time < oldestTime) {
         oldestTime = time;
         oldestChatId = chatId;
@@ -37,15 +37,15 @@ function removeOldestConnection(userId) {
 
 // 关闭指定的连接
 function closeConnection(chatId) {
-  const conn = connections.get(chatId);
+  const conn = connections.get(chatId.toString());
   if (conn && conn.ws) {
     try {
       conn.ws.close();
     } catch (e) {
       console.error('Error closing WebSocket:', e);
     }
-    connections.delete(chatId);
-    connectionTimes.delete(chatId);
+    connections.delete(chatId.toString());
+    connectionTimes.delete(chatId.toString());
 
     // 通知主线程连接已关闭
     self.postMessage({
@@ -57,6 +57,7 @@ function closeConnection(chatId) {
 
 // 创建新的 WebSocket 连接
 async function createConnection(chatId, userId, token) {
+  console.log('Creating WebSocket connection:', chatId);
   // 检查是否超过最大连接数
   if (getUserConnectionCount(userId) >= maxConnections) {
     // 移除最早的连接
@@ -71,7 +72,7 @@ async function createConnection(chatId, userId, token) {
 
     let id = chatId;
     // 如果 chatId 前缀是 tmp-，则是新会话，创建连接时 id 参数设为 -1
-    if (chatId.startsWith('tmp-')) {
+    if (chatId.toString().startsWith('tmp-')) {
       id = -1;
     }
 
@@ -79,11 +80,11 @@ async function createConnection(chatId, userId, token) {
     const ws = new WebSocket(`ws://localhost:8080/api/chat/ws?Authorization=${token}&id=${id}`);
 
     // 记录连接时间
-    connectionTimes.set(chatId, Date.now());
+    connectionTimes.set(chatId.toString(), Date.now());
 
     console.log('Creating WebSocket connection:', chatId);
     // 存储连接
-    connections.set(chatId, {
+    connections.set(chatId.toString(), {
       ws,
       userId,
       // 存储可能的部分消息
@@ -115,8 +116,8 @@ async function createConnection(chatId, userId, token) {
         type: 'close',
         chatId: chatId
       });
-      connections.delete(chatId);
-      connectionTimes.delete(chatId);
+      connections.delete(chatId.toString());
+      connectionTimes.delete(chatId.toString());
     };
 
     ws.onmessage = (event) => {
@@ -125,7 +126,7 @@ async function createConnection(chatId, userId, token) {
 
         // 处理流式响应
         if (data.conversationId) {
-          const conn = connections.get(chatId);
+          const conn = connections.get(chatId.toString());
           if (conn) {
             // 累加内容
             conn.partialMessage.content += data.content || '';
@@ -221,7 +222,7 @@ async function createConnection(chatId, userId, token) {
 
 // 发送消息
 function sendMessage(chatId, data) {
-  const conn = connections.get(chatId);
+  const conn = connections.get(chatId.toString());
   if (conn && conn.ws && conn.ws.readyState === WebSocket.OPEN) {
     console.log('Sending message:', data);
     conn.ws.send(JSON.stringify(data));
@@ -246,19 +247,19 @@ function sendMessage(chatId, data) {
 
 // 更新连接ID
 function updateConnectionId(oldId, newId) {
-  const conn = connections.get(oldId);
+  const conn = connections.get(oldId.toString());
   if (conn) {
     // 保存连接到新ID
-    connections.set(newId, conn);
+    connections.set(newId.toString(), conn);
 
     // 移除旧连接记录
-    connections.delete(oldId);
+    connections.delete(oldId.toString());
 
     // 更新连接时间
-    const time = connectionTimes.get(oldId);
+    const time = connectionTimes.get(oldId.toString());
     if (time) {
-      connectionTimes.set(newId, time);
-      connectionTimes.delete(oldId);
+      connectionTimes.set(newId.toString(), time);
+      connectionTimes.delete(oldId.toString());
     }
 
     self.postMessage({
@@ -273,6 +274,20 @@ function updateConnectionId(oldId, newId) {
       error: `Cannot update connection ID: connection ${oldId} not found`
     });
   }
+}
+
+// 检查连接是否存在
+function checkConnection(chatId) {
+  const conn = connections.get(chatId.toString());
+  const exists = !!(conn && conn.ws && conn.ws.readyState === WebSocket.OPEN);
+
+  self.postMessage({
+    type: 'connectionStatus',
+    chatId: chatId,
+    exists: exists
+  });
+
+  return exists;
 }
 
 // 处理来自主线程的消息
@@ -294,6 +309,10 @@ self.onmessage = function(e) {
 
     case 'updateConnectionId':
       updateConnectionId(oldId, newId);
+      break;
+
+    case 'checkConnection':
+      checkConnection(chatId);
       break;
 
     default:

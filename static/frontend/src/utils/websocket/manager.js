@@ -50,13 +50,47 @@ class WebSocketManager {
   }
 
   /**
+   * 检查是否存在指定的连接
+   * @param {string} chatId - 会话ID
+   * @returns {Promise<boolean>}
+   */
+  async hasConnection(chatId) {
+    return new Promise((resolve) => {
+      // 创建一次性消息处理器
+      const messageHandler = (e) => {
+        const { type, chatId: responseChatId, exists } = e.data;
+        if (type === 'connectionStatus' && responseChatId === chatId) {
+          this.worker.removeEventListener('message', messageHandler);
+          resolve(exists);
+        }
+      };
+
+      // 添加消息处理器
+      this.worker.addEventListener('message', messageHandler);
+
+      // 向 worker 发送查询消息
+      this.worker.postMessage({
+        action: 'checkConnection',
+        chatId
+      });
+    });
+  }
+
+  /**
    * 创建新的 WebSocket 连接
    * @param {string} chatId - 会话ID
    * @param {string} userId - 用户ID
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>}
    */
   async createConnection(chatId, userId) {
     try {
+
+      // 检查是否已经存在 WebSocket 连接
+      const has = await this.hasConnection(chatId)
+      if (has) {
+         return false
+      }
+
       // 获取 token
       const token = localStorage.getItem('token') || ''
 
@@ -79,13 +113,7 @@ class WebSocketManager {
         })
       }
 
-      // 为了保持与原接口兼容，返回一个模拟的Promise
-      return new Promise((resolve) => {
-        // 模拟异步操作，实际上worker已经开始创建连接
-        setTimeout(() => {
-          resolve()
-        }, 100)
-      })
+      return true
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       throw error

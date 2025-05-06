@@ -54,7 +54,8 @@ func ExtractConversation(db *gorm.DB, id int64, userId int64) *domain.Conversati
 		}
 	} else {
 		// 查询已有的 conversation
-		conversation, err := QueryConversationById(db, id)
+		var err error
+		conversation, err = QueryConversationById(db, id)
 		if err != nil {
 			conversation = NewConversation(userId)
 			if err := db.Create(conversation).Error; err != nil {
