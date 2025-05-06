@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"github.com/jinzhu/copier"
 	"strconv"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -12,6 +11,8 @@ import (
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
+
+	"github.com/jinzhu/copier"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -87,25 +88,20 @@ func Chat(c *gin.Context) {
 }
 
 // @Summary 获取会话列表
-// @Description 获取当前用户的会话列表，使用游标分页
-// @Tags 聊天会话
+// @Description 获取用户的会话列表
+// @Tags 聊天
 // @Accept json
 // @Produce json
-// @Param cursor query string false "游标"
-// @Param pageSize query int false "每页大小" default(20)
+// @Param data body dto.ConversationListRequest true "请求参数"
 // @Success 200 {object} utils.Response "成功"
-// @Failure 400 {object} utils.Response "请求参数错误"
-// @Failure 401 {object} utils.Response "未授权"
-// @Failure 500 {object} utils.Response "服务器内部错误"
-// @Router /api/chat/conversation/list [get]
+// @Router /api/chat/conversation/list [post]
 func GetConversationList(c *gin.Context) {
 	// 获取当前用户ID
-	//userId := utils.GetUIDFromContext(c)
-	userId := -1
+	userId := utils.GetUIDFromContext(c)
 
 	// 解析分页参数
 	var req dto.ConversationListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
 		return
 	}

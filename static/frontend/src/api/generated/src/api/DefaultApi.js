@@ -15,11 +15,13 @@
 import ApiClient from "../ApiClient";
 import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
+import ApiChatConversationsIdGet200Response from '../model/ApiChatConversationsIdGet200Response';
 import ApiCosPresignedUrlPost200Response from '../model/ApiCosPresignedUrlPost200Response';
 import ApiPresetPost200Response from '../model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Response';
+import DtoConversationListRequest from '../model/DtoConversationListRequest';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
 import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
@@ -626,6 +628,155 @@ export default class DefaultApi {
      */
     apiCaptchaGet() {
       return this.apiCaptchaGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取会话列表
+     * 获取用户的会话列表
+     * @param {module:model/DtoConversationListRequest} data 请求参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiChatConversationListPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiChatConversationListPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/chat/conversation/list', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取会话列表
+     * 获取用户的会话列表
+     * @param {module:model/DtoConversationListRequest} data 请求参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiChatConversationListPost(data) {
+      return this.apiChatConversationListPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取会话详情
+     * 获取指定会话的详细信息，包括基本信息和消息列表
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiChatConversationsIdGet200Response} and HTTP response
+     */
+    apiChatConversationsIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiChatConversationsIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiChatConversationsIdGet200Response;
+      return this.apiClient.callApi(
+        '/api/chat/conversations/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取会话详情
+     * 获取指定会话的详细信息，包括基本信息和消息列表
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiChatConversationsIdGet200Response}
+     */
+    apiChatConversationsIdGet(id) {
+      return this.apiChatConversationsIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 建立聊天 WebSocket 连接
+     * 建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回 AI 回复
+     * @param {Number} id 会话ID
+     * @param {Object} opts Optional parameters
+     * @param {String} [token] 用户令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing HTTP response
+     */
+    apiChatWsGetWithHttpInfo(id, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiChatWsGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'id': id,
+        'token': opts['token']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = null;
+      return this.apiClient.callApi(
+        '/api/chat/ws', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 建立聊天 WebSocket 连接
+     * 建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回 AI 回复
+     * @param {Number} id 会话ID
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.token 用户令牌
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}
+     */
+    apiChatWsGet(id, opts) {
+      return this.apiChatWsGetWithHttpInfo(id, opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

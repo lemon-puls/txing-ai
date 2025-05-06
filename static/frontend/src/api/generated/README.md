@@ -131,6 +131,9 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
+*TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
+*TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
+*TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 *TxingAiApi.DefaultApi* | [**apiModelIdGet**](docs/DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
 *TxingAiApi.DefaultApi* | [**apiModelListGet**](docs/DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
@@ -153,11 +156,13 @@ Class | Method | HTTP request | Description
 
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
+ - [TxingAiApi.ApiChatConversationsIdGet200Response](docs/ApiChatConversationsIdGet200Response.md)
  - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
  - [TxingAiApi.ApiPresetPost200Response](docs/ApiPresetPost200Response.md)
  - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
  - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)
+ - [TxingAiApi.DtoConversationListRequest](docs/DtoConversationListRequest.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
  - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
@@ -170,8 +175,10 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
+ - [TxingAiApi.GlobalMessage](docs/GlobalMessage.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
  - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
+ - [TxingAiApi.VoConversationDetailVO](docs/VoConversationDetailVO.md)
  - [TxingAiApi.VoGetPresignedURLVO](docs/VoGetPresignedURLVO.md)
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
  - [TxingAiApi.VoModelVO](docs/VoModelVO.md)

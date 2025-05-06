@@ -112,6 +112,7 @@ class WebSocketManager {
    * @param {object} data - 要发送的数据
    */
   sendMessage(chatId, data) {
+    console.log(`Sending message to chat ${chatId}:`, data)
     this.worker.postMessage({
       action: 'sendMessage',
       chatId,

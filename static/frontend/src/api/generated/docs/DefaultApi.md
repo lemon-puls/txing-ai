@@ -15,6 +15,9 @@ Method | HTTP request | Description
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
+[**apiChatConversationListPost**](DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
+[**apiChatConversationsIdGet**](DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
+[**apiChatWsGet**](DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 [**apiModelIdGet**](DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
 [**apiModelListGet**](DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
@@ -533,6 +536,142 @@ This endpoint does not need any parameter.
 ### Return type
 
 [**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiChatConversationListPost
+
+> UtilsResponse apiChatConversationListPost(data)
+
+获取会话列表
+
+获取用户的会话列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoConversationListRequest(); // DtoConversationListRequest | 请求参数
+apiInstance.apiChatConversationListPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoConversationListRequest**](DtoConversationListRequest.md)| 请求参数 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiChatConversationsIdGet
+
+> ApiChatConversationsIdGet200Response apiChatConversationsIdGet(id)
+
+获取会话详情
+
+获取指定会话的详细信息，包括基本信息和消息列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+apiInstance.apiChatConversationsIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+
+### Return type
+
+[**ApiChatConversationsIdGet200Response**](ApiChatConversationsIdGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiChatWsGet
+
+> apiChatWsGet(id, opts)
+
+建立聊天 WebSocket 连接
+
+建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回 AI 回复
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+let opts = {
+  'token': "token_example" // String | 用户令牌
+};
+apiInstance.apiChatWsGet(id, opts).then(() => {
+  console.log('API called successfully.');
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+ **token** | **String**| 用户令牌 | [optional] 
+
+### Return type
+
+null (empty response body)
 
 ### Authorization
 

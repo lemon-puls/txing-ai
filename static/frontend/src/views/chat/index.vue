@@ -470,6 +470,7 @@ import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
 import {defaultApi} from '@/api'
 import {useUserStore} from "@/stores/user.js";
+import { useConversationStore } from '@/stores/conversation'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -580,6 +581,7 @@ const renderMessage = (content) => {
 // 使用主题 store
 const themeStore = useThemeStore()
 const userStore = useUserStore()
+const conversationStore = useConversationStore()
 
 // 状态
 const isDarkTheme = computed(() => themeStore.isDark)
@@ -588,8 +590,13 @@ const showSettings = ref(false)
 const messageInput = ref('')
 const isTyping = ref(false)
 const messagesContainer = ref(null)
-const currentChat = ref({})
-const chatList = ref([])
+
+// 使用 conversationStore 管理会话
+const chatList = computed(() => conversationStore.conversations)
+const currentChat = computed({
+  get: () => conversationStore.currentConversation,
+  set: (value) => conversationStore.setCurrentConversation(value)
+})
 
 // 头像
 const userAvatar = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
@@ -712,26 +719,6 @@ const sendMessage = async () => {
 
 // 处理 WebSocket 消息
 const handleWebSocketMessage = (chatId, data) => {
-  // 查找对应的聊天会话
-  // 注意：chatId 可能是临时ID，或者是之前赋予的前端生成的ID
-  let chat = null
-
-  // 如果有会话ID，优先使用它查找
-  if (data.conversationId) {
-    const actualChatId = parseInt(data.conversationId.toString())
-    chat = chatList.value.find(c => c.id === actualChatId)
-  }
-
-  // 如果没找到，使用传入的chatId查找
-  if (!chat) {
-    chat = chatList.value.find(c => c.id.toString() === chatId.toString())
-  }
-
-  if (!chat) {
-    console.error(`Cannot find chat for ID ${chatId}`)
-    return
-  }
-
   if (data.type === 'chat') {
     // 完整的消息响应
     isTyping.value = false
@@ -742,16 +729,18 @@ const handleWebSocketMessage = (chatId, data) => {
       streamingMessage.value.thought_process = data.data.thought_process
       streamingMessage.value = null
     } else {
-      chat.messages.push({
+      const message = {
         id: Date.now(),
         role: 'assistant',
         content: data.data.content,
         thought_process: data.data.thought_process,
         showThought: true
-      })
+      }
+      conversationStore.addMessage(message)
     }
 
-    chat.lastMessage = data.data.content.substring(0, 50) + (data.data.content.length > 50 ? '...' : '')
+    // 更新最后一条消息预览
+    conversationStore.updateLastMessage(chatId, data.data.content)
     scrollToBottom()
   } else if (data.type === 'stream') {
     // 流式响应更新
@@ -764,7 +753,7 @@ const handleWebSocketMessage = (chatId, data) => {
         thought_process: '',
         showThought: true
       }
-      chat.messages.push(streamingMessage.value)
+      conversationStore.addMessage(streamingMessage.value)
     }
 
     // 更新流式消息内容
@@ -814,7 +803,7 @@ const goToHome = () => {
 
 const createNewChat = async () => {
   const newChat = {
-    id: Date.now(),
+    id: "tmp-" + Date.now(),
     // 标记这是一个还没有真实ID的新会话
     realId: false,
     title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
@@ -868,24 +857,14 @@ const createNewChat = async () => {
           newChat.id = parseInt(actualChatId)
           newChat.realId = true
 
-          // 更新聊天列表中的ID
-          const chatIndex = chatList.value.findIndex(c => c.id === oldId)
-          if (chatIndex !== -1) {
-            chatList.value[chatIndex].id = newChat.id
-            chatList.value[chatIndex].realId = true
-          }
-
-          // 更新当前聊天的ID
-          if (currentChat.value && currentChat.value.id === oldId) {
-            currentChat.value.id = newChat.id
-            currentChat.value.realId = true
-          }
+          // 更新会话ID
+          conversationStore.updateConversationId(oldId, newChat.id)
 
           // 更新连接映射
           wsManager.updateConnectionId(oldId, actualChatId)
 
           // 保存到本地存储
-          saveChatsToLocalStorage()
+          conversationStore.saveToLocalStorage()
         }
       }
 
@@ -902,27 +881,31 @@ const createNewChat = async () => {
       ElMessage.warning('连接已关闭')
     })
 
-    chatList.value.unshift(newChat)
-    currentChat.value = newChat
+    // 保存新会话到 store
+    await conversationStore.addConversation(newChat)
   } catch (error) {
     console.error('Failed to create chat:', error)
     ElMessage.error('创建会话失败')
   }
 }
 
-const switchChat = (chat) => {
-  currentChat.value = chat
-  scrollToBottom()
+const switchChat = async (chat) => {
+  try {
+    await conversationStore.loadConversationDetail(chat.id)
+    await scrollToBottom()
+  } catch (error) {
+    console.error('Failed to switch chat:', error)
+    ElMessage.error('切换会话失败')
+  }
 }
 
-const handleChatAction = (command, chat) => {
+const handleChatAction = async (command, chat) => {
   if (command === 'delete') {
-    const index = chatList.value.findIndex(c => c.id === chat.id)
-    if (index > -1) {
-      chatList.value.splice(index, 1)
-      if (currentChat.value?.id === chat.id) {
-        currentChat.value = chatList.value[0]
-      }
+    try {
+      await conversationStore.deleteConversation(chat.id)
+    } catch (error) {
+      console.error('Failed to delete chat:', error)
+      ElMessage.error('删除会话失败')
     }
   }
 }
@@ -976,7 +959,7 @@ const selectModel = (model) => {
   }
 
   // 保存到本地存储
-  saveChatsToLocalStorage();
+  conversationStore.saveToLocalStorage();
 }
 
 // 切换联网搜索
@@ -994,30 +977,31 @@ const toggleThought = (message) => {
 }
 
 // 监听系统主题变化
-onMounted(() => {
+onMounted(async () => {
   hljs.highlightAll()
 
-  // 检查是否需要创建新对话
-  if (route.query.newChat === 'true') {
-    createNewChat()
-  } else {
-    currentChat.value = chatList.value[0]
-  }
+  try {
+    // 加载会话列表
+    await conversationStore.loadConversations()
 
-  const savedPattern = localStorage.getItem('chatBgPattern')
-  if (savedPattern) {
-    currentBgPattern.value = savedPattern
-  }
+    // 检查是否需要创建新对话
+    if (route.query.newChat === 'true') {
+      await createNewChat()
+    } else if (chatList.value.length > 0) {
+      await conversationStore.loadConversationDetail(chatList.value[0].id)
+    }
 
-  // 初始化主题
-  themeStore.initTheme()
+    const savedPattern = localStorage.getItem('chatBgPattern')
+    if (savedPattern) {
+      currentBgPattern.value = savedPattern
+    }
 
-  loadModels()
-
-  // 在 onMounted 中加载本地存储的聊天记录
-  const savedChats = localStorage.getItem('chats')
-  if (savedChats) {
-    chatList.value = JSON.parse(savedChats)
+    // 初始化主题
+    themeStore.initTheme()
+    loadModels()
+  } catch (error) {
+    console.error('Failed to initialize chat:', error)
+    ElMessage.error('初始化聊天失败')
   }
 })
 
@@ -1096,10 +1080,6 @@ onUnmounted(() => {
     }
   })
 })
-
-const saveChatsToLocalStorage = () => {
-  localStorage.setItem('chats', JSON.stringify(chatList.value))
-}
 </script>
 
 <style scoped lang="scss">

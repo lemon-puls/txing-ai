@@ -16,6 +16,7 @@ type ConversationSimpleVO struct {
 
 // ConversationDetailVO 会话详情信息
 type ConversationDetailVO struct {
+	ID        int64  `json:"id"` // 会话ID
 	UserID    int64  `json:"userId"`
 	Name      string `json:"name"`
 	Model     string `json:"model"`

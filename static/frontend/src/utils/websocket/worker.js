@@ -64,14 +64,15 @@ async function createConnection(chatId, userId, token) {
   }
 
   try {
-
-    let id = chatId;
-    if (!connections.has(chatId)) {
-       id = -1;
-    }
-
+    // token 添加前缀
     if (token) {
       token = `Bearer ${token}`;
+    }
+
+    let id = chatId;
+    // 如果 chatId 前缀是 tmp-，则是新会话，创建连接时 id 参数设为 -1
+    if (chatId.startsWith('tmp-')) {
+      id = -1;
     }
 
     // 创建 WebSocket 连接，添加身份验证参数
@@ -80,6 +81,7 @@ async function createConnection(chatId, userId, token) {
     // 记录连接时间
     connectionTimes.set(chatId, Date.now());
 
+    console.log('Creating WebSocket connection:', chatId);
     // 存储连接
     connections.set(chatId, {
       ws,
@@ -93,6 +95,7 @@ async function createConnection(chatId, userId, token) {
 
     // 设置基本事件处理
     ws.onopen = () => {
+      console.log('WebSocket connection open finished:', chatId);
       self.postMessage({
         type: 'open',
         chatId: chatId
@@ -218,8 +221,9 @@ async function createConnection(chatId, userId, token) {
 
 // 发送消息
 function sendMessage(chatId, data) {
-  const conn = connections.get(Number(chatId));
+  const conn = connections.get(chatId);
   if (conn && conn.ws && conn.ws.readyState === WebSocket.OPEN) {
+    console.log('Sending message:', data);
     conn.ws.send(JSON.stringify(data));
   } else {
     // 记录连接状态以帮助调试
