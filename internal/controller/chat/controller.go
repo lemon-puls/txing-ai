@@ -12,7 +12,10 @@ import (
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
 
+	"go.uber.org/zap"
+
 	"github.com/jinzhu/copier"
+	"github.com/samber/lo"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -112,6 +115,7 @@ func GetConversationList(c *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(c)
+	cosClient := utils.GetCosClientFromContext(c)
 
 	// 使用游标分页查询
 	result, err := page.GetCursorPageByMySQL[domain.Conversation](
@@ -130,7 +134,41 @@ func GetConversationList(c *gin.Context) {
 		return
 	}
 
-	utils.OkWithData(c, result)
+	pageVO, err := page.ConvertCursorPageVO[domain.Conversation, vo.ConversationSimpleVO](result)
+	if err != nil {
+		log.Error("ConvertCursorPageVO failed", zap.Error(err))
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	// 收集所有用到的模型名称
+	modelNames := lo.Map(pageVO.Data, func(item vo.ConversationSimpleVO, _ int) string {
+		return item.Model
+	})
+	modelNames = lo.Uniq(modelNames)
+
+	// 批量查询模型信息
+	var models []domain.Model
+	if err := db.Where("name IN ?", modelNames).Find(&models).Error; err != nil {
+		log.Error("query models failed", zap.Error(err))
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	// 构建模型名称到头像的映射
+	modelAvatarMap := lo.SliceToMap(models, func(model domain.Model) (string, string) {
+		return model.Name, model.Avatar
+	})
+
+	// 更新会话的模型头像
+	pageVO.Data = lo.Map(pageVO.Data, func(item vo.ConversationSimpleVO, _ int) vo.ConversationSimpleVO {
+		if avatar, exists := modelAvatarMap[item.Model]; exists {
+			item.ModelAvatar, _ = cosClient.GenerateDownloadPresignedURL(avatar)
+		}
+		return item
+	})
+
+	utils.OkWithData(c, pageVO)
 	return
 }
 
