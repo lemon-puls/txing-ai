@@ -37,13 +37,13 @@
               <div class="chat-icon-wrapper">
                 <el-avatar
                   :size="40"
-                  :src="chat.avatar"
+                  :src="chat.modelAvatar"
                 >
-                  {{ chat.title?.charAt(0) }}
+                  {{ chat.model?.charAt(0) }}
                 </el-avatar>
               </div>
               <div class="chat-info">
-                <div class="chat-title">{{ chat.title }}</div>
+                <div class="chat-title">{{ chat.model }}</div>
                 <div class="chat-preview">{{ chat.lastMessage }}</div>
               </div>
             </div>
@@ -105,7 +105,7 @@
         <!-- 聊天头部 -->
         <div class="chat-header">
           <div class="chat-title">
-            <span>{{ currentChat.title }}</span>
+            <span>{{ currentChat.name }}</span>
             <!--            <el-tag size="small" effect="plain" class="ml-2 model-tag">{{ currentChat.model }}</el-tag>-->
           </div>
           <div class="chat-settings">
@@ -196,11 +196,11 @@
                 <template #reference>
                   <div class="current-model">
                     <div class="model-icon">
-                      <el-avatar :size="24" :src="currentChat.avatar">
-                        {{ currentChat.title?.charAt(0) }}
+                      <el-avatar :size="24" :src="currentModel?.avatar">
+                        {{ currentModel?.name?.charAt(0) }}
                       </el-avatar>
                     </div>
-                    <span class="model-name">{{ currentChat.title }}</span>
+                    <span class="model-name" v-text="currentModel?.name"></span>
                     <el-icon class="arrow-icon">
                       <ArrowDown/>
                     </el-icon>
@@ -212,21 +212,21 @@
                   <template v-else>
                     <div
                       v-for="model in availableModels"
-                      :key="model.value"
+                      :key="model.name"
                       class="model-item"
-                      :class="{ active: currentChat.model === model.value }"
+                      :class="{ active: currentChat.model === model.name }"
                       @click="selectModel(model)"
                     >
-                      <div class="model-item-icon" :class="model.type">
+                      <div class="model-item-icon" :class="model.tag">
                         <el-avatar :size="24" :src="model.avatar">
-                          {{ model.label.charAt(0) }}
+                          {{ model.name.charAt(0) }}
                         </el-avatar>
                       </div>
                       <div class="model-item-info">
-                        <div class="model-item-name">{{ model.label }}</div>
+                        <div class="model-item-name">{{ model.name }}</div>
                         <div class="model-item-desc">{{ model.description }}</div>
                       </div>
-                      <el-icon v-if="currentChat.model === model.value">
+                      <el-icon v-if="currentChat.model === model.name">
                         <Check/>
                       </el-icon>
                     </div>
@@ -421,7 +421,7 @@
 </template>
 
 <script setup name="ChatView">
-import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useThemeStore} from '@/stores/theme'
 import {
@@ -598,6 +598,7 @@ const currentChat = computed({
   set: (value) => conversationStore.setCurrentConversation(value)
 })
 
+
 // 头像
 const userAvatar = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
 const aiAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
@@ -605,6 +606,8 @@ const aiAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epn
 // 可用模型列表
 const availableModels = ref([])
 const loadingModels = ref(false)
+// 当前选中模型
+const currentModel = ref(null)
 
 // 加载模型列表
 const loadModels = async () => {
@@ -617,13 +620,8 @@ const loadModels = async () => {
 
     if (response.code === 0 && response.data) {
       availableModels.value = response.data.records.map(model => ({
-        value: model.id,
-        label: model.name,
-        description: model.description,
-        type: model.tag ? model.tag.split(',')[0] : 'default',
-        avatar: model.avatar,
-        high_context: model.high_context,
-        default: model.default
+        ...model,
+        tag: model.tag ? model.tag.split(',')[0] : 'default',
       }))
 
       // 找到默认模型并自动选中
@@ -854,7 +852,7 @@ const createNewChat = async () => {
     id: "tmp-" + Date.now(),
     // 标记这是一个还没有真实ID的新会话
     realId: false,
-    title: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
+    name: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
     model: 'gpt-3.5-turbo',
     webSearch: false,
     maxTokens: 2048,
@@ -899,10 +897,28 @@ const createNewChat = async () => {
 
 const switchChat = async (chat) => {
   try {
+    // 加载会话详情
     await conversationStore.loadConversationDetail(chat.id)
 
-    await NewChatConnection(chat, userStore.userId || '0')
+    console.log(availableModels.value)
+    // 根据会话的 model 字段查找并选中对应的模型
+    const model = availableModels.value.find(m => m.value === chat.model)
+    if (model) {
+      // 更新会话列表中的显示
+      const chatInList = chatList.value.find(c => c.id === chat.id)
+      if (chatInList) {
+        chatInList.avatar = model.avatar
+        chatInList.name = model.name
+      }
+      console.log("Switching model", model)
+      // 更新当前选中模型
+      currentModel.value = model
+    }
 
+    console.log("Switching chat", currentChat.value)
+
+    // 建立 WebSocket 连接
+    await NewChatConnection(chat, userStore.userId || '0')
     await scrollToBottom()
   } catch (error) {
     console.error('Failed to switch chat:', error)
@@ -952,22 +968,24 @@ const saveSettings = () => {
 
 // 选择模型
 const selectModel = (model) => {
-  currentChat.value.model = model.value;
+  console.log("currentChat", currentChat.value)
+  currentChat.value.model = model.name;
   currentChat.value.avatar = model.avatar;
-  currentChat.value.title = model.label;
+  currentChat.value.name = model.name;
+
+  console.log("currentChat2", currentChat.value)
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
   if (chatInList) {
-    chatInList.avatar = model.avatar;
-    chatInList.title = model.label;
+    chatInList.modelAvatar = model.avatar;
+    chatInList.name = model.name;
+    console.log("currentChat3", currentChat.value)
+    conversationStore.updateConversation(chatInList)
+    console.log("currentChat4", currentChat.value)
   }
-
-  // 更新当前模型显示名称
-  const modelDisplay = document.querySelector('.model-name');
-  if (modelDisplay) {
-    modelDisplay.textContent = model.label;
-  }
+  // 设置当前选中模型
+  currentModel.value = model;
 
   // 保存到本地存储
   conversationStore.saveToLocalStorage();
@@ -1009,7 +1027,9 @@ onMounted(async () => {
 
     // 初始化主题
     themeStore.initTheme()
-    loadModels()
+    await loadModels()
+    // 设置当前选中模型
+    currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || availableModels.value[0]
   } catch (error) {
     console.error('Failed to initialize chat:', error)
     ElMessage.error('初始化聊天失败')
@@ -1059,7 +1079,7 @@ const selectBgPattern = (pattern) => {
 const handlePresetSelect = (preset) => {
   const newChat = {
     id: Date.now(),
-    title: `与 ${preset.name} 对话`,
+    name: `与 ${preset.name} 对话`,
     model: currentChat.value?.model || 'gpt-3.5-turbo',
     webSearch: false,
     temperature: 1,

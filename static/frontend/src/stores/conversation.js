@@ -48,10 +48,6 @@ export const useConversationStore = defineStore('conversation', {
       if (index !== -1) {
         this.conversations[index] = { ...this.conversations[index], ...conversation }
 
-        if (this.currentConversation?.id === conversation.id) {
-          this.currentConversation = this.conversations[index]
-        }
-
         if (!userStore.isLoggedIn) {
           const localConversations = JSON.parse(localStorage.getItem('conversations') || '[]')
           const localIndex = localConversations.findIndex(conv => conv.id === conversation.id)
@@ -62,6 +58,7 @@ export const useConversationStore = defineStore('conversation', {
           }
         }
       }
+      console.log('update conversation:', this.conversations[index])
     },
 
     deleteConversation(id) {
