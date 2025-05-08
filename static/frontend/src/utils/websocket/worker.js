@@ -137,8 +137,10 @@ async function createConnection(chatId, userId, token) {
               const completeMessage = {
                 type: 'chat',
                 data: {
-                  content: conn.partialMessage.content,
-                  reasoningContent: conn.partialMessage.reasoningContent,
+                  content: data.content,
+                  reasoningContent: data.reasoningContent,
+                  partialContent: conn.partialMessage.content,
+                  partialReasoning: conn.partialMessage.reasoningContent,
                   conversationId: data.conversationId
                 }
               };

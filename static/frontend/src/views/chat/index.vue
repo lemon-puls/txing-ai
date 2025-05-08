@@ -144,9 +144,13 @@
                     <el-icon :class="{ 'is-fold': !message.showThought }">
                       <ArrowRight/>
                     </el-icon>
-                    <span>已深度思考 (用时{{
-                        message === streamingMessage ? Math.floor(thoughtTime / 1000) : 6
-                      }}秒)</span>
+                    <span>已深度思考 {{
+                      message === streamingMessage ?
+                        `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
+                        messageThoughtTimes.has(message.id) ?
+                          `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
+                          ''
+                    }}</span>
                   </div>
                   <div v-show="message.showThought" class="thought-content">
                     {{ message.reasoningContent }}
@@ -657,7 +661,7 @@ const showPresetMarket = ref(false)
 
 // 移除未使用的变量
 const streamingMessage = ref(null)
-const thoughtTime = ref(0)
+const messageThoughtTimes = ref(new Map())
 const showThemeDrawer = ref(false)
 
 // 发送消息
@@ -723,8 +727,18 @@ const handleWebSocketMessage = (chatId, data) => {
 
     // 如果存在流式消息，则更新它而不是创建新消息
     if (streamingMessage.value) {
-      streamingMessage.value.content = data.data.content
-      streamingMessage.value.reasoningContent = data.data.reasoningContent
+      streamingMessage.value.content = data.data.partialContent
+      streamingMessage.value.reasoningContent = data.data.partialReasoning
+      // 记录最终的思考时间
+      if (data.data.reasoningContent) {
+        const endTime = Date.now()
+        const startTime = messageThoughtTimes.value.get(streamingMessage.value.id)?.startTime || endTime
+        messageThoughtTimes.value.set(streamingMessage.value.id, {
+          startTime,
+          endTime,
+          duration: Math.floor((endTime - startTime) / 1000)
+        })
+      }
       streamingMessage.value = null
     } else {
       const message = {
@@ -734,6 +748,16 @@ const handleWebSocketMessage = (chatId, data) => {
         reasoningContent: data.data.reasoningContent,
         showThought: true
       }
+      // 如果有思考内容，记录思考时间
+      // if (message.reasoningContent) {
+      //   const endTime = Date.now()
+      //   const startTime = messageThoughtTimes.value.get(message.id)?.startTime || endTime
+      //   messageThoughtTimes.value.set(message.id, {
+      //     startTime,
+      //     endTime,
+      //     duration: Math.floor((endTime - startTime) / 1000)
+      //   })
+      // }
       conversationStore.addMessage(message)
     }
 
@@ -751,6 +775,14 @@ const handleWebSocketMessage = (chatId, data) => {
         reasoningContent: '',
         showThought: true
       }
+      // 记录思考开始时间
+      if (!messageThoughtTimes.value.has(streamingMessage.value.id)) {
+        messageThoughtTimes.value.set(streamingMessage.value.id, {
+          startTime: Date.now(),
+          endTime: null,
+          duration: 0
+        })
+      }
       conversationStore.addMessage(streamingMessage.value)
     }
 
@@ -758,9 +790,15 @@ const handleWebSocketMessage = (chatId, data) => {
     streamingMessage.value.content = data.data.partialContent
     streamingMessage.value.reasoningContent = data.data.partialReasoning
 
-    // 更新思考时间
+    // 更新当前思考时间
     if (data.data.reasoningContent) {
-      thoughtTime.value += 50
+      const currentTime = Date.now()
+      const startTime = messageThoughtTimes.value.get(streamingMessage.value.id)?.startTime || currentTime
+      messageThoughtTimes.value.set(streamingMessage.value.id, {
+        startTime,
+        endTime: currentTime,
+        duration: Math.floor((currentTime - startTime) / 1000)
+      })
     }
 
     scrollToBottom()
