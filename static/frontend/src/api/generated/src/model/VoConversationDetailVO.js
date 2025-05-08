@@ -12,7 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
-import GlobalMessage from './GlobalMessage';
+import VoMessageVO from './VoMessageVO';
 
 /**
  * The VoConversationDetailVO model module.
@@ -64,7 +64,7 @@ class VoConversationDetailVO {
                 obj['maxTokens'] = ApiClient.convertToType(data['maxTokens'], 'Number');
             }
             if (data.hasOwnProperty('messages')) {
-                obj['messages'] = ApiClient.convertToType(data['messages'], [GlobalMessage]);
+                obj['messages'] = ApiClient.convertToType(data['messages'], [VoMessageVO]);
             }
             if (data.hasOwnProperty('model')) {
                 obj['model'] = ApiClient.convertToType(data['model'], 'String');
@@ -107,7 +107,7 @@ class VoConversationDetailVO {
             }
             // validate the optional field `messages` (array)
             for (const item of data['messages']) {
-                GlobalMessage.validateJSON(item);
+                VoMessageVO.validateJSON(item);
             };
         }
         // ensure the json data is a string
@@ -156,7 +156,7 @@ VoConversationDetailVO.prototype['maxTokens'] = undefined;
 
 /**
  * 消息列表
- * @member {Array.<module:model/GlobalMessage>} messages
+ * @member {Array.<module:model/VoMessageVO>} messages
  */
 VoConversationDetailVO.prototype['messages'] = undefined;
 

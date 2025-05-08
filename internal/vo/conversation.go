@@ -2,7 +2,6 @@ package vo
 
 import (
 	"time"
-	"txing-ai/internal/global"
 )
 
 // ConversationSimpleVO 会话基本信息
@@ -33,5 +32,13 @@ type ConversationDetailVO struct {
 	FrequencyPenalty  *float32 `json:"frequencyPenalty,omitempty"`
 	RepetitionPenalty *float32 `json:"repetitionPenalty,omitempty"`
 
-	Messages []global.Message `json:"messages"` // 消息列表
+	Messages []MessageVO `json:"messages"` // 消息列表
+}
+
+// 聊天消息
+type MessageVO struct {
+	Role             string  `json:"role"`
+	Content          string  `json:"content"`
+	ReasoningContent string  `json:"reasoningContent"`
+	Name             *string `json:"name,omitempty"`
 }

@@ -138,7 +138,7 @@ async function createConnection(chatId, userId, token) {
                 type: 'chat',
                 data: {
                   content: conn.partialMessage.content,
-                  thought_process: conn.partialMessage.reasoningContent,
+                  reasoningContent: conn.partialMessage.reasoningContent,
                   conversationId: data.conversationId
                 }
               };
@@ -159,9 +159,9 @@ async function createConnection(chatId, userId, token) {
                 type: 'stream',
                 data: {
                   content: data.content,
-                  reasoning_content: data.reasoning_content,
-                  partial_content: conn.partialMessage.content,
-                  partial_reasoning: conn.partialMessage.reasoningContent,
+                  reasoningContent: data.reasoning_content,
+                  partialContent: conn.partialMessage.content,
+                  partialReasoning: conn.partialMessage.reasoningContent,
                   conversationId: data.conversationId
                 }
               };

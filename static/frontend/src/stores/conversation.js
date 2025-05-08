@@ -160,7 +160,9 @@ export const useConversationStore = defineStore('conversation', {
       if (userStore.isLoggedIn) {
         try {
           const response = await defaultApi.apiChatConversationsIdGet(id)
+          console.log('load conversation detail response:', response)
           if (response.code === 0 && response.data) {
+            console.log('load conversation detail:', response.data)
             this.currentConversation = response.data
             return response.data
           }

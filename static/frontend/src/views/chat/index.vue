@@ -139,7 +139,7 @@
               </div>
               <div class="message-content">
                 <!-- 添加思考过程组件 -->
-                <div v-if="message.thought_process" class="thought-process">
+                <div v-if="message.reasoningContent" class="thought-process">
                   <div class="thought-header" @click="toggleThought(message)">
                     <el-icon :class="{ 'is-fold': !message.showThought }">
                       <ArrowRight/>
@@ -149,7 +149,7 @@
                       }}秒)</span>
                   </div>
                   <div v-show="message.showThought" class="thought-content">
-                    {{ message.thought_process }}
+                    {{ message.reasoningContent }}
                   </div>
                 </div>
                 <div class="message-text" v-html="renderMessage(message.content)"></div>
@@ -724,14 +724,14 @@ const handleWebSocketMessage = (chatId, data) => {
     // 如果存在流式消息，则更新它而不是创建新消息
     if (streamingMessage.value) {
       streamingMessage.value.content = data.data.content
-      streamingMessage.value.thought_process = data.data.thought_process
+      streamingMessage.value.reasoningContent = data.data.reasoningContent
       streamingMessage.value = null
     } else {
       const message = {
         id: Date.now(),
         role: 'assistant',
         content: data.data.content,
-        thought_process: data.data.thought_process,
+        reasoningContent: data.data.reasoningContent,
         showThought: true
       }
       conversationStore.addMessage(message)
@@ -748,18 +748,18 @@ const handleWebSocketMessage = (chatId, data) => {
         id: Date.now(),
         role: 'assistant',
         content: '',
-        thought_process: '',
+        reasoningContent: '',
         showThought: true
       }
       conversationStore.addMessage(streamingMessage.value)
     }
 
     // 更新流式消息内容
-    streamingMessage.value.content = data.data.partial_content
-    streamingMessage.value.thought_process = data.data.partial_reasoning
+    streamingMessage.value.content = data.data.partialContent
+    streamingMessage.value.reasoningContent = data.data.partialReasoning
 
     // 更新思考时间
-    if (data.data.reasoning_content) {
+    if (data.data.reasoningContent) {
       thoughtTime.value += 50
     }
 

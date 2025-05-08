@@ -213,7 +213,14 @@ func GetConversationDetail(c *gin.Context) {
 	result := &vo.ConversationDetailVO{}
 	copier.Copy(result, entity)
 
-	result.Messages = entity.FormattedMessage
+	// 使用 lo 将  entity.FormattedMessage 转换为 vo.MessageVO 列表
+	result.Messages = lo.Map(entity.FormattedMessage, func(item global.Message, _ int) vo.MessageVO {
+		return vo.MessageVO{
+			Role:             item.Role,
+			Content:          item.Content,
+			ReasoningContent: item.ReasoningContent,
+			Name:             item.Name}
+	})
 
 	utils.OkWithData(c, result)
 }

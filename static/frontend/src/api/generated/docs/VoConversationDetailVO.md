@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **frequencyPenalty** | **Number** |  | [optional] 
 **id** | **Number** | 会话ID | [optional] 
 **maxTokens** | **Number** | 可选的模型参数 | [optional] 
-**messages** | [**[GlobalMessage]**](GlobalMessage.md) | 消息列表 | [optional] 
+**messages** | [**[VoMessageVO]**](VoMessageVO.md) | 消息列表 | [optional] 
 **model** | **String** |  | [optional] 
 **name** | **String** |  | [optional] 
 **presencePenalty** | **Number** |  | [optional] 

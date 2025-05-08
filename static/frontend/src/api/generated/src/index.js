@@ -34,12 +34,12 @@ import DtoUpdateModelReq from './model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
-import GlobalMessage from './model/GlobalMessage';
 import UtilsResponse from './model/UtilsResponse';
 import VoChannelVO from './model/VoChannelVO';
 import VoConversationDetailVO from './model/VoConversationDetailVO';
 import VoGetPresignedURLVO from './model/VoGetPresignedURLVO';
 import VoLoginVO from './model/VoLoginVO';
+import VoMessageVO from './model/VoMessageVO';
 import VoModelVO from './model/VoModelVO';
 import VoPresetVO from './model/VoPresetVO';
 import VoTokenPair from './model/VoTokenPair';
@@ -212,12 +212,6 @@ export {
     DtoUpdateProfileReq,
 
     /**
-     * The GlobalMessage model constructor.
-     * @property {module:model/GlobalMessage}
-     */
-    GlobalMessage,
-
-    /**
      * The UtilsResponse model constructor.
      * @property {module:model/UtilsResponse}
      */
@@ -246,6 +240,12 @@ export {
      * @property {module:model/VoLoginVO}
      */
     VoLoginVO,
+
+    /**
+     * The VoMessageVO model constructor.
+     * @property {module:model/VoMessageVO}
+     */
+    VoMessageVO,
 
     /**
      * The VoModelVO model constructor.
