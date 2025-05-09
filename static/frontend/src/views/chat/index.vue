@@ -897,12 +897,15 @@ const createNewChat = async (assistantId) => {
     }
   }
 
+  // 找到默认模型并自动选中
+  const defaultModel = availableModels.value.find(model => model.default)
+
   const newChat = {
     id: "tmp-" + Date.now(),
     // 标记这是一个还没有真实ID的新会话
     realId: false,
     name: assistant.name ? `与 ${assistant.name} 对话` : '新对话',
-    model: 'gpt-3.5-turbo',
+    model: defaultModel?.name || 'gpt-3.5-turbo',
     presetId: assistant.id,
     webSearch: false,
     maxTokens: 2048,
@@ -933,6 +936,11 @@ const createNewChat = async (assistantId) => {
 
     // 保存新会话到 store
     await conversationStore.addConversation(newChat)
+
+    if (defaultModel) {
+      // 选中默认模型
+      selectModel(defaultModel)
+    }
   } catch (error) {
     console.error('Failed to create chat:', error)
     ElMessage.error('创建会话失败')
@@ -1017,16 +1025,12 @@ const selectModel = (model) => {
   currentChat.value.avatar = model.avatar;
   currentChat.value.name = model.name;
 
-  console.log("currentChat2", currentChat.value)
-
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
   if (chatInList) {
     chatInList.modelAvatar = model.avatar;
     chatInList.name = model.name;
-    console.log("currentChat3", currentChat.value)
     conversationStore.updateConversation(chatInList)
-    console.log("currentChat4", currentChat.value)
   }
   // 设置当前选中模型
   currentModel.value = model;
