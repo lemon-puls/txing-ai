@@ -15,7 +15,7 @@
           </el-button>
         </el-tooltip>
         <el-tooltip content="新建会话" placement="right">
-          <el-button type="primary" circle class="new-chat-button" @click="createNewChat">
+          <el-button type="primary" circle class="new-chat-button" @click="createNewChat('')">
             <el-icon>
               <Plus class="icon-bounce"/>
             </el-icon>
@@ -145,12 +145,12 @@
                       <ArrowRight/>
                     </el-icon>
                     <span>已深度思考 {{
-                      message === streamingMessage ?
-                        `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
-                        messageThoughtTimes.has(message.id) ?
-                          `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
-                          ''
-                    }}</span>
+                        message === streamingMessage ?
+                          `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
+                          messageThoughtTimes.has(message.id) ?
+                            `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
+                            ''
+                      }}</span>
                   </div>
                   <div v-show="message.showThought" class="thought-content">
                     {{ message.reasoningContent }}
@@ -299,7 +299,7 @@
       <!-- 空状态 -->
       <div v-else class="chat-empty">
         <el-empty description="选择或创建一个会话开始聊天">
-          <el-button type="primary" @click="createNewChat" class="create-button">
+          <el-button type="primary" @click="createNewChat('')" class="create-button">
             <template #icon>
               <Plus/>
             </template>
@@ -425,7 +425,7 @@
 </template>
 
 <script setup name="ChatView">
-import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue'
+import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useThemeStore} from '@/stores/theme'
 import {
@@ -474,7 +474,7 @@ import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
 import {defaultApi} from '@/api'
 import {useUserStore} from "@/stores/user.js";
-import { useConversationStore } from '@/stores/conversation'
+import {useConversationStore} from '@/stores/conversation'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -837,11 +837,11 @@ const goToHome = () => {
   router.push('/')
 }
 
-async function NewChatConnection(newChat, userId) {
+async function NewChatConnection(newChat, userId, presetId) {
 
-  console.log("New chat connection", newChat.id, userId);
+  console.log("New chat connection", newChat.id, userId, presetId);
   // 创建 WebSocket 连接
-  let b = await wsManager.createConnection(newChat.id, userId);
+  let b = await wsManager.createConnection(newChat.id, userId, presetId);
   if (!b) {
     return;
   }
@@ -885,13 +885,25 @@ async function NewChatConnection(newChat, userId) {
   })
 }
 
-const createNewChat = async () => {
+const createNewChat = async (assistantId) => {
+  let assistant = {};
+  if (assistantId) {
+    // 获取助手详情
+    const res = await defaultApi.apiPresetIdGet(Number(assistantId));
+    if (res.code === 0) {
+      assistant = res.data;
+    } else {
+      ElMessage.error('获取助手详情失败')
+    }
+  }
+
   const newChat = {
     id: "tmp-" + Date.now(),
     // 标记这是一个还没有真实ID的新会话
     realId: false,
-    name: route.query.assistantName ? `与 ${route.query.assistantName} 对话` : '新对话',
+    name: assistant.name ? `与 ${assistant.name} 对话` : '新对话',
     model: 'gpt-3.5-turbo',
+    presetId: assistant.id,
     webSearch: false,
     maxTokens: 2048,
     temperature: 1,
@@ -900,30 +912,24 @@ const createNewChat = async () => {
     presencePenalty: 0,
     frequencyPenalty: 0,
     repetitionPenalty: 1,
-    lastMessage: route.query.assistantDescription || '你好！我是 AI 助手，有什么我可以帮你的吗？',
-    avatar: route.query.assistantAvatar || aiAvatar,
+    lastMessage: assistant.description || '你好！我是 AI 助手，有什么我可以帮你的吗？',
+    avatar: assistant.avatar || aiAvatar,
     messages: [
       {
         id: 1,
         role: 'assistant',
-        content: route.query.assistantDescription
-          ? `你好！我是 ${route.query.assistantName}，${route.query.assistantDescription}`
+        content: assistant.description
+          ? `你好！我是 ${assistant.name}，${assistant.description}`
           : '你好！我是 AI 助手，有什么我可以帮你的吗？'
       }
     ],
-    assistant: route.query.assistantId ? {
-      id: route.query.assistantId,
-      name: route.query.assistantName,
-      avatar: route.query.assistantAvatar,
-      description: route.query.assistantDescription,
-      type: route.query.assistantType
-    } : null
+    assistant: assistant
   }
 
   try {
     // 获取用户ID (如果登录的话)
     const userId = userStore.userId || '0'
-    await NewChatConnection(newChat, userId);
+    await NewChatConnection(newChat, userId, assistant.id);
 
     // 保存新会话到 store
     await conversationStore.addConversation(newChat)
@@ -956,7 +962,7 @@ const switchChat = async (chat) => {
     console.log("Switching chat", currentChat.value)
 
     // 建立 WebSocket 连接
-    await NewChatConnection(chat, userStore.userId || '0')
+    await NewChatConnection(chat, userStore.userId || '0', "")
     await scrollToBottom()
   } catch (error) {
     console.error('Failed to switch chat:', error)
@@ -1006,7 +1012,7 @@ const saveSettings = () => {
 
 // 选择模型
 const selectModel = (model) => {
-  console.log("currentChat", currentChat.value)
+  console.log("currentChat", currentChat.value, "model:", model)
   currentChat.value.model = model.name;
   currentChat.value.avatar = model.avatar;
   currentChat.value.name = model.name;
@@ -1053,7 +1059,8 @@ onMounted(async () => {
 
     // 检查是否需要创建新对话
     if (route.query.newChat === 'true') {
-      await createNewChat()
+      const assistantId = route.query.assistantId
+      await createNewChat(assistantId)
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
     }

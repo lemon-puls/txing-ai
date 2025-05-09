@@ -82,7 +82,7 @@ class WebSocketManager {
    * @param {string} userId - 用户ID
    * @returns {Promise<boolean>}
    */
-  async createConnection(chatId, userId) {
+  async createConnection(chatId, userId, presetId) {
     try {
 
       // 检查是否已经存在 WebSocket 连接
@@ -99,7 +99,8 @@ class WebSocketManager {
         action: 'createConnection',
         chatId,
         userId,
-        token
+        token,
+        presetId
       })
 
       console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)

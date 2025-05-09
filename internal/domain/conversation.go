@@ -30,6 +30,9 @@ type Conversation struct {
 	FrequencyPenalty  *float32 `gorm:"type:float;comment:频率惩罚参数" json:"frequencyPenalty,omitempty"`
 	RepetitionPenalty *float32 `gorm:"type:float;comment:重复惩罚参数" json:"repetitionPenalty,omitempty"`
 
+	// 预设 id
+	PresetID *int64 `gorm:"type:bigint;comment:预设 id" json:"presetId"`
+
 	// 非数据库字段
 	FormattedMessage []global.Message `gorm:"-" json:"formattedMessage"`
 }
@@ -76,7 +79,7 @@ func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest)
 
 func (c *Conversation) SaveResponse(db *gorm.DB, content string, reasoningContent string) {
 	// 添加消息到会话消息记录中
-	c.addMessageFromAssistant(content, reasoningContent)
+	c.AddMessageFromAssistant(content, reasoningContent)
 
 	// 更新会话信息到数据库
 	c.updateOrCreate(db)
@@ -153,10 +156,10 @@ func (c *Conversation) GetChatMessages() []global.Message {
 	return c.FormattedMessage[len(c.FormattedMessage)-length:]
 }
 
-func (c *Conversation) addMessageFromAssistant(content, reasoningContent string) {
+func (c *Conversation) AddMessageFromAssistant(content, reasoningContent string) {
 	// 如果消息内容为空，则不添加到消息记录中
 	if len(content) == 0 {
-		log.Error("response is empty, skip addMessageFromAssistant")
+		log.Error("response is empty, skip AddMessageFromAssistant")
 		return
 	}
 
@@ -165,5 +168,17 @@ func (c *Conversation) addMessageFromAssistant(content, reasoningContent string)
 		Role:             global.Assistant,
 		Content:          content,
 		ReasoningContent: reasoningContent,
+	})
+}
+
+func (c *Conversation) AddMessageFromSystem(content string) {
+	if len(content) == 0 {
+		log.Error("response is empty, skip AddMessageFromSystem")
+		return
+	}
+
+	c.addMessage(global.Message{
+		Role:    global.System,
+		Content: content,
 	})
 }

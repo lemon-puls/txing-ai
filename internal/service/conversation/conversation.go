@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	"go.uber.org/zap"
 
 	"gorm.io/gorm"
 )
@@ -39,7 +40,7 @@ func QueryConversationById(db *gorm.DB, id int64) (*domain.Conversation, error) 
 }
 
 // 根据情况获取到 conversation 实例
-func ExtractConversation(db *gorm.DB, id int64, userId int64) *domain.Conversation {
+func ExtractConversation(db *gorm.DB, id int64, userId int64, presetId string) *domain.Conversation {
 
 	var conversation *domain.Conversation
 	if userId == -1 {
@@ -48,6 +49,22 @@ func ExtractConversation(db *gorm.DB, id int64, userId int64) *domain.Conversati
 	} else if id == -1 {
 		// 需要新建 conversation
 		conversation = NewConversation(userId)
+		log.Info("presetId: ", zap.String("presetId", presetId))
+		if presetId != "" {
+			// 初始化 preset 结构体
+			preset := &domain.Preset{}
+			// 查询出预设详情，直接使用 presetId 而不是其地址
+			if err := db.Where("id = ?", presetId).First(preset).Error; err != nil {
+				log.Error("get preset failed", zap.Error(err))
+				panic("get preset failed")
+			}
+			// 添加初始系统消息，用于给大模型预设一些初始话题
+			conversation.AddMessageFromSystem(preset.Context)
+			// 添加初始 AI 消息，用于引导用户进行对话 `你好！我是 ${assistant.name}，${assistant.description}`
+			helloMsg := fmt.Sprintf("你好！我是 %s，%s", preset.Name, preset.Description)
+			conversation.AddMessageFromAssistant(helloMsg, "")
+		}
+
 		if err := db.Create(conversation).Error; err != nil {
 			log.Error("failed to create conversation", zap.Error(err))
 			return nil

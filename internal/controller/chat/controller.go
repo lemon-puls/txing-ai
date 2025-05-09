@@ -62,8 +62,11 @@ func Chat(c *gin.Context) {
 
 	db := utils.GetDBFromContext(c)
 
+	// 获取预设 id
+	presetId := c.Query("presetId")
+
 	// 获取到 conversation 实例
-	conversation := conversation.ExtractConversation(db, conversationId, userId)
+	conversation := conversation.ExtractConversation(db, conversationId, userId, presetId)
 	if conversation == nil {
 		log.Error("ExtractConversation failed")
 		return
