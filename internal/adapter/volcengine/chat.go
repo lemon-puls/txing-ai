@@ -72,6 +72,10 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 		}
 		if err != nil {
 			log.Error("stream chat error", zap.Error(err))
+			// 如果是 context canceled，则返回 nil，表示结束
+			if err == context.Canceled {
+				return nil
+			}
 			return err
 		}
 

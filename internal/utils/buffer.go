@@ -56,7 +56,7 @@ func (b *ChatRespBuffer) WriteReasoningContent(reasoningContent string) {
 }
 
 func (b *ChatRespBuffer) IsEmpty() bool {
-	return len(b.Content) == 0
+	return len(b.Content) == 0 && len(b.ReasoningContent) == 0
 }
 
 // 获取消息 （如果消息为空，则返回默认消息）
