@@ -1,6 +1,7 @@
 package adaptercommon
 
 import (
+	"context"
 	"txing-ai/internal/global"
 	"txing-ai/internal/iface"
 )
@@ -8,7 +9,7 @@ import (
 // 聊天请求器
 type ChatRequester interface {
 	// 流式聊天请求
-	StreamChat(conf *ChatConfig, callback global.Hook) error
+	StreamChat(ctx context.Context, conf *ChatConfig, callback global.Hook) error
 }
 
 // 聊天请求器工厂

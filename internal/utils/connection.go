@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"go.uber.org/zap"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global/logging/log"
+
+	"go.uber.org/zap"
 )
 
 type Stack chan *dto.WsMessageRequest
@@ -11,9 +12,10 @@ type Stack chan *dto.WsMessageRequest
 // 偏上层（业务层）的连接对象，通过 WebSocket 连接拿到客户端的数据，并丢给业务层处理
 // 或者把业务层的数据通过 WebSocket 发送给客户端
 type Connection struct {
-	conn  *WebSocket
-	auth  bool
-	stack Stack
+	conn       *WebSocket
+	auth       bool
+	stack      Stack
+	cancelFunc func()
 }
 
 func NewConnection(conn *WebSocket, auth bool, bufferSize int) *Connection {
@@ -21,6 +23,18 @@ func NewConnection(conn *WebSocket, auth bool, bufferSize int) *Connection {
 		conn:  conn,
 		auth:  auth,
 		stack: make(Stack, bufferSize),
+	}
+}
+
+// 设置取消函数
+func (c *Connection) SetCancelFunc(cancel func()) {
+	c.cancelFunc = cancel
+}
+
+// 执行取消
+func (c *Connection) Cancel() {
+	if c.cancelFunc != nil {
+		c.cancelFunc()
 	}
 }
 

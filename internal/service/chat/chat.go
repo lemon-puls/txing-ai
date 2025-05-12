@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"errors"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -25,12 +26,18 @@ type partialChunk struct {
 }
 
 // 处理聊天（调用大模型发送消息，并且响应结果）
-func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) (content, reasoningContent string) {
+func HandleChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) (content, reasoningContent string) {
 
 	// 创建响应缓冲区
 	buffer := utils.NewChatRespBuffer()
+
+	// 设置 ctx
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+
+	conn.SetCancelFunc(cancel)
+
 	// 开启聊天
-	err := execChat(conn, conversation, buffer, db)
+	err := execChat(ctxWithCancel, conn, conversation, buffer, db)
 
 	if err != nil {
 		log.Error("execChat failed", zap.Error(err))
@@ -60,7 +67,7 @@ func HandleChat(conn *utils.Connection, conversation *domain.Conversation, db *g
 }
 
 // 开启聊天
-func execChat(conn *utils.Connection, conversation *domain.Conversation, buffer *utils.ChatRespBuffer, db *gorm.DB) error {
+func execChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, buffer *utils.ChatRespBuffer, db *gorm.DB) error {
 	// 创建 channel 用于接收大模型的响应
 	chunkChan := make(chan partialChunk, 20)
 	defer close(chunkChan)
@@ -74,6 +81,7 @@ func execChat(conn *utils.Connection, conversation *domain.Conversation, buffer 
 		}()
 
 		err := NewChatRequest(
+			ctx,
 			db,
 			&adaptercommon.ChatConfig{
 				Model:             conversation.Model,
@@ -126,7 +134,7 @@ func execChat(conn *utils.Connection, conversation *domain.Conversation, buffer 
 	}
 }
 
-func NewChatRequest(db *gorm.DB, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
+func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
 
 	// 获取所有支持该模型的 channel
 	sequence := channel.GetAllChannelsByModel(db, chatConfig.Model)
@@ -139,7 +147,7 @@ func NewChatRequest(db *gorm.DB, chatConfig *adaptercommon.ChatConfig, hook glob
 	// 从中随机选择一个 channel
 	targetChannel := (*sequence)[rand.Intn(len(*sequence))]
 
-	err := adapter.NewChatRequest(&targetChannel, chatConfig, hook)
+	err := adapter.NewChatRequest(ctx, &targetChannel, chatConfig, hook)
 
 	return err
 }

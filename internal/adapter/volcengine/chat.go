@@ -45,8 +45,7 @@ func (c *ChatClient) ConvertMessage(message []global.Message) []*model.ChatCompl
 	return messages
 }
 
-func (c ChatClient) StreamChat(conf *adaptercommon.ChatConfig, callback global.Hook) error {
-	ctx := context.Background()
+func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConfig, callback global.Hook) error {
 
 	req := model.CreateChatCompletionRequest{
 		Model:             conf.Model,

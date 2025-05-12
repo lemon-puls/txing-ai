@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	adaptercommon "txing-ai/internal/adapter/common"
@@ -15,7 +16,7 @@ var chatRequesterFactories = map[string]adaptercommon.ChatRequesterFactory{
 	global.ChannelTypeVolcengine: myVolcengine.NewVoclEngineFactory(),
 }
 
-func createChatRequest(channelConfig iface.ChannelConfig, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
+func createChatRequest(ctx context.Context, channelConfig iface.ChannelConfig, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
 	channelType := channelConfig.GetType()
 	if factory, ok := chatRequesterFactories[channelType]; ok {
 		requester, err := factory.CreateChatRequester(channelConfig)
@@ -23,7 +24,7 @@ func createChatRequest(channelConfig iface.ChannelConfig, chatConfig *adaptercom
 			log.Error("failed to create chat requester for channel", zap.String("channel_type", channelType), zap.Error(err))
 			return err
 		}
-		err = requester.StreamChat(chatConfig, hook)
+		err = requester.StreamChat(ctx, chatConfig, hook)
 		if err != nil {
 			log.Error("failed to stream chat for channel", zap.String("channel_type", channelType), zap.Error(err))
 			return err

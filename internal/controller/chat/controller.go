@@ -81,13 +81,24 @@ func Chat(c *gin.Context) {
 			// 处理聊天消息
 			// 1. 保存消息
 			if err := conversation.HandleMessage(msg, db); err == nil {
-				// 2. 调用模型，返回响应结果
-				content, reasoningContent := chat.HandleChat(buf, conversation, db)
-				// 3. 保存响应结果
-				conversation.SaveResponse(db, content, reasoningContent)
+				// 开启协程处理聊天，为了不阻塞当前协程，确保能继续接收并处理其他消息，例如停止消息
+				// TODO 限制只能同时处理一个聊天请求
+				go func() {
+					// 捕获 panic 并记录日志
+					defer func() {
+						if err := recover(); err != nil {
+							log.Error("chat panic", zap.Any("err", err))
+						}
+					}()
+					// 2. 调用模型，返回响应结果
+					content, reasoningContent := chat.HandleChat(c, buf, conversation, db)
+					// 3. 保存响应结果
+					conversation.SaveResponse(db, content, reasoningContent)
+				}()
 			}
 
 		case global.MessageTypeStop:
+			buf.Cancel()
 		}
 		return nil
 	})
