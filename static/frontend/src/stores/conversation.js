@@ -166,7 +166,7 @@ export const useConversationStore = defineStore('conversation', {
           if (response.code === 0 && response.data) {
             console.log('load conversation detail:', response.data)
             this.currentConversation = response.data
-            
+
             // 使用对象的属性访问，不需要检查类型
             const lastMessage = this.lastMessageMap[id]
             if (lastMessage) {
@@ -176,7 +176,7 @@ export const useConversationStore = defineStore('conversation', {
               }
               this.currentConversation.messages.push(lastMessage)
             }
-            
+
             console.log('退出 currentConversation:', this.currentConversation)
             return response.data
           }
@@ -245,6 +245,10 @@ export const useConversationStore = defineStore('conversation', {
         delete this.lastMessageMap[conversationId]
       }
     },
+    // 清空 lastMessageMap
+    clearLastMessageMap() {
+      this.lastMessageMap = {}
+    }
   },
   persist: {
     key: 'conversation-store',

@@ -1070,6 +1070,9 @@ const toggleThought = (message) => {
 onMounted(async () => {
   hljs.highlightAll()
 
+  // 清空进行中消息缓存
+  conversationStore.clearLastMessageMap()
+
   try {
     // 加载会话列表
     await conversationStore.loadConversations()
