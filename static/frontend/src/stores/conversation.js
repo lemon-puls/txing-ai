@@ -8,7 +8,8 @@ export const useConversationStore = defineStore('conversation', {
     currentConversation: null,
     loading: false,
     isLastPage: false,
-    cursor: ''
+    cursor: '',
+    lastMessageMap: {},
   }),
   getters: {
     hasConversations: (state) => state.conversations.length > 0,
@@ -20,6 +21,7 @@ export const useConversationStore = defineStore('conversation', {
       this.currentConversation = null
       this.cursor = ''
       this.isLastPage = false
+      this.lastMessageMap = {}
       localStorage.removeItem('conversations')
     },
 
@@ -164,6 +166,18 @@ export const useConversationStore = defineStore('conversation', {
           if (response.code === 0 && response.data) {
             console.log('load conversation detail:', response.data)
             this.currentConversation = response.data
+            
+            // 使用对象的属性访问，不需要检查类型
+            const lastMessage = this.lastMessageMap[id]
+            if (lastMessage) {
+              // 确保 messages 数组已初始化
+              if (!this.currentConversation.messages) {
+                this.currentConversation.messages = []
+              }
+              this.currentConversation.messages.push(lastMessage)
+            }
+            
+            console.log('退出 currentConversation:', this.currentConversation)
             return response.data
           }
         } catch (error) {
@@ -219,10 +233,22 @@ export const useConversationStore = defineStore('conversation', {
     saveToLocalStorage() {
       localStorage.setItem('conversations', JSON.stringify(this.conversations))
     },
+
+    setLastMessage(conversationId, message) {
+      // 直接设置属性，不需要使用 Map 方法
+      this.lastMessageMap[conversationId] = message
+    },
+
+    removeLastMessage(conversationId) {
+      // 删除属性
+      if (this.lastMessageMap[conversationId]) {
+        delete this.lastMessageMap[conversationId]
+      }
+    },
   },
   persist: {
     key: 'conversation-store',
     storage: sessionStorage,
-    paths: ['currentConversation', 'cursor']
+    paths: ['currentConversation', 'cursor', 'lastMessageMap']
   }
 })

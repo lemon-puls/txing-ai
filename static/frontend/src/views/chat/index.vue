@@ -425,8 +425,11 @@
 </template>
 
 <script setup name="ChatView">
-import {computed, nextTick, onMounted, onUnmounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
+import {ref, computed, onMounted, nextTick, onUnmounted} from 'vue'
+import {useRouter, useRoute} from 'vue-router'
+import {ElMessage} from 'element-plus'
+import {useConversationStore} from '@/stores/conversation'
+import {useUserStore} from '@/stores/user'
 import {useThemeStore} from '@/stores/theme'
 import {
   ArrowDown,
@@ -442,7 +445,6 @@ import {
   Setting,
   Upload
 } from '@element-plus/icons-vue'
-import {ElMessage} from 'element-plus'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/atom-one-dark.css';
@@ -473,8 +475,6 @@ import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
 import {defaultApi} from '@/api'
-import {useUserStore} from "@/stores/user.js";
-import {useConversationStore} from '@/stores/conversation'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -740,6 +740,8 @@ const handleWebSocketMessage = (chatId, data) => {
         })
       }
       streamingMessage.value = null
+      // 消息完成时从 lastMessageMap 中删除
+      conversationStore.removeLastMessage(chatId)
     } else {
       const message = {
         id: Date.now(),
@@ -748,16 +750,6 @@ const handleWebSocketMessage = (chatId, data) => {
         reasoningContent: data.data.reasoningContent,
         showThought: true
       }
-      // 如果有思考内容，记录思考时间
-      // if (message.reasoningContent) {
-      //   const endTime = Date.now()
-      //   const startTime = messageThoughtTimes.value.get(message.id)?.startTime || endTime
-      //   messageThoughtTimes.value.set(message.id, {
-      //     startTime,
-      //     endTime,
-      //     duration: Math.floor((endTime - startTime) / 1000)
-      //   })
-      // }
       conversationStore.addMessage(message)
     }
 
@@ -784,11 +776,27 @@ const handleWebSocketMessage = (chatId, data) => {
         })
       }
       conversationStore.addMessage(streamingMessage.value)
+
+      // 将正在进行中的消息保存到 lastMessageMap 中（仅限登录用户）
+      const userStore = useUserStore()
+      if (userStore.isLoggedIn) {
+        conversationStore.setLastMessage(chatId, streamingMessage.value)
+      }
     }
 
     // 更新流式消息内容
     streamingMessage.value.content = data.data.partialContent
     streamingMessage.value.reasoningContent = data.data.partialReasoning
+
+    // 同步更新 lastMessageMap 中的消息（仅限登录用户）
+    const userStore = useUserStore()
+    if (userStore.isLoggedIn) {
+      const lastMessage = conversationStore.lastMessageMap[chatId]
+      if (lastMessage) {
+        lastMessage.content = data.data.partialContent
+        lastMessage.reasoningContent = data.data.partialReasoning
+      }
+    }
 
     // 更新当前思考时间
     if (data.data.reasoningContent) {
@@ -807,6 +815,9 @@ const handleWebSocketMessage = (chatId, data) => {
     ElMessage.error(data.data?.message || '接收消息出错')
     isTyping.value = false
     streamingMessage.value = null
+
+    // 出错时也需要从 lastMessageMap 中删除
+    conversationStore.removeLastMessage(chatId)
   }
 }
 
@@ -848,6 +859,8 @@ async function NewChatConnection(newChat, userId, presetId) {
 
   // 添加消息处理器
   wsManager.on(newChat.id, 'message', (data) => {
+    // console.log("Received message", data);
+
     // 如果收到的消息包含会话ID，更新当前会话ID
     if (data.conversationId) {
       const actualChatId = data.conversationId.toString()
