@@ -1067,6 +1067,9 @@ onMounted(async () => {
       await createNewChat(assistantId)
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
+      console.log("Switching chat", chatList.value[0].id)
+      // 获取用户ID (如果登录的话)
+      await NewChatConnection(chatList.value[0], userStore.userId, "");
     }
 
     const savedPattern = localStorage.getItem('chatBgPattern')

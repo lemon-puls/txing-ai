@@ -285,6 +285,7 @@ function updateConnectionId(oldId, newId) {
 
 // 检查连接是否存在
 function checkConnection(chatId) {
+  console.log('Checking connection:', chatId);
   const conn = connections.get(chatId.toString());
   const exists = !!(conn && conn.ws && conn.ws.readyState === WebSocket.OPEN);
 
