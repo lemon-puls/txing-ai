@@ -139,7 +139,7 @@ func GetConversationList(c *gin.Context) {
 			db.Where("user_id = ?", userId)
 		},
 		func(t *domain.Conversation) interface{} {
-			return &t.CreateTime
+			return &t.UpdateTime
 		},
 	)
 

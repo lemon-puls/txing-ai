@@ -108,10 +108,29 @@ export const useConversationStore = defineStore('conversation', {
       const chat = this.conversations.find(c => c.id === chatId)
       if (chat) {
         chat.lastMessage = content.substring(0, 50) + (content.length > 50 ? '...' : '')
+        // 更新会话时间并重新排序
+        this.updateConversationTime(chatId)
 
         // 如果是游客模式，保存到本地存储
         if (!userStore.isLoggedIn) {
           this.saveToLocalStorage()
+        }
+      }
+    },
+
+    // 更新会话时间并重新排序会话列表
+    updateConversationTime(chatId) {
+      const chat = this.conversations.find(c => c.id === chatId)
+      if (chat) {
+        // 更新时间
+        chat.updateTime = new Date()
+        
+        // 从列表中移除该会话
+        const index = this.conversations.findIndex(c => c.id === chatId)
+        if (index !== -1) {
+          this.conversations.splice(index, 1)
+          // 将会话添加到列表开头
+          this.conversations.unshift(chat)
         }
       }
     },
