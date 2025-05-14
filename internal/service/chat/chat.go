@@ -18,6 +18,8 @@ import (
 
 const defaultRespMessage = "Sorry, I don't understand your message."
 
+const defaultErrRespMessage = "Sorry, System error, please try again later."
+
 // 通过回调让下层把大模型响应消息块即时通过 chan 传送给上层处理
 type partialChunk struct {
 	Chunk *global.Chunk
@@ -41,7 +43,12 @@ func HandleChat(ctx context.Context, conn *utils.Connection, conversation *domai
 
 	if err != nil {
 		log.Error("execChat failed", zap.Error(err))
-		return err.Error(), ""
+		conn.Send(dto.WsMessageResponse{
+			Content:        defaultErrRespMessage,
+			End:            true,
+			ConversationId: conversation.Id,
+		})
+		return defaultErrRespMessage, ""
 	}
 
 	if buffer.IsEmpty() {
@@ -52,7 +59,7 @@ func HandleChat(ctx context.Context, conn *utils.Connection, conversation *domai
 			ConversationId: conversation.Id,
 		})
 		if err != nil {
-			return
+			return defaultErrRespMessage, ""
 		}
 		return defaultRespMessage, ""
 	}
