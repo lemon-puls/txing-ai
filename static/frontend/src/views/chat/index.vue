@@ -592,7 +592,6 @@ const isDarkTheme = computed(() => themeStore.isDark)
 const isSidebarCollapsed = ref(false)
 const showSettings = ref(false)
 const messageInput = ref('')
-const isTyping = ref(false)
 const messagesContainer = ref(null)
 
 // 使用 conversationStore 管理会话
@@ -664,6 +663,12 @@ const streamingMessage = ref(null)
 const messageThoughtTimes = ref(new Map())
 const showThemeDrawer = ref(false)
 
+// 添加计算属性来获取当前会话的打字状态
+const isTyping = computed(() => {
+  if (!currentChat.value) return false
+  return conversationStore.getTypingStatus(currentChat.value.id)
+})
+
 // 发送消息
 const sendMessage = async () => {
   if (!messageInput.value.trim() || !currentChat.value) return
@@ -681,7 +686,7 @@ const sendMessage = async () => {
   await scrollToBottom()
 
   // 设置正在输入状态
-  isTyping.value = true
+  conversationStore.setTypingStatus(currentChat.value.id, true)
 
   try {
     // 准备消息选项
@@ -715,7 +720,7 @@ const sendMessage = async () => {
   } catch (error) {
     console.error('Failed to send message:', error)
     ElMessage.error('发送消息失败')
-    isTyping.value = false
+    conversationStore.setTypingStatus(currentChat.value.id, false)
   }
 }
 
@@ -723,7 +728,7 @@ const sendMessage = async () => {
 const handleWebSocketMessage = (chatId, data) => {
   if (data.type === 'chat') {
     // 完整的消息响应
-    isTyping.value = false
+    conversationStore.setTypingStatus(chatId, false)
 
     // 如果存在流式消息，则更新它而不是创建新消息
     if (streamingMessage.value) {
@@ -813,7 +818,7 @@ const handleWebSocketMessage = (chatId, data) => {
   } else if (data.type === 'error') {
     // 错误消息
     ElMessage.error(data.data?.message || '接收消息出错')
-    isTyping.value = false
+    conversationStore.setTypingStatus(chatId, false)
     streamingMessage.value = null
 
     // 出错时也需要从 lastMessageMap 中删除
@@ -828,6 +833,7 @@ const stopGeneration = () => {
       currentChat.value.id.toString(),
       createStopMessage()
     )
+    conversationStore.setTypingStatus(currentChat.value.id, false)
   }
 }
 
@@ -1012,10 +1018,11 @@ const copyMessage = async (message) => {
 }
 
 const regenerateMessage = () => {
-  isTyping.value = true
+  if (!currentChat.value) return
+  conversationStore.setTypingStatus(currentChat.value.id, true)
   // 模拟重新生成
   setTimeout(() => {
-    isTyping.value = false
+    conversationStore.setTypingStatus(currentChat.value.id, false)
   }, 2000)
 }
 
@@ -1072,6 +1079,9 @@ onMounted(async () => {
 
   // 清空进行中消息缓存
   conversationStore.clearLastMessageMap()
+  
+  // 重置所有会话的打字状态
+  conversationStore.resetAllTypingStatus()
 
   try {
     // 加载会话列表
@@ -1167,6 +1177,9 @@ const handlePresetSelect = (preset) => {
 
 // 在组件销毁时关闭所有连接
 onUnmounted(() => {
+  // 重置所有会话的打字状态
+  conversationStore.resetAllTypingStatus()
+  
   // 关闭当前聊天的连接
   if (currentChat.value) {
     wsManager.closeConnection(currentChat.value.id.toString())

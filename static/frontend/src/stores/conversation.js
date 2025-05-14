@@ -10,6 +10,7 @@ export const useConversationStore = defineStore('conversation', {
     isLastPage: false,
     cursor: '',
     lastMessageMap: {},
+    typingMap: {},
   }),
   getters: {
     hasConversations: (state) => state.conversations.length > 0,
@@ -267,11 +268,26 @@ export const useConversationStore = defineStore('conversation', {
     // 清空 lastMessageMap
     clearLastMessageMap() {
       this.lastMessageMap = {}
-    }
+    },
+
+    // 设置会话的打字状态
+    setTypingStatus(conversationId, isTyping) {
+      this.typingMap[conversationId] = isTyping
+    },
+
+    // 获取会话的打字状态
+    getTypingStatus(conversationId) {
+      return this.typingMap[conversationId] || false
+    },
+
+    // 重置所有会话的打字状态
+    resetAllTypingStatus() {
+      this.typingMap = {}
+    },
   },
   persist: {
     key: 'conversation-store',
     storage: sessionStorage,
-    paths: ['currentConversation', 'cursor', 'lastMessageMap']
+    paths: ['currentConversation', 'cursor', 'lastMessageMap', 'typingMap']
   }
 })
