@@ -145,7 +145,7 @@
                       <ArrowRight/>
                     </el-icon>
                     <span>已深度思考 {{
-                        message === streamingMessage ?
+                        isCurrentStreamingMessage(message) ?
                           `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
                           messageThoughtTimes.has(message.id) ?
                             `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
@@ -659,9 +659,21 @@ const showBgPatternDialog = ref(false)
 const showPresetMarket = ref(false)
 
 // 移除未使用的变量
-const streamingMessage = ref(null)
+// const streamingMessage = ref(null)
 const messageThoughtTimes = ref(new Map())
 const showThemeDrawer = ref(false)
+
+// 添加计算属性来获取当前会话的流式消息
+// const streamingMessage = computed({
+//   get: () => {
+//     if (!currentChat.value) return null
+//     return conversationStore.getStreamingMessage(currentChat.value.id)
+//   },
+//   set: (value) => {
+//     if (!currentChat.value) return
+//     conversationStore.setStreamingMessage(currentChat.value.id, value)
+//   }
+// })
 
 // 添加计算属性来获取当前会话的打字状态
 const isTyping = computed(() => {
@@ -731,20 +743,22 @@ const handleWebSocketMessage = (chatId, data) => {
     conversationStore.setTypingStatus(chatId, false)
 
     // 如果存在流式消息，则更新它而不是创建新消息
-    if (streamingMessage.value) {
-      streamingMessage.value.content = data.data.partialContent
-      streamingMessage.value.reasoningContent = data.data.partialReasoning
+    const currentStreamingMessage = conversationStore.getStreamingMessage(chatId)
+    if (currentStreamingMessage) {
+      currentStreamingMessage.content = data.data.partialContent
+      currentStreamingMessage.reasoningContent = data.data.partialReasoning
       // 记录最终的思考时间
       if (data.data.reasoningContent) {
         const endTime = Date.now()
-        const startTime = messageThoughtTimes.value.get(streamingMessage.value.id)?.startTime || endTime
-        messageThoughtTimes.value.set(streamingMessage.value.id, {
+        const startTime = messageThoughtTimes.value.get(currentStreamingMessage.id)?.startTime || endTime
+        messageThoughtTimes.value.set(currentStreamingMessage.id, {
           startTime,
           endTime,
           duration: Math.floor((endTime - startTime) / 1000)
         })
       }
-      streamingMessage.value = null
+      // 消息完成时重置流式消息
+      conversationStore.setStreamingMessage(chatId, null)
       // 消息完成时从 lastMessageMap 中删除
       conversationStore.removeLastMessage(chatId)
     } else {
@@ -763,9 +777,10 @@ const handleWebSocketMessage = (chatId, data) => {
     scrollToBottom()
   } else if (data.type === 'stream') {
     // 流式响应更新
-    if (!streamingMessage.value) {
+    let currentStreamingMessage = conversationStore.getStreamingMessage(chatId)
+    if (!currentStreamingMessage) {
       // 创建新的流式消息
-      streamingMessage.value = {
+      currentStreamingMessage = {
         id: Date.now(),
         role: 'assistant',
         content: '',
@@ -773,25 +788,38 @@ const handleWebSocketMessage = (chatId, data) => {
         showThought: true
       }
       // 记录思考开始时间
-      if (!messageThoughtTimes.value.has(streamingMessage.value.id)) {
-        messageThoughtTimes.value.set(streamingMessage.value.id, {
+      if (!messageThoughtTimes.value.has(currentStreamingMessage.id)) {
+        messageThoughtTimes.value.set(currentStreamingMessage.id, {
           startTime: Date.now(),
           endTime: null,
           duration: 0
         })
       }
-      conversationStore.addMessage(streamingMessage.value)
+      
+      // 保存到当前会话
+      if (currentChat.value && currentChat.value.id === chatId) {
+        currentChat.value.messages.push(currentStreamingMessage)
+      } else {
+        // 如果不是当前会话，则直接添加到对应会话的消息列表中
+        const chat = chatList.value.find(c => c.id === chatId)
+        if (chat && chat.messages) {
+          chat.messages.push(currentStreamingMessage)
+        }
+      }
+      
+      // 设置会话的流式消息
+      conversationStore.setStreamingMessage(chatId, currentStreamingMessage)
 
       // 将正在进行中的消息保存到 lastMessageMap 中（仅限登录用户）
       const userStore = useUserStore()
       if (userStore.isLoggedIn) {
-        conversationStore.setLastMessage(chatId, streamingMessage.value)
+        conversationStore.setLastMessage(chatId, currentStreamingMessage)
       }
     }
 
     // 更新流式消息内容
-    streamingMessage.value.content = data.data.partialContent
-    streamingMessage.value.reasoningContent = data.data.partialReasoning
+    currentStreamingMessage.content = data.data.partialContent
+    currentStreamingMessage.reasoningContent = data.data.partialReasoning
 
     // 同步更新 lastMessageMap 中的消息（仅限登录用户）
     const userStore = useUserStore()
@@ -806,20 +834,23 @@ const handleWebSocketMessage = (chatId, data) => {
     // 更新当前思考时间
     if (data.data.reasoningContent) {
       const currentTime = Date.now()
-      const startTime = messageThoughtTimes.value.get(streamingMessage.value.id)?.startTime || currentTime
-      messageThoughtTimes.value.set(streamingMessage.value.id, {
+      const startTime = messageThoughtTimes.value.get(currentStreamingMessage.id)?.startTime || currentTime
+      messageThoughtTimes.value.set(currentStreamingMessage.id, {
         startTime,
         endTime: currentTime,
         duration: Math.floor((currentTime - startTime) / 1000)
       })
     }
 
-    scrollToBottom()
+    // 如果是当前会话则滚动到底部
+    if (currentChat.value && currentChat.value.id === chatId) {
+      scrollToBottom()
+    }
   } else if (data.type === 'error') {
     // 错误消息
     ElMessage.error(data.data?.message || '接收消息出错')
     conversationStore.setTypingStatus(chatId, false)
-    streamingMessage.value = null
+    conversationStore.setStreamingMessage(chatId, null)
 
     // 出错时也需要从 lastMessageMap 中删除
     conversationStore.removeLastMessage(chatId)
@@ -1073,6 +1104,13 @@ const toggleThought = (message) => {
   }
 }
 
+// 判断消息是否为当前会话的流式消息
+const isCurrentStreamingMessage = (message) => {
+  if (!currentChat.value) return false
+  const currentStreamingMessage = conversationStore.getStreamingMessage(currentChat.value.id)
+  return currentStreamingMessage && currentStreamingMessage.id === message.id
+}
+
 // 监听系统主题变化
 onMounted(async () => {
   hljs.highlightAll()
@@ -1080,8 +1118,9 @@ onMounted(async () => {
   // 清空进行中消息缓存
   conversationStore.clearLastMessageMap()
   
-  // 重置所有会话的打字状态
+  // 重置所有会话的打字状态和流式消息
   conversationStore.resetAllTypingStatus()
+  conversationStore.resetAllStreamingMessages()
 
   try {
     // 加载会话列表
@@ -1177,8 +1216,9 @@ const handlePresetSelect = (preset) => {
 
 // 在组件销毁时关闭所有连接
 onUnmounted(() => {
-  // 重置所有会话的打字状态
+  // 重置所有会话的打字状态和流式消息
   conversationStore.resetAllTypingStatus()
+  conversationStore.resetAllStreamingMessages()
   
   // 关闭当前聊天的连接
   if (currentChat.value) {

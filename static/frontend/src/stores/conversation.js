@@ -11,6 +11,7 @@ export const useConversationStore = defineStore('conversation', {
     cursor: '',
     lastMessageMap: {},
     typingMap: {},
+    streamingMessageMap: {},
   }),
   getters: {
     hasConversations: (state) => state.conversations.length > 0,
@@ -284,10 +285,25 @@ export const useConversationStore = defineStore('conversation', {
     resetAllTypingStatus() {
       this.typingMap = {}
     },
+
+    // 设置会话的流式消息
+    setStreamingMessage(conversationId, message) {
+      this.streamingMessageMap[conversationId] = message
+    },
+
+    // 获取会话的流式消息
+    getStreamingMessage(conversationId) {
+      return this.streamingMessageMap[conversationId] || null
+    },
+
+    // 清空所有会话的流式消息
+    resetAllStreamingMessages() {
+      this.streamingMessageMap = {}
+    },
   },
   persist: {
     key: 'conversation-store',
     storage: sessionStorage,
-    paths: ['currentConversation', 'cursor', 'lastMessageMap', 'typingMap']
+    paths: ['currentConversation', 'cursor', 'lastMessageMap', 'typingMap', 'streamingMessageMap']
   }
 })
