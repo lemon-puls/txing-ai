@@ -43,8 +43,7 @@
                 </el-avatar>
               </div>
               <div class="chat-info">
-                <div class="chat-title">{{ chat.model }}</div>
-                <div class="chat-preview">{{ chat.lastMessage }}</div>
+                <div class="chat-title">{{ chat.name || chat.messages?.[0]?.content }}</div>
               </div>
             </div>
             <div class="chat-actions">
@@ -685,6 +684,8 @@ const isTyping = computed(() => {
 const sendMessage = async () => {
   if (!messageInput.value.trim() || !currentChat.value) return
 
+  // 如果是会话的第一条消息，就把该消息设置为会话的名称
+  conversationStore.updateCurrentChatName(messageInput.value)
   // 添加用户消息
   currentChat.value.messages.push({
     id: Date.now(),
@@ -692,7 +693,6 @@ const sendMessage = async () => {
     content: messageInput.value
   })
 
-  currentChat.value.lastMessage = messageInput.value
   const message = messageInput.value
   messageInput.value = ''
   await scrollToBottom()
@@ -795,7 +795,7 @@ const handleWebSocketMessage = (chatId, data) => {
           duration: 0
         })
       }
-      
+
       // 保存到当前会话
       if (currentChat.value && currentChat.value.id === chatId) {
         currentChat.value.messages.push(currentStreamingMessage)
@@ -806,7 +806,7 @@ const handleWebSocketMessage = (chatId, data) => {
           chat.messages.push(currentStreamingMessage)
         }
       }
-      
+
       // 设置会话的流式消息
       conversationStore.setStreamingMessage(chatId, currentStreamingMessage)
 
@@ -1010,7 +1010,7 @@ const switchChat = async (chat) => {
       const chatInList = chatList.value.find(c => c.id === chat.id)
       if (chatInList) {
         chatInList.avatar = model.avatar
-        chatInList.name = model.name
+        // chatInList.name = model.name
       }
       console.log("Switching model", model)
       // 更新当前选中模型
@@ -1074,13 +1074,13 @@ const selectModel = (model) => {
   console.log("currentChat", currentChat.value, "model:", model)
   currentChat.value.model = model.name;
   currentChat.value.avatar = model.avatar;
-  currentChat.value.name = model.name;
+  // currentChat.value.name = model.name;
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
   if (chatInList) {
     chatInList.modelAvatar = model.avatar;
-    chatInList.name = model.name;
+    // chatInList.name = model.name;
     conversationStore.updateConversation(chatInList)
   }
   // 设置当前选中模型
@@ -1117,7 +1117,7 @@ onMounted(async () => {
 
   // 清空进行中消息缓存
   conversationStore.clearLastMessageMap()
-  
+
   // 重置所有会话的打字状态和流式消息
   conversationStore.resetAllTypingStatus()
   conversationStore.resetAllStreamingMessages()
@@ -1219,7 +1219,7 @@ onUnmounted(() => {
   // 重置所有会话的打字状态和流式消息
   conversationStore.resetAllTypingStatus()
   conversationStore.resetAllStreamingMessages()
-  
+
   // 关闭当前聊天的连接
   if (currentChat.value) {
     wsManager.closeConnection(currentChat.value.id.toString())

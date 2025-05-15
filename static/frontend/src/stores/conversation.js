@@ -126,7 +126,7 @@ export const useConversationStore = defineStore('conversation', {
       if (chat) {
         // 更新时间
         chat.updateTime = new Date()
-        
+
         // 从列表中移除该会话
         const index = this.conversations.findIndex(c => c.id === chatId)
         if (index !== -1) {
@@ -248,6 +248,21 @@ export const useConversationStore = defineStore('conversation', {
           this.conversations.unshift(conversation)
         }
         localStorage.setItem('conversations', JSON.stringify(this.conversations))
+      }
+    },
+
+    updateCurrentChatName(name) {
+      // 如果当前会话存在且是第一条用户消息，更新会话名称
+      if (this.currentConversation && this.currentConversation.messages) {
+        const userMessages = this.currentConversation.messages.filter(m => m.role === 'user')
+        if (userMessages.length === 0) {  // 只有一条用户消息时才更新名称
+          this.currentConversation.name = name
+          // 使用 updateConversation 方法来确保响应式更新
+          this.updateConversation({
+            id: this.currentConversation.id,
+            name: name
+          })
+        }
       }
     },
 
