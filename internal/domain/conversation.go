@@ -44,7 +44,7 @@ const (
 // 处理消息
 func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
 	// 如果是会话的第一条消息，则更新会话名称
-	if len(c.Message) == 0 {
+	if len(c.FormattedMessage) == 0 {
 		// 更新会话名称
 		c.Name = msg.Content
 	}
