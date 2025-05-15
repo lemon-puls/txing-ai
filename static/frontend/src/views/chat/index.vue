@@ -999,6 +999,14 @@ const createNewChat = async (assistantId) => {
 
 const switchChat = async (chat) => {
   try {
+    // 检查当前会话是否是新会话且没有消息
+    if (currentChat.value && 
+        currentChat.value.id.toString().startsWith('tmp-') && 
+        (!currentChat.value.messages || currentChat.value.messages.filter(m => m.role === 'user').length === 0)) {
+      // 删除当前空会话
+      conversationStore.deleteConversation(currentChat.value.id)
+    }
+
     // 加载会话详情
     await conversationStore.loadConversationDetail(chat.id)
 
