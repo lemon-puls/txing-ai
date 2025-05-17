@@ -474,6 +474,7 @@ import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
 import {defaultApi} from '@/api'
+import aiAvatar from '@/assets/images/ai_avatar.png'
 
 // 注册语言
 hljs.registerLanguage('javascript', javascript)
@@ -602,8 +603,8 @@ const currentChat = computed({
 
 
 // 头像
-const userAvatar = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-const aiAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const userAvatar = userStore.avatar
+// const aiAvatar = '@/assets/images/ai-avatar.png'
 
 // 可用模型列表
 const availableModels = ref([])
@@ -1000,8 +1001,8 @@ const createNewChat = async (assistantId) => {
 const switchChat = async (chat) => {
   try {
     // 检查当前会话是否是新会话且没有消息
-    if (currentChat.value && 
-        currentChat.value.id.toString().startsWith('tmp-') && 
+    if (currentChat.value &&
+        currentChat.value.id.toString().startsWith('tmp-') &&
         (!currentChat.value.messages || currentChat.value.messages.filter(m => m.role === 'user').length === 0)) {
       // 删除当前空会话
       conversationStore.deleteConversation(currentChat.value.id)
@@ -1637,14 +1638,19 @@ onUnmounted(() => {
 
     .message-avatar {
       .el-avatar {
-        background: linear-gradient(135deg, #4158D0, #C850C0);
+        background: transparent;
+
+        img {
+          object-fit: contain;
+          padding: 4px;
+        }
       }
     }
   }
 
   .message-avatar {
     .el-avatar {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: none;
       transition: transform 0.3s ease;
 
       &:hover {
