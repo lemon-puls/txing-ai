@@ -154,6 +154,10 @@ func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.
 	// 从中随机选择一个 channel
 	targetChannel := (*sequence)[rand.Intn(len(*sequence))]
 
+	// 查找是否有该模型的映射关系
+	mappingModel := targetChannel.GetMappingModel(chatConfig.Model)
+	chatConfig.Model = mappingModel
+
 	err := adapter.NewChatRequest(ctx, &targetChannel, chatConfig, hook)
 
 	return err

@@ -38,6 +38,7 @@ func Create(ctx *gin.Context) {
 		Secret:   req.Secret,
 		Endpoint: req.Endpoint,
 		Status:   req.Status,
+		Mappings: req.Mappings,
 	}
 
 	if err := db.Create(channel).Error; err != nil {
@@ -82,6 +83,7 @@ func Update(ctx *gin.Context) {
 	channel.Secret = req.Secret
 	channel.Endpoint = req.Endpoint
 	channel.Status = req.Status
+	channel.Mappings = req.Mappings
 
 	if err := db.Save(&channel).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "更新渠道失败", err)

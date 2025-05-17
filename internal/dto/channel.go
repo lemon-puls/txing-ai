@@ -14,6 +14,7 @@ type CreateChannelReq struct {
 	Secret   string   `json:"secret" binding:"required"`   // 密钥 Secret key
 	Endpoint string   `json:"endpoint" binding:"required"` // 服务地址 Service endpoint
 	Status   bool     `json:"status"`                      // 启用状态 Enable status
+	Mappings string   `json:"mappings"`                    // 模型映射关系 Mappings
 }
 
 // UpdateChannelReq 更新渠道请求
@@ -28,6 +29,7 @@ type UpdateChannelReq struct {
 	Secret   string   `json:"secret"`   // 密钥 Secret key
 	Endpoint string   `json:"endpoint"` // 服务地址 Service endpoint
 	Status   bool     `json:"status"`   // 启用状态 Enable status
+	Mappings string   `json:"mappings"` // 模型映射关系 Mappings
 }
 
 // ListChannelReq 渠道列表请求
