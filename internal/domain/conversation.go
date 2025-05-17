@@ -100,7 +100,7 @@ func (c *Conversation) applyCallParams(msg *dto.WsMessageRequest) {
 	c.RepetitionPenalty = msg.RepetitionPenalty
 	c.EnableWeb = msg.EnableWeb
 	c.Model = msg.Model
-	c.setContextLength(msg.Context)
+	//c.setContextLength(msg.Context)
 
 }
 

@@ -1,11 +1,12 @@
 package dto
 
 type WsMessageRequest struct {
-	Type      string `json:"type"`
-	Content   string `json:"content"`
-	Model     string `json:"model"`
-	Context   int    `json:"context"`
-	EnableWeb bool   `json:"enableWeb"`
+	Type    string `json:"type"`
+	Content string `json:"content"`
+	Model   string `json:"model"`
+	// 暂时不支持由客户端指定context
+	//Context   int    `json:"context"`
+	EnableWeb bool `json:"enableWeb"`
 
 	// optional fields
 	MaxTokens         *int     `json:"max_tokens,omitempty"`

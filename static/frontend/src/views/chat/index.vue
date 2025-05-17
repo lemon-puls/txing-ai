@@ -699,7 +699,6 @@ const sendMessage = async () => {
     const options = {
       model: availableModels.value.find(m => m.value === currentChat.value.model)?.label || currentChat.value.model.toString(),
       enableWeb: currentChat.value.webSearch,
-      context: 1,
       maxTokens: currentChat.value.maxTokens,
       temperature: currentChat.value.temperature,
       topP: currentChat.value.topP,
@@ -2138,7 +2137,7 @@ onUnmounted(() => {
 
     .el-button {
       transition: all 0.3s ease;
-      
+
       &:hover {
         transform: translateY(-2px);
       }
