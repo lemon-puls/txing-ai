@@ -148,6 +148,16 @@
                     />
                   </el-form-item>
                 </el-col>
+                <el-col :span="24">
+                  <el-form-item label="模型映射">
+                    <el-input
+                      v-model="channel.mappings"
+                      type="textarea"
+                      :rows="4"
+                      placeholder="请输入模型映射关系，例如：deepseek-r1>deepseek-r1-250120，多个映射请换行输入"
+                    />
+                  </el-form-item>
+                </el-col>
               </el-row>
               <div class="form-actions">
                 <el-button type="primary" @click="handleSave(channel)">保存</el-button>
@@ -262,6 +272,14 @@
             placeholder="请输入密钥，多个密钥请换行输入"
           />
         </el-form-item>
+        <el-form-item label="模型映射" prop="mappings">
+          <el-input
+            v-model="channelForm.mappings"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入模型映射关系，例如：deepseek-r1>deepseek-r1-250120，多个映射请换行输入"
+          />
+        </el-form-item>
         <el-form-item label="启用状态" prop="status">
           <el-switch
             v-model="channelForm.status"
@@ -300,7 +318,7 @@ const total = ref(0)
 // 渠道数据
 const channels = ref([])
 const channelTypes = ref(['火星引擎', '通义千问', 'Claude', 'ChatGPT'])
-const availableModels = ref(['deepseekr1', 'chatgpt3.5', 'chatgpt4', 'qwen-turbo', 'qwen-plus', 'claude2'])
+const availableModels = ref(['deepseek-r1', 'chatgpt3.5', 'chatgpt4', 'qwen-turbo', 'qwen-plus', 'claude2'])
 
 // 对话框数据
 const dialogVisible = ref(false)
@@ -315,7 +333,8 @@ const channelForm = ref({
   models: [],
   secret: '',
   endpoint: '',
-  status: false
+  status: false,
+  mappings: ''
 })
 
 // 表单验证规则
@@ -401,7 +420,8 @@ const handleAdd = () => {
     models: [],
     secret: '',
     endpoint: '',
-    status: false
+    status: false,
+    mappings: ''
   }
   dialogVisible.value = true
 }
@@ -418,7 +438,8 @@ const handleSave = async (channel) => {
       models: channel.models,
       secret: channel.secret,
       endpoint: channel.endpoint,
-      status: channel.status
+      status: channel.status,
+      mappings: channel.mappings
     }
 
     const response = await defaultApi.apiAdminChannelIdPut(channel.id, formData)
@@ -477,7 +498,8 @@ const handleSubmit = async () => {
           models: channelForm.value.models,
           secret: channelForm.value.secret,
           endpoint: channelForm.value.endpoint,
-          status: channelForm.value.status
+          status: channelForm.value.status,
+          mappings: channelForm.value.mappings
         }
 
         let response
@@ -607,11 +629,11 @@ onMounted(() => {
       font-size: 16px;
       color: var(--el-text-color-secondary);
       transition: all 0.3s;
-      
+
       &.is-active {
         color: var(--el-color-success);
       }
-      
+
       &:not(.is-active) {
         color: var(--el-color-danger);
       }

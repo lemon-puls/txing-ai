@@ -71,4 +71,3 @@ src/model/VoModelVO.js
 src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
-test/model/VoMessageVO.spec.js
