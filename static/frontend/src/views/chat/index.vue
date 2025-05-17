@@ -268,13 +268,6 @@
             />
             <div class="input-actions">
               <el-button-group>
-                <el-tooltip content="上传文件" placement="top">
-                  <el-button circle>
-                    <el-icon>
-                      <Upload/>
-                    </el-icon>
-                  </el-button>
-                </el-tooltip>
                 <el-tooltip content="停止生成" placement="top" v-if="isTyping">
                   <el-button circle @click="stopGeneration">
                     <el-icon>
@@ -2142,15 +2135,22 @@ onUnmounted(() => {
     position: absolute;
     right: 8px;
     bottom: 8px;
-  }
 
-  .send-button {
-    background: linear-gradient(135deg, #4158D0, #C850C0);
-    border: none;
-    transition: all 0.3s ease;
+    .el-button {
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
 
-    &:hover {
-      transform: scale(1.1);
+    .send-button {
+      background: var(--el-color-primary);
+      border: none;
+
+      &:hover {
+        background: var(--el-color-primary-light-3);
+      }
     }
   }
 }
