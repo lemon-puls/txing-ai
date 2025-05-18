@@ -256,6 +256,8 @@ export const useConversationStore = defineStore('conversation', {
       if (this.currentConversation && this.currentConversation.messages) {
         const userMessages = this.currentConversation.messages.filter(m => m.role === 'user')
         if (userMessages.length === 0) {  // 只有一条用户消息时才更新名称
+          // 最多保留 20 个字符
+          name = name.substring(0, 35)
           this.currentConversation.name = name
           // 使用 updateConversation 方法来确保响应式更新
           this.updateConversation({

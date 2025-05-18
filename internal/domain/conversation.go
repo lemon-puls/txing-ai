@@ -50,8 +50,12 @@ func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) err
 	})
 
 	if count == 0 {
-		// 更新会话名称
-		c.Name = msg.Content
+		// 更新会话名称 最多 15 个字符 超出就截断
+		if len(msg.Content) > 35 {
+			c.Name = msg.Content[:35]
+		} else {
+			c.Name = msg.Content
+		}
 	}
 	// 添加消息到会话消息记录中，并应用调用参数
 	if err := c.addMessageFromWsMessageRequest(msg); err != nil {
