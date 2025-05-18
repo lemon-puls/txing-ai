@@ -37,7 +37,7 @@
               <div class="chat-icon-wrapper">
                 <el-avatar
                   :size="40"
-                  :src="chat.modelAvatar"
+                  :src="chat.avatar"
                 >
                   {{ chat.model?.charAt(0) }}
                 </el-avatar>
@@ -131,9 +131,9 @@
               <div class="message-avatar">
                 <el-avatar
                   :size="40"
-                  :src="message.role === 'user' ? userAvatar : (currentChat.assistant?.avatar || aiAvatar)"
+                  :src="message.role === 'user' ? userAvatar : (currentChat.preset?.avatar || aiAvatar)"
                 >
-                  {{ message.role === 'user' ? 'U' : (currentChat.assistant?.name?.charAt(0) || 'AI') }}
+                  {{ message.role === 'user' ? 'U' : (currentChat.preset?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
               <div class="message-content">
@@ -929,16 +929,18 @@ async function NewChatConnection(newChat, userId, presetId) {
 }
 
 const createNewChat = async (assistantId) => {
-  let assistant = {};
+  let preset = {};
   if (assistantId) {
     // 获取助手详情
     const res = await defaultApi.apiPresetIdGet(Number(assistantId));
     if (res.code === 0) {
-      assistant = res.data;
+      preset = res.data;
     } else {
       ElMessage.error('获取助手详情失败')
     }
   }
+
+  console.log("Assistant", preset)
 
   // 找到默认模型并自动选中
   const defaultModel = availableModels.value.find(model => model.default)
@@ -947,9 +949,9 @@ const createNewChat = async (assistantId) => {
     id: "tmp-" + Date.now(),
     // 标记这是一个还没有真实ID的新会话
     realId: false,
-    name: assistant.name ? `与 ${assistant.name} 对话` : '新对话',
+    name: preset.name ? `与 ${preset.name} 对话` : '新对话',
     model: defaultModel?.name || 'gpt-3.5-turbo',
-    presetId: assistant.id,
+    presetId: preset.id,
     webSearch: false,
     maxTokens: 2048,
     temperature: 1,
@@ -958,24 +960,24 @@ const createNewChat = async (assistantId) => {
     presencePenalty: 0,
     frequencyPenalty: 0,
     repetitionPenalty: 1,
-    lastMessage: assistant.description || '你好！我是 AI 助手，有什么我可以帮你的吗？',
-    avatar: assistant.avatar || aiAvatar,
+    lastMessage: preset.description || '你好！我是 AI 助手，有什么我可以帮你的吗？',
+    avatar: preset.avatar || aiAvatar,
     messages: [
       {
         id: 1,
         role: 'assistant',
-        content: assistant.description
-          ? `你好！我是 ${assistant.name}，${assistant.description}`
+        content: preset.description
+          ? `你好！我是 ${preset.name}，${preset.description}`
           : '你好！我是 AI 助手，有什么我可以帮你的吗？'
       }
     ],
-    assistant: assistant
+    preset: preset,
   }
 
   try {
     // 获取用户ID (如果登录的话)
     const userId = userStore.userId || '0'
-    await NewChatConnection(newChat, userId, assistant.id);
+    await NewChatConnection(newChat, userId, preset.id);
 
     // 保存新会话到 store
     await conversationStore.addConversation(newChat)
@@ -1005,20 +1007,24 @@ const switchChat = async (chat) => {
 
     console.log(availableModels.value)
     // 根据会话的 model 字段查找并选中对应的模型
-    const model = availableModels.value.find(m => m.value === chat.model)
-    if (model) {
-      // 更新会话列表中的显示
-      const chatInList = chatList.value.find(c => c.id === chat.id)
-      if (chatInList) {
-        chatInList.avatar = model.avatar
-        // chatInList.name = model.name
-      }
-      console.log("Switching model", model)
-      // 更新当前选中模型
-      currentModel.value = model
-    }
+    console.log("Switching chat", chat.id, availableModels.value)
+    const model = availableModels.value.find(m => m.name === chat.model)
+    console.log("Model", model)
+    selectModel(model)
 
-    console.log("Switching chat", currentChat.value)
+    // if (model) {
+    //   // 更新会话列表中的显示
+    //   const chatInList = chatList.value.find(c => c.id === chat.id)
+    //   if (chatInList) {
+    //     chatInList.avatar = model.avatar
+    //     // chatInList.name = model.name
+    //   }
+    //   console.log("Switching model", model)
+    //   // 更新当前选中模型
+    //   currentModel.value = model
+    // }
+    //
+    // console.log("Switching chat", currentChat.value)
 
     // 建立 WebSocket 连接
     await NewChatConnection(chat, userStore.userId || '0', "")
@@ -1074,15 +1080,16 @@ const saveSettings = () => {
 const selectModel = (model) => {
   console.log("currentChat", currentChat.value, "model:", model)
   currentChat.value.model = model.name;
-  currentChat.value.avatar = model.avatar;
   // currentChat.value.name = model.name;
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
-  if (chatInList) {
-    chatInList.modelAvatar = model.avatar;
+  if (chatInList && !currentChat.value?.preset) {
+    chatInList.avatar = model.avatar;
     // chatInList.name = model.name;
     conversationStore.updateConversation(chatInList)
+
+    currentChat.value.avatar = model.avatar;
   }
   // 设置当前选中模型
   currentModel.value = model;
@@ -1195,24 +1202,7 @@ const selectBgPattern = (pattern) => {
 }
 
 const handlePresetSelect = (preset) => {
-  const newChat = {
-    id: Date.now(),
-    name: `与 ${preset.name} 对话`,
-    model: currentChat.value?.model || 'gpt-3.5-turbo',
-    webSearch: false,
-    temperature: 1,
-    lastMessage: preset.description,
-    avatar: preset.avatar || aiAvatar,
-    messages: [
-      {
-        id: 1,
-        role: 'assistant',
-        content: preset.context || `你好！我是 ${preset.name}，${preset.description}`
-      }
-    ]
-  }
-  chatList.value.unshift(newChat)
-  currentChat.value = newChat
+  createNewChat(preset.id)
 }
 
 // 在组件销毁时关闭所有连接

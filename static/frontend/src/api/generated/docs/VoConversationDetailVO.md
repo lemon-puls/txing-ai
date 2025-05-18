@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **model** | **String** |  | [optional] 
 **name** | **String** |  | [optional] 
 **presencePenalty** | **Number** |  | [optional] 
+**preset** | [**VoPresetVO**](VoPresetVO.md) | 预设信息 | [optional] 
 **repetitionPenalty** | **Number** |  | [optional] 
 **temperature** | **Number** |  | [optional] 
 **topK** | **Number** |  | [optional] 

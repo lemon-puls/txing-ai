@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"github.com/samber/lo"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -43,8 +44,12 @@ const (
 
 // 处理消息
 func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
-	// 如果是会话的第一条消息，则更新会话名称
-	if len(c.FormattedMessage) == 0 {
+	// 如果是该会话的第一条用户发的消息，则更新会话名称
+	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
+		return m.Role == global.User
+	})
+
+	if count == 0 {
 		// 更新会话名称
 		c.Name = msg.Content
 	}

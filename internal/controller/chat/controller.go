@@ -8,6 +8,7 @@ import (
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
+	presetservice "txing-ai/internal/service/preset"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
@@ -155,9 +156,9 @@ func GetConversationList(c *gin.Context) {
 		return
 	}
 
-	// 收集所有用到的模型名称
-	modelNames := lo.Map(pageVO.Data, func(item vo.ConversationSimpleVO, _ int) string {
-		return item.Model
+	// 收集所有没有预设的会话用到的模型名称
+	modelNames := lo.FilterMap(pageVO.Data, func(item vo.ConversationSimpleVO, _ int) (string, bool) {
+		return item.Model, item.PresetId <= 0
 	})
 	modelNames = lo.Uniq(modelNames)
 
@@ -174,13 +175,45 @@ func GetConversationList(c *gin.Context) {
 		return model.Name, model.Avatar
 	})
 
-	// 更新会话的模型头像
+	// 更新会话的模型头像（只为没有预设的会话设置）
 	pageVO.Data = lo.Map(pageVO.Data, func(item vo.ConversationSimpleVO, _ int) vo.ConversationSimpleVO {
-		if avatar, exists := modelAvatarMap[item.Model]; exists {
-			item.ModelAvatar, _ = cosClient.GenerateDownloadPresignedURL(avatar)
+		// 只有当没有预设ID时，才使用模型头像
+		if item.PresetId <= 0 {
+			if avatar, exists := modelAvatarMap[item.Model]; exists {
+				item.Avatar, _ = cosClient.GenerateDownloadPresignedURL(avatar)
+			}
 		}
 		return item
 	})
+
+	// 如果有 presetId, 则获取预设信息, 以预设 avatar 作为会话头像
+	// 收集 有 presetId 的会话 id 集合
+	presetIds := lo.FilterMap(pageVO.Data, func(chat vo.ConversationSimpleVO, _ int) (int64, bool) {
+		return chat.PresetId, chat.PresetId > 0
+	})
+
+	// 批量查询预设信息
+	if len(presetIds) > 0 {
+		presets, err := presetservice.GetPresetsByIds(c, presetIds)
+		if err != nil {
+			log.Error("GetPresetsByIds failed", zap.Error(err))
+			utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+			return
+		}
+
+		// 构建预设信息映射
+		presetMap := lo.SliceToMap(presets, func(preset *domain.Preset) (int64, *domain.Preset) {
+			return preset.Id, preset
+		})
+
+		// 为 presetId 对应的会话设置头像
+		pageVO.Data = lo.Map(pageVO.Data, func(chat vo.ConversationSimpleVO, _ int) vo.ConversationSimpleVO {
+			if preset, ok := presetMap[chat.PresetId]; ok {
+				chat.Avatar = preset.Avatar
+			}
+			return chat
+		})
+	}
 
 	utils.OkWithData(c, pageVO)
 	return
@@ -211,6 +244,7 @@ func GetConversationDetail(c *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(c)
+	cosClient := utils.GetCosClientFromContext(c)
 
 	entity, err := conversation.QueryConversationById(db, conversationId)
 	if err != nil {
@@ -235,6 +269,18 @@ func GetConversationDetail(c *gin.Context) {
 			ReasoningContent: item.ReasoningContent,
 			Name:             item.Name}
 	})
+
+	// 如果有 presetId，则获取预设信息
+	if entity.PresetID != nil {
+		preset, err := presetservice.GetPresetByID(db, cosClient, *entity.PresetID)
+		if err != nil {
+			log.Error("GetPresetByID failed", zap.Error(err))
+			utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+			return
+		}
+		presetVO := vo.ToPresetVO(*preset)
+		result.Preset = &presetVO
+	}
 
 	utils.OkWithData(c, result)
 }

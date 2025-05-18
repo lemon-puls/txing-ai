@@ -7,6 +7,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	presetservice "txing-ai/internal/service/preset"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
@@ -164,19 +165,23 @@ func Delete(ctx *gin.Context) {
 // @Success 200 {object} utils.Response{data=vo.PresetVO}
 // @Router /api/preset/{id} [get]
 func Get(ctx *gin.Context) {
-	var preset domain.Preset
 
 	db := utils.GetDBFromContext(ctx)
 	cosClient := utils.GetCosClientFromContext(ctx)
 
-	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
-		utils.ErrorWithMsg(ctx, "预设不存在", err)
+	id := ctx.Param("id")
+	parseInt64 := utils.SafeParseInt64(id, 0)
+	if parseInt64 <= 0 {
+		utils.ErrorWithMsg(ctx, "预设ID不能为空", nil)
 		return
 	}
 
-	preset.Avatar, _ = cosClient.GenerateDownloadPresignedURL(preset.Avatar)
-
-	utils.OkWithData(ctx, vo.ToPresetVO(preset))
+	preset, err := presetservice.GetPresetByID(db, cosClient, parseInt64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "预设不存在", err)
+		return
+	}
+	utils.OkWithData(ctx, vo.ToPresetVO(*preset))
 }
 
 // List 获取预设列表

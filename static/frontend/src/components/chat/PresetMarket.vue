@@ -12,7 +12,6 @@
         v-model="searchQuery"
         placeholder="搜索 AI 助手..."
         class="search-input"
-        :prefix-icon="Search"
         clearable
       >
         <template #prefix>
@@ -81,9 +80,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Search, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { defaultApi } from '@/api'
 
 const props = defineProps({
   visible: {
@@ -107,162 +107,46 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 
-// 模拟数据
-const presets = ref([
-  {
-    id: 1,
-    name: '全能代码助手',
-    description: '精通前后端开发，帮你解决各类编程难题，优化代码质量，提供最佳实践建议。',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    type: 'official'
-  },
-  {
-    id: 2,
-    name: '英语教练',
-    description: '专业英语教师，帮你提高口语、写作和语法，准备雅思托福考试。',
-    avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    type: 'official'
-  },
-  {
-    id: 3,
-    name: '数学导师',
-    description: '擅长微积分、线性代数、概率统计等，深入浅出讲解数学概念。',
-    avatar: 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-    type: 'official'
-  },
-  {
-    id: 4,
-    name: '写作助手',
-    description: '帮你润色文章，改进写作风格，提供创意灵感和写作建议。',
-    avatar: 'https://cube.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78png.png',
-    type: 'official'
-  },
-  {
-    id: 5,
-    name: '产品经理',
-    description: '协助产品规划、需求分析、用户研究，提供产品设计建议。',
-    avatar: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg',
-    type: 'official'
-  },
-  {
-    id: 6,
-    name: '心理咨询师',
-    description: '提供情感咨询、压力管理、心理疏导等服务，帮你保持心理健康。',
-    avatar: 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
-    type: 'official'
-  },
-  {
-    id: 7,
-    name: '健身教练',
-    description: '制定个性化健身计划，指导运动姿势，提供营养建议。',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    type: 'official'
-  },
-  {
-    id: 8,
-    name: '职业规划师',
-    description: '帮你分析职业发展方向，提供求职建议，优化简历面试。',
-    avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    type: 'community'
-  },
-  {
-    id: 9,
-    name: '设计导师',
-    description: 'UI/UX 设计指导，把控设计趋势，提供设计改进建议。',
-    avatar: 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-    type: 'official'
-  },
-  {
-    id: 10,
-    name: '创业顾问',
-    description: '创业全程指导，商业模式分析，风险控制建议。',
-    avatar: 'https://cube.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78png.png',
-    type: 'community'
-  },
-  {
-    id: 11,
-    name: '理财专家',
-    description: '个人理财规划，投资组合建议，风险管理指导。',
-    avatar: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg',
-    type: 'community'
-  },
-  {
-    id: 12,
-    name: '旅行规划师',
-    description: '定制旅行路线，景点推荐，旅行攻略分享。',
-    avatar: 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
-    type: 'community'
-  },
-  {
-    id: 13,
-    name: '营养师',
-    description: '膳食营养搭配，健康饮食建议，体重管理指导。',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    type: 'community'
-  },
-  {
-    id: 14,
-    name: '法律顾问',
-    description: '提供法律咨询，合同审查建议，法律风险提醒。',
-    avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    type: 'official'
-  },
-  {
-    id: 15,
-    name: '市场专家',
-    description: '市场分析，营销策略，品牌建设指导。',
-    avatar: 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-    type: 'community'
-  },
-  {
-    id: 16,
-    name: '学习规划师',
-    description: '学习方法指导，时间管理，考试备考建议。',
-    avatar: 'https://cube.elemecdn.com/d/e6/c4d93a3805b3ce3f323f7974e6f78png.png',
-    type: 'community'
-  },
-  {
-    id: 17,
-    name: '生活管家',
-    description: '日常生活建议，家居整理，时间规划指导。',
-    avatar: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg',
-    type: 'community'
-  },
-  {
-    id: 18,
-    name: '艺术导师',
-    description: '艺术创作指导，艺术鉴赏，创意灵感激发。',
-    avatar: 'https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png',
-    type: 'community'
-  },
-  {
-    id: 19,
-    name: '科技资讯师',
-    description: '最新科技动态解读，技术趋势分析，创新见解分享。',
-    avatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    type: 'official'
-  },
-  {
-    id: 20,
-    name: '情感咨询师',
-    description: '情感关系指导，沟通技巧建议，人际关系处理。',
-    avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
-    type: 'community'
+// 助手数据
+const presets = ref([])
+const loading = ref(false)
+
+// 加载助手列表
+const loadPresets = async () => {
+  try {
+    loading.value = true
+    const params = {
+      orderBy: 'id',
+      order: 'desc',
+      name: searchQuery.value || undefined,
+      official: filterType.value === 'official' ? true : filterType.value === 'community' ? false : undefined,
+      page: currentPage.value,
+      limit: pageSize.value
+    }
+    const response = await defaultApi.apiPresetListGet(
+      currentPage.value,
+      pageSize.value,
+      params
+    )
+    if (response.code === 0 && response.data) {
+      presets.value = (response.data.records || []).map(preset => ({
+        ...preset,
+        type: preset.official ? 'official' : 'community'
+      }))
+      total.value = response.data.total || 0
+    } else {
+      ElMessage.error(response.msg || '获取助手列表失败')
+    }
+  } catch (error) {
+    console.error('Load presets error:', error)
+    ElMessage.error(error.body?.msg || '获取助手列表失败')
+  } finally {
+    loading.value = false
   }
-])
+}
 
-// 更新总数
-total.value = presets.value.length
-
-// 过滤预设
-const filteredPresets = computed(() => {
-  return presets.value.filter(preset => {
-    const matchesSearch = preset.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                         preset.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesType = filterType.value === 'all' || preset.type === filterType.value
-    return matchesSearch && matchesType
-  })
-})
+// 过滤预设（仅本地过滤搜索和类型，已由后端处理）
+const filteredPresets = computed(() => presets.value)
 
 // 选择预设
 const selectPreset = (preset) => {
@@ -274,13 +158,24 @@ const selectPreset = (preset) => {
 // 分页处理
 const handleSizeChange = (val) => {
   pageSize.value = val
-  // TODO: 重新加载数据
+  currentPage.value = 1
+  loadPresets()
 }
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
-  // TODO: 重新加载数据
+  loadPresets()
 }
+
+// 搜索和筛选变化时重新加载
+watch([searchQuery, filterType], () => {
+  currentPage.value = 1
+  loadPresets()
+})
+
+onMounted(() => {
+  loadPresets()
+})
 </script>
 
 <style scoped lang="scss">

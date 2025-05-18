@@ -13,6 +13,7 @@
 
 import ApiClient from '../ApiClient';
 import VoMessageVO from './VoMessageVO';
+import VoPresetVO from './VoPresetVO';
 
 /**
  * The VoConversationDetailVO model module.
@@ -75,6 +76,9 @@ class VoConversationDetailVO {
             if (data.hasOwnProperty('presencePenalty')) {
                 obj['presencePenalty'] = ApiClient.convertToType(data['presencePenalty'], 'Number');
             }
+            if (data.hasOwnProperty('preset')) {
+                obj['preset'] = ApiClient.convertToType(data['preset'], VoPresetVO);
+            }
             if (data.hasOwnProperty('repetitionPenalty')) {
                 obj['repetitionPenalty'] = ApiClient.convertToType(data['repetitionPenalty'], 'Number');
             }
@@ -117,6 +121,10 @@ class VoConversationDetailVO {
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
+        }
+        // validate the optional field `preset`
+        if (data['preset']) { // data not null
+          VoPresetVO.validateJSON(data['preset']);
         }
 
         return true;
@@ -174,6 +182,12 @@ VoConversationDetailVO.prototype['name'] = undefined;
  * @member {Number} presencePenalty
  */
 VoConversationDetailVO.prototype['presencePenalty'] = undefined;
+
+/**
+ * 预设信息
+ * @member {module:model/VoPresetVO} preset
+ */
+VoConversationDetailVO.prototype['preset'] = undefined;
 
 /**
  * @member {Number} repetitionPenalty

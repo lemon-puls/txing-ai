@@ -63,6 +63,8 @@ func ExtractConversation(db *gorm.DB, id int64, userId int64, presetId string) *
 			// 添加初始 AI 消息，用于引导用户进行对话 `你好！我是 ${assistant.name}，${assistant.description}`
 			helloMsg := fmt.Sprintf("你好！我是 %s，%s", preset.Name, preset.Description)
 			conversation.AddMessageFromAssistant(helloMsg, "")
+
+			conversation.PresetID = &preset.Id
 		}
 
 		if err := db.Create(conversation).Error; err != nil {

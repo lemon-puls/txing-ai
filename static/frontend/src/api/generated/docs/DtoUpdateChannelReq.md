@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **endpoint** | **String** | 服务地址 Service endpoint | [optional] 
+**mappings** | **String** | 模型映射关系 Mappings | [optional] 
 **models** | **[String]** | 支持的模型列表 Supported models | [optional] 
 **name** | **String** | 渠道名称 Channel name | [optional] 
 **priority** | **Number** | 优先级 Priority | [optional] 

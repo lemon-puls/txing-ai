@@ -6,12 +6,13 @@ import (
 
 // ConversationSimpleVO 会话基本信息
 type ConversationSimpleVO struct {
-	ID          int64     `json:"id"`          // 会话ID
-	Name        string    `json:"name"`        // 会话标题
-	Model       string    `json:"model"`       // 使用的模型ID
-	ModelAvatar string    `json:"modelAvatar"` // 模型头像
-	CreateTime  time.Time `json:"createTime"`  // 创建时间
-	UpdateTime  time.Time `json:"updateTime"`  // 更新时间
+	ID         int64     `json:"id"`         // 会话ID
+	Name       string    `json:"name"`       // 会话标题
+	Model      string    `json:"model"`      // 使用的模型ID
+	Avatar     string    `json:"avatar"`     // 会话头像
+	CreateTime time.Time `json:"createTime"` // 创建时间
+	UpdateTime time.Time `json:"updateTime"` // 更新时间
+	PresetId   int64     `json:"presetId"`   // 预设ID
 }
 
 // ConversationDetailVO 会话详情信息
@@ -32,7 +33,8 @@ type ConversationDetailVO struct {
 	FrequencyPenalty  *float32 `json:"frequencyPenalty,omitempty"`
 	RepetitionPenalty *float32 `json:"repetitionPenalty,omitempty"`
 
-	Messages []MessageVO `json:"messages"` // 消息列表
+	Messages []MessageVO `json:"messages"`         // 消息列表
+	Preset   *PresetVO   `json:"preset,omitempty"` // 预设信息
 }
 
 // 聊天消息
