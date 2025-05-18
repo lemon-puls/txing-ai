@@ -436,7 +436,6 @@ import {
   Position,
   RefreshRight,
   Setting,
-  Upload
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -962,7 +961,7 @@ const createNewChat = async (assistantId) => {
     frequencyPenalty: 0,
     repetitionPenalty: 1,
     lastMessage: preset.description || '你好！我是 AI 助手，有什么我可以帮你的吗？',
-    avatar: preset.avatar || aiAvatar,
+    avatar: preset.avatar || defaultModel?.avatar || aiAvatar,
     messages: [
       {
         id: 1,
@@ -980,7 +979,6 @@ const createNewChat = async (assistantId) => {
     const userId = userStore.userId || '0'
     await NewChatConnection(newChat, userId, preset.id);
 
-    // 保存新会话到 store
     await conversationStore.addConversation(newChat)
 
     if (defaultModel) {
