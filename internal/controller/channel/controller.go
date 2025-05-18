@@ -38,7 +38,20 @@ func Create(ctx *gin.Context) {
 		Secret:   req.Secret,
 		Endpoint: req.Endpoint,
 		Status:   req.Status,
-		Mappings: req.Mappings,
+	}
+	// 转换 Mappings
+	channel.Mappings = make([]domain.ModelMapping, len(req.Mappings))
+	for i, m := range req.Mappings {
+		channel.Mappings[i] = domain.ModelMapping{
+			SourceModel: m.SourceModel,
+			Conditions:  make([]domain.ModelMappingCondition, len(m.Conditions)),
+		}
+		for j, c := range m.Conditions {
+			channel.Mappings[i].Conditions[j] = domain.ModelMappingCondition{
+				TargetModel: c.TargetModel,
+				Conditions:  c.Conditions,
+			}
+		}
 	}
 
 	if err := db.Create(channel).Error; err != nil {
@@ -83,7 +96,20 @@ func Update(ctx *gin.Context) {
 	channel.Secret = req.Secret
 	channel.Endpoint = req.Endpoint
 	channel.Status = req.Status
-	channel.Mappings = req.Mappings
+	// 转换 Mappings
+	channel.Mappings = make([]domain.ModelMapping, len(req.Mappings))
+	for i, m := range req.Mappings {
+		channel.Mappings[i] = domain.ModelMapping{
+			SourceModel: m.SourceModel,
+			Conditions:  make([]domain.ModelMappingCondition, len(m.Conditions)),
+		}
+		for j, c := range m.Conditions {
+			channel.Mappings[i].Conditions[j] = domain.ModelMappingCondition{
+				TargetModel: c.TargetModel,
+				Conditions:  c.Conditions,
+			}
+		}
+	}
 
 	if err := db.Save(&channel).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "更新渠道失败", err)

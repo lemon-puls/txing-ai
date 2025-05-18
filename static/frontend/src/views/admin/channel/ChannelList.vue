@@ -149,13 +149,78 @@
                   </el-form-item>
                 </el-col>
                 <el-col :span="24">
-                  <el-form-item label="模型映射">
-                    <el-input
-                      v-model="channel.mappings"
-                      type="textarea"
-                      :rows="4"
-                      placeholder="请输入模型映射关系，例如：deepseek-r1>deepseek-r1-250120，多个映射请换行输入"
-                    />
+                  <el-form-item label="模型映射" class="mapping-form-item">
+                    <div class="mapping-container">
+                      <div v-for="(mapping, mappingIndex) in channel.mappings" :key="mappingIndex" class="mapping-item">
+                        <div class="mapping-header">
+                          <div class="mapping-source">
+                            <el-select v-model="mapping.sourceModel" placeholder="选择源模型" class="mapping-select">
+                              <el-option
+                                v-for="model in availableModels"
+                                :key="model"
+                                :value="model"
+                                :label="model"
+                              />
+                            </el-select>
+                            <el-icon class="mapping-arrow"><ArrowRight /></el-icon>
+                          </div>
+                          <el-button type="danger" @click="removeMapping(channel, mappingIndex)" circle>
+                            <el-icon><Delete /></el-icon>
+                          </el-button>
+                        </div>
+                        
+                        <div class="conditions-container">
+                          <div v-for="(condition, conditionIndex) in mapping.conditions" :key="conditionIndex" class="condition-item">
+                            <div class="condition-header">
+                              <div class="condition-target">
+                                <el-input v-model="condition.targetModel" placeholder="输入目标模型" class="mapping-input" />
+                                <div class="condition-options">
+                                  <el-button 
+                                    type="primary" 
+                                    plain 
+                                    size="small" 
+                                    @click="addConditionConfig(condition)"
+                                  >
+                                    <el-icon><Plus /></el-icon>
+                                    添加条件
+                                  </el-button>
+                                </div>
+                              </div>
+                              <el-button type="danger" @click="removeCondition(channel, mappingIndex, conditionIndex)" circle>
+                                <el-icon><Delete /></el-icon>
+                              </el-button>
+                            </div>
+                            
+                            <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
+                              <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
+                                <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
+                                  <el-option label="网页搜索" value="enableWeb" />
+                                </el-select>
+                                <el-switch
+                                  v-if="config.key === 'enableWeb'"
+                                  v-model="config.value"
+                                  active-text="启用"
+                                  inactive-text="禁用"
+                                />
+                                <el-button type="danger" @click="removeConditionConfig(condition, configIndex)" circle>
+                                  <el-icon><Delete /></el-icon>
+                                </el-button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <el-button type="primary" @click="addCondition(channel, mappingIndex)" class="add-condition-btn" plain>
+                            <el-icon><Plus /></el-icon>
+                            添加目标模型
+                          </el-button>
+                        </div>
+                      </div>
+                      
+                      <el-button type="primary" @click="addMapping(channel)" class="add-mapping-btn" plain>
+                        <el-icon><Plus /></el-icon>
+                        添加映射规则
+                      </el-button>
+                    </div>
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -273,12 +338,77 @@
           />
         </el-form-item>
         <el-form-item label="模型映射" prop="mappings">
-          <el-input
-            v-model="channelForm.mappings"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入模型映射关系，例如：deepseek-r1>deepseek-r1-250120，多个映射请换行输入"
-          />
+          <div class="mapping-container">
+            <div v-for="(mapping, mappingIndex) in channelForm.mappings" :key="mappingIndex" class="mapping-item">
+              <div class="mapping-header">
+                <div class="mapping-source">
+                  <el-select v-model="mapping.sourceModel" placeholder="选择源模型" class="mapping-select">
+                    <el-option
+                      v-for="model in availableModels"
+                      :key="model"
+                      :value="model"
+                      :label="model"
+                    />
+                  </el-select>
+                  <el-icon class="mapping-arrow"><ArrowRight /></el-icon>
+                </div>
+                <el-button type="danger" @click="removeMapping(channelForm, mappingIndex)" circle>
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+              
+              <div class="conditions-container">
+                <div v-for="(condition, conditionIndex) in mapping.conditions" :key="conditionIndex" class="condition-item">
+                  <div class="condition-header">
+                    <div class="condition-target">
+                      <el-input v-model="condition.targetModel" placeholder="输入目标模型" class="mapping-input" />
+                      <div class="condition-options">
+                        <el-button 
+                          type="primary" 
+                          plain 
+                          size="small" 
+                          @click="addConditionConfig(condition)"
+                        >
+                          <el-icon><Plus /></el-icon>
+                          添加条件
+                        </el-button>
+                      </div>
+                    </div>
+                    <el-button type="danger" @click="removeCondition(channelForm, mappingIndex, conditionIndex)" circle>
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </div>
+                  
+                  <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
+                    <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
+                      <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
+                        <el-option label="网页搜索" value="enableWeb" />
+                      </el-select>
+                      <el-switch
+                        v-if="config.key === 'enableWeb'"
+                        v-model="config.value"
+                        active-text="启用"
+                        inactive-text="禁用"
+                      />
+                      <el-button type="danger" @click="removeConditionConfig(condition, configIndex)" circle>
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+                
+                <el-button type="primary" @click="addCondition(channelForm, mappingIndex)" class="add-condition-btn" plain>
+                  <el-icon><Plus /></el-icon>
+                  添加目标模型
+                </el-button>
+              </div>
+            </div>
+            
+            <el-button type="primary" @click="addMapping(channelForm)" class="add-mapping-btn" plain>
+              <el-icon><Plus /></el-icon>
+              添加映射规则
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="启用状态" prop="status">
           <el-switch
@@ -301,7 +431,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, CircleCheck, CircleClose, Delete, InfoFilled, Plus, ArrowRight } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
@@ -334,7 +464,7 @@ const channelForm = ref({
   secret: '',
   endpoint: '',
   status: false,
-  mappings: ''
+  mappings: []
 })
 
 // 表单验证规则
@@ -353,6 +483,38 @@ const channelRules = {
   models: [
     { required: true, message: '请选择支持的模型', trigger: 'change' },
     { type: 'array', min: 1, message: '请至少选择一个模型', trigger: 'change' }
+  ],
+  mappings: [
+    { 
+      validator: (rule, value, callback) => {
+        if (!value || value.length === 0) {
+          callback()
+          return
+        }
+        
+        for (const mapping of value) {
+          if (!mapping.sourceModel) {
+            callback(new Error('请选择源模型'))
+            return
+          }
+          
+          if (!mapping.conditions || mapping.conditions.length === 0) {
+            callback(new Error('请至少添加一个条件'))
+            return
+          }
+          
+          for (const condition of mapping.conditions) {
+            if (!condition.targetModel) {
+              callback(new Error('请选择目标模型'))
+              return
+            }
+          }
+        }
+        
+        callback()
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -373,7 +535,28 @@ const loadChannels = async () => {
       channels.value = response.data.records.map(channel => ({
         ...channel,
         isExpanded: false,
-        models: channel.models ? channel.models : []
+        models: channel.models ? channel.models : [],
+        mappings: channel.mappings ? channel.mappings.map(mapping => ({
+          sourceModel: mapping.sourceModel,
+          conditions: mapping.conditions.map(condition => {
+            const result = {
+              targetModel: condition.targetModel,
+              conditionConfigs: []
+            }
+            
+            // 如果有条件配置，转换为 conditionConfigs 格式
+            if (condition.conditions) {
+              Object.entries(condition.conditions).forEach(([key, value]) => {
+                result.conditionConfigs.push({
+                  key,
+                  value
+                })
+              })
+            }
+            
+            return result
+          })
+        })) : []
       }))
       total.value = response.data.total || 0
       currentPage.value = response.data.page || 1
@@ -421,7 +604,7 @@ const handleAdd = () => {
     secret: '',
     endpoint: '',
     status: false,
-    mappings: ''
+    mappings: []
   }
   dialogVisible.value = true
 }
@@ -439,7 +622,23 @@ const handleSave = async (channel) => {
       secret: channel.secret,
       endpoint: channel.endpoint,
       status: channel.status,
-      mappings: channel.mappings
+      mappings: channel.mappings.map(mapping => ({
+        sourceModel: mapping.sourceModel,
+        conditions: mapping.conditions.map(condition => {
+          const result = {
+            targetModel: condition.targetModel,
+            conditions: {}
+          }
+          
+          if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
+            condition.conditionConfigs.forEach(config => {
+              result.conditions[config.key] = config.value
+            })
+          }
+          
+          return result
+        })
+      }))
     }
 
     const response = await defaultApi.apiAdminChannelIdPut(channel.id, formData)
@@ -499,7 +698,23 @@ const handleSubmit = async () => {
           secret: channelForm.value.secret,
           endpoint: channelForm.value.endpoint,
           status: channelForm.value.status,
-          mappings: channelForm.value.mappings
+          mappings: channelForm.value.mappings.map(mapping => ({
+            sourceModel: mapping.sourceModel,
+            conditions: mapping.conditions.map(condition => {
+              const result = {
+                targetModel: condition.targetModel,
+                conditions: {}
+              }
+              
+              if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
+                condition.conditionConfigs.forEach(config => {
+                  result.conditions[config.key] = config.value
+                })
+              }
+              
+              return result
+            })
+          }))
         }
 
         let response
@@ -535,6 +750,51 @@ const handleSizeChange = (size) => {
 const handleCurrentChange = (page) => {
   currentPage.value = page
   loadChannels()
+}
+
+// 添加映射规则
+const addMapping = (channel) => {
+  if (!channel.mappings) {
+    channel.mappings = []
+  }
+  channel.mappings.push({
+    sourceModel: '',
+    conditions: []
+  })
+}
+
+// 移除映射规则
+const removeMapping = (channel, mappingIndex) => {
+  channel.mappings.splice(mappingIndex, 1)
+}
+
+// 添加条件
+const addCondition = (channel, mappingIndex) => {
+  channel.mappings[mappingIndex].conditions.push({
+    targetModel: '',
+    conditionConfigs: []
+  })
+}
+
+// 添加条件配置
+const addConditionConfig = (condition) => {
+  if (!condition.conditionConfigs) {
+    condition.conditionConfigs = []
+  }
+  condition.conditionConfigs.push({
+    key: 'enableWeb',
+    value: false
+  })
+}
+
+// 移除条件配置
+const removeConditionConfig = (condition, configIndex) => {
+  condition.conditionConfigs.splice(configIndex, 1)
+}
+
+// 移除条件
+const removeCondition = (channel, mappingIndex, conditionIndex) => {
+  channel.mappings[mappingIndex].conditions.splice(conditionIndex, 1)
 }
 
 // 页面加载时获取数据
@@ -715,5 +975,173 @@ onMounted(() => {
       border-radius: 0 4px 4px 0;
     }
   }
+}
+
+.mapping-form-item {
+  :deep(.el-form-item__content) {
+    width: 100%;
+  }
+}
+
+.mapping-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 16px;
+  background-color: var(--el-fill-color-blank);
+  width: 100%;
+}
+
+.mapping-item {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 16px;
+  background-color: var(--el-fill-color-blank);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.mapping-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.mapping-source {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.mapping-arrow {
+  color: var(--el-text-color-secondary);
+  font-size: 24px;
+}
+
+.mapping-select {
+  width: 320px;
+}
+
+.conditions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-left: 48px;
+  padding-left: 32px;
+  border-left: 2px dashed var(--el-border-color-lighter);
+}
+
+.condition-item {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 12px;
+  background-color: var(--el-fill-color-light);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.condition-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.condition-target {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.condition-options {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.condition-type-group {
+  :deep(.el-radio-button__inner) {
+    padding: 8px 16px;
+  }
+}
+
+.web-search-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .checkbox-label {
+    font-size: 14px;
+    color: var(--el-text-color-regular);
+  }
+  
+  .info-icon {
+    color: var(--el-text-color-secondary);
+    font-size: 16px;
+    cursor: help;
+  }
+}
+
+.add-condition-btn, .add-mapping-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  margin-top: 8px;
+  border-radius: 8px;
+  padding: 12px 24px;
+  
+  .el-icon {
+    font-size: 16px;
+  }
+}
+
+.add-mapping-btn {
+  margin-top: 16px;
+  padding: 12px 32px;
+}
+
+.mapping-input {
+  width: 320px;
+}
+
+.condition-configs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-left: 24px;
+}
+
+.condition-config-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  background-color: var(--el-fill-color-blank);
+}
+
+.condition-key-select {
+  width: 160px;
 }
 </style>

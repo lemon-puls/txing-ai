@@ -47,20 +47,33 @@ func (c *ChatClient) ConvertMessage(message []global.Message) []*model.ChatCompl
 
 func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConfig, callback global.Hook) error {
 
-	req := model.CreateChatCompletionRequest{
-		Model:             conf.Model,
-		Messages:          c.ConvertMessage(conf.Message),
-		MaxTokens:         conf.MaxTokens,
-		Temperature:       conf.Temperature,
-		TopP:              conf.TopP,
-		PresencePenalty:   conf.PresencePenalty,
-		FrequencyPenalty:  conf.FrequencyPenalty,
-		RepetitionPenalty: conf.RepetitionPenalty,
+	req := model.BotChatCompletionRequest{
+		BotId:    conf.Model,
+		Messages: c.ConvertMessage(conf.Message),
 	}
 
-	stream, err := c.client.CreateChatCompletionStream(ctx, req)
+	if conf.MaxTokens != nil {
+		req.MaxTokens = *conf.MaxTokens
+	}
+	if conf.TopP != nil {
+		req.TopP = *conf.TopP
+	}
+	if conf.PresencePenalty != nil {
+		req.PresencePenalty = *conf.PresencePenalty
+	}
+	if conf.FrequencyPenalty != nil {
+		req.FrequencyPenalty = *conf.FrequencyPenalty
+	}
+	if conf.RepetitionPenalty != nil {
+		req.RepetitionPenalty = *conf.RepetitionPenalty
+	}
+	if conf.Temperature != nil {
+		req.Temperature = *conf.Temperature
+	}
+
+	stream, err := c.client.CreateBotChatCompletionStream(ctx, req)
 	if err != nil {
-		log.Error("stream chat error", zap.Error(err))
+		fmt.Printf("stream chat error: %v\n", err)
 		return err
 	}
 	defer stream.Close()
@@ -94,6 +107,12 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 			if err != nil {
 				log.Error("callback error", zap.Error(err))
 				return err
+			}
+		}
+		// TODO 处理网页引用信息
+		if recv.References != nil {
+			for _, ref := range recv.References {
+				fmt.Printf("reference url: %s\n", ref.Url)
 			}
 		}
 	}

@@ -6,4 +6,5 @@ type ChannelConfig interface {
 	GetRetry() int
 	GetRandomSecret() string
 	GetEndpoint() string
+	GetMappingModel(model string, params map[string]interface{}) string
 }

@@ -325,6 +325,7 @@
               :min="0"
               :max="2"
               :step="0.1"
+              :default-value="0"
               show-input
             />
           </el-form-item>

@@ -9,19 +9,19 @@ import (
 // ChannelVO 渠道视图对象
 // Channel view object
 type ChannelVO struct {
-	Id       int64     `json:"id"`        // 渠道ID Channel ID
-	Name     string    `json:"name"`      // 渠道名称 Channel name
-	Type     string    `json:"type"`      // 渠道类型 Channel type
-	Priority int       `json:"priority"`  // 优先级 Priority
-	Weight   int       `json:"weight"`    // 权重 Weight
-	Models   []string  `json:"models"`    // 支持的模型列表 Supported models
-	Retry    int       `json:"retry"`     // 重试次数 Retry times
-	Secret   string    `json:"secret"`    // 密钥 Secret key
-	Endpoint string    `json:"endpoint"`  // 服务地址 Service endpoint
-	Status   bool      `json:"status"`    // 启用状态 Enable status
-	CreateAt time.Time `json:"create_at"` // 创建时间 Create time
-	UpdateAt time.Time `json:"update_at"` // 更新时间 Update time
-	Mappings string    `json:"mappings"`  // 模型映射关系 Mappings
+	Id       int64                 `json:"id"`        // 渠道ID Channel ID
+	Name     string                `json:"name"`      // 渠道名称 Channel name
+	Type     string                `json:"type"`      // 渠道类型 Channel type
+	Priority int                   `json:"priority"`  // 优先级 Priority
+	Weight   int                   `json:"weight"`    // 权重 Weight
+	Models   []string              `json:"models"`    // 支持的模型列表 Supported models
+	Retry    int                   `json:"retry"`     // 重试次数 Retry times
+	Secret   string                `json:"secret"`    // 密钥 Secret key
+	Endpoint string                `json:"endpoint"`  // 服务地址 Service endpoint
+	Status   bool                  `json:"status"`    // 启用状态 Enable status
+	CreateAt time.Time             `json:"create_at"` // 创建时间 Create time
+	UpdateAt time.Time             `json:"update_at"` // 更新时间 Update time
+	Mappings []domain.ModelMapping `json:"mappings"`  // 模型映射关系 Mappings
 }
 
 // ChannelListVO 渠道列表视图对象

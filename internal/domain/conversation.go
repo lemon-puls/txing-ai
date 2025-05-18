@@ -104,6 +104,7 @@ func (c *Conversation) applyCallParams(msg *dto.WsMessageRequest) {
 	c.FrequencyPenalty = msg.FrequencyPenalty
 	c.RepetitionPenalty = msg.RepetitionPenalty
 	c.EnableWeb = msg.EnableWeb
+	c.Temperature = msg.Temperature
 	c.Model = msg.Model
 	//c.setContextLength(msg.Context)
 

@@ -3,8 +3,6 @@ package chat
 import (
 	"context"
 	"errors"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
 	"math/rand"
 	"txing-ai/internal/adapter"
 	adaptercommon "txing-ai/internal/adapter/common"
@@ -14,6 +12,9 @@ import (
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/service/channel"
 	"txing-ai/internal/utils"
+
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const defaultRespMessage = "Sorry, I don't understand your message."
@@ -154,8 +155,17 @@ func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.
 	// 从中随机选择一个 channel
 	targetChannel := (*sequence)[rand.Intn(len(*sequence))]
 
+	// 构建映射参数
+	mappingParams := map[string]interface{}{
+		"enableWeb": chatConfig.EnableWeb,
+		// 可以添加更多参数，例如：
+		// "temperature": chatConfig.Temperature,
+		// "maxTokens": chatConfig.MaxTokens,
+		// 等等
+	}
+
 	// 查找是否有该模型的映射关系
-	mappingModel := targetChannel.GetMappingModel(chatConfig.Model)
+	mappingModel := targetChannel.GetMappingModel(chatConfig.Model, mappingParams)
 	chatConfig.Model = mappingModel
 
 	err := adapter.NewChatRequest(ctx, &targetChannel, chatConfig, hook)
