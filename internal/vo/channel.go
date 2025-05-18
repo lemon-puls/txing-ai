@@ -4,6 +4,7 @@ import (
 	"github.com/samber/lo"
 	"time"
 	"txing-ai/internal/domain"
+	"txing-ai/internal/global"
 )
 
 // ChannelVO 渠道视图对象
@@ -21,7 +22,7 @@ type ChannelVO struct {
 	Status   bool                  `json:"status"`    // 启用状态 Enable status
 	CreateAt time.Time             `json:"create_at"` // 创建时间 Create time
 	UpdateAt time.Time             `json:"update_at"` // 更新时间 Update time
-	Mappings []domain.ModelMapping `json:"mappings"`  // 模型映射关系 Mappings
+	Mappings []global.ModelMapping `json:"mappings"`  // 模型映射关系 Mappings
 }
 
 // ChannelListVO 渠道列表视图对象

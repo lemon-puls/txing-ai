@@ -3,20 +3,9 @@ package domain
 import (
 	"math/rand"
 	"strings"
+	"txing-ai/internal/global"
 	"txing-ai/internal/iface"
 )
-
-// ModelMapping 模型映射规则
-type ModelMapping struct {
-	SourceModel string                  `json:"sourceModel"` // 源模型
-	Conditions  []ModelMappingCondition `json:"conditions"`  // 条件列表
-}
-
-// ModelMappingCondition 模型映射条件
-type ModelMappingCondition struct {
-	TargetModel string                 `json:"targetModel"` // 目标模型
-	Conditions  map[string]interface{} `json:"conditions"`  // 条件映射，key 为条件名称，value 为条件值
-}
 
 type Channel struct {
 	BaseModel
@@ -52,7 +41,7 @@ type Channel struct {
 	// 	  }
 	// 	]
 	// }
-	Mappings []ModelMapping `gorm:"type:json;serializer:json;comment:模型映射关系" json:"mappings"`
+	Mappings []global.ModelMapping `gorm:"type:json;serializer:json;comment:模型映射关系" json:"mappings"`
 }
 
 func (c *Channel) GetId() int64 {

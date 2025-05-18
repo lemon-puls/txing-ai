@@ -17,3 +17,15 @@ type Chunk struct {
 	// 思考过程消息
 	ReasoningContent string `json:"reasoning_content"`
 }
+
+// ModelMapping 模型映射规则
+type ModelMapping struct {
+	SourceModel string                  `json:"sourceModel"` // 源模型
+	Conditions  []ModelMappingCondition `json:"conditions"`  // 条件列表
+}
+
+// ModelMappingCondition 模型映射条件
+type ModelMappingCondition struct {
+	TargetModel string                 `json:"targetModel"` // 目标模型
+	Conditions  map[string]interface{} `json:"conditions"`  // 条件映射，key 为条件名称，value 为条件值
+}
