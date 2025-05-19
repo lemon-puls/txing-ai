@@ -177,6 +177,15 @@
             </div>
           </TransitionGroup>
 
+          <!-- 点点加载动画，紧贴下一个 assistant 消息顶部左侧 -->
+          <div v-if="currentChat && messageLoadingMap.get(currentChat.id)" class="dot-loading-indicator">
+            <div class="dot-typing">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+
           <!-- 输入提示 -->
           <div v-if="isTyping" class="typing-indicator">
             <div class="typing-dot"></div>
@@ -436,6 +445,7 @@ import {
   Position,
   RefreshRight,
   Setting,
+  More,
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -694,6 +704,9 @@ const sendMessage = async () => {
   // 设置正在输入状态
   conversationStore.setTypingStatus(currentChat.value.id, true)
 
+  // 新增：设置当前会话的 loading 状态为 true
+  messageLoadingMap.value.set(currentChat.value.id, true)
+
   try {
     // 准备消息选项
     const options = {
@@ -731,6 +744,9 @@ const sendMessage = async () => {
 
 // 处理 WebSocket 消息
 const handleWebSocketMessage = (chatId, data) => {
+  // 关闭 loading 动画
+  messageLoadingMap.value.set(chatId, false)
+
   if (data.type === 'chat') {
     // 完整的消息响应
     conversationStore.setTypingStatus(chatId, false)
@@ -1166,6 +1182,10 @@ let startY = 0
 let startHeight = 0
 const minRows = 3
 const maxRows = 15
+
+// 新增：每个会话的"AI 正在思考中"动画状态 Map
+// Map<chatId, boolean>
+const messageLoadingMap = ref(new Map())
 
 const startResize = (e) => {
   startY = e.clientY
@@ -2339,5 +2359,42 @@ onUnmounted(() => {
       transform: rotate(180deg);
     }
   }
+}
+
+// 点点加载动画样式，仿微信气泡打字动画，左侧对齐
+.dot-loading-indicator {
+  display: flex;
+  align-items: flex-start;
+  margin: 0 0 12px 56px; // 与 assistant 头像左对齐
+  min-height: 24px;
+}
+
+.dot-typing {
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--el-color-primary);
+  opacity: 0.7;
+  animation: dot-bounce 1.2s infinite both;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40% { transform: scale(1.2); opacity: 1; }
 }
 </style>
