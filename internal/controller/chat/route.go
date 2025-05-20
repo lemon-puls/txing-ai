@@ -15,6 +15,6 @@ func Register(router gin.IRouter) {
 	// 获取会话详情
 	router.GET("/conversations/:id", middleware.AuthMiddleware(), GetConversationDetail)
 
-	// 删除会话
-	router.DELETE("/conversations/:id", middleware.AuthMiddleware(), DeleteConversation)
+	// 批量删除会话
+	router.POST("/conversations/deletebatch", middleware.AuthMiddleware(), BatchDeleteConversations)
 }

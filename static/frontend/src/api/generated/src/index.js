@@ -21,6 +21,7 @@ import ApiPresetPost200Response from './model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from './model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from './model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from './model/ApiUserRefreshPost200Response';
+import DtoBatchDeleteRequest from './model/DtoBatchDeleteRequest';
 import DtoConversationListRequest from './model/DtoConversationListRequest';
 import DtoCreateChannelReq from './model/DtoCreateChannelReq';
 import DtoCreateModelReq from './model/DtoCreateModelReq';
@@ -134,6 +135,12 @@ export {
      * @property {module:model/ApiUserRefreshPost200Response}
      */
     ApiUserRefreshPost200Response,
+
+    /**
+     * The DtoBatchDeleteRequest model constructor.
+     * @property {module:model/DtoBatchDeleteRequest}
+     */
+    DtoBatchDeleteRequest,
 
     /**
      * The DtoConversationListRequest model constructor.

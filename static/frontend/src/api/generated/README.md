@@ -132,7 +132,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
-*TxingAiApi.DefaultApi* | [**apiChatConversationsIdDelete**](docs/DefaultApi.md#apiChatConversationsIdDelete) | **DELETE** /api/chat/conversations/{id} | 删除会话
+*TxingAiApi.DefaultApi* | [**apiChatConversationsDeletebatchPost**](docs/DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
 *TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
 *TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
@@ -163,6 +163,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
  - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)
+ - [TxingAiApi.DtoBatchDeleteRequest](docs/DtoBatchDeleteRequest.md)
  - [TxingAiApi.DtoConversationListRequest](docs/DtoConversationListRequest.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)

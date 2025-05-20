@@ -11,6 +11,7 @@ docs/ApiUserInfoGet200Response.md
 docs/ApiUserLoginPost200Response.md
 docs/ApiUserRefreshPost200Response.md
 docs/DefaultApi.md
+docs/DtoBatchDeleteRequest.md
 docs/DtoConversationListRequest.md
 docs/DtoCreateChannelReq.md
 docs/DtoCreateModelReq.md
@@ -50,6 +51,7 @@ src/model/ApiPresetPost200Response.js
 src/model/ApiUserInfoGet200Response.js
 src/model/ApiUserLoginPost200Response.js
 src/model/ApiUserRefreshPost200Response.js
+src/model/DtoBatchDeleteRequest.js
 src/model/DtoConversationListRequest.js
 src/model/DtoCreateChannelReq.js
 src/model/DtoCreateModelReq.js
@@ -75,5 +77,3 @@ src/model/VoModelVO.js
 src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
-test/model/GlobalModelMapping.spec.js
-test/model/GlobalModelMappingCondition.spec.js

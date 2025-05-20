@@ -66,38 +66,43 @@ export const useConversationStore = defineStore('conversation', {
       console.log('update conversation:', this.conversations[index])
     },
 
-    async deleteConversation(id) {
-      const userStore = useUserStore()
-      const index = this.conversations.findIndex(conv => conv.id === id)
-
-      if (index !== -1) {
-
-        if (!userStore.isLoggedIn) {
-          const localConversations = JSON.parse(localStorage.getItem('conversations') || '[]')
-          const localIndex = localConversations.findIndex(conv => conv.id === id)
-
-          if (localIndex !== -1) {
-            localConversations.splice(localIndex, 1)
-            localStorage.setItem('conversations', JSON.stringify(localConversations))
-          }
-        } else {
-          // 如果是处于登录状态，需要调用后端接口删除会话
-          const response = await defaultApi.apiChatConversationsIdDelete(id)
-
-          if (response.code != 0) {
-            ElMessage.error(response.msg)
-            return
-          }
-        }
-
-        this.conversations.splice(index, 1)
-
-        if (this.currentConversation?.id === id) {
-          this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
-        }
-
-        ElMessage.success('会话已删除')
+    // 批量删除会话
+    async batchDeleteConversations(ids) {
+      if (!ids || ids.length === 0) {
+        ElMessage.warning('请选择要删除的会话')
+        return
       }
+
+      const userStore = useUserStore()
+
+      if (!userStore.isLoggedIn) {
+        // 游客模式下，直接从本地存储和状态中删除
+        const localConversations = JSON.parse(localStorage.getItem('conversations') || '[]')
+        const newLocalConversations = localConversations.filter(conv => !ids.includes(conv.id))
+        localStorage.setItem('conversations', JSON.stringify(newLocalConversations))
+
+
+      } else {
+        // 登录状态下，调用后端批量删除接口
+        const response = await defaultApi.apiChatConversationsDeletebatchPost({
+          ids: ids
+        })
+
+        if (response.code != 0) {
+          ElMessage.error(response.msg || '删除失败')
+          return
+        }
+      }
+
+      // 从状态中删除
+      this.conversations = this.conversations.filter(conv => !ids.includes(conv.id))
+
+      // 如果当前会话被删除，切换到第一个会话
+      if (this.currentConversation && ids.includes(this.currentConversation.id)) {
+        this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
+      }
+
+      ElMessage.success('删除成功')
     },
 
     setCurrentConversation(conversation) {

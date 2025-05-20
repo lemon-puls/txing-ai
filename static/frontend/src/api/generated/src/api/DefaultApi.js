@@ -21,6 +21,7 @@ import ApiPresetPost200Response from '../model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Response';
+import DtoBatchDeleteRequest from '../model/DtoBatchDeleteRequest';
 import DtoConversationListRequest from '../model/DtoConversationListRequest';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
@@ -682,20 +683,19 @@ export default class DefaultApi {
 
 
     /**
-     * 删除会话
-     * 删除指定的会话及其所有消息
-     * @param {Number} id 会话ID
+     * 批量删除会话
+     * 批量删除指定的会话
+     * @param {module:model/DtoBatchDeleteRequest} data 会话ID列表
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
-    apiChatConversationsIdDeleteWithHttpInfo(id) {
-      let postBody = null;
-      // verify the required parameter 'id' is set
-      if (id === undefined || id === null) {
-        throw new Error("Missing the required parameter 'id' when calling apiChatConversationsIdDelete");
+    apiChatConversationsDeletebatchPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiChatConversationsDeletebatchPost");
       }
 
       let pathParams = {
-        'id': id
       };
       let queryParams = {
       };
@@ -705,24 +705,24 @@ export default class DefaultApi {
       };
 
       let authNames = [];
-      let contentTypes = [];
+      let contentTypes = ['application/json'];
       let accepts = ['application/json'];
       let returnType = UtilsResponse;
       return this.apiClient.callApi(
-        '/api/chat/conversations/{id}', 'DELETE',
+        '/api/chat/conversations/deletebatch', 'POST',
         pathParams, queryParams, headerParams, formParams, postBody,
         authNames, contentTypes, accepts, returnType, null
       );
     }
 
     /**
-     * 删除会话
-     * 删除指定的会话及其所有消息
-     * @param {Number} id 会话ID
+     * 批量删除会话
+     * 批量删除指定的会话
+     * @param {module:model/DtoBatchDeleteRequest} data 会话ID列表
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
-    apiChatConversationsIdDelete(id) {
-      return this.apiChatConversationsIdDeleteWithHttpInfo(id)
+    apiChatConversationsDeletebatchPost(data) {
+      return this.apiChatConversationsDeletebatchPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

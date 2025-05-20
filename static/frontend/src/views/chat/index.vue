@@ -30,10 +30,19 @@
             v-for="chat in chatList"
             :key="chat.id"
             class="chat-item"
-            :class="{ active: currentChat?.id === chat.id }"
-            @click="switchChat(chat)"
+            :class="{
+              active: currentChat?.id === chat.id,
+              selected: selectedChats.includes(chat.id)
+            }"
+            @click="handleChatClick(chat)"
           >
             <div class="chat-item-content">
+              <el-checkbox
+                v-if="showCheckboxes"
+                v-model="selectedChats"
+                :value="chat.id"
+                @click.stop
+              />
               <div class="chat-icon-wrapper">
                 <el-avatar
                   :size="40"
@@ -63,6 +72,20 @@
         </TransitionGroup>
       </div>
 
+      <!-- 批量操作栏（底部固定，批量模式下显示） -->
+      <transition name="batch-bar-fade">
+        <div class="batch-actions-bar" v-if="showCheckboxes">
+          <el-button type="danger" size="small" class="batch-btn" @click="batchDelete">
+            <el-icon><Delete /></el-icon>
+            删除选中会话
+          </el-button>
+          <el-button size="small" class="batch-btn cancel-btn" @click="showCheckboxes = false">
+            <el-icon><Close /></el-icon>
+            取消
+          </el-button>
+        </div>
+      </transition>
+
       <!-- 底部操作区 -->
       <div class="sidebar-footer">
         <div class="footer-actions">
@@ -75,6 +98,13 @@
             <div class="bg-toggle" @click="showBgPatternSelector">
               <el-icon>
                 <Picture/>
+              </el-icon>
+            </div>
+          </el-tooltip>
+          <el-tooltip content="批量操作" placement="top">
+            <div class="batch-toggle" @click="toggleBatchMode">
+              <el-icon>
+                <Select />
               </el-icon>
             </div>
           </el-tooltip>
@@ -429,7 +459,7 @@
 <script setup name="ChatView">
 import {ref, computed, onMounted, nextTick, onUnmounted} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
-import {ElMessage} from 'element-plus'
+import {ElMessage, ElMessageBox, ElCheckbox} from 'element-plus'
 import {useConversationStore} from '@/stores/conversation'
 import {useUserStore} from '@/stores/user'
 import {useThemeStore} from '@/stores/theme'
@@ -446,6 +476,8 @@ import {
   RefreshRight,
   Setting,
   More,
+  Delete,
+  Close,
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -1053,7 +1085,7 @@ const switchChat = async (chat) => {
 const handleChatAction = async (command, chat) => {
   if (command === 'delete') {
     try {
-      await conversationStore.deleteConversation(chat.id)
+      await conversationStore.batchDeleteConversations([chat.id])
     } catch (error) {
       console.error('Failed to delete chat:', error)
       ElMessage.error('删除会话失败')
@@ -1242,6 +1274,72 @@ onUnmounted(() => {
     }
   })
 })
+
+// 批量操作相关
+const showCheckboxes = ref(false)
+const selectedChats = ref([])
+
+// 切换批量操作模式
+const toggleBatchMode = () => {
+  showCheckboxes.value = !showCheckboxes.value
+  if (!showCheckboxes.value) {
+    selectedChats.value = []
+  }
+}
+
+// 清除选择
+const clearSelection = () => {
+  selectedChats.value = []
+}
+
+// 处理会话点击
+const handleChatClick = (chat) => {
+  if (showCheckboxes.value) {
+    // 批量操作模式下，切换选中状态
+    const index = selectedChats.value.indexOf(chat.id)
+    if (index === -1) {
+      selectedChats.value.push(chat.id)
+    } else {
+      selectedChats.value.splice(index, 1)
+    }
+  } else {
+    // 普通模式下，切换会话
+    switchChat(chat)
+  }
+}
+
+// 批量删除
+const batchDelete = async () => {
+  if (selectedChats.value.length === 0) {
+    ElMessage.warning('请选择要删除的会话')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedChats.value.length} 个会话吗？`,
+      '批量删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    // 调用批量删除方法
+    await conversationStore.batchDeleteConversations(selectedChats.value)
+
+    // 清空选择
+    selectedChats.value = []
+    // 关闭批量操作模式
+    showCheckboxes.value = false
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Failed to batch delete:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -2396,5 +2494,119 @@ onUnmounted(() => {
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
   40% { transform: scale(1.2); opacity: 1; }
+}
+
+.batch-actions {
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--el-bg-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.chat-item {
+  &.selected {
+    background: var(--el-color-primary-light-9);
+    border-color: var(--el-color-primary);
+  }
+}
+
+.batch-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+
+  &:hover {
+    color: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+  }
+
+  &.active {
+    background: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    color: white;
+  }
+}
+
+// 批量操作栏美化
+.batch-actions-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: var(--el-bg-color);
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+  border-top: 1.5px solid var(--el-border-color-light);
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 8px 10px 8px;
+  z-index: 10;
+  gap: 10px;
+  animation: batch-bar-in 0.25s;
+}
+
+.batch-btn {
+  font-size: 14px;
+  min-width: 90px;
+  height: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 16px;
+  &.el-button--danger {
+    background: linear-gradient(90deg, #f56c6c 60%, #f78989 100%);
+    color: #fff;
+    border: none;
+    &:hover {
+      background: linear-gradient(90deg, #f56c6c 80%, #f78989 100%);
+      box-shadow: 0 4px 16px rgba(245,108,108,0.15);
+      transform: translateY(-2px) scale(1.04);
+    }
+  }
+  &.cancel-btn {
+    background: #f4f4f5;
+    color: #909399;
+    border: none;
+    &:hover {
+      background: #e4e7ed;
+      color: #606266;
+      transform: translateY(-2px) scale(1.04);
+    }
+  }
+}
+
+@keyframes batch-bar-in {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.batch-bar-fade-enter-active, .batch-bar-fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.batch-bar-fade-enter-from, .batch-bar-fade-leave-to {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+// 移除顶部批量操作栏样式
+.batch-actions {
+  display: none;
 }
 </style>

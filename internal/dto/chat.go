@@ -25,3 +25,8 @@ type WsMessageResponse struct {
 	ReasoningContent string `json:"reasoning_content"`
 	End              bool   `json:"end"`
 }
+
+// BatchDeleteRequest 批量删除请求
+type BatchDeleteRequest struct {
+	Ids []int64 `json:"ids" binding:"required"` // 会话ID列表
+}
