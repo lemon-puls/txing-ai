@@ -278,6 +278,33 @@ go run cmd/main.go
 <SvgIcon icon="theme" size="20" color="#1890ff" click/>
 ```
 
+### 前端权限指令使用
+
+```js
+
+// 权限指令
+// Permission directive
+
+// 使用方式 Usage:
+v-permission:role="['admin', 'editor']"  // 角色权限 Role permission
+
+v-permission:perm="['create', 'edit']"   // 操作权限 Permission-based
+
+v-permission:role.hide="['admin']"       // 无权限时隐藏元素 Hide when no permission
+
+v-permission:perm.hide="['create']"      // 无权限时隐藏元素 Hide when no permission
+```
+
+在需要进行前端权限的元素上添加 v-permission 指令即可，实例如下：
+
+```js
+<el-button v-permission:role.hide="['admin']" type="primary" circle class="new-chat-button" @click="createNewChat('')">
+    <el-icon>
+         <Plus class="icon-bounce"/>
+    </el-icon>
+</el-button>
+```
+
 ## 🤝 贡献指南
 
 1. Fork 本仓库
