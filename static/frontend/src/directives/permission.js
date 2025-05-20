@@ -1,5 +1,6 @@
 import { useUserStore } from '@/stores/user'
 import { hasRole, hasPermission } from '@/utils/auth'
+import { ElMessage } from 'element-plus'
 
 /**
  * 权限指令
@@ -30,13 +31,56 @@ export const permission = {
       hasAuth = hasPermission(userStore.userPermissions, value)
     }
 
-    // 如果没有权限，则禁用元素
-    // If no permission, disable the element
+    // 如果没有权限，则禁用元素并添加提示功能
+    // If no permission, disable the element and add tooltip
     if (!hasAuth) {
-      el.disabled = true
-      el.style.pointerEvents = 'none'
+      // 设置禁用样式，但不设置 disabled 属性
+      // Set disabled style without setting disabled attribute
       el.style.opacity = '0.5'
       el.style.cursor = 'not-allowed'
+      
+      // 创建一个覆盖层来捕获点击事件
+      // Create an overlay to capture click events
+      const overlay = document.createElement('div')
+      overlay.style.position = 'absolute'
+      overlay.style.top = '0'
+      overlay.style.left = '0'
+      overlay.style.width = '100%'
+      overlay.style.height = '100%'
+      overlay.style.zIndex = '999'
+      overlay.style.backgroundColor = 'transparent'
+      overlay.style.cursor = 'not-allowed'
+      
+      // 设置鼠标悬停提示
+      // Set mouseover tooltip
+      overlay.title = '您没有权限执行此操作'
+      
+      // 添加点击事件监听器
+      // Add click event listener
+      overlay.onclick = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        // 显示无权限提示
+        // Show no permission message
+        ElMessage({
+          message: '您没有权限执行此操作',
+          type: 'warning',
+          duration: 2000
+        })
+        
+        return false
+      }
+      
+      // 确保父元素是相对定位，以便正确定位覆盖层
+      // Make sure parent element has relative position for proper overlay positioning
+      if (getComputedStyle(el).position === 'static') {
+        el.style.position = 'relative'
+      }
+      
+      // 添加覆盖层到元素
+      // Add overlay to element
+      el.appendChild(overlay)
     }
   }
 } 
