@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from './user'
 import { defaultApi } from '@/api'
+import {ElMessage} from "element-plus";
 
 export const useConversationStore = defineStore('conversation', {
   state: () => ({
@@ -65,16 +66,11 @@ export const useConversationStore = defineStore('conversation', {
       console.log('update conversation:', this.conversations[index])
     },
 
-    deleteConversation(id) {
+    async deleteConversation(id) {
       const userStore = useUserStore()
       const index = this.conversations.findIndex(conv => conv.id === id)
 
       if (index !== -1) {
-        this.conversations.splice(index, 1)
-
-        if (this.currentConversation?.id === id) {
-          this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
-        }
 
         if (!userStore.isLoggedIn) {
           const localConversations = JSON.parse(localStorage.getItem('conversations') || '[]')
@@ -84,7 +80,23 @@ export const useConversationStore = defineStore('conversation', {
             localConversations.splice(localIndex, 1)
             localStorage.setItem('conversations', JSON.stringify(localConversations))
           }
+        } else {
+          // 如果是处于登录状态，需要调用后端接口删除会话
+          const response = await defaultApi.apiChatConversationsIdDelete(id)
+
+          if (response.code != 0) {
+            ElMessage.error(response.msg)
+            return
+          }
         }
+
+        this.conversations.splice(index, 1)
+
+        if (this.currentConversation?.id === id) {
+          this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
+        }
+
+        ElMessage.success('会话已删除')
       }
     },
 

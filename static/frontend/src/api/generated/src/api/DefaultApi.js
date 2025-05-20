@@ -682,6 +682,54 @@ export default class DefaultApi {
 
 
     /**
+     * 删除会话
+     * 删除指定的会话及其所有消息
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiChatConversationsIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiChatConversationsIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/chat/conversations/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除会话
+     * 删除指定的会话及其所有消息
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiChatConversationsIdDelete(id) {
+      return this.apiChatConversationsIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
      * 获取会话详情
      * 获取指定会话的详细信息，包括基本信息和消息列表
      * @param {Number} id 会话ID

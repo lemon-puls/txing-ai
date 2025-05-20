@@ -24,6 +24,8 @@ docs/DtoUpdateModelReq.md
 docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
+docs/GlobalModelMapping.md
+docs/GlobalModelMappingCondition.md
 docs/UtilsResponse.md
 docs/VoChannelVO.md
 docs/VoConversationDetailVO.md
@@ -61,6 +63,8 @@ src/model/DtoUpdateModelReq.js
 src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
+src/model/GlobalModelMapping.js
+src/model/GlobalModelMappingCondition.js
 src/model/UtilsResponse.js
 src/model/VoChannelVO.js
 src/model/VoConversationDetailVO.js
@@ -71,3 +75,5 @@ src/model/VoModelVO.js
 src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
+test/model/GlobalModelMapping.spec.js
+test/model/GlobalModelMappingCondition.spec.js

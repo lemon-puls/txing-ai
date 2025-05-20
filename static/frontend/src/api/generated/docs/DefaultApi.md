@@ -16,6 +16,7 @@ Method | HTTP request | Description
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiChatConversationListPost**](DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
+[**apiChatConversationsIdDelete**](DefaultApi.md#apiChatConversationsIdDelete) | **DELETE** /api/chat/conversations/{id} | 删除会话
 [**apiChatConversationsIdGet**](DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
 [**apiChatWsGet**](DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
@@ -588,6 +589,50 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiChatConversationsIdDelete
+
+> UtilsResponse apiChatConversationsIdDelete(id)
+
+删除会话
+
+删除指定的会话及其所有消息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+apiInstance.apiChatConversationsIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 

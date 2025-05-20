@@ -132,6 +132,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
+*TxingAiApi.DefaultApi* | [**apiChatConversationsIdDelete**](docs/DefaultApi.md#apiChatConversationsIdDelete) | **DELETE** /api/chat/conversations/{id} | 删除会话
 *TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
 *TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
@@ -175,6 +176,8 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
+ - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
+ - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
  - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
  - [TxingAiApi.VoConversationDetailVO](docs/VoConversationDetailVO.md)

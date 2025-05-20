@@ -284,3 +284,49 @@ func GetConversationDetail(c *gin.Context) {
 
 	utils.OkWithData(c, result)
 }
+
+// @Summary 删除会话
+// @Description 删除指定的会话及其所有消息
+// @Tags 聊天会话
+// @Accept json
+// @Produce json
+// @Param id path int true "会话ID"
+// @Success 200 {object} utils.Response "成功"
+// @Failure 400 {object} utils.Response "请求参数错误"
+// @Failure 401 {object} utils.Response "未授权"
+// @Failure 404 {object} utils.Response "会话不存在"
+// @Failure 500 {object} utils.Response "服务器内部错误"
+// @Router /api/chat/conversations/{id} [delete]
+func DeleteConversation(c *gin.Context) {
+	// 获取当前用户ID
+	userId := utils.GetUIDFromContext(c)
+
+	// 获取会话ID
+	id := c.Param("id")
+	conversationId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+
+	// 查询会话是否存在且属于当前用户
+	var conversation domain.Conversation
+	if err := db.Where("id = ? AND user_id = ?", conversationId, userId).First(&conversation).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			utils.ErrorWithCode(c, global.CodeNotFound, err)
+			return
+		}
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	// 删除会话
+	if err := db.Delete(&conversation).Error; err != nil {
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	utils.Ok(c)
+}

@@ -123,6 +123,14 @@ func OkWithData(ctx *gin.Context, data interface{}) {
 	})
 }
 
+func Ok(ctx *gin.Context) {
+	response(ctx, http.StatusOK, &Response{
+		Code: global.CodeSuccess,
+		Msg:  global.Code(global.CodeSuccess).ToMsg(),
+		Data: nil,
+	})
+}
+
 // ErrorWithHttpCode 返回指定 HTTP 状态码的错误响应
 // Returns an error response with specified HTTP status code
 func ErrorWithHttpCode(ctx *gin.Context, httpCode int, code global.Code, err error) {

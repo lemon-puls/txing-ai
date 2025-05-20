@@ -34,6 +34,8 @@ import DtoUpdateModelReq from './model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
+import GlobalModelMapping from './model/GlobalModelMapping';
+import GlobalModelMappingCondition from './model/GlobalModelMappingCondition';
 import UtilsResponse from './model/UtilsResponse';
 import VoChannelVO from './model/VoChannelVO';
 import VoConversationDetailVO from './model/VoConversationDetailVO';
@@ -210,6 +212,18 @@ export {
      * @property {module:model/DtoUpdateProfileReq}
      */
     DtoUpdateProfileReq,
+
+    /**
+     * The GlobalModelMapping model constructor.
+     * @property {module:model/GlobalModelMapping}
+     */
+    GlobalModelMapping,
+
+    /**
+     * The GlobalModelMappingCondition model constructor.
+     * @property {module:model/GlobalModelMappingCondition}
+     */
+    GlobalModelMappingCondition,
 
     /**
      * The UtilsResponse model constructor.

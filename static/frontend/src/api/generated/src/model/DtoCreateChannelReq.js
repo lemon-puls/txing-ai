@@ -12,6 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
+import GlobalModelMapping from './GlobalModelMapping';
 
 /**
  * The DtoCreateChannelReq model module.
@@ -61,7 +62,7 @@ class DtoCreateChannelReq {
                 obj['endpoint'] = ApiClient.convertToType(data['endpoint'], 'String');
             }
             if (data.hasOwnProperty('mappings')) {
-                obj['mappings'] = ApiClient.convertToType(data['mappings'], 'String');
+                obj['mappings'] = ApiClient.convertToType(data['mappings'], [GlobalModelMapping]);
             }
             if (data.hasOwnProperty('models')) {
                 obj['models'] = ApiClient.convertToType(data['models'], ['String']);
@@ -107,9 +108,15 @@ class DtoCreateChannelReq {
         if (data['endpoint'] && !(typeof data['endpoint'] === 'string' || data['endpoint'] instanceof String)) {
             throw new Error("Expected the field `endpoint` to be a primitive type in the JSON string but got " + data['endpoint']);
         }
-        // ensure the json data is a string
-        if (data['mappings'] && !(typeof data['mappings'] === 'string' || data['mappings'] instanceof String)) {
-            throw new Error("Expected the field `mappings` to be a primitive type in the JSON string but got " + data['mappings']);
+        if (data['mappings']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['mappings'])) {
+                throw new Error("Expected the field `mappings` to be an array in the JSON data but got " + data['mappings']);
+            }
+            // validate the optional field `mappings` (array)
+            for (const item of data['mappings']) {
+                GlobalModelMapping.validateJSON(item);
+            };
         }
         // ensure the json data is an array
         if (!Array.isArray(data['models'])) {
@@ -144,7 +151,7 @@ DtoCreateChannelReq.prototype['endpoint'] = undefined;
 
 /**
  * 模型映射关系 Mappings
- * @member {String} mappings
+ * @member {Array.<module:model/GlobalModelMapping>} mappings
  */
 DtoCreateChannelReq.prototype['mappings'] = undefined;
 
