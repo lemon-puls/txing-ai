@@ -1094,17 +1094,17 @@ const saveSettings = () => {
 // 选择模型
 const selectModel = (model) => {
   console.log("currentChat", currentChat.value, "model:", model)
-  currentChat.value.model = model.name;
+  currentChat.value.model = model?.name;
   // currentChat.value.name = model.name;
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
   if (chatInList && !currentChat.value?.preset) {
-    chatInList.avatar = model.avatar;
+    chatInList.avatar = model?.avatar;
     // chatInList.name = model.name;
     conversationStore.updateConversation(chatInList)
 
-    currentChat.value.avatar = model.avatar;
+    currentChat.value.avatar = model?.avatar;
   }
   // 设置当前选中模型
   currentModel.value = model;
