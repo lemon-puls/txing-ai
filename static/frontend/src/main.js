@@ -9,6 +9,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
+import { permission } from './directives/permission'
 
 import App from './App.vue'
 import router from './router'
@@ -24,6 +25,9 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 // 注册 SVG 图标组件
 app.component('SvgIcon', SvgIcon)
+
+// 注册全局指令
+app.directive('permission', permission)
 
 app.use(pinia)
 app.use(router)
