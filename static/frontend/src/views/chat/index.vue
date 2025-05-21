@@ -968,7 +968,6 @@ async function NewChatConnection(newChat, userId, presetId) {
 
   wsManager.on(newChat.id, 'close', () => {
     console.log('WebSocket connection closed')
-    ElMessage.warning('连接已关闭')
   })
 }
 
