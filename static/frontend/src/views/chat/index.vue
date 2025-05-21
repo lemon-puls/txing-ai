@@ -77,7 +77,7 @@
         <div class="batch-actions-bar" v-if="showCheckboxes">
           <el-button type="danger" size="small" class="batch-btn" @click="batchDelete">
             <el-icon><Delete /></el-icon>
-            删除选中会话
+            删除
           </el-button>
           <el-button size="small" class="batch-btn cancel-btn" @click="showCheckboxes = false">
             <el-icon><Close /></el-icon>
@@ -90,22 +90,18 @@
       <div class="sidebar-footer">
         <div class="footer-actions">
           <el-tooltip content="切换主题" placement="top">
-            <div class="theme-toggle" @click="toggleTheme">
+            <div class="action-btn" @click="toggleTheme">
               <SvgIcon icon="theme" size="20" hover click/>
             </div>
           </el-tooltip>
           <el-tooltip content="切换背景" placement="top">
-            <div class="bg-toggle" @click="showBgPatternSelector">
-              <el-icon>
-                <Picture/>
-              </el-icon>
+            <div class="action-btn" @click="showBgPatternSelector">
+              <SvgIcon icon="pic" color="#1890ff" size="20" hover click/>
             </div>
           </el-tooltip>
           <el-tooltip content="批量操作" placement="top">
-            <div class="batch-toggle" @click="toggleBatchMode">
-              <el-icon>
-                <Select />
-              </el-icon>
+            <div class="action-btn" @click="toggleBatchMode">
+              <SvgIcon icon="deletebatch" size="18" hover click/>
             </div>
           </el-tooltip>
         </div>
@@ -286,10 +282,10 @@
                 <el-tooltip content="联网搜索" placement="top">
                   <div
                     class="feature-toggle"
-                    :class="{ active: currentChat.webSearch }"
                     @click="toggleWebSearch"
                   >
-                    <SvgIcon icon="network" size="24" hover click/>
+                    <SvgIcon v-if="currentChat.webSearch" icon="network-active" size="28" hover click/>
+                    <SvgIcon v-else icon="network" size="24" hover click/>
                   </div>
                 </el-tooltip>
               </div>
@@ -2201,11 +2197,11 @@ const batchDelete = async () => {
       background: var(--el-color-primary-light-9);
     }
 
-    &.active {
-      background: var(--el-color-primary);
-      border-color: var(--el-color-primary);
-      color: white;
-    }
+    //&.active {
+    //  background: var(--el-color-primary);
+    //  border-color: var(--el-color-primary);
+    //  color: white;
+    //}
   }
 }
 
