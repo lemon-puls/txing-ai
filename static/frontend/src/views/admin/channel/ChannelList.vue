@@ -168,17 +168,17 @@
                             <el-icon><Delete /></el-icon>
                           </el-button>
                         </div>
-                        
+
                         <div class="conditions-container">
                           <div v-for="(condition, conditionIndex) in mapping.conditions" :key="conditionIndex" class="condition-item">
                             <div class="condition-header">
                               <div class="condition-target">
                                 <el-input v-model="condition.targetModel" placeholder="输入目标模型" class="mapping-input" />
                                 <div class="condition-options">
-                                  <el-button 
-                                    type="primary" 
-                                    plain 
-                                    size="small" 
+                                  <el-button
+                                    type="primary"
+                                    plain
+                                    size="small"
                                     @click="addConditionConfig(condition)"
                                   >
                                     <el-icon><Plus /></el-icon>
@@ -190,7 +190,7 @@
                                 <el-icon><Delete /></el-icon>
                               </el-button>
                             </div>
-                            
+
                             <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
                               <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
                                 <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
@@ -208,14 +208,14 @@
                               </div>
                             </div>
                           </div>
-                          
+
                           <el-button type="primary" @click="addCondition(channel, mappingIndex)" class="add-condition-btn" plain>
                             <el-icon><Plus /></el-icon>
                             添加目标模型
                           </el-button>
                         </div>
                       </div>
-                      
+
                       <el-button type="primary" @click="addMapping(channel)" class="add-mapping-btn" plain>
                         <el-icon><Plus /></el-icon>
                         添加映射规则
@@ -356,17 +356,17 @@
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
-              
+
               <div class="conditions-container">
                 <div v-for="(condition, conditionIndex) in mapping.conditions" :key="conditionIndex" class="condition-item">
                   <div class="condition-header">
                     <div class="condition-target">
                       <el-input v-model="condition.targetModel" placeholder="输入目标模型" class="mapping-input" />
                       <div class="condition-options">
-                        <el-button 
-                          type="primary" 
-                          plain 
-                          size="small" 
+                        <el-button
+                          type="primary"
+                          plain
+                          size="small"
                           @click="addConditionConfig(condition)"
                         >
                           <el-icon><Plus /></el-icon>
@@ -378,7 +378,7 @@
                       <el-icon><Delete /></el-icon>
                     </el-button>
                   </div>
-                  
+
                   <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
                     <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
                       <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
@@ -396,14 +396,14 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <el-button type="primary" @click="addCondition(channelForm, mappingIndex)" class="add-condition-btn" plain>
                   <el-icon><Plus /></el-icon>
                   添加目标模型
                 </el-button>
               </div>
             </div>
-            
+
             <el-button type="primary" @click="addMapping(channelForm)" class="add-mapping-btn" plain>
               <el-icon><Plus /></el-icon>
               添加映射规则
@@ -448,7 +448,7 @@ const total = ref(0)
 // 渠道数据
 const channels = ref([])
 const channelTypes = ref(['火星引擎', '通义千问', 'Claude', 'ChatGPT'])
-const availableModels = ref(['deepseek-r1', 'chatgpt3.5', 'chatgpt4', 'qwen-turbo', 'qwen-plus', 'claude2'])
+const availableModels = ref(['deepseek-r1', 'deepseek-v3', 'chatgpt3.5', 'chatgpt4', 'qwen-turbo', 'qwen-plus', 'claude2'])
 
 // 对话框数据
 const dialogVisible = ref(false)
@@ -485,24 +485,24 @@ const channelRules = {
     { type: 'array', min: 1, message: '请至少选择一个模型', trigger: 'change' }
   ],
   mappings: [
-    { 
+    {
       validator: (rule, value, callback) => {
         if (!value || value.length === 0) {
           callback()
           return
         }
-        
+
         for (const mapping of value) {
           if (!mapping.sourceModel) {
             callback(new Error('请选择源模型'))
             return
           }
-          
+
           if (!mapping.conditions || mapping.conditions.length === 0) {
             callback(new Error('请至少添加一个条件'))
             return
           }
-          
+
           for (const condition of mapping.conditions) {
             if (!condition.targetModel) {
               callback(new Error('请选择目标模型'))
@@ -510,7 +510,7 @@ const channelRules = {
             }
           }
         }
-        
+
         callback()
       },
       trigger: 'change'
@@ -543,7 +543,7 @@ const loadChannels = async () => {
               targetModel: condition.targetModel,
               conditionConfigs: []
             }
-            
+
             // 如果有条件配置，转换为 conditionConfigs 格式
             if (condition.conditions) {
               Object.entries(condition.conditions).forEach(([key, value]) => {
@@ -553,7 +553,7 @@ const loadChannels = async () => {
                 })
               })
             }
-            
+
             return result
           })
         })) : []
@@ -629,13 +629,13 @@ const handleSave = async (channel) => {
             targetModel: condition.targetModel,
             conditions: {}
           }
-          
+
           if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
             condition.conditionConfigs.forEach(config => {
               result.conditions[config.key] = config.value
             })
           }
-          
+
           return result
         })
       }))
@@ -705,13 +705,13 @@ const handleSubmit = async () => {
                 targetModel: condition.targetModel,
                 conditions: {}
               }
-              
+
               if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
                 condition.conditionConfigs.forEach(config => {
                   result.conditions[config.key] = config.value
                 })
               }
-              
+
               return result
             })
           }))
@@ -1086,12 +1086,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   .checkbox-label {
     font-size: 14px;
     color: var(--el-text-color-regular);
   }
-  
+
   .info-icon {
     color: var(--el-text-color-secondary);
     font-size: 16px;
@@ -1108,7 +1108,7 @@ onMounted(() => {
   margin-top: 8px;
   border-radius: 8px;
   padding: 12px 24px;
-  
+
   .el-icon {
     font-size: 16px;
   }
