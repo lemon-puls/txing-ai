@@ -41,7 +41,7 @@ type Channel struct {
 	// 	  }
 	// 	]
 	// }
-	Mappings []global.ModelMapping `gorm:"type:json;serializer:json;comment:模型映射关系" json:"mappings"`
+	Mappings []global.ModelMapping `gorm:"type:longtext;serializer:json;comment:模型映射关系" json:"mappings"`
 }
 
 func (c *Channel) GetId() int64 {
