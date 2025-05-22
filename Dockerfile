@@ -51,8 +51,8 @@ RUN ls -la /app/static/frontend/dist && \
 
 # 构建应用程序
 RUN make docker && \
-    chmod +x txing-oj && \
-    ls -hail txing-oj && \
+    chmod +x txing-ai && \
+    ls -hail txing-ai && \
     touch build_complete
 
 # 最终运行阶段
@@ -63,11 +63,11 @@ WORKDIR /app
 
 # 复制构建产物
 COPY --from=backend-builder /app/build_complete /app/build_complete
-COPY --from=backend-builder /app/txing-oj /app/txing-oj
+COPY --from=backend-builder /app/txing-ai /app/txing-ai
 
 # 清理构建标记文件
 RUN rm build_complete && \
-    ls -hail txing-oj
+    ls -hail txing-ai
 
 # 设置时区
 ENV TZ=Asia/Shanghai
@@ -76,4 +76,4 @@ ENV TZ=Asia/Shanghai
 EXPOSE 8080
 
 # 启动命令
-ENTRYPOINT ["./txing-oj"]
+ENTRYPOINT ["./txing-ai"]
