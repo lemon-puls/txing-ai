@@ -1188,8 +1188,10 @@ onMounted(async () => {
 
     // 检查是否需要创建新对话
     if (route.query.newChat === 'true') {
-      const assistantId = route.query.assistantId
-      await createNewChat(assistantId)
+      const presetId = route.query.presetId
+      await createNewChat(presetId)
+      // 清除 URL 参数，否则用户只要刷新页面就会再次创建新对话
+      router.replace({ query: {} })
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
       console.log("Switching chat", chatList.value[0].id)

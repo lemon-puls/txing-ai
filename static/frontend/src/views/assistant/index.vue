@@ -327,11 +327,7 @@ const useAssistant = (preset) => {
     path: '/chat',
     query: {
       newChat: 'true',
-      assistantId: preset.id,
-      assistantName: preset.name,
-      assistantAvatar: preset.avatar,
-      assistantDescription: preset.description,
-      assistantType: preset.type
+      presetId: preset.id
     }
   })
 }
@@ -393,7 +389,7 @@ const deleteAssistant = async (preset) => {
         type: 'warning'
       }
     )
-    
+
     const response = await defaultApi.apiPresetIdDelete(preset.id)
     if (response.code === 0) {
       ElMessage.success('删除成功')
@@ -878,7 +874,7 @@ const deleteAssistant = async (preset) => {
       display: flex;
       gap: 12px;
       align-items: center;
-      
+
       .action-icons {
         display: flex;
         gap: 8px;
