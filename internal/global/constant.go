@@ -11,6 +11,7 @@ const (
 const (
 	ChannelTypeVolcengine = "volcengine"
 	ChannelTypePolo       = "polo"
+	ChannelOpenai         = "OpenAI"
 )
 
 // 所有大模型

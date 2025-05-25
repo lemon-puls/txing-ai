@@ -447,7 +447,7 @@ const total = ref(0)
 
 // 渠道数据
 const channels = ref([])
-const channelTypes = ref(['火星引擎', 'polo'])
+const channelTypes = ref(['火星引擎', 'polo', 'OpenAI'])
 const availableModels = ref([])
 const loadingModels = ref(false)
 

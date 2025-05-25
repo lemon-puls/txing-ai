@@ -3,6 +3,7 @@ module txing-ai
 go 1.23.0
 
 require (
+	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/locales v0.14.1
@@ -16,10 +17,13 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/redis/go-redis/v9 v9.7.1
 	github.com/samber/lo v1.49.1
+	github.com/sashabaranov/go-openai v1.40.0
 	github.com/spf13/viper v1.19.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.4
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.65
+	github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20250416063818-9d1689d8400b
 	github.com/volcengine/volcengine-go-sdk v1.1.1
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/mysql v1.5.7
@@ -29,7 +33,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72 // indirect
 	github.com/bytedance/sonic v1.12.9 // indirect
 	github.com/bytedance/sonic/loader v0.2.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -45,7 +48,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -69,10 +72,6 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1147 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sts v1.0.1142 // indirect
-	github.com/tencentyun/cos-go-sdk-v5 v0.7.65 // indirect
-	github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20250416063818-9d1689d8400b // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/volcengine/volc-sdk-golang v1.0.23 // indirect
