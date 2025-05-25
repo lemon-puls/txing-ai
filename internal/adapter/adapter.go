@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	adaptercommon "txing-ai/internal/adapter/common"
+	"txing-ai/internal/adapter/polo"
 	myVolcengine "txing-ai/internal/adapter/volcengine"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -14,6 +15,7 @@ import (
 // 存储所有 ChatRequester 工厂，发送请求时根据 channelType 选择对应的工厂创建 ChatRequester
 var chatRequesterFactories = map[string]adaptercommon.ChatRequesterFactory{
 	global.ChannelTypeVolcengine: myVolcengine.NewVoclEngineFactory(),
+	global.ChannelTypePolo:       polo.NewPoloFactory(),
 }
 
 func createChatRequest(ctx context.Context, channelConfig iface.ChannelConfig, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {

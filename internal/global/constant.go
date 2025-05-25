@@ -10,6 +10,7 @@ const (
 // 渠道类型
 const (
 	ChannelTypeVolcengine = "volcengine"
+	ChannelTypePolo       = "polo"
 )
 
 // 所有大模型
