@@ -430,7 +430,7 @@ const handleDelete = async (preset) => {
       }
     )
 
-    const response = await defaultApi.apiAdminPresetIdDelete(preset.id)
+    const response = await defaultApi.apiPresetIdDelete(preset.id)
     if (response.code === 0) {
       ElMessage.success('删除成功')
       await loadPresets()
@@ -470,9 +470,9 @@ const handleSubmit = async () => {
 
         let response
         if (dialogType.value === 'add') {
-          response = await defaultApi.apiAdminPresetPost(formData)
+          response = await defaultApi.apiPresetPost(formData)
         } else {
-          response = await defaultApi.apiAdminPresetIdPut(presetForm.value.id, formData)
+          response = await defaultApi.apiPresetIdPut(presetForm.value.id, formData)
         }
 
         if (response.code === 0) {
