@@ -2080,6 +2080,10 @@ const batchDelete = async () => {
 }
 
 .model-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 8px;
+
   .el-empty {
     padding: 24px;
   }
