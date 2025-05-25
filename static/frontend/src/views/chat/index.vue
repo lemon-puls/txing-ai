@@ -716,6 +716,10 @@ const isTyping = computed(() => {
 const sendMessage = async () => {
   if (!messageInput.value.trim() || !currentChat.value) return
 
+  // 获取用户ID (如果登录的话)
+  const userId = userStore.userId || '0'
+  await NewChatConnectionIfNeed(currentChat.value, userId, currentChat.value.presetId);
+
   // 如果是会话的第一条消息，就把该消息设置为会话的名称
   conversationStore.updateCurrentChatName(messageInput.value)
   // 添加用户消息
@@ -922,9 +926,18 @@ const goToHome = () => {
   router.push('/')
 }
 
-async function NewChatConnection(newChat, userId, presetId) {
+// 若没有连接，则创建连接
+async function NewChatConnectionIfNeed(newChat, userId, presetId) {
 
   console.log("New chat connection", newChat.id, userId, presetId);
+
+  let connCreated = await wsManager.hasConnection(newChat.id);
+
+  if (connCreated) {
+    console.log("Connection already created", newChat.id);
+    return;
+  }
+
   // 创建 WebSocket 连接
   let b = await wsManager.createConnection(newChat.id, userId, presetId);
   if (!b) {
@@ -1018,9 +1031,6 @@ const createNewChat = async (assistantId) => {
   }
 
   try {
-    // 获取用户ID (如果登录的话)
-    const userId = userStore.userId || '0'
-    await NewChatConnection(newChat, userId, preset.id);
 
     await conversationStore.addConversation(newChat)
 
@@ -1041,7 +1051,7 @@ const switchChat = async (chat) => {
         currentChat.value.id.toString().startsWith('tmp-') &&
         (!currentChat.value.messages || currentChat.value.messages.filter(m => m.role === 'user').length === 0)) {
       // 删除当前空会话
-      conversationStore.deleteConversation(currentChat.value.id)
+      conversationStore.batchDeleteConversations([currentChat.value.id])
     }
 
     // 加载会话详情
@@ -1069,7 +1079,7 @@ const switchChat = async (chat) => {
     // console.log("Switching chat", currentChat.value)
 
     // 建立 WebSocket 连接
-    await NewChatConnection(chat, userStore.userId || '0', "")
+    // await NewChatConnectionIfNeed(chat, userStore.userId || '0', "")
     await scrollToBottom()
   } catch (error) {
     console.error('Failed to switch chat:', error)
@@ -1183,8 +1193,8 @@ onMounted(async () => {
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
       console.log("Switching chat", chatList.value[0].id)
-      // 获取用户ID (如果登录的话)
-      await NewChatConnection(chatList.value[0], userStore.userId, "");
+
+      // await NewChatConnectionIfNeed(chatList.value[0], userStore.userId, "");
     }
 
     const savedPattern = localStorage.getItem('chatBgPattern')

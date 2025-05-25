@@ -84,13 +84,20 @@ export const useConversationStore = defineStore('conversation', {
 
       } else {
         // 登录状态下，调用后端批量删除接口
-        const response = await defaultApi.apiChatConversationsDeletebatchPost({
-          ids: ids
-        })
 
-        if (response.code != 0) {
-          ElMessage.error(response.msg || '删除失败')
-          return
+        // 过滤掉 id 不为数字字符串的会话
+        // id 不为数字字符串的会话是新建会话，并且没有发送过消息（此时 id 包含 tmp 前缀）, 会话暂未保存到服务器，不用请求后端删除接口
+        const filteredIds = ids.filter(id => /^\d+$/.test(id))
+
+        if (filteredIds.length > 0) {
+          const response = await defaultApi.apiChatConversationsDeletebatchPost({
+            ids: filteredIds
+          })
+
+          if (response.code != 0) {
+            ElMessage.error(response.msg || '删除失败')
+            return
+          }
         }
       }
 
