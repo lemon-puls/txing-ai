@@ -432,7 +432,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, ArrowUp, CircleCheck, CircleClose, Delete, InfoFilled, Plus, ArrowRight } from '@element-plus/icons-vue'
-import { defaultApi } from '@/api/index.js'
+import { defaultApi } from '@/api'
 
 // 搜索表单
 const searchForm = ref({
@@ -447,8 +447,9 @@ const total = ref(0)
 
 // 渠道数据
 const channels = ref([])
-const channelTypes = ref(['火星引擎', '通义千问', 'Claude', 'ChatGPT'])
-const availableModels = ref(['deepseek-r1', 'deepseek-v3', 'chatgpt3.5', 'chatgpt4', 'qwen-turbo', 'qwen-plus', 'claude2'])
+const channelTypes = ref(['火星引擎', 'polo'])
+const availableModels = ref([])
+const loadingModels = ref(false)
 
 // 对话框数据
 const dialogVisible = ref(false)
@@ -797,9 +798,34 @@ const removeCondition = (channel, mappingIndex, conditionIndex) => {
   channel.mappings[mappingIndex].conditions.splice(conditionIndex, 1)
 }
 
-// 页面加载时获取数据
-onMounted(() => {
-  loadChannels()
+// 加载模型列表
+const loadModels = async () => {
+  try {
+    loadingModels.value = true
+    const response = await defaultApi.apiModelListGet(1, 999, {
+      orderBy: 'id',
+      order: 'desc'
+    })
+
+    if (response.code === 0 && response.data) {
+      availableModels.value = response.data.records.map(model => model.name)
+    } else {
+      ElMessage.error(response.msg || '获取模型列表失败')
+    }
+  } catch (error) {
+    console.error('Load models error:', error)
+    ElMessage.error(error.body?.msg || '获取模型列表失败')
+  } finally {
+    loadingModels.value = false
+  }
+}
+
+// 在组件挂载时加载数据
+onMounted(async () => {
+  await Promise.all([
+    loadChannels(),
+    loadModels()
+  ])
 })
 </script>
 
@@ -1143,5 +1169,33 @@ onMounted(() => {
 
 .condition-key-select {
   width: 160px;
+}
+
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+
+  .model-name {
+    font-weight: 500;
+  }
+
+  .model-desc {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+  }
+}
+
+:deep(.el-select-dropdown__item) {
+  padding: 8px 12px;
+}
+
+:deep(.el-select-dropdown__item.selected) {
+  .model-option {
+    .model-name {
+      color: var(--el-color-primary);
+    }
+  }
 }
 </style>
