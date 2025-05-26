@@ -9,7 +9,7 @@
           </div>
         </div>
         <div class="nav-right">
-          <a href="https://github.com/yourusername/txing-ai" target="_blank" class="github-link">
+          <a href="https://github.com/lemon-puls/txing-ai" target="_blank" class="github-link">
             <el-tooltip content="在 GitHub 上查看" placement="bottom">
               <el-icon class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg></el-icon>
             </el-tooltip>
@@ -37,7 +37,7 @@
     <!-- 主要内容 -->
     <div class="content">
       <h1 class="main-title">
-        <span class="gradient-text">AI Assistant</span>
+        <span class="gradient-text">Txing AI</span>
         <div class="subtitle">
           <span class="typing-text"></span>
           <span class="cursor">|</span>
@@ -56,7 +56,7 @@
           <div class="card-content">
             <el-icon class="card-icon"><ChatRound /></el-icon>
             <h2>开启聊天</h2>
-            <p>与 AI 助手展开对话，探索无限可能</p>
+            <p>与 AI 对话，探索无限可能</p>
             <div class="card-action">
               <el-icon><ArrowRight /></el-icon>
             </div>
@@ -75,7 +75,7 @@
           <div class="card-content">
             <el-icon class="card-icon"><Shop /></el-icon>
             <h2>AI 助手市场</h2>
-            <p>发现更多专业 AI 助手，提升工作效率</p>
+            <p>更多 AI 助手，提升工作效率</p>
             <div class="card-action">
               <el-icon><ArrowRight /></el-icon>
             </div>
@@ -101,8 +101,9 @@ const router = useRouter()
 const hoveredCard = ref(null)
 const particles = ref([])
 
+
 // 打字效果相关变量
-const text = '智能助手，助您提升效率'
+const text = '智能助手，让我们都有光明的未来'
 const typingSpeed = 150 // 打字速度（毫秒）
 const eraseSpeed = 100  // 删除速度（毫秒）
 const delayBetweenLoops = 2000 // 循环之间的延迟（毫秒）
@@ -320,6 +321,7 @@ const navigateToMarket = () => {
 
 .main-title {
   margin-bottom: 60px;
+  text-align: center;
 
   .gradient-text {
     font-size: 4em;
