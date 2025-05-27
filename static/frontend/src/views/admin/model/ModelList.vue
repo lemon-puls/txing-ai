@@ -186,7 +186,7 @@ const total = ref(0)
 
 // 模型数据
 const models = ref([])
-const modelTags = ref(['通用', '对话', '编程', '创意', '分析'])
+const modelTags = ref(['通用', '联网搜索', '深度思考', '编程强化'])
 
 // 对话框数据
 const dialogVisible = ref(false)

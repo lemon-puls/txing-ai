@@ -278,7 +278,7 @@
                   <SvgIcon icon="ai" size="30" hover click/>
                 </div>
               </el-tooltip>
-              <div class="feature-toggles">
+              <div class="feature-toggles" v-if="currentModel?.tag?.includes('联网搜索')">
                 <el-tooltip content="联网搜索" placement="top">
                   <div
                     class="feature-toggle"
@@ -1130,7 +1130,6 @@ const saveSettings = () => {
 
 // 选择模型
 const selectModel = (model) => {
-  console.log("currentChat", currentChat.value, "model:", model)
   currentChat.value.model = model?.name;
   // currentChat.value.name = model.name;
 
@@ -1148,6 +1147,8 @@ const selectModel = (model) => {
 
   // 保存到本地存储
   conversationStore.saveToLocalStorage();
+
+  console.log("Selected model", model)
 }
 
 // 切换联网搜索
