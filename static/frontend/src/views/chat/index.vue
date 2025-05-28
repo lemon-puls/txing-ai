@@ -1915,6 +1915,13 @@ const batchDelete = async () => {
           line-height: 1.6;
         }
       }
+
+      table {
+
+        tr {
+          background-color: var(--var-bg-color);
+        }
+      }
     }
   }
 
