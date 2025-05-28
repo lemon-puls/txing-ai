@@ -3,10 +3,12 @@ package domain
 import (
 	"encoding/json"
 	"errors"
-	"github.com/samber/lo"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	"unicode/utf8"
+
+	"github.com/samber/lo"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -50,9 +52,15 @@ func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) err
 	})
 
 	if count == 0 {
-		// 更新会话名称 最多 15 个字符 超出就截断
-		if len(msg.Content) > 35 {
-			c.Name = msg.Content[:35]
+		// 更新会话名称 最多 35 个字符 超出就截断
+		if utf8.RuneCountInString(msg.Content) > 35 {
+			// 找到第 35 个字符的位置
+			pos := 0
+			for i := 0; i < 35; i++ {
+				_, size := utf8.DecodeRuneInString(msg.Content[pos:])
+				pos += size
+			}
+			c.Name = msg.Content[:pos]
 		} else {
 			c.Name = msg.Content
 		}
