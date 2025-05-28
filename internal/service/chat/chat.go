@@ -3,6 +3,8 @@ package chat
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"math/rand"
 	"txing-ai/internal/adapter"
 	adaptercommon "txing-ai/internal/adapter/common"
@@ -21,6 +23,8 @@ const defaultRespMessage = "Sorry, I don't understand your message."
 
 const defaultErrRespMessage = "Sorry, System error, please try again later."
 
+const exceedMessageLimit = "您今日的消息次数已达上限（%d条），请明天再试"
+
 // 通过回调让下层把大模型响应消息块即时通过 chan 传送给上层处理
 type partialChunk struct {
 	Chunk *global.Chunk
@@ -29,7 +33,39 @@ type partialChunk struct {
 }
 
 // 处理聊天（调用大模型发送消息，并且响应结果）
-func HandleChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) (content, reasoningContent string) {
+func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB) (content, reasoningContent string) {
+
+	uid, exists := utils.GetUIDFromContextAllowEmpty(ctx)
+
+	var role int8
+	if exists {
+		role = utils.GetRoleFromContext(ctx)
+	}
+
+	messageLimiter := utils.GetMessageLimiterFromContext(ctx)
+
+	// 检查消息限制
+	allowed, err := messageLimiter.CheckAndIncrement(ctx, uid, role)
+	if err != nil {
+		log.Error("check message limit error", zap.Error(err))
+		conn.Send(dto.WsMessageResponse{
+			Content:        defaultErrRespMessage,
+			End:            true,
+			ConversationId: conversation.Id,
+		})
+		return defaultErrRespMessage, ""
+	}
+
+	// 如果不允许发送消息，返回提示信息
+	if !allowed {
+		limitMessage := fmt.Sprintf(exceedMessageLimit, utils.DailyMessageLimit)
+		conn.Send(dto.WsMessageResponse{
+			Content:        limitMessage,
+			End:            true,
+			ConversationId: conversation.Id,
+		})
+		return limitMessage, ""
+	}
 
 	// 创建响应缓冲区
 	buffer := utils.NewChatRespBuffer()
@@ -40,7 +76,7 @@ func HandleChat(ctx context.Context, conn *utils.Connection, conversation *domai
 	conn.SetCancelFunc(cancel)
 
 	// 开启聊天
-	err := execChat(ctxWithCancel, conn, conversation, buffer, db)
+	err = execChat(ctxWithCancel, conn, conversation, buffer, db)
 
 	if err != nil {
 		log.Error("execChat failed", zap.Error(err))

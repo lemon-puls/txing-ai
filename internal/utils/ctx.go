@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"txing-ai/internal/enum"
+
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"txing-ai/internal/enum"
 )
 
 func GetDBFromContext(c *gin.Context) *gorm.DB {
@@ -26,6 +27,10 @@ func GetUIDFromContextAllowEmpty(c *gin.Context) (int64, bool) {
 
 func GetCosClientFromContext(c *gin.Context) *COSClient {
 	return c.MustGet("cos").(*COSClient)
+}
+
+func GetMessageLimiterFromContext(c *gin.Context) *MessageLimiter {
+	return c.MustGet("messageLimiter").(*MessageLimiter)
 }
 
 func GetRoleFromContext(c *gin.Context) int8 {
