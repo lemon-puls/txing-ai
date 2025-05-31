@@ -1151,8 +1151,6 @@ const selectModel = (model) => {
 
   // 保存到本地存储
   conversationStore.saveToLocalStorage();
-
-  console.log("Selected model", model)
 }
 
 // 切换联网搜索
@@ -1191,6 +1189,9 @@ onMounted(async () => {
     // 加载会话列表
     await conversationStore.loadConversations()
 
+    // 加载可用模型列表
+    await loadModels()
+
     // 检查是否需要创建新对话
     if (route.query.newChat === 'true') {
       const presetId = route.query.presetId
@@ -1211,10 +1212,11 @@ onMounted(async () => {
 
     // 初始化主题
     themeStore.initTheme()
-    await loadModels()
+
     // 设置当前选中模型
     if (currentChat.value) {
       currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || availableModels.value[0]
+      selectModel(currentModel.value)
     }
   } catch (error) {
     console.error('Failed to initialize chat:', error)
