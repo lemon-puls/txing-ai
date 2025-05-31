@@ -274,7 +274,7 @@
             </div>
             <div class="quick-actions">
               <el-tooltip content="AI 助手市场" placement="top">
-                <div class="action-btn" @click="showPresetMarket = true">
+                <div class="action-btn" @click="showPresetMarket = true" v-permission:login>
                   <SvgIcon icon="ai" size="30" hover click/>
                 </div>
               </el-tooltip>
@@ -1130,6 +1130,10 @@ const saveSettings = () => {
 
 // 选择模型
 const selectModel = (model) => {
+
+  // 如果当前没有选中会话，则直接返回即可
+  if (!currentChat.value) return
+
   currentChat.value.model = model?.name;
   // currentChat.value.name = model.name;
 
@@ -1209,7 +1213,9 @@ onMounted(async () => {
     themeStore.initTheme()
     await loadModels()
     // 设置当前选中模型
-    currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || availableModels.value[0]
+    if (currentChat.value) {
+      currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || availableModels.value[0]
+    }
   } catch (error) {
     console.error('Failed to initialize chat:', error)
     ElMessage.error('初始化聊天失败')

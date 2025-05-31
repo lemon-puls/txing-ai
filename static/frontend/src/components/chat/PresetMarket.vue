@@ -84,6 +84,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { Search, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { defaultApi } from '@/api'
+import {useUserStore} from "@/stores/user.js";
 
 const props = defineProps({
   visible: {
@@ -110,6 +111,8 @@ const total = ref(0)
 // 助手数据
 const presets = ref([])
 const loading = ref(false)
+
+const userStore = useUserStore()
 
 // 加载助手列表
 const loadPresets = async () => {
@@ -174,7 +177,11 @@ watch([searchQuery, filterType], () => {
 })
 
 onMounted(() => {
-  loadPresets()
+
+  // 登陆后才允许加载助手列表
+  if (userStore.isLoggedIn) {
+    loadPresets()
+  }
 })
 </script>
 

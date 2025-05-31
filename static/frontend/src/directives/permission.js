@@ -5,12 +5,14 @@ import { ElMessage } from 'element-plus'
 /**
  * 权限指令
  * Permission directive
- * 
+ *
  * 使用方式 Usage:
  * v-permission:role="['admin', 'editor']"  // 角色权限 Role permission
  * v-permission:perm="['create', 'edit']"   // 操作权限 Permission-based
  * v-permission:role.hide="['admin']"       // 无权限时隐藏元素 Hide when no permission
  * v-permission:perm.hide="['create']"      // 无权限时隐藏元素 Hide when no permission
+ * v-permission:login                       // 仅需登录 Only requires login
+ * v-permission:login.hide                  // 未登录时隐藏元素 Hide when not logged in
  */
 export const permission = {
   mounted(el, binding) {
@@ -19,7 +21,7 @@ export const permission = {
 
     // 如果没有指定权限要求，则不进行权限控制
     // If no permission requirement is specified, no permission control
-    if (!value) return
+    if (!value && arg !== 'login') return
 
     let hasAuth = false
 
@@ -31,6 +33,10 @@ export const permission = {
       // 检查操作权限
       // Check operation permission
       hasAuth = hasPermission(userStore.userPermissions, value)
+    } else if (arg === 'login') {
+      // 检查是否已登录
+      // Check if user is logged in
+      hasAuth = userStore.isLoggedIn
     }
 
     // 如果没有权限
@@ -47,7 +53,7 @@ export const permission = {
         // Set disabled style without setting disabled attribute
         el.style.opacity = '0.5'
         el.style.cursor = 'not-allowed'
-        
+
         // 创建一个覆盖层来捕获点击事件
         // Create an overlay to capture click events
         const overlay = document.createElement('div')
@@ -59,38 +65,38 @@ export const permission = {
         overlay.style.zIndex = '999'
         overlay.style.backgroundColor = 'transparent'
         overlay.style.cursor = 'not-allowed'
-        
+
         // 设置鼠标悬停提示
         // Set mouseover tooltip
-        overlay.title = '您没有权限执行此操作'
-        
+        overlay.title = arg === 'login' ? '请先登录' : '您没有权限执行此操作'
+
         // 添加点击事件监听器
         // Add click event listener
         overlay.onclick = (e) => {
           e.preventDefault()
           e.stopPropagation()
-          
+
           // 显示无权限提示
           // Show no permission message
           ElMessage({
-            message: '您没有权限执行此操作',
+            message: arg === 'login' ? '请先登录' : '您没有权限执行此操作',
             type: 'warning',
             duration: 2000
           })
-          
+
           return false
         }
-        
+
         // 确保父元素是相对定位，以便正确定位覆盖层
         // Make sure parent element has relative position for proper overlay positioning
         if (getComputedStyle(el).position === 'static') {
           el.style.position = 'relative'
         }
-        
+
         // 添加覆盖层到元素
         // Add overlay to element
         el.appendChild(overlay)
       }
     }
   }
-} 
+}
