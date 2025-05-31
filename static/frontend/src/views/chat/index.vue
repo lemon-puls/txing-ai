@@ -1132,14 +1132,18 @@ const saveSettings = () => {
 const selectModel = (model) => {
 
   // 如果当前没有选中会话，则直接返回即可
-  if (!currentChat.value) return
+  if (!currentChat.value) {
+    console.log("No current chat")
+    return
+  }
 
   currentChat.value.model = model?.name;
   // currentChat.value.name = model.name;
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
-  if (chatInList && !currentChat.value?.preset) {
+  console.log("Setting chat avatar", chatInList, currentChat.value?.preset)
+  if (chatInList && !currentChat.value?.preset?.id) {
     chatInList.avatar = model?.avatar;
     // chatInList.name = model.name;
     conversationStore.updateConversation(chatInList)
