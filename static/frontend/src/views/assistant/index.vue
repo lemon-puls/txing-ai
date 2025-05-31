@@ -27,7 +27,7 @@
             <el-icon><Timer /></el-icon>
             开始聊天
           </el-button>
-          <el-button type="primary" class="action-btn" @click="createAssistant">
+          <el-button v-permission:login type="primary" class="action-btn" @click="createAssistant">
             <el-icon><Plus /></el-icon>
             创建助手
           </el-button>
@@ -145,6 +145,7 @@
               type="primary"
               class="use-button"
               @click.stop="useAssistant(preset)"
+              v-permission:login
             >
               <span class="button-content">
                 <el-icon><ArrowRight /></el-icon>
