@@ -1142,7 +1142,6 @@ const selectModel = (model) => {
 
   // 更新当前会话在列表中的头像
   const chatInList = chatList.value.find(chat => chat.id === currentChat.value.id);
-  console.log("Setting chat avatar", chatInList, currentChat.value?.preset)
   if (chatInList && !currentChat.value?.preset?.id) {
     chatInList.avatar = model?.avatar;
     // chatInList.name = model.name;
