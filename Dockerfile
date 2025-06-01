@@ -58,6 +58,21 @@ RUN make docker && \
 # 最终运行阶段
 FROM debian:bookworm-slim as final
 
+# 安装CA证书和时区数据 否则最终容器无法通过 https 访问外部接口
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+# 更新CA证书
+RUN update-ca-certificates
+
 # 设置工作目录
 WORKDIR /app
 
@@ -68,9 +83,6 @@ COPY --from=backend-builder /app/txing-ai /app/txing-ai
 # 清理构建标记文件
 RUN rm build_complete && \
     ls -hail txing-ai
-
-# 设置时区
-ENV TZ=Asia/Shanghai
 
 # 暴露端口
 EXPOSE 8080
