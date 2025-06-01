@@ -29,22 +29,16 @@ const originalCallApi = apiClient.callApi
 apiClient.callApi = async function (...args) {
   const [path] = args
 
-  console.log("请求路径：", path)
-
   // 如果不是刷新token的请求，添加token到请求头
   if (!path.includes('/user/refresh')) {
     const token = localStorage.getItem('token')
     if (token) {
-      console.log("设置 token：", token)
       this.defaultHeaders['Authorization'] = `Bearer ${token}`
     }
   }
 
   try {
     const response = await originalCallApi.apply(this, args)
-    const data = response.data
-    console.log("请求路径：", path, data, data.code)
-
     return response
   } catch (error) {
     // 处理401错误（未登录或token失效）
@@ -73,7 +67,6 @@ apiClient.callApi = async function (...args) {
             //   null
             // )'
             const refreshResponse = await defaultApi.apiUserRefreshPost(`Bearer ${refreshToken}`)
-            console.log("刷新token完成：", refreshResponse)
             // const refreshData = refreshResponse.response.body
             if (refreshResponse.code === 0) {
               // 更新token
@@ -89,7 +82,6 @@ apiClient.callApi = async function (...args) {
               this.defaultHeaders['Authorization'] = `Bearer ${newToken}`
               return await originalCallApi.apply(this, args)
             } else {
-              console.log("请重新登录")
               // 刷新失败，清除用户信息
               logout()
               ElMessage.error('请重新登录!')

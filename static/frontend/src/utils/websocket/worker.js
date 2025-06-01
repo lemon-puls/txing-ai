@@ -57,7 +57,6 @@ function closeConnection(chatId) {
 
 // 创建新的 WebSocket 连接
 async function createConnection(chatId, userId, token, presetId, wsUrl) {
-  console.log('Creating WebSocket connection:', chatId, presetId);
   // 检查是否超过最大连接数
   if (getUserConnectionCount(userId) >= maxConnections) {
     // 移除最早的连接
@@ -79,16 +78,11 @@ async function createConnection(chatId, userId, token, presetId, wsUrl) {
       presetId = "";
     }
 
-    console.log(`-----------------------------------------${wsUrl}?Authorization=${token}&id=${id}&presetId=${presetId}`)
-
-
     // 创建 WebSocket 连接，添加身份验证参数
     const ws = new WebSocket(`${wsUrl}?Authorization=${token}&id=${id}&presetId=${presetId}`);
 
     // 记录连接时间
     connectionTimes.set(chatId.toString(), Date.now());
-
-    console.log('Creating WebSocket connection:', chatId);
     // 存储连接
     connections.set(chatId.toString(), {
       ws,
@@ -232,7 +226,6 @@ async function createConnection(chatId, userId, token, presetId, wsUrl) {
 function sendMessage(chatId, data) {
   const conn = connections.get(chatId.toString());
   if (conn && conn.ws && conn.ws.readyState === WebSocket.OPEN) {
-    console.log('Sending message:', data);
     conn.ws.send(JSON.stringify(data));
   } else {
     // 记录连接状态以帮助调试
@@ -286,7 +279,6 @@ function updateConnectionId(oldId, newId) {
 
 // 检查连接是否存在
 function checkConnection(chatId) {
-  console.log('Checking connection:', chatId);
   const conn = connections.get(chatId.toString());
   const exists = !!(conn && conn.ws && conn.ws.readyState === WebSocket.OPEN);
 

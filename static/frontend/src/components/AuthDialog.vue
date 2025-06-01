@@ -106,7 +106,6 @@ const captchaId = ref('')
 const getCaptcha = async () => {
   try {
     const res = await defaultApi.apiCaptchaGet()
-    console.log('获取验证码成功:', res)
     if (res.code === 0) {
       captchaImage.value = res.data.image
       captchaId.value = res.data.id
@@ -535,7 +534,7 @@ const handleSubmit = async () => {
   .el-dialog {
     margin-top: 15vh !important;
   }
-  
+
   .el-overlay {
     position: fixed;
     top: 0;

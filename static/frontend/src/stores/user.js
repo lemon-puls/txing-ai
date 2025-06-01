@@ -57,7 +57,6 @@ export const useUserStore = defineStore('user', {
       this.syncConversationsAfterLogin()
     },
     logout() {
-      console.log('logout')
       this.clearUserInfo()
       this.clearToken()
 

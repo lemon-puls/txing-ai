@@ -42,7 +42,6 @@ class WebSocketManager {
           break
 
         case 'idUpdated':
-          console.log(`WebSocket connection ID updated from ${oldId} to ${newId}`)
           break
 
         default:
@@ -52,8 +51,6 @@ class WebSocketManager {
     if (import.meta.env.VITE_WS_URL) {
       this.wsUrl = import.meta.env.VITE_WS_URL
     }
-
-    console.log(`Using WebSocket URL from VITE_WS_URL env variable: ${this.wsUrl}`)
   }
 
   /**
@@ -94,15 +91,12 @@ class WebSocketManager {
       // 检查是否已经存在 WebSocket 连接
       const has = await this.hasConnection(chatId)
       if (has) {
-        console.log(`WebSocket connection already exists for chat ${chatId}`)
         return false
       }
 
       // 获取 token
       const token = localStorage.getItem('token') || ''
       const wsUrl = this.wsUrl
-
-      console.log(`#########################${wsUrl}`)
 
       // 返回一个 Promise，等待连接建立
       return new Promise((resolve, reject) => {
@@ -140,8 +134,6 @@ class WebSocketManager {
           wsUrl
         })
 
-        console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
-
         // 初始化此聊天ID的处理器集合
         if (!this.handlers.has(chatId)) {
           this.handlers.set(chatId, {
@@ -177,7 +169,6 @@ class WebSocketManager {
    * @param {object} data - 要发送的数据
    */
   sendMessage(chatId, data) {
-    console.log(`Sending message to chat ${chatId}:`, data)
     this.worker.postMessage({
       action: 'sendMessage',
       chatId,

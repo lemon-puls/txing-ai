@@ -63,7 +63,6 @@ export const useConversationStore = defineStore('conversation', {
           }
         }
       }
-      console.log('update conversation:', this.conversations[index])
     },
 
     // 批量删除会话
@@ -207,9 +206,7 @@ export const useConversationStore = defineStore('conversation', {
       if (userStore.isLoggedIn) {
         try {
           const response = await defaultApi.apiChatConversationsIdGet(id)
-          console.log('load conversation detail response:', response)
           if (response.code === 0 && response.data) {
-            console.log('load conversation detail:', response.data)
             this.currentConversation = response.data
 
             // 使用对象的属性访问，不需要检查类型
@@ -222,7 +219,6 @@ export const useConversationStore = defineStore('conversation', {
               this.currentConversation.messages.push(lastMessage)
             }
 
-            console.log('退出 currentConversation:', this.currentConversation)
             return response.data
           }
         } catch (error) {

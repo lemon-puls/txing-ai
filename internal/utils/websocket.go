@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
 	"txing-ai/internal/dto"
@@ -73,7 +72,7 @@ func (w *WebSocket) IsClosed() bool {
 }
 
 func (w *WebSocket) Send(v interface{}) error {
-	log.Info("发送消息：", zap.Any("message", v))
+	//log.Info("发送消息：", zap.Any("message", v))
 	return w.SendJson(v)
 }
 

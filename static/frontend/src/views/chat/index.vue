@@ -929,8 +929,6 @@ const goToHome = () => {
 // 若没有连接，则创建连接
 async function NewChatConnectionIfNeed(newChat, userId, presetId) {
 
-  console.log("New chat connection", newChat.id, userId, presetId);
-
   let connCreated = await wsManager.hasConnection(newChat.id);
 
   if (connCreated) {
@@ -956,7 +954,6 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
 
   // 添加消息处理器
   wsManager.on(newChat.id, 'message', (data) => {
-    // console.log("Received message", data);
 
     // 如果收到的消息包含会话ID，更新当前会话ID
     if (data.conversationId) {
@@ -965,7 +962,6 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
       // 如果这是第一条消息，且ID与当前不同，需要更新会话ID
       if (newChat.realId === false && newChat.id.toString() !== actualChatId) {
         // 更新会话对象的ID
-        console.log(`Updating chat ID from ${newChat.id} to ${actualChatId}`)
         let oldId = newChat.id
         newChat.id = parseInt(actualChatId)
         newChat.realId = true
@@ -1005,8 +1001,6 @@ const createNewChat = async (assistantId) => {
       ElMessage.error('获取助手详情失败')
     }
   }
-
-  console.log("Assistant", preset)
 
   // 找到默认模型并自动选中
   const defaultModel = availableModels.value.find(model => model.default)
@@ -1067,11 +1061,8 @@ const switchChat = async (chat) => {
     // 加载会话详情
     await conversationStore.loadConversationDetail(chat.id)
 
-    console.log(availableModels.value)
     // 根据会话的 model 字段查找并选中对应的模型
-    console.log("Switching chat", chat.id, availableModels.value)
     const model = availableModels.value.find(m => m.name === chat.model)
-    console.log("Model", model)
     selectModel(model)
 
     // if (model) {
@@ -1143,7 +1134,6 @@ const selectModel = (model) => {
 
   // 如果当前没有选中会话，则直接返回即可
   if (!currentChat.value) {
-    console.log("No current chat")
     return
   }
 
@@ -1213,7 +1203,6 @@ onMounted(async () => {
       router.replace({ query: {} })
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
-      console.log("Switching chat", chatList.value[0].id)
 
       // await NewChatConnectionIfNeed(chatList.value[0], userStore.userId, "");
     }

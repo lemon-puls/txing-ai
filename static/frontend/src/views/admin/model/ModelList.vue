@@ -121,7 +121,7 @@
             :enable-crop="true"
             placeholder="点击上传头像"
             @success="(url) => {
-              console.log('Upload success:', url)
+              // console.log('Upload success:', url)
             }"
             @error="(error) => ElMessage.error(error.message || '上传失败')"
           />

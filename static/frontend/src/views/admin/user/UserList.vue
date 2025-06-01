@@ -212,7 +212,6 @@ const handleToggleStatus = async (row) => {
 // 搜索
 const handleSearch = () => {
   currentPage.value = 1
-  console.log(searchForm.value)
   loadUsers()
 }
 

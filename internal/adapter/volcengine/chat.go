@@ -93,7 +93,6 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 		}
 
 		if len(recv.Choices) > 0 {
-			fmt.Print(recv.Choices[0].Delta.Content)
 			var reasoningContent string
 			if recv.Choices[0].Delta.ReasoningContent != nil {
 				reasoningContent = *recv.Choices[0].Delta.ReasoningContent
