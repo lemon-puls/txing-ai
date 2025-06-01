@@ -56,7 +56,7 @@ function closeConnection(chatId) {
 }
 
 // 创建新的 WebSocket 连接
-async function createConnection(chatId, userId, token, presetId) {
+async function createConnection(chatId, userId, token, presetId, wsUrl) {
   console.log('Creating WebSocket connection:', chatId, presetId);
   // 检查是否超过最大连接数
   if (getUserConnectionCount(userId) >= maxConnections) {
@@ -79,10 +79,11 @@ async function createConnection(chatId, userId, token, presetId) {
       presetId = "";
     }
 
-    console.log(`ws://localhost:8080/api/chat/ws?Authorization=${token}&id=${id}&presetId=${presetId}`)
+    console.log(`-----------------------------------------${wsUrl}?Authorization=${token}&id=${id}&presetId=${presetId}`)
+
 
     // 创建 WebSocket 连接，添加身份验证参数
-    const ws = new WebSocket(`ws://localhost:8080/api/chat/ws?Authorization=${token}&id=${id}&presetId=${presetId}`);
+    const ws = new WebSocket(`${wsUrl}?Authorization=${token}&id=${id}&presetId=${presetId}`);
 
     // 记录连接时间
     connectionTimes.set(chatId.toString(), Date.now());
@@ -300,11 +301,11 @@ function checkConnection(chatId) {
 
 // 处理来自主线程的消息
 self.onmessage = function(e) {
-  const { action, chatId, userId, data, token, presetId, oldId, newId } = e.data;
+  const { action, chatId, userId, data, token, presetId, oldId, newId, wsUrl } = e.data;
 
   switch (action) {
     case 'createConnection':
-      createConnection(chatId, userId, token, presetId);
+      createConnection(chatId, userId, token, presetId, wsUrl);
       break;
 
     case 'sendMessage':

@@ -5,6 +5,8 @@ class WebSocketManager {
   constructor() {
     // 存储所有的回调处理器
     this.handlers = new Map()
+    // 不指定域名和端口，使用当前页面的域名和端口
+    this.wsUrl = '/api/chat/ws'
     // 初始化 Worker
     this.initWorker()
   }
@@ -47,6 +49,11 @@ class WebSocketManager {
           console.warn(`Unknown message type from worker: ${type}`)
       }
     }
+    if (import.meta.env.VITE_WS_URL) {
+      this.wsUrl = import.meta.env.VITE_WS_URL
+    }
+
+    console.log(`Using WebSocket URL from VITE_WS_URL env variable: ${this.wsUrl}`)
   }
 
   /**
@@ -94,13 +101,18 @@ class WebSocketManager {
       // 获取 token
       const token = localStorage.getItem('token') || ''
 
+      const wsUrl = this.wsUrl
+
+      console.log(`#########################${wsUrl}`)
+
       // 通过 worker 创建连接
       this.worker.postMessage({
         action: 'createConnection',
         chatId,
         userId,
         token,
-        presetId
+        presetId,
+        wsUrl
       })
 
       console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
