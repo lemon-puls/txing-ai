@@ -91,42 +91,66 @@ class WebSocketManager {
    */
   async createConnection(chatId, userId, presetId) {
     try {
-
       // 检查是否已经存在 WebSocket 连接
       const has = await this.hasConnection(chatId)
       if (has) {
-         return false
+        console.log(`WebSocket connection already exists for chat ${chatId}`)
+        return false
       }
 
       // 获取 token
       const token = localStorage.getItem('token') || ''
-
       const wsUrl = this.wsUrl
 
       console.log(`#########################${wsUrl}`)
 
-      // 通过 worker 创建连接
-      this.worker.postMessage({
-        action: 'createConnection',
-        chatId,
-        userId,
-        token,
-        presetId,
-        wsUrl
-      })
+      // 返回一个 Promise，等待连接建立
+      return new Promise((resolve, reject) => {
+        // 设置超时
+        const timeout = setTimeout(() => {
+          reject(new Error('WebSocket connection timeout'))
+        }, 5000)
 
-      console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
+        // 创建一次性消息处理器
+        const messageHandler = (e) => {
+          const { type, chatId: responseChatId, error } = e.data
+          if (responseChatId === chatId) {
+            if (type === 'open') {
+              clearTimeout(timeout)
+              this.worker.removeEventListener('message', messageHandler)
+              resolve(true)
+            } else if (type === 'error') {
+              clearTimeout(timeout)
+              this.worker.removeEventListener('message', messageHandler)
+              reject(new Error(error || 'Failed to create WebSocket connection'))
+            }
+          }
+        }
 
-      // 初始化此聊天ID的处理器集合
-      if (!this.handlers.has(chatId)) {
-        this.handlers.set(chatId, {
-          message: new Set(),
-          error: new Set(),
-          close: new Set()
+        // 添加消息处理器
+        this.worker.addEventListener('message', messageHandler)
+
+        // 通过 worker 创建连接
+        this.worker.postMessage({
+          action: 'createConnection',
+          chatId,
+          userId,
+          token,
+          presetId,
+          wsUrl
         })
-      }
 
-      return true
+        console.log(`WebSocket connection creation requested for chat ${chatId} with user ${userId}`)
+
+        // 初始化此聊天ID的处理器集合
+        if (!this.handlers.has(chatId)) {
+          this.handlers.set(chatId, {
+            message: new Set(),
+            error: new Set(),
+            close: new Set()
+          })
+        }
+      })
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
       throw error

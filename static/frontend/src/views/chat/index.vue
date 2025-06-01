@@ -939,8 +939,18 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
   }
 
   // 创建 WebSocket 连接
-  let b = await wsManager.createConnection(newChat.id, userId, presetId);
-  if (!b) {
+  try {
+    const connected = await wsManager.createConnection(newChat.id, userId, presetId);
+    if (connected) {
+      console.log('WebSocket connection established successfully');
+    } else {
+      console.error('Failed to establish WebSocket connection');
+      ElMessage.error('与服务器建立连接失败')
+      return;
+    }
+  } catch (error) {
+    console.error('Failed to establish WebSocket connection:', error);
+    ElMessage.error('与服务器建立连接失败')
     return;
   }
 
