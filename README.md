@@ -335,14 +335,55 @@ v-permission:perm.hide="['create']"      // 无权限时隐藏元素 Hide when n
 
 ## 🎉 展示
 
+### 🏠 首页
 <div align="center">
-  <img src="docs/images/screenshot1.png" alt="Screenshot 1" width="45%"/>
-  <img src="docs/images/screenshot2.png" alt="Screenshot 2" width="45%"/>
+  <img src="static/imgs/首页.png" alt="首页"/>
+  <p><em>现代化的首页设计，展示平台核心功能和特色</em></p>
 </div>
 
+### 💬 AI 聊天功能
 <div align="center">
-  <img src="docs/images/screenshot3.png" alt="Screenshot 3" width="45%"/>
-  <img src="docs/images/screenshot4.png" alt="Screenshot 4" width="45%"/>
+  <img src="static/imgs/AI聊天页.png" alt="AI聊天页" width="65%"/>
+  <img src="static/imgs/AI聊天参数设置.png" alt="AI聊天参数设置" width="30%"/>
+  <p><em>智能对话界面，支持多模型切换和参数自定义</em></p>
+</div>
+
+### 🤖 AI 助手预设
+<div align="center">
+  <img src="static/imgs/AI助手页（预设）.png" alt="AI助手预设" />
+  <p><em>丰富的 AI 助手预设市场，支持角色定制和场景应用</em></p>
+</div>
+
+### 👨‍💼 后台管理系统
+
+#### 📊 控制台
+<div align="center">
+  <img src="static/imgs/后台管理-控制台.png" alt="后台管理控制台"/>
+  <p><em>数据统计仪表板，实时监控平台运营状态</em></p>
+</div>
+
+#### 👥 用户管理
+<div align="center">
+  <img src="static/imgs/后台管理-用户管理.png" alt="用户管理"/>
+  <p><em>用户权限管理，支持角色分配和状态控制</em></p>
+</div>
+
+#### 🔗 渠道管理
+<div align="center">
+  <img src="static/imgs/后台管理-渠道管理.png" alt="渠道管理"/>
+  <p><em>多渠道配置管理，支持负载均衡和故障转移</em></p>
+</div>
+
+#### 🤖 模型管理
+<div align="center">
+  <img src="static/imgs/后台管理-模型管理.png" alt="模型管理"/>
+  <p><em>模型市场管理，支持模型上架和价格策略配置</em></p>
+</div>
+
+#### 🎯 AI 助手管理
+<div align="center">
+  <img src="static/imgs/后台管理-AI助手管理.png" alt="AI助手管理"/>
+  <p><em>预设内容管理，支持审核发布和分类管理</em></p>
 </div>
 
 ---
