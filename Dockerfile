@@ -51,29 +51,41 @@ RUN ls -la /app/static/frontend/dist && \
 
 # 构建应用程序
 RUN make docker && \
-    chmod +x txing-oj && \
-    ls -hail txing-oj && \
+    chmod +x txing-ai && \
+    ls -hail txing-ai && \
     touch build_complete
 
 # 最终运行阶段
 FROM debian:bookworm-slim as final
+
+# 安装CA证书和时区数据 否则最终容器无法通过 https 访问外部接口
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+# 更新CA证书
+RUN update-ca-certificates
 
 # 设置工作目录
 WORKDIR /app
 
 # 复制构建产物
 COPY --from=backend-builder /app/build_complete /app/build_complete
-COPY --from=backend-builder /app/txing-oj /app/txing-oj
+COPY --from=backend-builder /app/txing-ai /app/txing-ai
 
 # 清理构建标记文件
 RUN rm build_complete && \
-    ls -hail txing-oj
-
-# 设置时区
-ENV TZ=Asia/Shanghai
+    ls -hail txing-ai
 
 # 暴露端口
 EXPOSE 8080
 
 # 启动命令
-ENTRYPOINT ["./txing-oj"]
+ENTRYPOINT ["./txing-ai"]

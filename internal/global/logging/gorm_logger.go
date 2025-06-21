@@ -22,7 +22,7 @@ type GormLogger struct {
 func NewGormLogger(zapLogger *zap.Logger) *GormLogger {
 	return &GormLogger{
 		ZapLogger:                 zapLogger,
-		LogLevel:                  logger.Info, // 默认日志级别为 Info
+		LogLevel:                  logger.Warn, // 默认日志级别为 Info
 		SlowThreshold:             time.Second, // 默认慢查询阈值为 1 秒
 		IgnoreRecordNotFoundError: true,        // 默认忽略记录未找到的错误
 	}

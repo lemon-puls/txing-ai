@@ -1,0 +1,202 @@
+package domain
+
+import (
+	"encoding/json"
+	"errors"
+	"txing-ai/internal/dto"
+	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
+	"unicode/utf8"
+
+	"github.com/samber/lo"
+
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+)
+
+type Conversation struct {
+	BaseModel
+	Auth      bool   `gorm:"type:boolean;not null;default:false;comment:是否已认证" json:"auth"`
+	UserID    int64  `gorm:"type:bigint;not null;index;comment:用户ID" json:"userId"`
+	Name      string `gorm:"type:varchar(255);comment:会话名称" json:"name"`
+	Message   string `gorm:"type:mediumtext;comment:会话消息记录" json:"message"`
+	Model     string `gorm:"type:varchar(50);not null;comment:使用的模型" json:"model"`
+	EnableWeb bool   `gorm:"type:boolean;not null;default:false;comment:是否启用网页搜索" json:"enableWeb"`
+	Context   int    `gorm:"type:int;not null;default:0;comment:上下文长度" json:"context"`
+
+	// 可选的模型参数
+	MaxTokens         *int     `gorm:"type:int;comment:最大token数" json:"maxTokens,omitempty"`
+	Temperature       *float32 `gorm:"type:float;comment:温度参数" json:"temperature,omitempty"`
+	TopP              *float32 `gorm:"type:float;comment:Top-P采样参数" json:"topP,omitempty"`
+	TopK              *int     `gorm:"type:int;comment:Top-K采样参数" json:"topK,omitempty"`
+	PresencePenalty   *float32 `gorm:"type:float;comment:存在惩罚参数" json:"presencePenalty,omitempty"`
+	FrequencyPenalty  *float32 `gorm:"type:float;comment:频率惩罚参数" json:"frequencyPenalty,omitempty"`
+	RepetitionPenalty *float32 `gorm:"type:float;comment:重复惩罚参数" json:"repetitionPenalty,omitempty"`
+
+	// 预设 id
+	PresetID *int64 `gorm:"type:bigint;comment:预设 id" json:"presetId"`
+
+	// 非数据库字段
+	FormattedMessage []global.Message `gorm:"-" json:"formattedMessage"`
+}
+
+const (
+	defaultContextLength = 8
+)
+
+// 处理消息
+func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
+	// 如果是该会话的第一条用户发的消息，则更新会话名称
+	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
+		return m.Role == global.User
+	})
+
+	if count == 0 {
+		// 更新会话名称 最多 35 个字符 超出就截断
+		if utf8.RuneCountInString(msg.Content) > 35 {
+			// 找到第 35 个字符的位置
+			pos := 0
+			for i := 0; i < 35; i++ {
+				_, size := utf8.DecodeRuneInString(msg.Content[pos:])
+				pos += size
+			}
+			c.Name = msg.Content[:pos]
+		} else {
+			c.Name = msg.Content
+		}
+	}
+	// 添加消息到会话消息记录中，并应用调用参数
+	if err := c.addMessageFromWsMessageRequest(msg); err != nil {
+		return err
+	}
+
+	// 更新会话信息到数据库
+	if err := c.updateOrCreate(db); err != nil {
+		return err
+	}
+	return nil
+}
+
+// 将 WsMessageRequest 消息添加到会话消息记录中
+func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest) error {
+	// 如果消息内容为空，则不添加到消息记录中
+	if len(msg.Content) == 0 {
+		return errors.New("message content is empty")
+	}
+
+	// 将消息添加到会话消息记录中
+	c.addMessage(global.Message{
+		Role:    global.User,
+		Content: msg.Content,
+	})
+	// 应用调用参数
+	c.applyCallParams(msg)
+	return nil
+}
+
+func (c *Conversation) SaveResponse(db *gorm.DB, content string, reasoningContent string) {
+	// 添加消息到会话消息记录中
+	c.AddMessageFromAssistant(content, reasoningContent)
+
+	// 更新会话信息到数据库
+	c.updateOrCreate(db)
+}
+
+// 添加消息到会话消息记录中
+func (c *Conversation) addMessage(msg global.Message) {
+	c.FormattedMessage = append(c.FormattedMessage, msg)
+}
+
+// 应用本次调用参数
+func (c *Conversation) applyCallParams(msg *dto.WsMessageRequest) {
+	c.MaxTokens = msg.MaxTokens
+	c.TopP = msg.TopP
+	c.TopK = msg.TopK
+	c.PresencePenalty = msg.PresencePenalty
+	c.FrequencyPenalty = msg.FrequencyPenalty
+	c.RepetitionPenalty = msg.RepetitionPenalty
+	c.EnableWeb = msg.EnableWeb
+	c.Temperature = msg.Temperature
+	c.Model = msg.Model
+	//c.setContextLength(msg.Context)
+
+}
+
+// 设置上下文长度
+func (c *Conversation) setContextLength(context int) {
+	if context <= 0 {
+		c.Context = defaultContextLength
+	} else {
+		c.Context = context
+	}
+}
+
+func (c *Conversation) getContextLength() int {
+	if c.Context <= 0 {
+		return defaultContextLength
+	}
+	return c.Context
+}
+
+func (c *Conversation) updateOrCreate(db *gorm.DB) error {
+	// 消息转换为 json 字符串
+	jsonBytes, err := json.Marshal(c.FormattedMessage)
+	if err != nil {
+		log.Error("json.Marshal failed", zap.Error(err))
+		return err
+	}
+	c.Message = string(jsonBytes)
+
+	// 执行新增或更新操作
+	tx := db.Save(c)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+// 获取到用于发送给大模型的消息切片（context 的长度）
+func (c *Conversation) GetChatMessages() []global.Message {
+	//// 深复制消息
+	//var cp []global.Message
+	//err := copier.Copy(&cp, &c.FormattedMessage)
+	//if err != nil {
+	//	log.Error("copier.Copy failed", zap.Error(err))
+	//	panic(err)
+	//}
+
+	length := c.getContextLength()
+
+	if len(c.FormattedMessage) < length {
+		return c.FormattedMessage
+	}
+
+	return c.FormattedMessage[len(c.FormattedMessage)-length:]
+}
+
+func (c *Conversation) AddMessageFromAssistant(content, reasoningContent string) {
+	// 如果消息内容为空，则不添加到消息记录中
+	if len(content) == 0 {
+		log.Error("response is empty, skip AddMessageFromAssistant")
+		return
+	}
+
+	// 将消息添加到会话消息记录中
+	c.addMessage(global.Message{
+		Role:             global.Assistant,
+		Content:          content,
+		ReasoningContent: reasoningContent,
+	})
+}
+
+func (c *Conversation) AddMessageFromSystem(content string) {
+	if len(content) == 0 {
+		log.Error("response is empty, skip AddMessageFromSystem")
+		return
+	}
+
+	c.addMessage(global.Message{
+		Role:    global.System,
+		Content: content,
+	})
+}

@@ -47,7 +47,6 @@ func main() {
 	sigCtx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	// 启动服务
-	// 使用wire初始化应用
 	app := app.New(sigCtx, appConfig)
 	// 启动
 	app.Start()

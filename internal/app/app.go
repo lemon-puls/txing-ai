@@ -12,6 +12,8 @@ import (
 	"txing-ai/internal/iface"
 	"txing-ai/internal/middleware"
 	"txing-ai/internal/route"
+	"txing-ai/internal/utils"
+	"txing-ai/internal/utils/captcha"
 
 	"github.com/gin-gonic/gin"
 )
@@ -61,8 +63,21 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	// 初始化资源提供者
 	resProvider := NewResourceProvider(redisClient, db)
 
+	// 初始化 jwt 工具
+	utils.InitJwtSecret(appConfig.AuthConfig)
+
+	// 初始化 captcha 验证码 store
+	captcha.InitStore(redisClient)
+
+	// 初始化 COS 客户端
+	cosClient, err := utils.NewCOSClient(appConfig.CosConfig)
+	if err != nil {
+		log.Error("cos client init error", zap.Error(err))
+		panic(err)
+	}
+
 	// 注册全局中间（局部中间件在具体的路由处注册）
-	middleware.RegisterMiddleware(engine, db, redisClient)
+	middleware.RegisterMiddleware(engine, db, redisClient, cosClient)
 	// 注册路由
 	route.Register(engine, resProvider)
 

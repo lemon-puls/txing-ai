@@ -2,15 +2,16 @@ package config
 
 import (
 	"fmt"
-	"go.uber.org/zap"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 	"time"
 	model "txing-ai/internal/domain"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging"
 	"txing-ai/internal/global/logging/log"
+
+	"go.uber.org/zap"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 // 分页
@@ -76,6 +77,14 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 
 	//数据库迁移
 	db.AutoMigrate(&model.User{})
+	db.AutoMigrate(&model.Model{})
+	db.AutoMigrate(&model.Channel{})
+	db.AutoMigrate(&model.Preset{})
+	db.AutoMigrate(&model.Conversation{})
+
+	// 设置 GORM 的 JSON 序列化器
+	db.Config.PrepareStmt = true
+	db.Config.DisableForeignKeyConstraintWhenMigrating = true
 
 	return db
 }

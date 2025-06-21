@@ -1,0 +1,12 @@
+// 浅色主题全局样式
+:root:not(.dark) {
+
+  //.el-dropdown__popper {
+  //  --el-dropdown-menuItem-hover-fill: var(--el-hover-fill) !important;
+  //}
+
+  .el-tag.el-tag--primary {
+    //background-color: initial !important;
+    --el-tag-text-color: white !important;
+  }
+}
