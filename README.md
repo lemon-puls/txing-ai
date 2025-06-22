@@ -103,68 +103,76 @@ graph TD
     classDef external fill:#f1f8e9,stroke:#33691e,stroke-width:2px
     
     %% 1. 前端层
-    subgraph "🎨 前端层"
-        A[Vue 3 前端应用]
+    subgraph Frontend
+        A[Vue 3 Frontend App]
     end
     
     %% 2. 网关层
-    subgraph "🚪 网关层"
-        E[Gin 路由网关]
+    subgraph Gateway
+        E[Gin Router Gateway]
+        E1[JWT Auth Middleware]
     end
     
     %% 3. 业务层
-    subgraph "⚙️ 业务层"
-        I[用户管理服务]
-        L[聊天服务]
-        P[渠道管理服务]
-        T[预设管理服务]
+    subgraph Business
+        I[User Service]
+        P[Channel Service]
+        T[Preset Service]
+        L[Chat Service WebSocket]
     end
 
     %% 4. 数据层
-    subgraph "💾 数据层"
-        CC[MySQL 数据库]
-        HH[Redis 缓存]
+    subgraph Data
+        CC[MySQL Database]
+        HH[Redis Cache]
     end
     
     %% 5. 适配器层
-    subgraph "🔌 适配器层"
-        ZZ[适配器工厂]
-        W[OpenAI 适配器]
-        Y[火山引擎适配器]
-        AA[Polo 适配器]
+    subgraph Adapter
+        ZZ[Adapter Factory]
+        W[OpenAI Adapter]
+        Y[Volcengine Adapter]
+        AA[Polo Adapter]
     end
     
     %% 6. 外部服务
-    subgraph "🌐 外部服务"
+    subgraph External
         X[OpenAI API]
-        Z[火山引擎 API]
+        Z[Volcengine API]
         BB[Polo API]
     end
     
-    %% --- 连接关系 ---
-    
-    %% 主要垂直流程
-    A --> E
-    E --> I & L & P & T
+    %% 连接关系
+    A -->|HTTP API Request| E
+    E -->|Route| E1
+    E1 --> I
+    E1 --> P
+    E1 --> T
 
-    %% 业务层到数据层
-    I --> CC & HH
-    L --> CC & HH
+    A -.->|WebSocket| E
+    E -.->|Upgrade| L
+    A <--> L
+    
+    I --> CC
+    I --> HH
+    L --> CC
+    L --> HH
     P --> CC
     T --> CC
 
-    %% 业务层到适配器层
     L --> ZZ
+    ZZ --> W
+    ZZ --> Y
+    ZZ --> AA
 
-    %% 适配器层到外部服务
-    ZZ --> W --> X
-    ZZ --> Y --> Z
-    ZZ --> AA --> BB
+    W --> X
+    Y --> Z
+    AA --> BB
     
     %% 应用样式
     class A frontend
-    class E gateway
-    class I,L,P,T business
+    class E,E1 gateway
+    class I,P,T,L business
     class CC,HH data
     class ZZ,W,Y,AA adapter
     class X,Z,BB external
