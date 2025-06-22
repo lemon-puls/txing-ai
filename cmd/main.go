@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,6 +51,13 @@ func main() {
 	app := app.New(sigCtx, appConfig)
 	// 启动
 	app.Start()
+
+	// 打印服务访问地址
+	log.Info("🚀 Txing AI service started successfully!")
+	log.Info("\n _______     _                           _____ \n|__   __|   (_)                   /\\    |_   _|\n   | |__  __ _  _ __    __ _     /  \\     | |  \n   | |\\ \\/ /| || '_ \\  / _` |   / /\\ \\    | |  \n   | | >  < | || | | || (_| |  / ____ \\  _| |_ \n   |_|/_/\\_\\|_||_| |_| \\__, | /_/    \\_\\|_____|\n                        __/ |                  \n                       |___/   ")
+	log.Info(fmt.Sprintf("📚 API Documentation: http://localhost:%d/swagger/index.html", appConfig.ServerConfig.Port))
+	log.Info(fmt.Sprintf("🏠 Homepage: http://localhost:%d/dash", appConfig.ServerConfig.Port))
+	log.Info("💡 Press Ctrl+C to stop the service")
 
 	// 等待信号
 	<-sigCtx.Done()
