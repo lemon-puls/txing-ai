@@ -1,7 +1,6 @@
 # Txing AI
 
-<div align="center">
-  <img src="docs/images/logo.png" alt="Txing AI Logo" width="200"/>
+<div align="center"> 
 
   <h1>Txing AI</h1>
   <p>🤖 智能对话平台 | 多模型支持 | 智能负载均衡</p>
@@ -16,11 +15,21 @@
   [🚀 快速开始](#快速开始) |
   [👥 贡献](#贡献指南) |
   [📝 更新日志](CHANGELOG.md)
+
+---
+
+  ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=txing-ai.readme)
+  [![Stars](https://img.shields.io/github/stars/lemon-puls/txing-ai)](https://github.com/lemon-puls/txing-ai/stargazers)
+  [![Forks](https://img.shields.io/github/forks/lemon-puls/txing-ai)](https://github.com/lemon-puls/txing-ai/network/members)
+  [![Issues](https://img.shields.io/github/issues/lemon-puls/txing-ai)](https://github.com/lemon-puls/txing-ai/issues)
+  [![Pull Requests](https://img.shields.io/github/issues-pr/lemon-puls/txing-ai)](https://github.com/lemon-puls/txing-ai/pulls)
 </div>
 
 ---
 
 Txing AI 是一个现代化的 AI 聊天平台，基于 Vue 3 和 Go 开发，支持多模型接入和智能会话管理。平台采用前后端分离架构，提供流畅的用户体验和强大的后台管理功能。
+
+**核心优势**：支持 OpenAI、火山引擎、Polo 等多个 AI 服务商统一接入，具备智能负载均衡、WebSocket 实时通信、JWT 安全认证、模块化可扩展架构等企业级特性，为用户提供高性能、安全可靠的 AI 对话服务。
 
 ## 🌟 功能特点
 
@@ -29,64 +38,41 @@ Txing AI 是一个现代化的 AI 聊天平台，基于 Vue 3 和 Go 开发，�
 | 功能模块 | 子功能 | 状态 | 说明 |
 |---------|--------|------|------|
 | **多模型支持** | 多种大语言模型接入 | ✅ 已实现 | 支持 DeepSeek、ChatGPT 等 |
-| | 模型市场自由选择 | ✅ 已实现 | 支持模型评分和评价 |
+| | 模型市场自由选择 | ✅ 已实现 | 自由指定对话模型 |
 | | 实时对话流式响应 | ✅ 已实现 | 打字机效果，WebSocket 通信 |
 | | 智能上下文管理 | ✅ 已实现 | 支持多轮对话 |
-| | 网页搜索增强 | 🔄 开发中 | 正在开发中 |
+| | 网页搜索增强 | ✅ 已实现 | 当前仅有部分模型支持联网搜索 |
 | **预设系统** | 自定义 AI 助手角色 | ✅ 已实现 | 支持角色背景、性格特征设定 |
 | | 预设市场一键使用 | ✅ 已实现 | 支持按场景分类 |
 | | 个性化对话场景定制 | ✅ 已实现 | 完整的预设管理功能 |
-| | 预设分享与导入功能 | 🔄 开发中 | 正在开发中 |
-| | 预设评分和收藏系统 | 🔄 开发中 | 正在开发中 |
+| | 预设评分和收藏系统 | 📋 待开发 | 后续版本规划 |
 | **会话管理** | 多会话并行支持 | ✅ 已实现 | 快速切换，实时保存 |
 | | 历史记录完整保存 | ✅ 已实现 | 支持查看和导出 |
 | | 会话导出备份 | ✅ 已实现 | 支持多种格式 |
-| | 会话标题自动生成 | ✅ 已实现 | 智能标题生成 |
-| | 会话分类管理 | 🔄 开发中 | 正在开发中 |
 
 ### 👨‍💼 管理端功能
 
 | 功能模块 | 子功能 | 状态 | 说明 |
 |---------|--------|------|------|
 | **渠道管理** | 多渠道统一管理 | ✅ 已实现 | 支持多个供应商 |
-| | 智能负载均衡策略 | ✅ 已实现 | 优先级控制、权重分配 |
+| | 智能负载均衡策略 | 🔄 开发中 | 优先级控制、权重分配，当前后端还是随机选择使用 |
 | | 自动故障转移 | ✅ 已实现 | 故障自动切换 |
 | | 模型组合配置 | ✅ 已实现 | 一个渠道支持多个模型 |
 | | 实时状态监控 | ✅ 已实现 | 调用量、响应时间、错误率统计 |
-| | 成本统计 | 🔄 开发中 | 正在开发中 |
-| **预设管理** | 预设审核发布流程 | ✅ 已实现 | 完整的审核流程 |
-| | 分类标签管理系统 | ✅ 已实现 | 支持分类和标签 |
-| | 热门推荐设置 | 🔄 开发中 | 正在开发中 |
-| | 内容质量控制 | ✅ 已实现 | 基础内容管理 |
-| | 用户反馈处理 | 🔄 开发中 | 正在开发中 |
-| | 预设排行榜 | 🔄 开发中 | 正在开发中 |
-| **用户管理** | 用户权限分级控制 | ✅ 已实现 | 支持角色分配 |
-| | 使用量统计分析 | ✅ 已实现 | 调用次数、使用时长统计 |
-| | 费用统计 | 🔄 开发中 | 正在开发中 |
-| | 异常行为监控 | 🔄 开发中 | 正在开发中 |
+| **预设管理** | 分类标签管理系统 | ✅ 已实现 | 支持分类和标签 |
+| | 热门推荐设置 | 📋 待开发 | 后续版本规划 |
+| | 预设排行榜 | 📋 待开发 | 后续版本规划 |
+| **用户管理** | 用户权限分级控制 | ✅ 已实现 | 目前实现了简单的权限分级管理 |
+| | 使用量统计分析 | 📋 待开发 | 对话 token 消耗、调用次数、使用时长等统计，后续版本规划 |
+| | 费用统计 | 📋 待开发 | 后续版本规划 |
 | | 账户状态管理 | ✅ 已实现 | 启用/禁用用户 |
-| | 用户反馈处理 | 🔄 开发中 | 正在开发中 |
-| **模型市场** | 模型上架审核流程 | ✅ 已实现 | 完整的审核流程 |
-| | 价格策略设置 | ✅ 已实现 | 按次计费、按 Token 计费 |
-| | 使用量统计 | ✅ 已实现 | 基础统计功能 |
-| | 评分反馈系统 | 🔄 开发中 | 正在开发中 |
-| | 模型性能监控 | 🔄 开发中 | 正在开发中 |
-| | 模型版本管理 | 🔄 开发中 | 正在开发中 |
+| **模型市场** | 基础管理 | ✅ 已实现 | 基础的 CRUD |
+| | 价格策略设置 | 📋 待开发 | 按次计费、按 Token 计费 |
+| | 使用量统计 | 📋 待开发 | 基础统计功能 |
+| | 评分反馈系统 | 📋 待开发 | 后续版本规划 |
+| **控制台** | 各种数据统计和监控 | 📋 待开发 | 通过可视化仪表监控各种数据 |
 
-### 📊 实现状态统计
 
-- ✅ **已实现**: 65% - 核心功能已完成
-- 🔄 **开发中**: 25% - 正在积极开发
-- 📋 **计划中**: 10% - 后续版本规划
-
-### 🎯 核心特性
-
-| 特性 | 状态 | 技术实现 |
-|------|------|----------|
-| **智能负载均衡** | ✅ 已实现 | Channel 系统，优先级权重调度 |
-| **高性能设计** | ✅ 已实现 | WebSocket、流式响应、连接池 |
-| **安全性** | ✅ 已实现 | JWT 认证、权限控制、数据加密 |
-| **可扩展性** | ✅ 已实现 | 模块化架构、插件化模型接入 |
 
 ## 🏗️ 系统设计
 
@@ -284,7 +270,7 @@ sequenceDiagram
   - 提供故障转移机制
 - **配置项**:
   - `name`: 渠道名称
-  - `type`: 渠道类型（OpenAI、火山引擎、Polo）
+  - `type`: 渠道类型（OpenAI、火山引擎、Polo等），注意，不同的服务供应商也可以使用相同的渠道 channel 类型，例如阿里云的通义千问支持 OpenAI 访问格式，所以也可以定义为  OpenAI 类型。
   - `priority`: 优先级（1-100）
   - `weight`: 权重分配
   - `models`: 支持的模型列表
@@ -310,22 +296,6 @@ sequenceDiagram
 - **多对多关系**: 一个渠道可以支持多个模型，一个模型可以被多个渠道支持
 - **模型映射**: 渠道可以配置模型映射规则，根据条件动态选择具体的模型版本
 - **负载均衡**: 系统根据渠道的优先级和权重，智能选择最优渠道处理请求
-- **映射示例**:
-  ```json
-  {
-    "sourceModel": "deepseek-r1",
-    "conditions": [
-      {
-        "targetModel": "deepseek-r1-250120",
-        "conditions": {"enableWeb": true}
-      },
-      {
-        "targetModel": "deepseek-r1-250121", 
-        "conditions": {"enableWeb": false}
-      }
-    ]
-  }
-  ```
 
 #### 🎭 Preset（预设）
 - **定义**: AI 助手的角色配置
@@ -421,15 +391,13 @@ sequenceDiagram
     {
       "targetModel": "deepseek-r1-250120",
       "conditions": {
-        "enableWeb": true,
-        "temperature": 0.7
+        "enableWeb": true
       }
     },
     {
       "targetModel": "deepseek-r1-250121", 
       "conditions": {
-        "enableWeb": false,
-        "temperature": 0.5
+        "enableWeb": false
       }
     }
   ]
@@ -470,93 +438,30 @@ graph TD
 ## 🔧 技术架构
 
 ### 🎨 前端技术栈
-- Vue 3 (Composition API)
-  - 响应式数据处理
-  - 组件化开发
-- Element Plus
-  - 美观的 UI 组件
-  - 响应式布局
-- Vite
-  - 快速的开发构建
-  - 模块热重载
-- Pinia
-  - 状态管理
-  - 持久化存储
-- Axios
-  - 请求拦截器
-  - 响应处理
-- WebSocket
-  - 实时通信
-  - 断线重连
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| **Vue.js** | 3.x | 渐进式 JavaScript 框架，使用 Composition API |
+| **Element Plus** | Latest | 基于 Vue 3 的组件库，提供美观的 UI 组件 |
+| **Vite** | Latest | 下一代前端构建工具，提供快速的开发体验 |
+| **Pinia** | Latest | Vue 3 的状态管理库，替代 Vuex |
+| **Vue Router** | 4.x | Vue.js 官方路由管理器 |
+| **Axios** | Latest | 基于 Promise 的 HTTP 客户端 |
+| **WebSocket** | Native | 实时通信协议，支持流式响应 |
+| **OpenAPI Generator** | Latest | 自动生成 TypeScript API 客户端代码 |
 
 ### ⚙️ 后端技术栈
-- Go
-  - 高性能
-  - 并发处理
-- Gin
-  - 路由管理
-  - 中间件支持
-- GORM
-  - ORM 映射
-  - 数据库操作
-- Redis
-  - 缓存处理
-  - 会话存储
-- WebSocket
-  - 长连接管理
-  - 消息推送
-- Zap
-  - 日志记录
-  - 性能监控
 
-## 💫 系统特点
-
-1. **智能负载均衡**
-   - Channel 系统支持多模型配置
-   - 基于优先级和权重的智能调度
-   - 自动故障转移机制
-   - 动态负载分配
-   - 实时监控和调整
-   - 成本优化策略
-
-2. **高性能设计**
-   - WebSocket 实时通信
-   - 流式响应处理
-   - 连接池优化
-   - 多级缓存策略
-   - 异步处理机制
-   - 性能监控告警
-
-3. **安全性**
-   - 完整的权限控制系统
-   - 数据加密传输
-   - 敏感信息保护
-   - 操作日志审计
-   - 防攻击策略
-   - 数据备份恢复
-
-4. **可扩展性**
-   - 模块化架构设计
-   - 插件化模型接入
-   - 灵活的配置系统
-   - 开放的 API 设计
-   - 第三方集成支持
-   - 自定义扩展能力
-
-## ✨ 特性
-
-- 🚀 基于 Go 1.23+ 的高性能后端服务
-    - Gin 框架提供高效的 HTTP 服务
-    - GORM 实现优雅的数据库操作
-    - Redis 支持高性能缓存
-    - Zap 处理日志记录
-    - Swagger 自动生成 API 文档
-
-- 🎯 基于 Vue 3 的现代化前端框架
-    - Vite 构建工具确保快速的开发体验
-    - Element Plus 组件库提供美观的 UI
-    - Pinia 状态管理
-    - Vue Router 路由管理
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| **Go** | 1.23+ | 高性能编程语言，支持高并发处理 |
+| **Gin** | Latest | 高性能 HTTP Web 框架 |
+| **GORM** | Latest | Go 语言的 ORM 库，简化数据库操作 |
+| **Redis** | 6.0+ | 高性能缓存数据库 |
+| **MySQL** | 5.7+ | 关系型数据库，存储业务数据 |
+| **Zap** | Latest | 高性能结构化日志库 |
+| **Viper** | Latest | 配置管理库，支持多种配置格式 |
+| **Swagger** | Latest | API 文档自动生成工具 |
 
 ## 🚀 快速开始
 
@@ -568,14 +473,14 @@ graph TD
 - Node.js 18+
 - pnpm 8.0+
 
-### 获取代码
+### 克隆代码
 
 ```bash
-git clone git@github.com:lemon-puls/Vine.git
-cd Vine
+git clone git@github.com:lemon-puls/txing-ai.git
+cd txing-ai
 ```
 
-### 后端服务
+### 配置及启动
 
 1. 配置数据库
 ```bash
@@ -605,6 +510,9 @@ npm run build
 ```bash
 go run cmd/main.go
 ```
+5. 访问地址
+
+   项目启动后会打印出 swgger 和网站的访问地址。
 
 ## 📚 项目结构
 
@@ -680,34 +588,34 @@ v-permission:perm.hide="['create']"      // 无权限时隐藏元素 Hide when n
     </el-icon>
 </el-button>
 ```
+### 前后端开发对接方式
 
-## 🤝 贡献指南
+本项目接入了 OpenAPI Generator 库用于直接根据后端接口文档生成 api 客户端代码，极大程度上方便了在前端业务代码中对接口的调用。开发步骤如下：
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
+1. 后端接口完成修改后，使用 swag init 命令重新生成接口文档，然后启动后端
 
-## 📄 许可证
+2. 在前端运行以下命令生成 api 客户端代码，生成的代码在 src/api/generated 目录下
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+    ```bash
+    npm run generate-api
+    ```
 
-## 🙏 鸣谢
+3. 在前端业务代码中要调用后端接口只需调用上一步生成代码的对应方法即可，示例如下：
 
-- [Gin](https://gin-gonic.com/)
-- [GORM](https://gorm.io/)
-- [Vue.js](https://vuejs.org/)
-- [Element Plus](https://element-plus.org/)
-- [Vite](https://vitejs.dev/)
+   ```js
+       const response = await defaultApi.apiAdminChannelListGet(
+         currentPage.value,
+         pageSize.value,
+         {
+           orderBy: 'id',
+           order: 'desc',
+           type: searchForm.value.type || undefined,
+           name: searchForm.value.name || undefined
+         }
+       )
+   ```
 
-## 📊 统计
-
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=txing-ai.readme)
-[![Stars](https://img.shields.io/github/stars/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/stargazers)
-[![Forks](https://img.shields.io/github/forks/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/network/members)
-[![Issues](https://img.shields.io/github/issues/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/txing-ai/txing-ai)](https://github.com/txing-ai/txing-ai/pulls)
+   ​
 
 ## 🎉 展示
 
@@ -762,8 +670,20 @@ v-permission:perm.hide="['create']"      // 无权限时隐藏元素 Hide when n
   <p><em>预设内容管理，支持审核发布和分类管理</em></p>
 </div>
 
+## 🤝 贡献指南
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feat/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feat/AmazingFeature`)
+5. 提交 Pull Request
+
+## 📄 许可证
+
+本项目采用 MIT 许可证
+
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by The Txing AI Team</sub>
+  <sub>Built with ❤️ by The Txing AI</sub>
 </div>
