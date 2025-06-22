@@ -93,66 +93,81 @@ Txing AI 是一个现代化的 AI 聊天平台，基于 Vue 3 和 Go 开发，�
 ### 📐 系统架构图
 
 ```mermaid
-graph TB
-    subgraph "前端层 Frontend Layer"
-        A[Vue 3 前端应用] --> B[Element Plus UI]
-        A --> C[Pinia 状态管理]
-        A --> D[WebSocket 客户端]
+graph TD
+    %% 定义样式
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef gateway fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef business fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef data fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef adapter fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef external fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    
+    %% 1. 前端层
+    subgraph "🎨 前端层"
+        A[Vue 3 前端应用]
     end
     
-    subgraph "网关层 Gateway Layer"
-        E[Gin 路由网关] --> F[JWT 认证中间件]
-        E --> G[权限控制中间件]
-        E --> H[WebSocket 升级]
+    %% 2. 网关层
+    subgraph "🚪 网关层"
+        E[Gin 路由网关]
     end
     
-    subgraph "业务层 Business Layer"
-        I[用户管理服务] --> J[用户认证]
-        I --> K[权限管理]
-        
-        L[聊天服务] --> M[会话管理]
-        L --> N[消息处理]
-        L --> O[流式响应]
-        
-        P[渠道管理服务] --> Q[负载均衡]
-        P --> R[故障转移]
-        P --> S[模型映射]
-        
-        T[预设管理服务] --> U[预设审核]
-        T --> V[内容管理]
+    %% 3. 业务层
+    subgraph "⚙️ 业务层"
+        I[用户管理服务]
+        L[聊天服务]
+        P[渠道管理服务]
+        T[预设管理服务]
+    end
+
+    %% 4. 数据层
+    subgraph "💾 数据层"
+        CC[MySQL 数据库]
+        HH[Redis 缓存]
     end
     
-    subgraph "适配器层 Adapter Layer"
-        W[OpenAI 适配器] --> X[OpenAI API]
-        Y[火山引擎适配器] --> Z[火山引擎 API]
-        AA[Polo 适配器] --> BB[Polo API]
+    %% 5. 适配器层
+    subgraph "🔌 适配器层"
+        ZZ[适配器工厂]
+        W[OpenAI 适配器]
+        Y[火山引擎适配器]
+        AA[Polo 适配器]
     end
     
-    subgraph "数据层 Data Layer"
-        CC[MySQL 数据库] --> DD[用户数据]
-        CC --> EE[会话数据]
-        CC --> FF[渠道配置]
-        CC --> GG[预设数据]
-        
-        HH[Redis 缓存] --> II[会话缓存]
-        HH --> JJ[限流缓存]
-        HH --> KK[Token 缓存]
+    %% 6. 外部服务
+    subgraph "🌐 外部服务"
+        X[OpenAI API]
+        Z[火山引擎 API]
+        BB[Polo API]
     end
     
+    %% --- 连接关系 ---
+    
+    %% 主要垂直流程
     A --> E
-    E --> I
-    E --> L
-    E --> P
-    E --> T
-    L --> W
-    L --> Y
-    L --> AA
-    I --> CC
-    L --> CC
+    E --> I & L & P & T
+
+    %% 业务层到数据层
+    I --> CC & HH
+    L --> CC & HH
     P --> CC
     T --> CC
-    L --> HH
-    I --> HH
+
+    %% 业务层到适配器层
+    L --> ZZ
+
+    %% 适配器层到外部服务
+    ZZ --> W --> X
+    ZZ --> Y --> Z
+    ZZ --> AA --> BB
+    
+    %% 应用样式
+    class A frontend
+    class E gateway
+    class I,L,P,T business
+    class CC,HH data
+    class ZZ,W,Y,AA adapter
+    class X,Z,BB external
 ```
 
 ### 🔗 核心组件关系图
@@ -178,22 +193,28 @@ graph LR
         K --> L[OpenAI 适配器]
         K --> M[火山引擎适配器]
         K --> N[Polo 适配器]
+        K --> O[...]
         
-        B --> O[聊天服务 Chat Service]
-        O --> J
-        O --> P[消息限制器 Message Limiter]
-        O --> Q[响应缓冲区 Response Buffer]
+        B --> P[聊天服务 Chat Service]
+        P --> J
+        P --> Q[消息限制器 Message Limiter]
+        P --> R[响应缓冲区 Response Buffer]   
+        
+        %% 新增：Channel 和 Model 的关系
+        F -.->|支持模型列表 Models| G
+        F -.->|模型映射 Mappings| G
+        G -.->|被渠道支持| F
     end
     
     subgraph "外部服务 External Services"
-        L --> R[OpenAI API]
-        M --> S[火山引擎 API]
-        N --> T[Polo API]
+        L --> S[OpenAI API]
+        M --> T[火山引擎 API]
+        N --> U[Polo API]
     end
     
-    A --> O
-    C --> O
-    F --> O
+    A --> P
+    C --> P
+    F --> P
 ```
 
 ### 💬 聊天请求处理流程图
@@ -267,13 +288,36 @@ sequenceDiagram
 - **定义**: AI 模型的具体实现
 - **功能**:
   - 定义模型的基本信息
-  - 配置模型参数
-  - 管理模型价格策略
-- **属性**:
+  - 支持模型标签分类
+  - 配置模型特性（高上下文、默认模型等）
+- **配置项**:
   - `name`: 模型名称
-  - `avatar`: 模型头像
   - `description`: 模型描述
-  - `price`: 价格配置
+  - `default`: 是否为默认模型
+  - `high_context`: 是否支持高上下文
+  - `avatar`: 模型头像
+  - `tag`: 模型标签
+
+#### 🔄 Channel-Model 关系
+- **多对多关系**: 一个渠道可以支持多个模型，一个模型可以被多个渠道支持
+- **模型映射**: 渠道可以配置模型映射规则，根据条件动态选择具体的模型版本
+- **负载均衡**: 系统根据渠道的优先级和权重，智能选择最优渠道处理请求
+- **映射示例**:
+  ```json
+  {
+    "sourceModel": "deepseek-r1",
+    "conditions": [
+      {
+        "targetModel": "deepseek-r1-250120",
+        "conditions": {"enableWeb": true}
+      },
+      {
+        "targetModel": "deepseek-r1-250121", 
+        "conditions": {"enableWeb": false}
+      }
+    ]
+  }
+  ```
 
 #### 🎭 Preset（预设）
 - **定义**: AI 助手的角色配置
@@ -331,6 +375,64 @@ const channels = [
 // 30% 的请求会路由到 Channel B  
 // 10% 的请求会路由到 Channel C
 ```
+
+### 🔄 模型映射机制
+
+#### 模型映射流程图
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant Chat as 聊天服务
+    participant Channel as 渠道管理
+    participant Model as 模型映射
+    participant Adapter as 适配器层
+    participant AI as AI 服务商
+    
+    User->>Chat: 发送聊天请求 (model: deepseek-r1)
+    Chat->>Channel: 查询支持 deepseek-r1 的渠道
+    Channel-->>Chat: 返回渠道列表
+    
+    Note over Chat,Model: 模型映射处理
+    Chat->>Model: 检查模型映射规则
+    Model->>Model: 根据条件映射模型
+    Note right of Model: 例如：enableWeb=true → deepseek-r1-250120<br/>enableWeb=false → deepseek-r1-250121
+    
+    Model-->>Chat: 返回映射后的模型
+    Chat->>Adapter: 使用映射后的模型发送请求
+    Adapter->>AI: 调用 AI 服务商 API
+    AI-->>Adapter: 返回响应
+    Adapter-->>Chat: 转发响应
+    Chat-->>User: 返回聊天结果
+```
+
+#### 模型映射配置示例
+```json
+{
+  "sourceModel": "deepseek-r1",
+  "conditions": [
+    {
+      "targetModel": "deepseek-r1-250120",
+      "conditions": {
+        "enableWeb": true,
+        "temperature": 0.7
+      }
+    },
+    {
+      "targetModel": "deepseek-r1-250121", 
+      "conditions": {
+        "enableWeb": false,
+        "temperature": 0.5
+      }
+    }
+  ]
+}
+```
+
+#### 映射规则说明
+- **源模型**: 用户请求的模型名称
+- **目标模型**: 实际发送给 AI 服务商的模型名称
+- **条件映射**: 根据请求参数动态选择目标模型
+- **默认映射**: 如果没有匹配的条件，使用源模型作为目标模型
 
 ### 🛡️ 安全机制
 
