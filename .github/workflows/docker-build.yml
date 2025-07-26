@@ -2,10 +2,10 @@ name: Docker Build and Push
 
 on:
   push:
-    branches: [ main, release ]
+    branches: [ master ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main, release ]
+    branches: [ master ]
 
 env:
   REGISTRY: ghcr.io
