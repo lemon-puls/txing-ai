@@ -103,6 +103,7 @@ func Login(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	var user domain.User
 	if err := db.Where("username = ?", req.Username).First(&user).Error; err != nil {
@@ -128,6 +129,10 @@ func Login(ctx *gin.Context) {
 		utils.ErrorWithMsg(ctx, "生成 token 失败", err)
 		return
 	}
+
+	// 头像预签名
+	url, _ := cosClient.GenerateDownloadPresignedURL(user.Avatar)
+	user.Avatar = url
 
 	utils.OkWithData(ctx, vo.ToLoginVO(user, accessToken, refreshToken))
 }
