@@ -6,6 +6,12 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      description:
+        description: '手动触发构建的描述'
+        required: false
+        default: '手动触发构建'
 
 env:
   REGISTRY: ghcr.io
