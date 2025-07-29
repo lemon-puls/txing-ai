@@ -10,9 +10,13 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import SvgIcon from '@/components/common/SvgIcon.vue'
 import { permission } from './directives/permission'
+import { loadAnalyticsScript } from '@/utils/analytics'
 
 import App from './App.vue'
 import router from './router'
+
+// 加载分析脚本
+loadAnalyticsScript()
 
 const app = createApp(App)
 const pinia = createPinia()
