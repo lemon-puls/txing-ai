@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"time"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -205,7 +206,10 @@ func (c *COSClient) GenerateDownloadPresignedURL(key string) (string, error) {
 		return "", err
 	}
 
-	return presignedURL.String(), nil
+	// 把前面部分替换为 CDN 加速地址
+	url := strings.Replace(presignedURL.String(), c.config.BaseURL, c.config.CDNURL, 1)
+
+	return url, nil
 }
 
 // 删除文件

@@ -44,6 +44,8 @@ type CosConfig struct {
 	BaseURL string `mapstructure:"base_url"`
 	// 预签名URL有效期 单位秒
 	SignExpire time.Duration `mapstructure:"sign_expire"`
+	// CDN 加速地址
+	CDNURL string `mapstructure:"cdn_url"`
 }
 
 type AuthConfig struct {
