@@ -77,6 +77,7 @@
               :effect="selectedTags.includes(tag) ? 'dark' : 'plain'"
               class="tag-item"
               @click="toggleTag(tag)"
+              style="color: rgba(0, 0, 0, 0.7)"
             >
               {{ tag }}
             </el-tag>
@@ -116,6 +117,7 @@
                 size="small"
                 type="info"
                 effect="plain"
+                style="color: rgba(0, 0, 0, 0.7)"
               >
                 {{ tag }}
               </el-tag>
@@ -156,6 +158,8 @@ const websites = ref([])
 const particles = ref([])
 
 import { defaultApi } from '@/api'
+import {useThemeStore} from "@/stores/theme.js";
+import {useUserStore} from "@/stores/user.js";
 
 
 // 计算所有标签
@@ -272,9 +276,23 @@ const goBack = () => {
   router.back()
 }
 
+const themeStore = useThemeStore()
+// 存储进入页面时的主题状态
+const previousThemeState = ref(null)
+const previousTheme = ref("'#409EFF'")
+
 onMounted(() => {
   initParticles()
   loadWebsites()
+
+  // 保存当前主题状态
+  previousThemeState.value = themeStore.isDark
+  previousTheme.value = themeStore.primaryColor
+  themeStore.setPrimaryColor('#409EFF')
+  // 如果当前是暗色主题，切换为明亮主题
+  if (themeStore.isDark) {
+    themeStore.toggleTheme()
+  }
 })
 </script>
 
@@ -283,7 +301,7 @@ onMounted(() => {
   min-height: 100vh;
   width: 100%;
   position: relative;
-  background: #0f0f1a;
+  background: #f5f7fa;
   overflow-x: hidden;
 }
 
@@ -296,7 +314,7 @@ onMounted(() => {
   height: 64px;
   z-index: 100;
   backdrop-filter: blur(10px);
-  background: rgba(15, 15, 26, 0.8);
+  background: rgba(255, 255, 255, 0.8);
 
   .nav-content {
     max-width: 1200px;
@@ -335,7 +353,7 @@ onMounted(() => {
       .github-link {
         display: flex;
         align-items: center;
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(0, 0, 0, 0.7);
         transition: color 0.3s ease;
 
         &:hover {
@@ -369,9 +387,9 @@ onMounted(() => {
     transform: translate(-50%, -50%);
     background: radial-gradient(
       circle,
-      rgba(43, 94, 255, 0.08) 0%,
-      rgba(30, 136, 229, 0.08) 30%,
-      rgba(3, 169, 244, 0.08) 70%
+      rgba(43, 94, 255, 0.05) 0%,
+      rgba(30, 136, 229, 0.05) 30%,
+      rgba(3, 169, 244, 0.05) 70%
     );
     animation: rotate 30s linear infinite;
   }
@@ -386,7 +404,7 @@ onMounted(() => {
 
   .particle {
     position: absolute;
-    background: linear-gradient(45deg, rgba(43, 94, 255, 0.3), rgba(3, 169, 244, 0.3));
+    background: linear-gradient(45deg, rgba(43, 94, 255, 0.2), rgba(3, 169, 244, 0.2));
     border-radius: 50%;
     animation: float 10s infinite;
   }
@@ -422,7 +440,7 @@ onMounted(() => {
     .subtitle {
       margin-top: 10px;
       font-size: 1.2em;
-      color: rgba(255, 255, 255, 0.7);
+      color: rgba(0, 0, 0, 0.7);
       font-weight: normal;
     }
   }
@@ -430,8 +448,8 @@ onMounted(() => {
   .back-btn {
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
 
@@ -453,8 +471,8 @@ onMounted(() => {
       max-width: 500px;
 
       :deep(.el-input__wrapper) {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(10px);
         border-radius: 12px;
         transition: all 0.3s ease;
@@ -470,10 +488,10 @@ onMounted(() => {
       }
 
       :deep(.el-input__inner) {
-        color: white;
+        color: #333;
 
         &::placeholder {
-          color: rgba(255, 255, 255, 0.5);
+          color: rgba(0, 0, 0, 0.4);
         }
       }
     }
@@ -486,7 +504,7 @@ onMounted(() => {
     flex-wrap: wrap;
 
     .filter-label {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(0, 0, 0, 0.8);
       font-weight: 500;
       white-space: nowrap;
     }
@@ -500,6 +518,7 @@ onMounted(() => {
         cursor: pointer;
         transition: all 0.3s ease;
         border-radius: 16px;
+        color: rgba(0, 0, 0, 0.7);
 
         &:hover {
           transform: translateY(-2px);
@@ -520,18 +539,19 @@ onMounted(() => {
 // 网站卡片
 .website-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
   padding: 24px;
   cursor: pointer;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.15);
     border-color: rgba(43, 94, 255, 0.3);
 
     .card-overlay {
@@ -555,7 +575,7 @@ onMounted(() => {
       height: 48px;
       border-radius: 12px;
       overflow: hidden;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.05);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -569,7 +589,7 @@ onMounted(() => {
 
       .default-icon {
         font-size: 24px;
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(0, 0, 0, 0.6);
       }
     }
 
@@ -580,7 +600,7 @@ onMounted(() => {
       .website-name {
         font-size: 18px;
         font-weight: 600;
-        color: white;
+        color: #333;
         margin: 0 0 8px 0;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -589,7 +609,7 @@ onMounted(() => {
 
       .website-description {
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(0, 0, 0, 0.7);
         margin: 0;
         line-height: 1.5;
         display: -webkit-box;
@@ -629,9 +649,9 @@ onMounted(() => {
     bottom: 0;
     background: linear-gradient(
       45deg,
-      rgba(43, 94, 255, 0.05) 0%,
-      rgba(30, 136, 229, 0.05) 50%,
-      rgba(3, 169, 244, 0.05) 100%
+      rgba(43, 94, 255, 0.03) 0%,
+      rgba(30, 136, 229, 0.03) 50%,
+      rgba(3, 169, 244, 0.03) 100%
     );
     opacity: 0;
     transition: opacity 0.4s ease;
@@ -644,7 +664,7 @@ onMounted(() => {
   padding: 60px 20px;
 
   :deep(.el-empty__description p) {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(0, 0, 0, 0.6);
   }
 }
 
