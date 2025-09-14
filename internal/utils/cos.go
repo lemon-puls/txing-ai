@@ -31,6 +31,17 @@ type COSClient struct {
 	config *global.CosConfig
 }
 
+// 上传文件
+func (c *COSClient) PutFromURL(ctx context.Context, key string, url string) (string, error) {
+	uploadResult, response, err := c.client.Object.PutFromURL(ctx, key, url, nil)
+	if err != nil {
+		log.Error("PutFromURL failed", zap.String("key", key), zap.String("url", url),
+			zap.Any("uploadResult", uploadResult), zap.Any("response", response), zap.Error(err))
+		return "", err
+	}
+	return uploadResult.Key, err
+}
+
 // 获取临时密钥
 func (c *COSClient) GetTempCredential() (*TempCredential, error) {
 	stsClient := sts.NewClient(
