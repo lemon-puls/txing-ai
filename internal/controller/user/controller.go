@@ -156,6 +156,7 @@ func UpdateProfile(ctx *gin.Context) {
 	db := utils.GetDBFromContext(ctx)
 	// 获取当前用户信息
 	userId := utils.GetUIDFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	var user domain.User
 	if err := db.First(&user, userId).Error; err != nil {
@@ -179,7 +180,7 @@ func UpdateProfile(ctx *gin.Context) {
 		updates["age"] = req.Age
 	}
 	if req.Avatar != "" {
-		updates["avatar"] = utils.ConvertObjectPath(req.Avatar)
+		updates["avatar"] = cosClient.ConvertObjectPath(req.Avatar)
 	}
 
 	// 使用 Updates 方法只更新有变化的字段

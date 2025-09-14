@@ -36,6 +36,7 @@ func Create(ctx *gin.Context) {
 	db := utils.GetDBFromContext(ctx)
 	userId := utils.GetUIDFromContext(ctx)
 	isAdmin := utils.GetIsAdminFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	// 非管理员只能创建非官方（社区）预设
 	if !isAdmin {
@@ -44,7 +45,7 @@ func Create(ctx *gin.Context) {
 
 	preset := &domain.Preset{
 		UserID:      &userId,
-		Avatar:      utils.ConvertObjectPath(req.Avatar),
+		Avatar:      cosClient.ConvertObjectPath(req.Avatar),
 		Name:        req.Name,
 		Description: req.Description,
 		Context:     req.Context,
@@ -80,6 +81,7 @@ func Update(ctx *gin.Context) {
 	db := utils.GetDBFromContext(ctx)
 	userId := utils.GetUIDFromContext(ctx)
 	isAdmin := utils.GetIsAdminFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	var preset domain.Preset
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
@@ -94,7 +96,7 @@ func Update(ctx *gin.Context) {
 	}
 
 	if req.Avatar != "" {
-		preset.Avatar = utils.ConvertObjectPath(req.Avatar)
+		preset.Avatar = cosClient.ConvertObjectPath(req.Avatar)
 	}
 	if req.Name != "" {
 		preset.Name = req.Name

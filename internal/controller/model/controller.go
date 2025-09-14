@@ -29,13 +29,14 @@ func Create(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	model := &domain.Model{
 		Name:        req.Name,
 		Description: req.Description,
 		Default:     req.Default,
 		HighContext: req.HighContext,
-		Avatar:      utils.ConvertObjectPath(req.Avatar),
+		Avatar:      cosClient.ConvertObjectPath(req.Avatar),
 		Tag:         req.Tag,
 	}
 
@@ -65,6 +66,7 @@ func Update(ctx *gin.Context) {
 	}
 
 	db := utils.GetDBFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext(ctx)
 
 	var model domain.Model
 	if err := db.First(&model, ctx.Param("id")).Error; err != nil {
@@ -85,7 +87,7 @@ func Update(ctx *gin.Context) {
 		model.HighContext = *req.HighContext
 	}
 	if req.Avatar != "" {
-		model.Avatar = utils.ConvertObjectPath(req.Avatar)
+		model.Avatar = cosClient.ConvertObjectPath(req.Avatar)
 	}
 	if req.Tag != "" {
 		model.Tag = req.Tag

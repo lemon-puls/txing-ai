@@ -178,6 +178,11 @@ func (c *COSClient) GenerateDownloadPresignedURL(key string) (string, error) {
 		return "", fmt.Errorf("key is empty")
 	}
 
+	// 如果非 COS 对象存储对象，则直接返回原路径
+	if strings.HasPrefix(key, "https://") {
+		return key, nil
+	}
+
 	ctx := context.Background()
 
 	// 获取临时密钥
@@ -276,7 +281,12 @@ func (c *COSClient) GetObjectSize(key string) (int64, error) {
 // ConvertObjectPath 将文件路径转换为存储至数据库中的路径
 // 例如：https://www.example.com/exampleobject/1745647348066-761.jpg?q-sign-algorithm=sha1&q-ak=AKIDc6MDsKXWGm38z432-7823gGhv9D4jANM7e094m
 // 转换为：exampleobject/1745647348066-761.jpg
-func ConvertObjectPath(path string) string {
+func (c *COSClient) ConvertObjectPath(path string) string {
+	// 只有是本系统 COS 的地址才需要转换，其他的地址不转换
+	if !strings.HasPrefix(path, c.config.CDNURL) {
+		return path
+	}
+
 	if path == "" {
 		return ""
 	}
