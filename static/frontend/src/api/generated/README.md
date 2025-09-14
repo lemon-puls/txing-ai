@@ -130,6 +130,12 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesFaviconPost**](docs/DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdDelete**](docs/DefaultApi.md#apiAdminWebsitesIdDelete) | **DELETE** /api/admin/websites/{id} | 删除网站
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdGet**](docs/DefaultApi.md#apiAdminWebsitesIdGet) | **GET** /api/admin/websites/{id} | 获取网站详情
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdPut**](docs/DefaultApi.md#apiAdminWebsitesIdPut) | **PUT** /api/admin/websites/{id} | 更新网站
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesListGet**](docs/DefaultApi.md#apiAdminWebsitesListGet) | **GET** /api/admin/websites/list | 获取网站列表
+*TxingAiApi.DefaultApi* | [**apiAdminWebsitesPost**](docs/DefaultApi.md#apiAdminWebsitesPost) | **POST** /api/admin/websites | 创建网站
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 *TxingAiApi.DefaultApi* | [**apiChatConversationsDeletebatchPost**](docs/DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
@@ -151,12 +157,15 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiUserRefreshPost**](docs/DefaultApi.md#apiUserRefreshPost) | **POST** /api/user/refresh | 刷新访问令牌
 *TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 *TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
+*TxingAiApi.DefaultApi* | [**apiWebsitesListGet**](docs/DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
 
 
 ## Documentation for Models
 
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
+ - [TxingAiApi.ApiAdminWebsitesFaviconPost200Response](docs/ApiAdminWebsitesFaviconPost200Response.md)
+ - [TxingAiApi.ApiAdminWebsitesPost200Response](docs/ApiAdminWebsitesPost200Response.md)
  - [TxingAiApi.ApiChatConversationsIdGet200Response](docs/ApiChatConversationsIdGet200Response.md)
  - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
  - [TxingAiApi.ApiPresetPost200Response](docs/ApiPresetPost200Response.md)
@@ -168,6 +177,8 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
  - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
+ - [TxingAiApi.DtoCreateWebsiteReq](docs/DtoCreateWebsiteReq.md)
+ - [TxingAiApi.DtoGetFaviconReq](docs/DtoGetFaviconReq.md)
  - [TxingAiApi.DtoGetPresignedURLReq](docs/DtoGetPresignedURLReq.md)
  - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
  - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
@@ -177,11 +188,13 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
+ - [TxingAiApi.DtoUpdateWebsiteReq](docs/DtoUpdateWebsiteReq.md)
  - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
  - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
  - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
  - [TxingAiApi.VoConversationDetailVO](docs/VoConversationDetailVO.md)
+ - [TxingAiApi.VoGetFaviconVO](docs/VoGetFaviconVO.md)
  - [TxingAiApi.VoGetPresignedURLVO](docs/VoGetPresignedURLVO.md)
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
  - [TxingAiApi.VoMessageVO](docs/VoMessageVO.md)
@@ -189,6 +202,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
  - [TxingAiApi.VoTokenPair](docs/VoTokenPair.md)
  - [TxingAiApi.VoUserVO](docs/VoUserVO.md)
+ - [TxingAiApi.VoWebsiteVO](docs/VoWebsiteVO.md)
 
 
 ## Documentation for Authorization

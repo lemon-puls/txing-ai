@@ -15,6 +15,8 @@
 import ApiClient from "../ApiClient";
 import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
+import ApiAdminWebsitesFaviconPost200Response from '../model/ApiAdminWebsitesFaviconPost200Response';
+import ApiAdminWebsitesPost200Response from '../model/ApiAdminWebsitesPost200Response';
 import ApiChatConversationsIdGet200Response from '../model/ApiChatConversationsIdGet200Response';
 import ApiCosPresignedUrlPost200Response from '../model/ApiCosPresignedUrlPost200Response';
 import ApiPresetPost200Response from '../model/ApiPresetPost200Response';
@@ -26,6 +28,8 @@ import DtoConversationListRequest from '../model/DtoConversationListRequest';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
 import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
+import DtoCreateWebsiteReq from '../model/DtoCreateWebsiteReq';
+import DtoGetFaviconReq from '../model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from '../model/DtoGetPresignedURLReq';
 import DtoLoginReq from '../model/DtoLoginReq';
 import DtoRegisterReq from '../model/DtoRegisterReq';
@@ -35,6 +39,7 @@ import DtoUpdateModelReq from '../model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from '../model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from '../model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from '../model/DtoUpdateProfileReq';
+import DtoUpdateWebsiteReq from '../model/DtoUpdateWebsiteReq';
 import UtilsResponse from '../model/UtilsResponse';
 
 /**
@@ -588,6 +593,323 @@ export default class DefaultApi {
      */
     apiAdminUserStatusIdPut(id) {
       return this.apiAdminUserStatusIdPutWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取网站图标
+     * 自动获取网站的favicon图标
+     * @param {module:model/DtoGetFaviconReq} data 网站地址
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminWebsitesFaviconPost200Response} and HTTP response
+     */
+    apiAdminWebsitesFaviconPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWebsitesFaviconPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminWebsitesFaviconPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/websites/favicon', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取网站图标
+     * 自动获取网站的favicon图标
+     * @param {module:model/DtoGetFaviconReq} data 网站地址
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminWebsitesFaviconPost200Response}
+     */
+    apiAdminWebsitesFaviconPost(data) {
+      return this.apiAdminWebsitesFaviconPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除网站
+     * 删除网站
+     * @param {Number} id 网站ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminWebsitesIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWebsitesIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/websites/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除网站
+     * 删除网站
+     * @param {Number} id 网站ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminWebsitesIdDelete(id) {
+      return this.apiAdminWebsitesIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取网站详情
+     * 根据ID获取网站详情
+     * @param {Number} id 网站ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminWebsitesPost200Response} and HTTP response
+     */
+    apiAdminWebsitesIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWebsitesIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminWebsitesPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/websites/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取网站详情
+     * 根据ID获取网站详情
+     * @param {Number} id 网站ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminWebsitesPost200Response}
+     */
+    apiAdminWebsitesIdGet(id) {
+      return this.apiAdminWebsitesIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新网站
+     * 更新网站信息
+     * @param {Number} id 网站ID
+     * @param {module:model/DtoUpdateWebsiteReq} data 网站信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminWebsitesPost200Response} and HTTP response
+     */
+    apiAdminWebsitesIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWebsitesIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWebsitesIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminWebsitesPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/websites/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新网站
+     * 更新网站信息
+     * @param {Number} id 网站ID
+     * @param {module:model/DtoUpdateWebsiteReq} data 网站信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminWebsitesPost200Response}
+     */
+    apiAdminWebsitesIdPut(id, data) {
+      return this.apiAdminWebsitesIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取网站列表
+     * 获取网站列表，支持分页和搜索
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [orderBy] 排序字段
+     * @param {String} [order] 排序方式(asc/desc)
+     * @param {String} [name] 网站名称
+     * @param {String} [tag] 标签
+     * @param {Number} [status] 状态
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminWebsitesListGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiAdminWebsitesListGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiAdminWebsitesListGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'order_by': opts['orderBy'],
+        'order': opts['order'],
+        'name': opts['name'],
+        'tag': opts['tag'],
+        'status': opts['status']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/websites/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取网站列表
+     * 获取网站列表，支持分页和搜索
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.orderBy 排序字段
+     * @param {String} opts.order 排序方式(asc/desc)
+     * @param {String} opts.name 网站名称
+     * @param {String} opts.tag 标签
+     * @param {Number} opts.status 状态
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminWebsitesListGet(page, limit, opts) {
+      return this.apiAdminWebsitesListGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建网站
+     * 创建新的网站
+     * @param {module:model/DtoCreateWebsiteReq} data 网站信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminWebsitesPost200Response} and HTTP response
+     */
+    apiAdminWebsitesPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWebsitesPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminWebsitesPost200Response;
+      return this.apiClient.callApi(
+        '/api/admin/websites', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建网站
+     * 创建新的网站
+     * @param {module:model/DtoCreateWebsiteReq} data 网站信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminWebsitesPost200Response}
+     */
+    apiAdminWebsitesPost(data) {
+      return this.apiAdminWebsitesPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });
@@ -1631,6 +1953,62 @@ export default class DefaultApi {
      */
     apiUserResetPasswordPost(data) {
       return this.apiUserResetPasswordPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 用户端获取网站列表
+     * 用户端获取启用状态的网站列表，支持搜索和过滤
+     * @param {Object} opts Optional parameters
+     * @param {Number} [page = 1)] 页码
+     * @param {Number} [limit = 20)] 每页数量
+     * @param {String} [name] 网站名称
+     * @param {String} [tag] 标签
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWebsitesListGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': opts['page'],
+        'limit': opts['limit'],
+        'name': opts['name'],
+        'tag': opts['tag']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/websites/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 用户端获取网站列表
+     * 用户端获取启用状态的网站列表，支持搜索和过滤
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.page 页码 (default to 1)
+     * @param {Number} opts.limit 每页数量 (default to 20)
+     * @param {String} opts.name 网站名称
+     * @param {String} opts.tag 标签
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWebsitesListGet(opts) {
+      return this.apiWebsitesListGetWithHttpInfo(opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

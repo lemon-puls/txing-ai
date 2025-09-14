@@ -44,6 +44,11 @@
             <template #title>AI 助手管理</template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/websites">
+            <el-icon><Cpu /></el-icon>
+            <template #title>工具网站管理</template>
+          </el-menu-item>
+
 
 <!--          <el-menu-item index="/pricing">-->
 <!--            <el-icon><Wallet /></el-icon>-->

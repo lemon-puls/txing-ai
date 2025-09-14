@@ -53,6 +53,15 @@ const router = createRouter({
           meta: {
             title: '个人中心'
           }
+        },
+        {
+          path: 'websites',
+          name: 'websites',
+          component: () => import('@/views/websites/index.vue'),
+          meta: {
+            title: '实用网站',
+            icon: 'link'
+          }
         }
       ]
     },
@@ -110,6 +119,16 @@ const router = createRouter({
           meta: {
             title: 'AI 助手管理',
             icon: 'Robot',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'websites',
+          name: 'AdminWebsites',
+          component: () => import('@/views/admin/websites/WebsiteList.vue'),
+          meta: {
+            title: '网站管理',
+            icon: 'Link',
             roles: ['admin']
           }
         }

@@ -82,6 +82,25 @@
           </div>
           <div class="card-overlay"></div>
         </div>
+
+        <!-- 实用网站入口 -->
+        <div
+          class="entrance-card websites-card"
+          :class="{ 'card-hover': hoveredCard === 'websites' }"
+          @click="navigateToWebsites"
+          @mouseenter="handleHover('websites')"
+          @mouseleave="handleHover(null)"
+        >
+          <div class="card-content">
+            <el-icon class="card-icon"><Link /></el-icon>
+            <h2>实用网站</h2>
+            <p>精选实用网站，提升工作效率</p>
+            <div class="card-action">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -93,7 +112,8 @@ import { useRouter } from 'vue-router'
 import {
   ChatRound,
   Shop,
-  ArrowRight
+  ArrowRight,
+  Link
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
@@ -177,6 +197,10 @@ const navigateToChat = () => {
 
 const navigateToMarket = () => {
   router.push('/assistant')
+}
+
+const navigateToWebsites = () => {
+  router.push('/websites')
 }
 </script>
 

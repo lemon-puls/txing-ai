@@ -14,6 +14,12 @@ Method | HTTP request | Description
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
+[**apiAdminWebsitesFaviconPost**](DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
+[**apiAdminWebsitesIdDelete**](DefaultApi.md#apiAdminWebsitesIdDelete) | **DELETE** /api/admin/websites/{id} | 删除网站
+[**apiAdminWebsitesIdGet**](DefaultApi.md#apiAdminWebsitesIdGet) | **GET** /api/admin/websites/{id} | 获取网站详情
+[**apiAdminWebsitesIdPut**](DefaultApi.md#apiAdminWebsitesIdPut) | **PUT** /api/admin/websites/{id} | 更新网站
+[**apiAdminWebsitesListGet**](DefaultApi.md#apiAdminWebsitesListGet) | **GET** /api/admin/websites/list | 获取网站列表
+[**apiAdminWebsitesPost**](DefaultApi.md#apiAdminWebsitesPost) | **POST** /api/admin/websites | 创建网站
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiChatConversationListPost**](DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 [**apiChatConversationsDeletebatchPost**](DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
@@ -35,6 +41,7 @@ Method | HTTP request | Description
 [**apiUserRefreshPost**](DefaultApi.md#apiUserRefreshPost) | **POST** /api/user/refresh | 刷新访问令牌
 [**apiUserRegisterPost**](DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 [**apiUserResetPasswordPost**](DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
+[**apiWebsitesListGet**](DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
 
 
 
@@ -505,6 +512,286 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWebsitesFaviconPost
+
+> ApiAdminWebsitesFaviconPost200Response apiAdminWebsitesFaviconPost(data)
+
+获取网站图标
+
+自动获取网站的favicon图标
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoGetFaviconReq(); // DtoGetFaviconReq | 网站地址
+apiInstance.apiAdminWebsitesFaviconPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoGetFaviconReq**](DtoGetFaviconReq.md)| 网站地址 | 
+
+### Return type
+
+[**ApiAdminWebsitesFaviconPost200Response**](ApiAdminWebsitesFaviconPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminWebsitesIdDelete
+
+> UtilsResponse apiAdminWebsitesIdDelete(id)
+
+删除网站
+
+删除网站
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 网站ID
+apiInstance.apiAdminWebsitesIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 网站ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWebsitesIdGet
+
+> ApiAdminWebsitesPost200Response apiAdminWebsitesIdGet(id)
+
+获取网站详情
+
+根据ID获取网站详情
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 网站ID
+apiInstance.apiAdminWebsitesIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 网站ID | 
+
+### Return type
+
+[**ApiAdminWebsitesPost200Response**](ApiAdminWebsitesPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWebsitesIdPut
+
+> ApiAdminWebsitesPost200Response apiAdminWebsitesIdPut(id, data)
+
+更新网站
+
+更新网站信息
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 网站ID
+let data = new TxingAiApi.DtoUpdateWebsiteReq(); // DtoUpdateWebsiteReq | 网站信息
+apiInstance.apiAdminWebsitesIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 网站ID | 
+ **data** | [**DtoUpdateWebsiteReq**](DtoUpdateWebsiteReq.md)| 网站信息 | 
+
+### Return type
+
+[**ApiAdminWebsitesPost200Response**](ApiAdminWebsitesPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminWebsitesListGet
+
+> UtilsResponse apiAdminWebsitesListGet(page, limit, opts)
+
+获取网站列表
+
+获取网站列表，支持分页和搜索
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example", // String | 排序方式(asc/desc)
+  'name': "name_example", // String | 网站名称
+  'tag': "tag_example", // String | 标签
+  'status': 56 // Number | 状态
+};
+apiInstance.apiAdminWebsitesListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式(asc/desc) | [optional] 
+ **name** | **String**| 网站名称 | [optional] 
+ **tag** | **String**| 标签 | [optional] 
+ **status** | **Number**| 状态 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWebsitesPost
+
+> ApiAdminWebsitesPost200Response apiAdminWebsitesPost(data)
+
+创建网站
+
+创建新的网站
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateWebsiteReq(); // DtoCreateWebsiteReq | 网站信息
+apiInstance.apiAdminWebsitesPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateWebsiteReq**](DtoCreateWebsiteReq.md)| 网站信息 | 
+
+### Return type
+
+[**ApiAdminWebsitesPost200Response**](ApiAdminWebsitesPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 
@@ -1453,5 +1740,57 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWebsitesListGet
+
+> UtilsResponse apiWebsitesListGet(opts)
+
+用户端获取网站列表
+
+用户端获取启用状态的网站列表，支持搜索和过滤
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'page': 1, // Number | 页码
+  'limit': 20, // Number | 每页数量
+  'name': "name_example", // String | 网站名称
+  'tag': "tag_example" // String | 标签
+};
+apiInstance.apiWebsitesListGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | [optional] [default to 1]
+ **limit** | **Number**| 每页数量 | [optional] [default to 20]
+ **name** | **String**| 网站名称 | [optional] 
+ **tag** | **String**| 标签 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 

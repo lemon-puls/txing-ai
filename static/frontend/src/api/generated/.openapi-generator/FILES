@@ -4,6 +4,8 @@
 README.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
+docs/ApiAdminWebsitesFaviconPost200Response.md
+docs/ApiAdminWebsitesPost200Response.md
 docs/ApiChatConversationsIdGet200Response.md
 docs/ApiCosPresignedUrlPost200Response.md
 docs/ApiPresetPost200Response.md
@@ -16,6 +18,8 @@ docs/DtoConversationListRequest.md
 docs/DtoCreateChannelReq.md
 docs/DtoCreateModelReq.md
 docs/DtoCreatePresetReq.md
+docs/DtoCreateWebsiteReq.md
+docs/DtoGetFaviconReq.md
 docs/DtoGetPresignedURLReq.md
 docs/DtoLoginReq.md
 docs/DtoRegisterReq.md
@@ -25,11 +29,13 @@ docs/DtoUpdateModelReq.md
 docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
+docs/DtoUpdateWebsiteReq.md
 docs/GlobalModelMapping.md
 docs/GlobalModelMappingCondition.md
 docs/UtilsResponse.md
 docs/VoChannelVO.md
 docs/VoConversationDetailVO.md
+docs/VoGetFaviconVO.md
 docs/VoGetPresignedURLVO.md
 docs/VoLoginVO.md
 docs/VoMessageVO.md
@@ -37,6 +43,7 @@ docs/VoModelVO.md
 docs/VoPresetVO.md
 docs/VoTokenPair.md
 docs/VoUserVO.md
+docs/VoWebsiteVO.md
 git_push.sh
 mocha.opts
 package.json
@@ -45,6 +52,8 @@ src/api/DefaultApi.js
 src/index.js
 src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
+src/model/ApiAdminWebsitesFaviconPost200Response.js
+src/model/ApiAdminWebsitesPost200Response.js
 src/model/ApiChatConversationsIdGet200Response.js
 src/model/ApiCosPresignedUrlPost200Response.js
 src/model/ApiPresetPost200Response.js
@@ -56,6 +65,8 @@ src/model/DtoConversationListRequest.js
 src/model/DtoCreateChannelReq.js
 src/model/DtoCreateModelReq.js
 src/model/DtoCreatePresetReq.js
+src/model/DtoCreateWebsiteReq.js
+src/model/DtoGetFaviconReq.js
 src/model/DtoGetPresignedURLReq.js
 src/model/DtoLoginReq.js
 src/model/DtoRegisterReq.js
@@ -65,11 +76,13 @@ src/model/DtoUpdateModelReq.js
 src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
+src/model/DtoUpdateWebsiteReq.js
 src/model/GlobalModelMapping.js
 src/model/GlobalModelMappingCondition.js
 src/model/UtilsResponse.js
 src/model/VoChannelVO.js
 src/model/VoConversationDetailVO.js
+src/model/VoGetFaviconVO.js
 src/model/VoGetPresignedURLVO.js
 src/model/VoLoginVO.js
 src/model/VoMessageVO.js
@@ -77,3 +90,4 @@ src/model/VoModelVO.js
 src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
+src/model/VoWebsiteVO.js
