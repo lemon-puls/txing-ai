@@ -21,18 +21,8 @@
       <!-- 页面标题 -->
       <div class="page-header">
         <h1 class="page-title">
-          <span class="gradient-text">实用网站</span>
           <div class="subtitle">精选实用网站，提升工作效率</div>
         </h1>
-
-        <!-- 返回按钮 -->
-        <el-button
-          class="back-btn"
-          @click="goBack"
-          type="primary"
-          :icon="ArrowLeft"
-          circle
-        />
       </div>
 
       <!-- 搜索和筛选区域 -->
@@ -395,7 +385,7 @@ onMounted(() => {
 .content {
   position: relative;
   z-index: 10;
-  padding: 80px 24px 40px;
+  padding: 40px 24px 40px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -408,16 +398,6 @@ onMounted(() => {
   margin-bottom: 40px;
 
   .page-title {
-    .gradient-text {
-      font-size: 3em;
-      font-weight: bold;
-      background: linear-gradient(45deg, #2B5EFF, #1E88E5, #03A9F4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: hue-rotate 6s linear infinite;
-    }
-
     .subtitle {
       margin-top: 10px;
       font-size: 1.2em;

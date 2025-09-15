@@ -54,7 +54,7 @@
         <el-table-column label="标签" min-width="200">
           <template #default="{ row }">
             <el-tag
-              v-for="tag in row.tags"
+              v-for="tag in (row.tags || '').split(',')"
               :key="tag"
               size="small"
               type="info"
@@ -68,7 +68,7 @@
 
         <el-table-column prop="createdAt" label="创建时间" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
+            {{ formatISODate(row.createdAt) }}
           </template>
         </el-table-column>
 
@@ -205,6 +205,7 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Link } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
+import {formatISODate} from "../../../utils/timeUtils.js";
 
 // 响应式数据
 const loading = ref(false)
@@ -507,11 +508,6 @@ const handleInputConfirm = () => {
   inputValue.value = ''
 }
 
-// 工具方法
-const formatDate = (dateString) => {
-  console.log(dateString)
-  return dateString || '-'
-}
 
 const handleImageError = (event) => {
   event.target.style.display = 'none'
@@ -667,6 +663,38 @@ onMounted(() => {
     :deep(.el-table) {
       .el-table__cell {
         padding: 8px 0;
+      }
+    }
+  }
+}
+.search-form {
+  margin-bottom: 24px;
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 12px;
+  }
+
+  :deep(.el-select) {
+    width: 180px;
+  }
+
+  :deep(.el-button) {
+    border-radius: 12px;
+    padding: 12px 24px;
+    transition: all 0.3s;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    &.el-button--primary {
+      &:hover {
+        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
       }
     }
   }
