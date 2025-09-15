@@ -22,11 +22,17 @@ const router = createRouter({
         {
           path: 'assistant',
           name: 'assistant',
-          component: () => import('@/views/assistant/index.vue'),
-          meta: {
-            title: '首页',
-            icon: 'home'
-          }
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              path: '',
+              component: () => import('@/views/assistant/index.vue'),
+              meta: {
+                title: '首页',
+                icon: 'home'
+              }
+            }
+          ]
         },
         {
           path: 'chat',
@@ -56,12 +62,18 @@ const router = createRouter({
         },
         {
           path: 'websites',
-          name: 'websites',
-          component: () => import('@/views/websites/index.vue'),
-          meta: {
-            title: '实用网站',
-            icon: 'link'
-          }
+          name: 'WebsitesPage',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              path: '',
+              component: () => import('@/views/websites/index.vue'),
+              meta: {
+                title: '实用网站',
+                icon: 'link'
+              }
+            }
+          ]
         }
       ]
     },
