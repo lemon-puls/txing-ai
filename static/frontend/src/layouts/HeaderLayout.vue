@@ -7,6 +7,12 @@
           <div class="logo">
             <span class="logo-text">Txing AI</span>
           </div>
+          <div class="nav-menu">
+            <router-link to="/" class="menu-item" :class="{ 'active': $route.path === '/' }">首页</router-link>
+            <router-link to="/chat" class="menu-item" active-class="active">AI 对话</router-link>
+            <router-link to="/assistant" class="menu-item" active-class="active">AI 助手</router-link>
+            <router-link to="/websites" class="menu-item" active-class="active">精选网站</router-link>
+          </div>
         </div>
         <div class="nav-right">
           <a href="https://github.com/lemon-puls/txing-ai" target="_blank" class="github-link">
@@ -28,11 +34,14 @@
 
 <script setup>
 import { defineOptions } from 'vue'
+import { useRoute } from 'vue-router'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
 defineOptions({
   name: 'HeaderLayout'
 })
+
+const route = useRoute()
 </script>
 
 <style lang="scss" scoped>
@@ -60,6 +69,10 @@ defineOptions({
     align-items: center;
 
     .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+
       .logo {
         .logo-text {
           font-size: 24px;
@@ -68,6 +81,36 @@ defineOptions({
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+        }
+      }
+
+      .nav-menu {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+
+        .menu-item {
+          font-size: 16px;
+          color: var(--el-text-color-regular);
+          text-decoration: none;
+          padding: 6px 0;
+          position: relative;
+          transition: color 0.3s ease;
+
+          &:hover, &.active {
+            color: var(--el-color-primary);
+          }
+
+          &.active:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--el-color-primary);
+            border-radius: 2px;
+          }
         }
       }
     }
