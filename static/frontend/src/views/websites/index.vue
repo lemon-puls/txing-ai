@@ -60,7 +60,7 @@
       <!-- 网站列表 -->
       <div class="websites-grid" v-loading="loading">
         <div
-          v-for="website in filteredWebsites"
+          v-for="website in websites"
           :key="website.id"
           class="website-card"
           @click="openWebsite(website.url)"
@@ -77,14 +77,14 @@
             </div>
             <div class="website-info">
               <h3 class="website-name">{{ website.name }}</h3>
-              <p class="website-description">{{ website.description }}</p>
+              <p class="website-description" :title="website.description">{{ website.description }}</p>
             </div>
           </div>
 
           <div class="card-footer">
             <div class="website-tags">
               <el-tag
-                v-for="tag in website.tags"
+                v-for="tag in website.tags.split(',')"
                 :key="tag"
                 size="small"
                 type="info"
@@ -104,7 +104,7 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="!loading && filteredWebsites.length === 0" class="empty-state">
+      <div v-if="!loading && websites.length === 0" class="empty-state">
         <el-empty description="暂无相关网站" />
       </div>
     </div>
@@ -112,16 +112,13 @@
 </template>
 
 <script setup name="WebsitesPage">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import {ref, onMounted, computed, watchEffect} from 'vue'
 import {
-  ArrowLeft,
   Search,
   Link
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-const router = useRouter()
 const loading = ref(false)
 const searchKeyword = ref('')
 const selectedTags = ref([])
@@ -130,7 +127,6 @@ const particles = ref([])
 
 import { defaultApi } from '@/api'
 import {useThemeStore} from "@/stores/theme.js";
-import {useUserStore} from "@/stores/user.js";
 
 
 // 计算所有标签
@@ -143,29 +139,6 @@ const allTags = computed(() => {
     })
   })
   return Array.from(tags)
-})
-
-// 过滤后的网站列表
-const filteredWebsites = computed(() => {
-  let result = websites.value
-
-  // 关键词搜索
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(website =>
-      website.name.toLowerCase().includes(keyword) ||
-      website.description.toLowerCase().includes(keyword)
-    )
-  }
-
-  // 标签筛选
-  if (selectedTags.value.length > 0) {
-    result = result.filter(website =>
-      selectedTags.value.some(tag => website.tags.includes(tag))
-    )
-  }
-
-  return result
 })
 
 // 生成随机数在指定范围内
@@ -195,14 +168,12 @@ const initParticles = () => {
 const loadWebsites = async () => {
   loading.value = true
   try {
-    const response = await defaultApi.apiWebsitesListGet(
-      1, // page
-      100, // pageSize - 获取所有数据
-      {
-        name: searchKeyword.value || undefined,
-        tag: selectedTags.value.length > 0 ? selectedTags.value[0] : undefined
-      }
-    )
+    const response = await defaultApi.apiWebsitesListGet({
+      page: 1, // page
+      limit: 100, // pageSize - 获取所有数据
+      name: searchKeyword.value || undefined,
+      tag: selectedTags.value.length > 0 ? selectedTags.value[0] : undefined
+    })
 
     if (response.code === 0) {
       websites.value = response.data.records || []
@@ -216,6 +187,11 @@ const loadWebsites = async () => {
     loading.value = false
   }
 }
+
+watchEffect(() => {
+  // 监听搜索关键词和标签变化，重新加载网站数据
+  loadWebsites()
+})
 
 // 搜索处理
 const handleSearch = () => {
@@ -242,10 +218,6 @@ const handleImageError = (event) => {
   event.target.style.display = 'none'
 }
 
-// 返回上一页
-const goBack = () => {
-  router.back()
-}
 
 const themeStore = useThemeStore()
 // 存储进入页面时的主题状态
@@ -529,7 +501,8 @@ onMounted(() => {
     display: flex;
     align-items: flex-start;
     gap: 16px;
-    margin-bottom: 20px;
+    //margin-bottom: 16px; /* 减小底部间距 */
+    height: 100px; /* 固定高度，为标签位置提供稳定基础 */
 
     .website-avatar {
       width: 48px;
@@ -557,6 +530,8 @@ onMounted(() => {
     .website-info {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
 
       .website-name {
         font-size: 18px;
@@ -574,9 +549,11 @@ onMounted(() => {
         margin: 0;
         line-height: 1.5;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        position: relative;
+        cursor: default;
       }
     }
   }
@@ -585,12 +562,31 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 8px; /* 减小与上方内容的间距 */
 
     .website-tags {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
       flex: 1;
+      min-height: 28px; /* 固定最小高度，确保标签位置稳定 */
+
+      :deep(.el-tag) {
+        margin-bottom: 4px;
+        border-radius: 12px;
+        padding: 0 10px;
+        height: 24px;
+        line-height: 22px;
+        background: rgba(64, 158, 255, 0.08);
+        border-color: rgba(64, 158, 255, 0.2);
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
+          background: rgba(64, 158, 255, 0.12);
+        }
+      }
     }
 
     .visit-btn {

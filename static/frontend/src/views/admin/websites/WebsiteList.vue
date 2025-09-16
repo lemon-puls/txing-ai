@@ -277,15 +277,14 @@ const websiteRules = {
 const loadWebsites = async () => {
   loading.value = true
   try {
-    const response = await defaultApi.apiWebsitesListGet(
-      currentPage.value,
-      pageSize.value,
-      {
-        name: searchForm.value.name || undefined,
-        tag: searchForm.value.tag || undefined
-      }
-    )
 
+    const response = await defaultApi.apiWebsitesListGet({
+      page: currentPage.value,
+      limit: pageSize.value,
+      name: searchForm.value.name || undefined,
+      tag: searchForm.value.tag || undefined
+    })
+    console.log('网站列表:', response)
     if (response.code === 0) {
       websites.value = response.data.records || []
       total.value = response.data.total || 0
