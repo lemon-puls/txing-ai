@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/controller/agent"
 	"txing-ai/internal/controller/captcha"
 	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
@@ -42,6 +43,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	// 验证码相关路由
 	captcha.Register(group.Group("/captcha"))
+
+	// agent 相关路由
+	agent.Register(group.Group("/agent"))
 
 	// COS 相关路由
 	cos.Register(group.Group("/cos"))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/http"
+	"txing-ai/internal/agent"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/config"
 	"txing-ai/internal/global/logging/log"
@@ -76,8 +77,10 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 		panic(err)
 	}
 
+	factory := agent.NewSimpleAgentFactory()
+	
 	// 注册全局中间（局部中间件在具体的路由处注册）
-	middleware.RegisterMiddleware(engine, db, redisClient, cosClient)
+	middleware.RegisterMiddleware(engine, db, redisClient, cosClient, factory)
 	// 注册路由
 	route.Register(engine, resProvider)
 

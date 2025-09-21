@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"txing-ai/internal/agent"
 	"txing-ai/internal/enum"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,10 @@ func GetUIDFromContextAllowEmpty(c *gin.Context) (int64, bool) {
 
 func GetCosClientFromContext(c *gin.Context) *COSClient {
 	return c.MustGet("cos").(*COSClient)
+}
+
+func GetAgentFactoryFromContext(c *gin.Context) agent.AgentFactory {
+	return c.MustGet("agentFactory").(agent.AgentFactory)
 }
 
 func GetMessageLimiterFromContext(c *gin.Context) *MessageLimiter {
