@@ -23,6 +23,16 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, searchWebTool)
+
+		// 注册Markdown保存工具
+		markdownSaveTool, err := utils.InferTool(
+			"markdown save tool",
+			"Save markdown content to a local file",
+			saveMarkdown)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, markdownSaveTool)
 	})
 	return tools
 }
