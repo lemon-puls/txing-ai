@@ -1,6 +1,8 @@
 package channel
 
 import (
+	"errors"
+	"math/rand"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/global/logging/log"
 
@@ -31,4 +33,19 @@ func GetAllChannelsByModel(db *gorm.DB, model string) Sequence {
 	})
 
 	return &result
+}
+
+// 指定模型，返回选用的渠道
+func ChooseChannelByModel(db *gorm.DB, model string) (*domain.Channel, error) {
+	sequence := GetAllChannelsByModel(db, model)
+
+	// 判断是否有支持该模型的 channel
+	if len(*sequence) == 0 {
+		log.Error("no channel found for model ", zap.String("model", model))
+		return nil, errors.New("no channel found for model " + model)
+	}
+	// TODO 后续优化为根据优先级和权重选择 以及实现重试机制
+	// 从中随机选择一个 channel
+	targetChannel := (*sequence)[rand.Intn(len(*sequence))]
+	return &targetChannel, nil
 }

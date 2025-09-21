@@ -2,10 +2,8 @@ package chat
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"math/rand"
 	"txing-ai/internal/adapter"
 	adaptercommon "txing-ai/internal/adapter/common"
 	"txing-ai/internal/domain"
@@ -181,16 +179,11 @@ func execChat(ctx context.Context, conn *utils.Connection, conversation *domain.
 func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
 
 	// 获取所有支持该模型的 channel
-	sequence := channel.GetAllChannelsByModel(db, chatConfig.Model)
-	// 判断是否有支持该模型的 channel
-	if len(*sequence) == 0 {
-		log.Error("no channel found for model ", zap.String("model", chatConfig.Model))
-		return errors.New("no channel found for model " + chatConfig.Model)
+	targetChannel, err := channel.ChooseChannelByModel(db, chatConfig.Model)
+	if err != nil {
+		log.Error("choose channel failed", zap.Error(err))
+		return err
 	}
-	// TODO 后续优化为根据优先级和权重选择 以及实现重试机制
-	// 从中随机选择一个 channel
-	targetChannel := (*sequence)[rand.Intn(len(*sequence))]
-
 	// 构建映射参数
 	mappingParams := map[string]interface{}{
 		"enableWeb": chatConfig.EnableWeb,
@@ -204,7 +197,7 @@ func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.
 	mappingModel := targetChannel.GetMappingModel(chatConfig.Model, mappingParams)
 	chatConfig.Model = mappingModel
 
-	err := adapter.NewChatRequest(ctx, &targetChannel, chatConfig, hook)
+	err = adapter.NewChatRequest(ctx, targetChannel, chatConfig, hook)
 
 	return err
 }
