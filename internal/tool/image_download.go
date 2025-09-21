@@ -1,0 +1,114 @@
+package tool
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/utils/httputils"
+
+	"go.uber.org/zap"
+)
+
+// imageDownloadParams 下载图片参数
+type imageDownloadParams struct {
+	ImageURL string `json:"image_url" jsonschema:"description=图片URL地址"`
+	Filename string `json:"filename,omitempty" jsonschema:"description=保存的文件名(可选,默认从URL获取)"`
+}
+
+// downloadImage 下载图片到本地
+func downloadImage(ctx context.Context, params *imageDownloadParams) (string, error) {
+	// 验证图片URL
+	if params.ImageURL == "" {
+		return "", fmt.Errorf("图片URL不能为空")
+	}
+
+	// 获取当前工作目录
+	currentDir, err := os.Getwd()
+	if err != nil {
+		log.Error("获取当前工作目录失败", zap.Error(err))
+		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
+	}
+	savePath := currentDir
+	savePath = filepath.Join(savePath, "runtime")
+	savePath = filepath.Join(savePath, "docs")
+	savePath = filepath.Join(savePath, "markdown")
+	// 确保目录存在
+	if err := os.MkdirAll(savePath, 0755); err != nil {
+		log.Error("创建目录失败", zap.String("dir", savePath), zap.Error(err))
+		return "", fmt.Errorf("创建目录失败: %v", err)
+	}
+
+	// 确定文件名
+	filename := params.Filename
+	if filename == "" {
+		// 从URL中提取文件名
+		urlParts := strings.Split(params.ImageURL, "/")
+		if len(urlParts) > 0 {
+			filename = urlParts[len(urlParts)-1]
+			// 移除URL参数
+			if idx := strings.Index(filename, "?"); idx > 0 {
+				filename = filename[:idx]
+			}
+		}
+
+		// 如果仍然没有文件名，使用时间戳
+		if filename == "" {
+			filename = fmt.Sprintf("image_%d", time.Now().Unix())
+		}
+	}
+
+	// 确保文件名有扩展名
+	if filepath.Ext(filename) == "" {
+		// 默认添加.jpg扩展名
+		filename = filename + ".jpg"
+	}
+
+	// 构建完整的文件路径
+	fullPath := filepath.Join(savePath, filename)
+
+	// 使用项目的HTTP工具下载图片
+	httpClient := httputils.DefaultHTTPClient()
+
+	// 记录开始下载
+	log.Debug("开始下载图片", zap.String("url", params.ImageURL))
+
+	// 直接使用Get方法下载图片内容
+	imageData, err := httpClient.Get(ctx, params.ImageURL, nil, nil)
+	if err != nil {
+		log.Error("下载图片失败", zap.String("url", params.ImageURL), zap.Error(err))
+		return "", fmt.Errorf("下载图片失败: %v", err)
+	}
+
+	// 检查是否成功获取到图片数据
+	if len(imageData) == 0 {
+		log.Error("下载的图片数据为空", zap.String("url", params.ImageURL))
+		return "", fmt.Errorf("下载的图片数据为空")
+	}
+
+	// 创建文件
+	file, err := os.Create(fullPath)
+	if err != nil {
+		log.Error("创建文件失败", zap.String("path", fullPath), zap.Error(err))
+		return "", fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer file.Close()
+
+	// 将图片数据写入文件
+	_, err = file.Write(imageData)
+	if err != nil {
+		log.Error("写入文件失败", zap.String("path", fullPath), zap.Error(err))
+		return "", fmt.Errorf("写入文件失败: %v", err)
+	}
+
+	// 记录成功日志
+	log.Info("图片下载成功",
+		zap.String("url", params.ImageURL),
+		zap.String("path", fullPath),
+		zap.Time("timestamp", time.Now()))
+
+	return fmt.Sprintf("图片已成功下载到: %s", fullPath), nil
+}

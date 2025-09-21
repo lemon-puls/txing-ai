@@ -19,15 +19,14 @@ type markdownSaveParams struct {
 
 // saveMarkdown 将Markdown内容保存到本地文件
 func saveMarkdown(ctx context.Context, params *markdownSaveParams) (string, error) {
-	// 如果未指定路径，使用当前目录
-	savePath := ""
 	// 获取当前工作目录
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Error("获取当前工作目录失败", zap.Error(err))
 		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
 	}
-	savePath = currentDir
+	savePath := currentDir
+	savePath = filepath.Join(savePath, "runtime")
 	savePath = filepath.Join(savePath, "docs")
 	savePath = filepath.Join(savePath, "markdown")
 

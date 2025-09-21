@@ -33,6 +33,16 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, markdownSaveTool)
+		
+		// 注册图片下载工具
+		imageDownloadTool, err := utils.InferTool(
+			"image download tool",
+			"Download image from URL to local file",
+			downloadImage)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, imageDownloadTool)
 	})
 	return tools
 }
