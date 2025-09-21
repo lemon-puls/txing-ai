@@ -53,3 +53,8 @@ cos:
   sign_expire: 600
   # CDN 加速地址
   cdn_url: "https://www.abc.com"
+
+searchapi:
+  endpoint: "https://www.searchapi.io/api/v1/search"
+  api_key: "<输入您的 API Key>"
+  engine: "baidu"

@@ -3,6 +3,7 @@ package global
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -17,6 +18,11 @@ const (
 	defaultConfigName = "config.yaml"
 )
 
+var (
+	appConfig  = new(AppConfig)
+	configOnce sync.Once
+)
+
 type AppConfig struct {
 	*ServerConfig    `mapstructure:"server"`
 	*LogConfig       `mapstructure:"log"`
@@ -27,6 +33,7 @@ type AppConfig struct {
 	*CosConfig       `mapstructure:"cos"`
 	*AmapConfig      `mapstructure:"amap"`
 	*AWSConfig       `mapstructure:"aws"`
+	*SearchAPIConfig `mapstructure:"searchapi"`
 }
 
 type ServerConfig struct {
@@ -98,39 +105,44 @@ type AWSConfig struct {
 	SignExpire time.Duration `mapstructure:"sign_expire"`
 }
 
+type SearchAPIConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
+	ApiKey   string `mapstructure:"api_key"`
+	Engine   string `mapstructure:"Engine"`
+}
+
 func LoadConfig() *AppConfig {
+	configOnce.Do(func() {
+		var configPath string
+		flag.StringVar(&configPath, "cfg", "./"+RuntimeDir+"/"+defaultConfigName, "配置文件路径")
+		flag.Parse()
 
-	var conf = new(AppConfig)
+		// 设置配置文件路径
+		viper.SetConfigFile(configPath)
+		// 读取配置文件
+		err := viper.ReadInConfig()
+		if err != nil {
+			fmt.Printf("viper.ReadInConfig failed, err:%v\n", err)
+			panic(err)
+		}
 
-	var configPath string
-	flag.StringVar(&configPath, "cfg", "./"+RuntimeDir+"/"+defaultConfigName, "配置文件路径")
-	flag.Parse()
-
-	// 设置配置文件路径
-	viper.SetConfigFile(configPath)
-	// 读取配置文件
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Printf("viper.ReadInConfig failed, err:%v\n", err)
-		panic(err)
-	}
-
-	// 将读取的配置绑定到结构体变量
-	if err := viper.Unmarshal(conf); err != nil {
-		fmt.Printf("viper.Unmarshal failed, err:%v\n", err)
-		panic(err)
-	}
-
-	// 监听配置文件变化
-	viper.WatchConfig()
-	// 注册回调函数 当配置文件变化时 更新配置
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Printf("Config file changed: %s", e.Name)
-		if err := viper.Unmarshal(conf); err != nil {
+		// 将读取的配置绑定到结构体变量
+		if err := viper.Unmarshal(appConfig); err != nil {
 			fmt.Printf("viper.Unmarshal failed, err:%v\n", err)
 			panic(err)
 		}
+
+		// 监听配置文件变化
+		viper.WatchConfig()
+		// 注册回调函数 当配置文件变化时 更新配置
+		viper.OnConfigChange(func(e fsnotify.Event) {
+			fmt.Printf("Config file changed: %s", e.Name)
+			if err := viper.Unmarshal(appConfig); err != nil {
+				fmt.Printf("viper.Unmarshal failed, err:%v\n", err)
+				panic(err)
+			}
+		})
 	})
 
-	return conf
+	return appConfig
 }
