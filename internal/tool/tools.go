@@ -53,6 +53,16 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, imageSearchTool)
+
+		// 注册网页抓取工具
+		webScrapingTool, err := utils.InferTool(
+			"web scraping tool",
+			"Scrape the content of a web page",
+			scrapeWebPage)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, webScrapingTool)
 	})
 	return tools
 }
