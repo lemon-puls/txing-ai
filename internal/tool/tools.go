@@ -63,6 +63,56 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, webScrapingTool)
+		
+		// 注册文件读取工具
+		fileReadTool, err := utils.InferTool(
+			"file read tool",
+			"Read content from a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+			readFile)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, fileReadTool)
+		
+		// 注册文件写入工具
+		fileWriteTool, err := utils.InferTool(
+			"file write tool",
+			"Write content to a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+			writeFile)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, fileWriteTool)
+		
+		// 注册文件内容替换工具
+		fileReplaceTool, err := utils.InferTool(
+			"file replace tool",
+			"Replace content in a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+			replaceFileContent)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, fileReplaceTool)
+		
+		// 注册文件删除工具
+		fileDeleteTool, err := utils.InferTool(
+			"file delete tool",
+			"Delete a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+			deleteFile)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, fileDeleteTool)
+		
+		// 注册文件列表工具
+		fileListTool, err := utils.InferTool(
+			"file list tool",
+			"List files in a directory using relative path (only directories in runtime directory are allowed, e.g. runtime, runtime/folder)",
+			listFiles)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, fileListTool)
 	})
 	return tools
 }
