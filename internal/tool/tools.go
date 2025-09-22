@@ -33,7 +33,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, markdownSaveTool)
-		
+
 		// 注册图片下载工具
 		imageDownloadTool, err := utils.InferTool(
 			"image download tool",
@@ -43,6 +43,16 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, imageDownloadTool)
+
+		// 注册图片搜索工具
+		imageSearchTool, err := utils.InferTool(
+			"image search tool",
+			"Search images from Sougou Search Engine",
+			searchImageSougou)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, imageSearchTool)
 	})
 	return tools
 }

@@ -24,16 +24,17 @@ var (
 )
 
 type AppConfig struct {
-	*ServerConfig    `mapstructure:"server"`
-	*LogConfig       `mapstructure:"log"`
-	*MysqlConfig     `mapstructure:"mysql"`
-	*RedisConfig     `mapstructure:"redis"`
-	*SnowflakeConfig `mapstructure:"snowflake"`
-	*AuthConfig      `mapstructure:"auth"`
-	*CosConfig       `mapstructure:"cos"`
-	*AmapConfig      `mapstructure:"amap"`
-	*AWSConfig       `mapstructure:"aws"`
-	*SearchAPIConfig `mapstructure:"searchapi"`
+	*ServerConfig      `mapstructure:"server"`
+	*LogConfig         `mapstructure:"log"`
+	*MysqlConfig       `mapstructure:"mysql"`
+	*RedisConfig       `mapstructure:"redis"`
+	*SnowflakeConfig   `mapstructure:"snowflake"`
+	*AuthConfig        `mapstructure:"auth"`
+	*CosConfig         `mapstructure:"cos"`
+	*AmapConfig        `mapstructure:"amap"`
+	*AWSConfig         `mapstructure:"aws"`
+	*SearchAPIConfig   `mapstructure:"searchapi"`
+	*ImageSearchConfig `mapstructure:"image_search"`
 }
 
 type ServerConfig struct {
@@ -109,6 +110,16 @@ type SearchAPIConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	ApiKey   string `mapstructure:"api_key"`
 	Engine   string `mapstructure:"Engine"`
+}
+
+type ImageSearchConfig struct {
+	Sougou *ImageSearchSougou `mapstructure:"sougou"`
+}
+
+type ImageSearchSougou struct {
+	ID       string `mapstructure:"id"`
+	Key      string `mapstructure:"key"`
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 func LoadConfig() *AppConfig {
