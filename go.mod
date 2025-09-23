@@ -1,12 +1,12 @@
 module txing-ai
 
-go 1.23.0
+go 1.24.1
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
 	github.com/cloudwego/eino v0.5.3
-	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250919093114-b7a34962a8d8
+	github.com/cloudwego/eino-ext/components/model/openai v0.1.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/locales v0.14.1
@@ -19,6 +19,7 @@ require (
 	github.com/mojocn/base64Captcha v1.3.6
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/redis/go-redis/v9 v9.7.1
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/samber/lo v1.49.1
 	github.com/sashabaranov/go-openai v1.40.0
 	github.com/spf13/viper v1.19.0
@@ -44,7 +45,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
-	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250918130948-16e3a249e721 // indirect
+	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250922100652-4a4306a8bf2c // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eino-contrib/jsonschema v1.0.0 // indirect

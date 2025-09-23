@@ -3,6 +3,8 @@ package tool
 import (
 	"context"
 	"fmt"
+	"github.com/russross/blackfriday/v2"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
@@ -12,9 +14,6 @@ import (
 	"strings"
 	"time"
 	"txing-ai/internal/global/logging/log"
-
-	"github.com/russross/blackfriday/v2"
-	"go.uber.org/zap"
 )
 
 // markdownToPDFParams 将Markdown转换为PDF的参数

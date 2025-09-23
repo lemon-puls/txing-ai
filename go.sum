@@ -44,10 +44,10 @@ github.com/cloudwego/base64x v0.1.5 h1:XPciSp1xaq2VCSt6lF0phncD4koWyULpl5bUxbfCy
 github.com/cloudwego/base64x v0.1.5/go.mod h1:0zlkT4Wn5C6NdauXdJRhSKRlJvmclQ1hhJgA0rcu/8w=
 github.com/cloudwego/eino v0.5.3 h1:Qnxk/4dbEG5AT3LKHymLiuVTw1G+TPRObsb7ypRPi4I=
 github.com/cloudwego/eino v0.5.3/go.mod h1:S38tlNO4cNqFfGJKQSJZimxjzc9JDJKdf2eW3FEEfdc=
-github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250919093114-b7a34962a8d8 h1:bm6MVSRveq4CM0bxFy6nIusEOypXxq+dEhUSEkUwV1o=
-github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250919093114-b7a34962a8d8/go.mod h1:VwAXEY1ik2K9KFPZvymnkfBQQKgLHbpg90yg+7hrTt8=
-github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250918130948-16e3a249e721 h1:5Hd8GxNEmu+ppTGCRBU6kLKfCQNXPMwi31xA83PzEqo=
-github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250918130948-16e3a249e721/go.mod h1:fHn/6OqPPY1iLLx9wzz+MEVT5Dl9gwuZte1oLEnCoYw=
+github.com/cloudwego/eino-ext/components/model/openai v0.1.1 h1:VRdUDcnfi/T8F0jcuovhdADU9Io/oMqiKpY2ZJTBc1o=
+github.com/cloudwego/eino-ext/components/model/openai v0.1.1/go.mod h1:VwAXEY1ik2K9KFPZvymnkfBQQKgLHbpg90yg+7hrTt8=
+github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250922100652-4a4306a8bf2c h1:AY6RspLUHeZUF8g+q+ksc9tuk/jeOF4VdW6Z4fldIos=
+github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250922100652-4a4306a8bf2c/go.mod h1:fHn/6OqPPY1iLLx9wzz+MEVT5Dl9gwuZte1oLEnCoYw=
 github.com/cloudwego/iasm v0.2.0/go.mod h1:8rXZaNYT2n95jn+zTI1sDr+IgcD2GVs0nlbbQPiEFhY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -234,6 +234,8 @@ github.com/redis/go-redis/v9 v9.7.1/go.mod h1:f6zhXITC7JUJIlPEiBOTXxJgPLdZcA93Ge
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
 github.com/rollbar/rollbar-go v1.0.2/go.mod h1:AcFs5f0I+c71bpHlXNNDbOWJiKwjFDtISeXco0L5PKQ=
+github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
+github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagikazarmark/locafero v0.4.0 h1:HApY1R9zGo4DBgr7dqsTH/JJxLTTsOt7u6keLGt6kNQ=
 github.com/sagikazarmark/locafero v0.4.0/go.mod h1:Pe1W6UlPYUk/+wc/6KFhbORCfqzgYEpgQ3O5fPuL3H4=
 github.com/sagikazarmark/slog-shim v0.1.0 h1:diDBnUNK9N/354PgrxMywXnAwEr1QZcOr6gto+ugjYE=
