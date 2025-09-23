@@ -17,7 +17,8 @@ func ProvideTools() []tool.BaseTool {
 		// 注册网页搜索工具
 		searchWebTool, err := utils.InferTool(
 			"web search tool",
-			"Search for information from Baidu Search Engine",
+			// 说明有速率限制，需要注意不要频繁调用
+			"Search for information from Baidu Search Engine, has rate limit, please be careful",
 			searchWeb)
 		if err != nil {
 			panic(err)
@@ -63,7 +64,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, webScrapingTool)
-		
+
 		// 注册文件读取工具
 		fileReadTool, err := utils.InferTool(
 			"file read tool",
@@ -73,7 +74,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, fileReadTool)
-		
+
 		// 注册文件写入工具
 		fileWriteTool, err := utils.InferTool(
 			"file write tool",
@@ -83,7 +84,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, fileWriteTool)
-		
+
 		// 注册文件内容替换工具
 		fileReplaceTool, err := utils.InferTool(
 			"file replace tool",
@@ -93,7 +94,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, fileReplaceTool)
-		
+
 		// 注册文件删除工具
 		fileDeleteTool, err := utils.InferTool(
 			"file delete tool",
@@ -103,7 +104,7 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, fileDeleteTool)
-		
+
 		// 注册文件列表工具
 		fileListTool, err := utils.InferTool(
 			"file list tool",
@@ -113,6 +114,16 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, fileListTool)
+
+		// 注册Markdown转PDF工具
+		markdownToPDFTool, err := utils.InferTool(
+			"markdown to pdf tool",
+			"Convert markdown content to a PDF file with images support",
+			saveMarkdownToPDF)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, markdownToPDFTool)
 	})
 	return tools
 }
