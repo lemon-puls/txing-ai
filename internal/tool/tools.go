@@ -124,6 +124,26 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, markdownToPDFTool)
+
+		// 注册PDF文本提取工具
+		pdfReadTool, err := utils.InferTool(
+			"pdf read tool",
+			"Extract text content from a PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/folder/file.pdf)",
+			readPdfText)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, pdfReadTool)
+
+		// 注册PDF验证工具
+		pdfValidateTool, err := utils.InferTool(
+			"pdf validate tool",
+			"Validate if a file is a valid PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/folder/file.pdf)",
+			validatePdf)
+		if err != nil {
+			panic(err)
+		}
+		tools = append(tools, pdfValidateTool)
 	})
 	return tools
 }
