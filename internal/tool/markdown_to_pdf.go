@@ -32,6 +32,8 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
 	}
 
+	log.Info("开始Markdown转PDF", zap.String("content", params.Content))
+
 	// 创建临时目录用于存放处理过程中的文件
 	tempDir := filepath.Join(currentDir, "runtime", "temp")
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
@@ -40,7 +42,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	}
 
 	// 创建保存目录
-	savePath := filepath.Join(currentDir, "runtime", "docs", "pdf")
+	savePath := filepath.Join(currentDir, "runtime", "temp")
 	if err := os.MkdirAll(savePath, 0755); err != nil {
 		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
 		return "", fmt.Errorf("创建保存目录失败: %v", err)
@@ -95,7 +97,7 @@ func processMarkdownImages(content string, tempDir string) (string, []string, er
 	var imagePaths []string
 
 	// 创建图片目录
-	imageDir := filepath.Join(tempDir, "images")
+	imageDir := tempDir
 	if err := os.MkdirAll(imageDir, 0755); err != nil {
 		return "", nil, fmt.Errorf("创建图片目录失败: %v", err)
 	}

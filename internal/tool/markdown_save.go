@@ -26,9 +26,7 @@ func saveMarkdown(ctx context.Context, params *markdownSaveParams) (string, erro
 		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
 	}
 	savePath := currentDir
-	savePath = filepath.Join(savePath, "runtime")
-	savePath = filepath.Join(savePath, "docs")
-	savePath = filepath.Join(savePath, "markdown")
+	savePath = filepath.Join(savePath, "runtime", "temp")
 
 	// 确保文件名有.md扩展名
 	filename := params.Filename

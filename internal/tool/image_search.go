@@ -77,7 +77,7 @@ func searchImageSougou(ctx context.Context, params *imageSearchParams) (string, 
 		log.Error("图片搜索API返回错误",
 			zap.Int("code", searchResponse.Code),
 			zap.String("msg", searchResponse.Msg))
-		return "", fmt.Errorf("图片搜索API返回错误: %s", searchResponse.Msg)
+		return searchResponse.Msg, nil
 	}
 
 	// 如果没有结果，返回提示信息

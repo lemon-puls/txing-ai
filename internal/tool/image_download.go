@@ -33,9 +33,7 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
 	}
 	savePath := currentDir
-	savePath = filepath.Join(savePath, "runtime")
-	savePath = filepath.Join(savePath, "docs")
-	savePath = filepath.Join(savePath, "markdown")
+	savePath = filepath.Join(savePath, "runtime", "temp")
 	// 确保目录存在
 	if err := os.MkdirAll(savePath, 0755); err != nil {
 		log.Error("创建目录失败", zap.String("dir", savePath), zap.Error(err))
