@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"txing-ai/internal/iface"
 )
 
 // AgentType represents the type of agent to create
@@ -28,13 +29,13 @@ type SimpleAgentFactory struct {
 var _ AgentFactory = (*SimpleAgentFactory)(nil)
 
 // NewSimpleAgentFactory creates a new simple agent factory
-func NewSimpleAgentFactory() AgentFactory {
+func NewSimpleAgentFactory(res iface.ResourceProvider) AgentFactory {
 	factory := SimpleAgentFactory{
 		constructors: make(map[AgentType]func() Agent),
 	}
 	// 注册一个通用 agent 类型
 	factory.RegisterAgentType(GeneralAgentType, func() Agent {
-		return NewGeneralAgent()
+		return NewGeneralAgent(res)
 	})
 	return &factory
 }

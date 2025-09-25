@@ -20,14 +20,14 @@ type ToolCallAgent struct {
 }
 
 // NewToolCallAgent 创建一个新的通用智能体
-func NewToolCallAgent() *ToolCallAgent {
+func NewToolCallAgent(res iface.ResourceProvider) *ToolCallAgent {
 	baseAgent := NewBaseAgent("ToolCallAgent", "A general-purpose AI agent")
 
 	baseAgent.SetSystemPrompt("You are a helpful AI assistant that can use tools to solve problems.")
 
 	return &ToolCallAgent{
 		BaseAgent: baseAgent,
-		tools:     mytool.ProvideTools(),
+		tools:     mytool.ProvideTools(res),
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"sync"
+	"txing-ai/internal/iface"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 )
 
 // ProvideTools 注册工具
-func ProvideTools() []tool.BaseTool {
+func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 	toolRegisterOnce.Do(func() {
 		// 注册网页搜索工具
 		searchWebTool, err := utils.InferTool(
@@ -144,6 +145,13 @@ func ProvideTools() []tool.BaseTool {
 			panic(err)
 		}
 		tools = append(tools, pdfValidateTool)
+
+		// 添加MCP工具（如果已初始化）
+		mcpClientManager := res.GetMCPClientManager()
+		mcpTools := mcpClientManager.GetAllMCPTools()
+		if len(mcpTools) > 0 {
+			tools = append(tools, mcpTools...)
+		}
 	})
 	return tools
 }

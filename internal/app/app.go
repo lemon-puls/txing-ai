@@ -13,6 +13,7 @@ import (
 	"txing-ai/internal/iface"
 	"txing-ai/internal/middleware"
 	"txing-ai/internal/route"
+	"txing-ai/internal/tool/mcp"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/captcha"
 
@@ -48,6 +49,13 @@ func (s *server) Shutdown(ctx context.Context) error {
 		log.Error("redis client close error", zap.Error(err))
 	}
 
+	// 关闭 MCP 服务
+	mcpClientManager := s.resProvider.GetMCPClientManager()
+	err = mcpClientManager.CloseAllMCPServers()
+	if err != nil {
+		log.Error("close mcp client error", zap.Error(err))
+	}
+
 	return s.impl.Shutdown(ctx)
 }
 
@@ -61,8 +69,16 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	// 初始化 Redis
 	redisClient := config.NewRedisClient(appConfig.RedisConfig, ctx)
 
+	mcpClientManager := mcp.NewMCPClientManager(ctx)
+
+	// TODO 支持配置路径 暂时先用默认路径
+	err := mcpClientManager.Init("")
+	if err != nil {
+		log.Error("mcpClientManager init error", zap.Error(err))
+	}
+
 	// 初始化资源提供者
-	resProvider := NewResourceProvider(redisClient, db)
+	resProvider := NewResourceProvider(redisClient, db, mcpClientManager)
 
 	// 初始化 jwt 工具
 	utils.InitJwtSecret(appConfig.AuthConfig)
@@ -77,8 +93,8 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 		panic(err)
 	}
 
-	factory := agent.NewSimpleAgentFactory()
-	
+	factory := agent.NewSimpleAgentFactory(resProvider)
+
 	// 注册全局中间（局部中间件在具体的路由处注册）
 	middleware.RegisterMiddleware(engine, db, redisClient, cosClient, factory)
 	// 注册路由
