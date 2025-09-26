@@ -29,23 +29,16 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
+		return "获取当前工作目录失败", nil
 	}
 
 	log.Info("开始Markdown转PDF", zap.String("content", params.Content))
 
-	// 创建临时目录用于存放处理过程中的文件
-	tempDir := filepath.Join(currentDir, "runtime", "temp")
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
-		log.Error("创建临时目录失败", zap.String("dir", tempDir), zap.Error(err))
-		return "", fmt.Errorf("创建临时目录失败: %v", err)
-	}
-
 	// 创建保存目录
-	savePath := filepath.Join(currentDir, "runtime", "temp")
-	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "", fmt.Errorf("创建保存目录失败: %v", err)
+	saveDir := filepath.Join(currentDir, "runtime", "temp")
+	if err := os.MkdirAll(saveDir, 0755); err != nil {
+		log.Error("创建保存目录失败", zap.String("dir", saveDir), zap.Error(err))
+		return "创建保存目录失败", fmt.Errorf("创建保存目录失败: %v", err)
 	}
 
 	// 确保文件名有.pdf扩展名
@@ -55,13 +48,13 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	}
 
 	// 构建完整的文件路径
-	fullPath := filepath.Join(savePath, filename)
+	fullPath := filepath.Join(saveDir, filename)
 
 	// 处理Markdown内容中的图片
-	content, imagePaths, err := processMarkdownImages(params.Content, tempDir)
+	content, imagePaths, err := processMarkdownImages(params.Content, saveDir)
 	if err != nil {
 		log.Error("处理Markdown图片失败", zap.Error(err))
-		return "", fmt.Errorf("处理Markdown图片失败: %v", err)
+		return fmt.Sprintf("处理Markdown图片失败：%v", err), nil
 	}
 	defer cleanupTempImages(imagePaths)
 
@@ -69,17 +62,17 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	htmlContent := markdownToHTML(content, params.Title)
 
 	// 保存HTML到临时文件
-	htmlFilePath := filepath.Join(tempDir, "temp.html")
+	htmlFilePath := filepath.Join(saveDir, "temp.html")
 	if err := os.WriteFile(htmlFilePath, []byte(htmlContent), 0644); err != nil {
 		log.Error("保存临时HTML文件失败", zap.String("path", htmlFilePath), zap.Error(err))
-		return "", fmt.Errorf("保存临时HTML文件失败: %v", err)
+		return fmt.Sprintf("保存临时HTML文件失败：%v"), nil
 	}
 	defer os.Remove(htmlFilePath)
 
 	// 使用wkhtmltopdf将HTML转换为PDF
 	if err := convertHTMLToPDF(htmlFilePath, fullPath); err != nil {
 		log.Error("HTML转PDF失败", zap.Error(err))
-		return "", fmt.Errorf("HTML转PDF失败: %v", err)
+		return fmt.Sprintf("HTML转PDF失败：%v"), nil
 	}
 
 	// 记录成功日志
@@ -88,7 +81,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 		zap.Int("contentLength", len(params.Content)),
 		zap.Time("timestamp", time.Now()))
 
-	return fmt.Sprintf("PDF文件已成功生成: %s", fullPath), nil
+	return fmt.Sprintf("PDF文件已成功生成: ./%s", filename), nil
 }
 
 // processMarkdownImages 处理Markdown内容中的图片

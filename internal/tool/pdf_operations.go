@@ -20,24 +20,27 @@ type pdfReadParams struct {
 func readPdfText(ctx context.Context, params *pdfReadParams) (string, error) {
 	// 检查路径是否允许
 	if !isPathAllowed(params.FilePath) {
-		return "", fmt.Errorf("不允许访问该路径: %s", params.FilePath)
+		log.Error("不允许访问该路径", zap.String("path", params.FilePath))
+		return "没有权限访问该路径", nil
 	}
 
 	// 检查文件是否存在
 	if _, err := os.Stat(params.FilePath); os.IsNotExist(err) {
-		return "", fmt.Errorf("文件不存在: %s", params.FilePath)
+		log.Error("文件不存在", zap.String("path", params.FilePath))
+		return fmt.Sprintf("文件不存在: %s", params.FilePath), nil
 	}
 
 	// 检查文件扩展名
 	if !strings.HasSuffix(strings.ToLower(params.FilePath), ".pdf") {
-		return "", fmt.Errorf("文件不是PDF格式: %s", params.FilePath)
+		log.Error("文件不是PDF格式", zap.String("path", params.FilePath))
+		return fmt.Sprintf("文件不是PDF格式: %s", params.FilePath), nil
 	}
 
 	// 打开PDF文件
 	f, r, err := pdf.Open(params.FilePath)
 	if err != nil {
 		log.Error("打开PDF文件失败", zap.String("path", params.FilePath), zap.Error(err))
-		return "", fmt.Errorf("打开PDF文件失败: %v", err)
+		return fmt.Sprintf("打开PDF文件失败: %v", err), nil
 	}
 	defer f.Close()
 

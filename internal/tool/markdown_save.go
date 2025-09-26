@@ -57,5 +57,5 @@ func saveMarkdown(ctx context.Context, params *markdownSaveParams) (string, erro
 		zap.Int("contentLength", len(params.Content)),
 		zap.Time("timestamp", time.Now()))
 
-	return fmt.Sprintf("Markdown文件已成功保存到: %s", fullPath), nil
+	return fmt.Sprintf("Markdown文件已成功保存到: ./%s", filename), nil
 }

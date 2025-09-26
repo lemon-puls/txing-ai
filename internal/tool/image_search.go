@@ -35,7 +35,7 @@ func searchImageSougou(ctx context.Context, params *imageSearchParams) (string, 
 
 	// 验证搜索关键词
 	if params.Words == "" {
-		return "", fmt.Errorf("搜索关键词不能为空")
+		return "搜索关键词不能为空", nil
 	}
 
 	// 设置默认值
@@ -69,7 +69,7 @@ func searchImageSougou(ctx context.Context, params *imageSearchParams) (string, 
 	err := httpClient.GetJSON(ctx, apiURL, values, nil, &searchResponse)
 	if err != nil {
 		log.Error("图片搜索请求失败", zap.Error(err))
-		return "", fmt.Errorf("图片搜索请求失败: %v", err)
+		return "图片搜索请求失败", nil
 	}
 
 	// 检查响应状态
@@ -90,7 +90,7 @@ func searchImageSougou(ctx context.Context, params *imageSearchParams) (string, 
 	resultJSON, err := json.Marshal(searchResponse.Res)
 	if err != nil {
 		log.Error("结果序列化失败", zap.Error(err))
-		return "", fmt.Errorf("结果序列化失败: %v", err)
+		return "结果序列化失败", nil
 	}
 
 	//记录成功日志

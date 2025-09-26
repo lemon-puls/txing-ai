@@ -43,7 +43,7 @@ func searchWeb(ctx context.Context, params *webSearchParams) (string, error) {
 	err := httpClient.GetJSON(ctx, config.SearchAPIConfig.Endpoint, values, nil, &searchResponse)
 	if err != nil {
 		log.Error("Web搜索请求失败", zap.Error(err))
-		return "", fmt.Errorf("Web搜索请求失败: %v", err)
+		return fmt.Sprintf("Web搜索请求失败: %v", err), nil
 	}
 
 	// 提取前5条结果
@@ -55,7 +55,7 @@ func searchWeb(ctx context.Context, params *webSearchParams) (string, error) {
 	// 如果没有结果，返回空字符串
 	if resultCount == 0 {
 		log.Debug("Web搜索无结果", zap.String("query", params.Query))
-		return "", nil
+		return "搜索结果为空", nil
 	}
 
 	// 将结果转换为JSON字符串并拼接

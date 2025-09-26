@@ -15,9 +15,7 @@ import (
 
 // 允许操作的目录列表
 var allowedDirectories = []string{
-	"runtime",
-	"data",
-	"temp",
+	"runtime/temp",
 }
 
 // 检查文件路径是否在允许的目录中

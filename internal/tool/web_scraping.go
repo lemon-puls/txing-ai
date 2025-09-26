@@ -19,7 +19,7 @@ type webScrapingRequest struct {
 
 // webScrapingResponse 网页抓取响应
 type webScrapingResponse struct {
-	Content     string `json:"content"`      // 提取的文本内容
+	Content     string `json:"content"` // 提取的文本内容
 	Title       string `json:"title,omitempty"`
 	URL         string `json:"url,omitempty"`
 	Description string `json:"description,omitempty"` // 网页描述
@@ -41,10 +41,10 @@ const defaultMaxTextLength = 16000
 
 // 清理HTML文本的正则表达式
 var (
-	spaceRegex      = regexp.MustCompile(`\s+`)
-	scriptRegex     = regexp.MustCompile(`(?s)<script.*?</script>`)
-	styleRegex      = regexp.MustCompile(`(?s)<style.*?</style>`)
-	htmlTagRegex    = regexp.MustCompile(`<[^>]*>`)
+	spaceRegex   = regexp.MustCompile(`\s+`)
+	scriptRegex  = regexp.MustCompile(`(?s)<script.*?</script>`)
+	styleRegex   = regexp.MustCompile(`(?s)<style.*?</style>`)
+	htmlTagRegex = regexp.MustCompile(`<[^>]*>`)
 )
 
 // scrapeWebPage 网页抓取工具
@@ -53,7 +53,7 @@ func scrapeWebPage(ctx context.Context, req *webScrapingRequest) (webScrapingRes
 	var response webScrapingResponse
 	var textContent strings.Builder
 	var pageTitle, pageDescription string
-	
+
 	// 设置最大文本长度
 	maxLength := defaultMaxTextLength
 	if req.MaxTextLength > 0 {
@@ -84,7 +84,7 @@ func scrapeWebPage(ctx context.Context, req *webScrapingRequest) (webScrapingRes
 		// 设置随机User-Agent
 		r.Headers.Set("User-Agent", userAgents[time.Now().UnixNano()%int64(len(userAgents))])
 		// 设置Referer
-		r.Headers.Set("Referer", "https://www.google.com/")
+		r.Headers.Set("Referer", "https://www.baidu.com/")
 		// 设置Accept头
 		r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 		r.Headers.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
@@ -135,14 +135,14 @@ func scrapeWebPage(ctx context.Context, req *webScrapingRequest) (webScrapingRes
 
 	// 设置响应内容
 	content := textContent.String()
-	
+
 	// 检查是否需要截断内容
 	truncated := false
 	if len(content) > maxLength {
 		content = content[:maxLength]
 		truncated = true
 	}
-	
+
 	response.Content = content
 	response.Title = pageTitle
 	response.URL = req.URL
@@ -156,15 +156,15 @@ func scrapeWebPage(ctx context.Context, req *webScrapingRequest) (webScrapingRes
 func extractText(html string) string {
 	// 移除script标签及其内容
 	html = scriptRegex.ReplaceAllString(html, "")
-	
+
 	// 移除style标签及其内容
 	html = styleRegex.ReplaceAllString(html, "")
-	
+
 	// 移除HTML标签
 	html = htmlTagRegex.ReplaceAllString(html, " ")
-	
+
 	// 规范化空白字符
 	html = spaceRegex.ReplaceAllString(html, " ")
-	
+
 	return strings.TrimSpace(html)
 }

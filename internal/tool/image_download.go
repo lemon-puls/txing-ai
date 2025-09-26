@@ -23,21 +23,21 @@ type imageDownloadParams struct {
 func downloadImage(ctx context.Context, params *imageDownloadParams) (string, error) {
 	// 验证图片URL
 	if params.ImageURL == "" {
-		return "", fmt.Errorf("图片URL不能为空")
+		return "保存失败，图片URL不能为空", nil
 	}
 
 	// 获取当前工作目录
 	currentDir, err := os.Getwd()
 	if err != nil {
 		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
+		return "保存失败，获取当前工作目录失败", nil
 	}
 	savePath := currentDir
 	savePath = filepath.Join(savePath, "runtime", "temp")
 	// 确保目录存在
 	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "", fmt.Errorf("创建目录失败: %v", err)
+		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
+		return "创建保存目录失败", nil
 	}
 
 	// 确定文件名
@@ -78,20 +78,20 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 	imageData, err := httpClient.Get(ctx, params.ImageURL, nil, nil)
 	if err != nil {
 		log.Error("下载图片失败", zap.String("url", params.ImageURL), zap.Error(err))
-		return "", fmt.Errorf("下载图片失败: %v", err)
+		return "下载图片失败，" + err.Error(), nil
 	}
 
 	// 检查是否成功获取到图片数据
 	if len(imageData) == 0 {
 		log.Error("下载的图片数据为空", zap.String("url", params.ImageURL))
-		return "", fmt.Errorf("下载的图片数据为空")
+		return "下载的图片数据为空", nil
 	}
 
 	// 创建文件
 	file, err := os.Create(fullPath)
 	if err != nil {
 		log.Error("创建文件失败", zap.String("path", fullPath), zap.Error(err))
-		return "", fmt.Errorf("创建文件失败: %v", err)
+		return "创建文件失败", nil
 	}
 	defer file.Close()
 
@@ -99,7 +99,7 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 	_, err = file.Write(imageData)
 	if err != nil {
 		log.Error("写入文件失败", zap.String("path", fullPath), zap.Error(err))
-		return "", fmt.Errorf("写入文件失败: %v", err)
+		return "写入文件失败", nil
 	}
 
 	// 记录成功日志
@@ -108,5 +108,5 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		zap.String("path", fullPath),
 		zap.Time("timestamp", time.Now()))
 
-	return fmt.Sprintf("图片已成功下载到: %s", fullPath), nil
+	return fmt.Sprintf("下载完成: ./%s", filename), nil
 }
