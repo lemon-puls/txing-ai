@@ -35,9 +35,6 @@ func searchWeb(ctx context.Context, params *webSearchParams) (string, error) {
 	// 使用通用HTTP客户端
 	httpClient := httputils.DefaultHTTPClient()
 
-	// 记录请求日志
-	log.Debug("发起Web搜索请求", zap.String("query", params.Query))
-
 	// 发送请求并解析JSON响应
 	var searchResponse SearchResponse
 	err := httpClient.GetJSON(ctx, config.SearchAPIConfig.Endpoint, values, nil, &searchResponse)

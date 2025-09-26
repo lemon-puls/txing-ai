@@ -100,9 +100,8 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 	// 2. 添加节点
 	// 在节点预处理中维护消息序列
 	modelPreHandle := func(ctx context.Context, input []*schema.Message, state *AgentState) ([]*schema.Message, error) {
-		// 打印出输入消息
 		for _, msg := range input {
-			log.Info("Input message Model", zap.String("role", string(msg.Role)), zap.String("content", msg.Content))
+			log.Debug("model input", zap.String("role", string(msg.Role)), zap.String("content", msg.Content))
 		}
 		state.Messages = append(state.Messages, input...)
 		return state.Messages, nil
@@ -110,7 +109,10 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 
 	// 工具节点的预处理器，接收单个消息并添加到状态中
 	toolsPreHandle := func(ctx context.Context, input *schema.Message, state *AgentState) (*schema.Message, error) {
-		log.Info("Input message tools", zap.String("role", string(input.Role)), zap.String("content", input.Content))
+		// 打印工具调用信息
+		for _, call := range input.ToolCalls {
+			log.Debug("tool call", zap.String("name", call.Function.Name), zap.Any("args", call.Function.Arguments))
+		}
 		state.Messages = append(state.Messages, input)
 		// 返回输入消息，保持类型一致性
 		return input, nil
