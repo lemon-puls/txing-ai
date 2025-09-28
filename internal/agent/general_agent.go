@@ -2,12 +2,12 @@ package agent
 
 import "txing-ai/internal/iface"
 
-// GeneralAgent is a general-purpose AI agent
+// ResumeAgent is a general-purpose AI agent
 type GeneralAgent struct {
 	*ToolCallAgent
 }
 
-// NewGeneralAgent creates a new general-purpose agent
+// NewResumeAgent creates a new general-purpose agent
 func NewGeneralAgent(res iface.ResourceProvider) *GeneralAgent {
 	a := &GeneralAgent{
 		ToolCallAgent: NewToolCallAgent(res),

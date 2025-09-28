@@ -11,6 +11,8 @@ type AgentType string
 const (
 	// GeneralAgentType is a general-purpose agent
 	GeneralAgentType AgentType = "general"
+	// ResumeAgentType is an agent for resume optimation
+	ResumeAgentType = "resume"
 )
 
 // AgentFactory creates agents of different types
@@ -35,7 +37,10 @@ func NewSimpleAgentFactory(res iface.ResourceProvider) AgentFactory {
 	}
 	// 注册一个通用 agent 类型
 	factory.RegisterAgentType(GeneralAgentType, func() Agent {
-		return NewGeneralAgent(res)
+		return NewResumeAgent(res)
+	})
+	factory.RegisterAgentType(ResumeAgentType, func() Agent {
+		return NewResumeAgent(res)
 	})
 	return &factory
 }

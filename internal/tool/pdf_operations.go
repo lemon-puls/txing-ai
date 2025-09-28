@@ -12,12 +12,12 @@ import (
 )
 
 // PDF文件读取参数
-type pdfReadParams struct {
+type PdfReadParams struct {
 	FilePath string `json:"file_path" jsonschema:"description=要读取的PDF文件路径"`
 }
 
 // 读取PDF文件内容
-func readPdfText(ctx context.Context, params *pdfReadParams) (string, error) {
+func ReadPdfText(ctx context.Context, params *PdfReadParams) (string, error) {
 	// 检查路径是否允许
 	if !isPathAllowed(params.FilePath) {
 		log.Error("不允许访问该路径", zap.String("path", params.FilePath))
