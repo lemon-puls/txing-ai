@@ -35,6 +35,7 @@ type AppConfig struct {
 	*AWSConfig         `mapstructure:"aws"`
 	*SearchAPIConfig   `mapstructure:"searchapi"`
 	*ImageSearchConfig `mapstructure:"image_search"`
+	*LocalUploadConfig `mapstructure:"local_upload"`
 }
 
 type ServerConfig struct {
@@ -120,6 +121,11 @@ type ImageSearchSougou struct {
 	ID       string `mapstructure:"id"`
 	Key      string `mapstructure:"key"`
 	Endpoint string `mapstructure:"endpoint"`
+}
+
+type LocalUploadConfig struct {
+	Dir     string `mapstructure:"dir"`
+	MaxSize int    `mapstructure:"max_size"`
 }
 
 func LoadConfig() *AppConfig {

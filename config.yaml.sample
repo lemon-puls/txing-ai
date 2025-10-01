@@ -64,3 +64,9 @@ image_search:
     id: "12345678"
     key: "12345678"
     endpoint: ""
+
+# 本地上传配置 主要用于保存一些临时文件，其他地方上传文件都使用云存储
+local_upload:
+  dir: "/runtime/temp_files"
+  # 文件大小限制 最大 20MB
+  max_size: 20971520
