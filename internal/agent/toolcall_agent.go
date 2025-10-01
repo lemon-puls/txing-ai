@@ -7,7 +7,9 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 	mytool "txing-ai/internal/tool"
@@ -48,7 +50,10 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	}
 
 	// 创建一个包含工具的执行图
-	graph, err := newGraph(context.Background(), chatModel, a.tools)
+	graph, err := newGraph(context.Background(), chatModel, a.tools, func(chunk *global.Chunk) error {
+		// 不需要处理chunk
+		return nil
+	})
 	if err != nil {
 		log.Error("Failed to create graph", zap.Error(err))
 		return "", err
@@ -63,7 +68,35 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseTool) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
+func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, channelConfig iface.ChannelConfig, model string,
+	input string, callback func(chunk *global.Chunk) error) error {
+
+	secret := channelConfig.GetRandomSecret()
+	endpoint := channelConfig.GetEndpoint()
+
+	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		BaseURL: endpoint,
+		Model:   model, // 使用的模型版本
+		APIKey:  secret,
+	})
+	if err != nil {
+		return "", fmt.Errorf("Failed to create chat model: %w", err)
+	}
+
+	// 创建一个包含工具的执行图
+	graph, err := newGraph(context.Background(), chatModel, a.tools, callback)
+	if err != nil {
+		log.Error("Failed to create graph", zap.Error(err))
+		return err
+	}
+	a.SetGraph(graph)
+
+	err = a.BaseAgent.ExecuteStream(ctx, channelConfig, model, input, callback)
+	return err
+}
+
+func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseTool,
+	callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
 
 	// 创建工具节点时确保正确配置
 	todoToolsNode, err := compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
@@ -102,6 +135,13 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 	modelPreHandle := func(ctx context.Context, input []*schema.Message, state *AgentState) ([]*schema.Message, error) {
 		for _, msg := range input {
 			log.Debug("model input", zap.String("role", string(msg.Role)), zap.String("content", msg.Content))
+			if msg.ToolCallID != "" {
+				callback(&global.Chunk{
+					ToolCallId: msg.ToolCallID,
+					ToolName:   msg.ToolName,
+					ToolResult: msg.Content,
+				})
+			}
 		}
 		state.Messages = append(state.Messages, input...)
 		return state.Messages, nil
@@ -112,6 +152,11 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 		// 打印工具调用信息
 		for _, call := range input.ToolCalls {
 			log.Debug("tool call", zap.String("name", call.Function.Name), zap.Any("args", call.Function.Arguments))
+			callback(&global.Chunk{
+				ToolCallId: call.ID,
+				ToolName:   call.Function.Name,
+				ToolParams: call.Function.Arguments,
+			})
 		}
 		state.Messages = append(state.Messages, input)
 		// 返回输入消息，保持类型一致性

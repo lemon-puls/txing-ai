@@ -7,6 +7,10 @@ import (
 	_ "github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 )
 
@@ -18,6 +22,7 @@ type Agent interface {
 	GetName() string
 	// GetDescription 获取智能体描述
 	GetDescription() string
+	ExecuteStream(ctx *gin.Context, channel iface.ChannelConfig, model string, content string, callback func(chunk *global.Chunk) error) error
 }
 
 // 校验接口实现
@@ -93,4 +98,18 @@ func (a *BaseAgent) Execute(ctx context.Context,
 	}
 
 	return response.Content, nil
+}
+
+func (a *BaseAgent) ExecuteStream(ctx *gin.Context, channel iface.ChannelConfig, model string,
+	content string, callback func(chunk *global.Chunk) error) error {
+
+	response, err := a.Execute(ctx, channel, model, content)
+	if err != nil {
+		log.Error("execute agent stream failed", zap.Error(err))
+		return err
+	}
+	chunk := global.Chunk{
+		Content: response,
+	}
+	return callback(&chunk)
 }

@@ -16,6 +16,14 @@ type Chunk struct {
 	Content string `json:"content"`
 	// 思考过程消息
 	ReasoningContent string `json:"reasoning_content"`
+	// toolCall Id
+	ToolCallId string `json:"tool_call_id"`
+	// 工具名称
+	ToolName string `json:"tool_name"`
+	// 工具调用参数
+	ToolParams string `json:"tool_params"`
+	// 工具返回结果
+	ToolResult string `json:"tool_result"`
 }
 
 // ModelMapping 模型映射规则
