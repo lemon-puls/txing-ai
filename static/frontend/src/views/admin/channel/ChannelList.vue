@@ -193,8 +193,9 @@
 
                             <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
                               <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
-                                <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
+                                <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select" @change="handleConditionConfigChange(config)">
                                   <el-option label="网页搜索" value="enableWeb" />
+                                  <el-option label="目标类型" value="type" />
                                 </el-select>
                                 <el-switch
                                   v-if="config.key === 'enableWeb'"
@@ -202,6 +203,10 @@
                                   active-text="启用"
                                   inactive-text="禁用"
                                 />
+                                <el-select v-if="config.key === 'type'" v-model="config.value" placeholder="选择类型">
+                                  <el-option label="直连大模型" value="model" />
+                                  <el-option label="三方应用" value="app" />
+                                </el-select>
                                 <el-button type="danger" @click="removeConditionConfig(condition, configIndex)" circle>
                                   <el-icon><Delete /></el-icon>
                                 </el-button>
@@ -251,7 +256,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'add' ? '新增渠道' : '编辑渠道'"
-      width="700px"
+      width="80%"
     >
       <el-form
         ref="channelFormRef"
@@ -381,8 +386,9 @@
 
                   <div v-if="condition.conditionConfigs && condition.conditionConfigs.length > 0" class="condition-configs">
                     <div v-for="(config, configIndex) in condition.conditionConfigs" :key="configIndex" class="condition-config-item">
-                      <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select">
+                      <el-select v-model="config.key" placeholder="选择条件" class="condition-key-select" @change="handleConditionConfigChange(config)">
                         <el-option label="网页搜索" value="enableWeb" />
+                        <el-option label="目标类型" value="type" />
                       </el-select>
                       <el-switch
                         v-if="config.key === 'enableWeb'"
@@ -390,6 +396,10 @@
                         active-text="启用"
                         inactive-text="禁用"
                       />
+                      <el-select v-if="config.key === 'type'" v-model="config.value" placeholder="选择类型">
+                        <el-option label="直连大模型" value="model" />
+                        <el-option label="三方应用" value="app" />
+                      </el-select>
                       <el-button type="danger" @click="removeConditionConfig(condition, configIndex)" circle>
                         <el-icon><Delete /></el-icon>
                       </el-button>
@@ -686,58 +696,55 @@ const handleDelete = async (channel) => {
 // 提交表单
 const handleSubmit = async () => {
   if (!channelFormRef.value) return
-  await channelFormRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        const formData = {
-          name: channelForm.value.name,
-          type: channelForm.value.type,
-          priority: channelForm.value.priority,
-          weight: channelForm.value.weight,
-          retry: channelForm.value.retry,
-          models: channelForm.value.models,
-          secret: channelForm.value.secret,
-          endpoint: channelForm.value.endpoint,
-          status: channelForm.value.status,
-          mappings: channelForm.value.mappings.map(mapping => ({
-            sourceModel: mapping.sourceModel,
-            conditions: mapping.conditions.map(condition => {
-              const result = {
-                targetModel: condition.targetModel,
-                conditions: {}
-              }
+  console.log(channelForm.value)
+  try {
+    const formData = {
+      name: channelForm.value.name,
+      type: channelForm.value.type,
+      priority: channelForm.value.priority,
+      weight: channelForm.value.weight,
+      retry: channelForm.value.retry,
+      models: channelForm.value.models,
+      secret: channelForm.value.secret,
+      endpoint: channelForm.value.endpoint,
+      status: channelForm.value.status,
+      mappings: channelForm.value.mappings.map(mapping => ({
+        sourceModel: mapping.sourceModel,
+        conditions: mapping.conditions.map(condition => {
+          const result = {
+            targetModel: condition.targetModel,
+            conditions: {}
+          }
 
-              if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
-                condition.conditionConfigs.forEach(config => {
-                  result.conditions[config.key] = config.value
-                })
-              }
-
-              return result
+          if (condition.conditionConfigs && condition.conditionConfigs.length > 0) {
+            condition.conditionConfigs.forEach(config => {
+              result.conditions[config.key] = config.value
             })
-          }))
-        }
+          }
 
-        let response
-        if (dialogType.value === 'add') {
-          response = await defaultApi.apiAdminChannelPost(formData)
-        } else {
-          response = await defaultApi.apiAdminChannelIdPut(channelForm.value.id, formData)
-        }
-
-        if (response.code === 0) {
-          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-          dialogVisible.value = false
-          await loadChannels()
-        } else {
-          ElMessage.error(response.msg || '操作失败')
-        }
-      } catch (error) {
-        console.error('Submit error:', error)
-        ElMessage.error(error.body?.msg || '操作失败')
-      }
+          return result
+        })
+      }))
     }
-  })
+
+    let response
+    if (dialogType.value === 'add') {
+      response = await defaultApi.apiAdminChannelPost(formData)
+    } else {
+      response = await defaultApi.apiAdminChannelIdPut(channelForm.value.id, formData)
+    }
+
+    if (response.code === 0) {
+      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+      dialogVisible.value = false
+      await loadChannels()
+    } else {
+      ElMessage.error(response.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('Submit error:', error)
+    ElMessage.error(error.body?.msg || '操作失败')
+  }
 }
 
 // 分页大小变化
@@ -796,6 +803,16 @@ const removeConditionConfig = (condition, configIndex) => {
 // 移除条件
 const removeCondition = (channel, mappingIndex, conditionIndex) => {
   channel.mappings[mappingIndex].conditions.splice(conditionIndex, 1)
+}
+
+// 处理条件配置变更
+const handleConditionConfigChange = (config) => {
+  // 根据不同条件配置，初始化默认值
+  if (config.key === "type") {
+    config.value = "model"
+  } else if (config.key === "enableWeb") {
+    config.value = false
+  }
 }
 
 // 加载模型列表

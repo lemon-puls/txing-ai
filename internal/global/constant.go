@@ -25,3 +25,11 @@ const (
 	MessageTypeChat = "chat"
 	MessageTypeStop = "stop"
 )
+
+// 目标模型类型（用于模型映射条件）
+const (
+	// 直连 LLM
+	LLMTypeModel = "model"
+	// 三方提供的应用 （支持内置联网搜索等功能）
+	LLMTypeAPP = "app"
+)

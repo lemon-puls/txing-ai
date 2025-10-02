@@ -87,7 +87,7 @@ func (c *Channel) GetMappingModel(model string, params map[string]interface{}) s
 			allConditionsMet := true
 			for key, expectedValue := range condition.Conditions {
 				actualValue, exists := params[key]
-				if !exists || actualValue != expectedValue {
+				if exists && actualValue != expectedValue {
 					allConditionsMet = false
 					break
 				}
