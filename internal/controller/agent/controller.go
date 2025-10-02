@@ -52,8 +52,14 @@ func Exec(ctx *gin.Context) {
 	// TODO 支持后台配置，然后从数据库中查询出要使用的模型，暂时先用默认模型qwen-plus
 	// 设置默认使用的模型为 qwen-plus
 	model := "qwen-plus"
+
+	// 构建映射参数
+	mappingParams := map[string]interface{}{
+		"type": global.LLMTypeModel,
+	}
+
 	// 根据模型选择对应的渠道
-	channel, err := channel.ChooseChannelByModel(db, model)
+	channel, mappingModel, err := channel.ChooseChannelAndModel(db, model, mappingParams)
 	if err != nil {
 		// 如果选择渠道失败，记录错误日志并返回错误响应
 		log.Error("choose channel failed", zap.Error(err))
@@ -63,7 +69,7 @@ func Exec(ctx *gin.Context) {
 	// 获取请求中的内容
 	content := req.Content
 	// 执行智能体，传入上下文、渠道、模型和内容
-	resp, err := agent.Execute(ctx, channel, model, content)
+	resp, err := agent.Execute(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content)
 
 	if err != nil {
 		// 如果执行智能体失败，记录错误日志并返回错误响应
@@ -111,9 +117,13 @@ func ExecStream(ctx *gin.Context) {
 
 	// TODO 支持后台配置，然后从数据库中查询出要使用的模型，暂时先用默认模型qwen-plus
 	// 设置默认使用的模型为 qwen-plus
-	model := "qwen-plus"
+	model := "deepseek-v3"
+	// 构建映射参数
+	mappingParams := map[string]interface{}{
+		"type": global.LLMTypeModel,
+	}
 	// 根据模型选择对应的渠道
-	channel, err := channel.ChooseChannelByModel(db, model)
+	channel, mappingModel, err := channel.ChooseChannelAndModel(db, model, mappingParams)
 	if err != nil {
 		// 如果选择渠道失败，记录错误日志并返回错误响应
 		log.Error("choose channel failed", zap.Error(err))
@@ -161,7 +171,7 @@ func ExecStream(ctx *gin.Context) {
 	}
 
 	// 执行智能体，传入上下文、渠道、模型、内容和回调函数
-	err = agent.ExecuteStream(ctx, channel, model, content, callback)
+	err = agent.ExecuteStream(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, callback)
 	if err != nil {
 		// 如果执行智能体失败，记录错误日志
 		log.Error("execute agent stream failed", zap.Error(err))

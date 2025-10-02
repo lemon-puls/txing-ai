@@ -12,6 +12,7 @@ const (
 	ChannelTypeVolcengine = "volcengine"
 	ChannelTypePolo       = "polo"
 	ChannelOpenai         = "OpenAI"
+	ChannelEinoOpenai     = "Eino OpenAI"
 )
 
 // 所有大模型
@@ -33,3 +34,9 @@ const (
 	// 三方提供的应用 （支持内置联网搜索等功能）
 	LLMTypeAPP = "app"
 )
+
+// channel 模型映射条件的默认值
+var ChannelModelMappingConditionDefaultVal = map[string]interface{}{
+	"enableWeb": false,
+	"type":      LLMTypeModel,
+}

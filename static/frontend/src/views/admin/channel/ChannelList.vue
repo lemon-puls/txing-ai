@@ -441,7 +441,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, CircleCheck, CircleClose, Delete, InfoFilled, Plus, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, CircleCheck, CircleClose, Delete, Plus, ArrowRight } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 
 // 搜索表单
@@ -457,7 +457,7 @@ const total = ref(0)
 
 // 渠道数据
 const channels = ref([])
-const channelTypes = ref(['火星引擎', 'polo', 'OpenAI'])
+const channelTypes = ref(['火星引擎', 'polo', 'OpenAI', 'Eino OpenAI'])
 const availableModels = ref([])
 const loadingModels = ref(false)
 

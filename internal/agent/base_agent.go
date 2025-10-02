@@ -11,18 +11,17 @@ import (
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
-	"txing-ai/internal/iface"
 )
 
 // Agent 定义智能体接口
 type Agent interface {
 	// Execute 执行智能体任务
-	Execute(ctx context.Context, channelConfig iface.ChannelConfig, model string, input string) (string, error)
+	Execute(ctx context.Context, endpoint string, apiKey string, model string, input string) (string, error)
 	// GetName 获取智能体名称
 	GetName() string
 	// GetDescription 获取智能体描述
 	GetDescription() string
-	ExecuteStream(ctx *gin.Context, channel iface.ChannelConfig, model string, content string, callback func(chunk *global.Chunk) error) error
+	ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string, content string, callback func(chunk *global.Chunk) error) error
 }
 
 // 校验接口实现
@@ -67,7 +66,7 @@ func (a *BaseAgent) SetSystemPrompt(prompt string) {
 
 // Execute 执行智能体任务的默认实现
 func (a *BaseAgent) Execute(ctx context.Context,
-	channelConfig iface.ChannelConfig, model string, input string) (string, error) {
+	endpoint string, apiKey string, model string, input string) (string, error) {
 	if a.graph == nil {
 		// 如果没有设置执行图，则直接使用模型生成回复
 		messages := []*schema.Message{
@@ -100,10 +99,10 @@ func (a *BaseAgent) Execute(ctx context.Context,
 	return response.Content, nil
 }
 
-func (a *BaseAgent) ExecuteStream(ctx *gin.Context, channel iface.ChannelConfig, model string,
+func (a *BaseAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
 	content string, callback func(chunk *global.Chunk) error) error {
 
-	response, err := a.Execute(ctx, channel, model, content)
+	response, err := a.Execute(ctx, endpoint, apiKey, model, content)
 	if err != nil {
 		log.Error("execute agent stream failed", zap.Error(err))
 		return err

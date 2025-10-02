@@ -35,15 +35,12 @@ func NewToolCallAgent(res iface.ResourceProvider) *ToolCallAgent {
 
 // Execute 执行通用智能体任务
 func (a *ToolCallAgent) Execute(ctx context.Context,
-	channelConfig iface.ChannelConfig, model string, input string) (string, error) {
-
-	secret := channelConfig.GetRandomSecret()
-	endpoint := channelConfig.GetEndpoint()
+	endpoint string, apiKey string, model string, input string) (string, error) {
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: endpoint,
 		Model:   model, // 使用的模型版本
-		APIKey:  secret,
+		APIKey:  apiKey,
 	})
 	if err != nil {
 		return "", fmt.Errorf("Failed to create chat model: %w", err)
@@ -60,7 +57,7 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	}
 	a.SetGraph(graph)
 
-	response, err := a.BaseAgent.Execute(ctx, channelConfig, model, input)
+	response, err := a.BaseAgent.Execute(ctx, endpoint, apiKey, model, input)
 	if err != nil {
 		return "", err
 	}
@@ -68,19 +65,16 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, channelConfig iface.ChannelConfig, model string,
+func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
 	input string, callback func(chunk *global.Chunk) error) error {
-
-	secret := channelConfig.GetRandomSecret()
-	endpoint := channelConfig.GetEndpoint()
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: endpoint,
 		Model:   model, // 使用的模型版本
-		APIKey:  secret,
+		APIKey:  apiKey,
 	})
 	if err != nil {
-		return "", fmt.Errorf("Failed to create chat model: %w", err)
+		return fmt.Errorf("Failed to create chat model: %w", err)
 	}
 
 	// 创建一个包含工具的执行图
@@ -91,7 +85,7 @@ func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, channelConfig iface.Chan
 	}
 	a.SetGraph(graph)
 
-	err = a.BaseAgent.ExecuteStream(ctx, channelConfig, model, input, callback)
+	err = a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, callback)
 	return err
 }
 

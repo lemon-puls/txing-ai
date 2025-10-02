@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	adaptercommon "txing-ai/internal/adapter/common"
+	"txing-ai/internal/adapter/eino_openai"
 	"txing-ai/internal/adapter/openai"
 	"txing-ai/internal/adapter/polo"
 	myVolcengine "txing-ai/internal/adapter/volcengine"
@@ -18,6 +19,7 @@ var chatRequesterFactories = map[string]adaptercommon.ChatRequesterFactory{
 	global.ChannelTypeVolcengine: myVolcengine.NewVoclEngineFactory(),
 	global.ChannelTypePolo:       polo.NewPoloFactory(),
 	global.ChannelOpenai:         openai.NewOpenaiFactory(),
+	global.ChannelEinoOpenai:     eino_openai.NewEinoOpenaiFactory(),
 }
 
 func createChatRequest(ctx context.Context, channelConfig iface.ChannelConfig, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {

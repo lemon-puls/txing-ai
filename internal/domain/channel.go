@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/samber/lo"
 	"math/rand"
 	"strings"
 	"txing-ai/internal/global"
@@ -74,7 +75,7 @@ func (c *Channel) GetEndpoint() string {
 }
 
 // GetMappingModel 获取映射后的模型
-func (c *Channel) GetMappingModel(model string, params map[string]interface{}) string {
+func (c *Channel) GetMappingModel(model string, mappingParams map[string]interface{}) string {
 	// 遍历映射规则
 	for _, mapping := range c.Mappings {
 		if mapping.SourceModel != model {
@@ -85,11 +86,35 @@ func (c *Channel) GetMappingModel(model string, params map[string]interface{}) s
 		for _, condition := range mapping.Conditions {
 			// 检查所有条件是否满足
 			allConditionsMet := true
+
+			// 收集遍历过的条件 key
+			checkedKeys := make(map[string]struct{})
+
 			for key, expectedValue := range condition.Conditions {
-				actualValue, exists := params[key]
-				if exists && actualValue != expectedValue {
+				// 保存遍历过的条件 key
+				checkedKeys[key] = struct{}{}
+
+				actualValue, exists := mappingParams[key]
+				if !exists || actualValue != expectedValue {
 					allConditionsMet = false
 					break
+				}
+			}
+
+			// 过滤出 mappingParams 中没有遍历过的条件
+			// 使用 lo.PickBy 过滤出未校验过的参数键值对
+			uncheckedParams := lo.PickBy(mappingParams, func(k string, v interface{}) bool {
+				_, ok := checkedKeys[k]
+				return !ok
+			})
+			for key := range uncheckedParams {
+				// 判断是否是默认值
+				val, exists := mappingParams[key]
+				defaultVal, existsDefault := global.ChannelModelMappingConditionDefaultVal[key]
+				if exists {
+					if !existsDefault || val != defaultVal {
+						allConditionsMet = false
+					}
 				}
 			}
 
@@ -97,6 +122,14 @@ func (c *Channel) GetMappingModel(model string, params map[string]interface{}) s
 			if allConditionsMet {
 				return condition.TargetModel
 			}
+		}
+	}
+
+	// 通过映射关系没有找到匹配的模型，判断 mappingParams 中的条件是否均为默认值，如果是则返回原始模型，否则返回空字符串
+	for key, val := range mappingParams {
+		defaultVal, existsDefault := global.ChannelModelMappingConditionDefaultVal[key]
+		if existsDefault && val != defaultVal {
+			return ""
 		}
 	}
 

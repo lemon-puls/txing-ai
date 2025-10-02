@@ -178,23 +178,20 @@ func execChat(ctx context.Context, conn *utils.Connection, conversation *domain.
 
 func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.ChatConfig, hook global.Hook) error {
 
-	// 获取所有支持该模型的 channel
-	targetChannel, err := channel.ChooseChannelByModel(db, chatConfig.Model)
-	if err != nil {
-		log.Error("choose channel failed", zap.Error(err))
-		return err
-	}
 	// 构建映射参数
 	mappingParams := map[string]interface{}{
 		"enableWeb": chatConfig.EnableWeb,
 		// 可以添加更多参数，例如：
-		// "temperature": chatConfig.Temperature,
-		// "maxTokens": chatConfig.MaxTokens,
+		// "type": "model",
 		// 等等
 	}
 
-	// 查找是否有该模型的映射关系
-	mappingModel := targetChannel.GetMappingModel(chatConfig.Model, mappingParams)
+	// 获取所有支持该模型的 channel
+	targetChannel, mappingModel, err := channel.ChooseChannelAndModel(db, chatConfig.Model, mappingParams)
+	if err != nil {
+		log.Error("choose channel failed", zap.Error(err))
+		return err
+	}
 	chatConfig.Model = mappingModel
 
 	err = adapter.NewChatRequest(ctx, targetChannel, chatConfig, hook)

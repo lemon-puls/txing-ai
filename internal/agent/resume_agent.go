@@ -74,7 +74,7 @@ func NewResumeAgent(res iface.ResourceProvider) *ResumeAgent {
 
 // Execute 执行通用智能体任务
 func (a *ResumeAgent) Execute(ctx context.Context,
-	channelConfig iface.ChannelConfig, model string, input string) (string, error) {
+	endpoint string, apiKey string, model string, input string) (string, error) {
 
 	text, err1 := tool.ReadPdfText(ctx, &tool.PdfReadParams{
 		FilePath: input,
@@ -83,7 +83,7 @@ func (a *ResumeAgent) Execute(ctx context.Context,
 		return "", err1
 	}
 
-	response, err := a.ToolCallAgent.Execute(ctx, channelConfig, model, text)
+	response, err := a.ToolCallAgent.Execute(ctx, endpoint, apiKey, model, text)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func (a *ResumeAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, channelConfig iface.ChannelConfig, model string,
+func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
 	input string, callback func(chunk *global.Chunk) error) error {
 
 	text, err1 := tool.ReadPdfText(ctx, &tool.PdfReadParams{
@@ -101,7 +101,7 @@ func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, channelConfig iface.Channe
 		return err1
 	}
 
-	err := a.ToolCallAgent.ExecuteStream(ctx, channelConfig, model, text, callback)
+	err := a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, text, callback)
 	if err != nil {
 		return err
 	}
