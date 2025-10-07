@@ -92,16 +92,23 @@ func (a *ResumeAgent) Execute(ctx context.Context,
 }
 
 func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	input string, callback func(chunk *global.Chunk) error) error {
+	input string, filePath string, callback func(chunk *global.Chunk) error) error {
 
 	text, err1 := tool.ReadPdfText(ctx, &tool.PdfReadParams{
-		FilePath: input,
+		FilePath: filePath,
 	})
 	if err1 != nil {
 		return err1
 	}
 
-	err := a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, text, callback)
+	// 构建最终 prompt
+	prompt := ""
+	if input != "" {
+		prompt += "目标公司、岗位信息：\n\n" + input + "\n\n"
+	}
+	prompt += "简历原始内容：\n\n" + text
+
+	err := a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, prompt, "", callback)
 	if err != nil {
 		return err
 	}

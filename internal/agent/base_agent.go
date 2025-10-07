@@ -21,7 +21,8 @@ type Agent interface {
 	GetName() string
 	// GetDescription 获取智能体描述
 	GetDescription() string
-	ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string, content string, callback func(chunk *global.Chunk) error) error
+	ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
+		content string, filePath string, callback func(chunk *global.Chunk) error) error
 }
 
 // 校验接口实现
@@ -100,7 +101,7 @@ func (a *BaseAgent) Execute(ctx context.Context,
 }
 
 func (a *BaseAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	content string, callback func(chunk *global.Chunk) error) error {
+	content string, filePath string, callback func(chunk *global.Chunk) error) error {
 
 	response, err := a.Execute(ctx, endpoint, apiKey, model, content)
 	if err != nil {

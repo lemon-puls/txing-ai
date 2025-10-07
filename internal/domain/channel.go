@@ -95,9 +95,8 @@ func (c *Channel) GetMappingModel(model string, mappingParams map[string]interfa
 				checkedKeys[key] = struct{}{}
 
 				actualValue, exists := mappingParams[key]
-				if !exists || actualValue != expectedValue {
+				if allConditionsMet && (!exists || actualValue != expectedValue) {
 					allConditionsMet = false
-					break
 				}
 			}
 

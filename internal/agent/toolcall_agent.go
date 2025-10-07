@@ -66,7 +66,7 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 }
 
 func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	input string, callback func(chunk *global.Chunk) error) error {
+	input string, filePath string, callback func(chunk *global.Chunk) error) error {
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: endpoint,
@@ -85,7 +85,7 @@ func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey 
 	}
 	a.SetGraph(graph)
 
-	err = a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, callback)
+	err = a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
 	return err
 }
 
