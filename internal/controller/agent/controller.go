@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"net/url"
+	"strings"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
@@ -195,7 +197,8 @@ func ExecStream(ctx *gin.Context) {
 	}
 
 	// 执行智能体，传入上下文、渠道、模型、内容和回调函数
-	err = agent.ExecuteStream(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, filePath, callback)
+	response := ""
+	response, err = agent.ExecuteStream(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, filePath, callback)
 	if err != nil {
 		// 如果执行智能体失败，记录错误日志
 		log.Error("execute agent stream failed", zap.Error(err))
@@ -215,9 +218,26 @@ func ExecStream(ctx *gin.Context) {
 		return
 	}
 
+	downloadURL := ""
+	// 从响应中获取文件路径
+	if response != "" {
+		// response 中包含文件的格式："文件：优化简历_lzw_腾讯后台开发工程师.pdf"
+		// 从中获取文件名，然后拼接下载路径，再更新到 response 中
+		// 下载路径 /api/file/download?filePath={文件名}
+		if strings.Contains(response, "文件：") {
+			// 提取文件名
+			filePrefix := "文件："
+			startIndex := strings.Index(response, filePrefix) + len(filePrefix)
+			fileName := strings.TrimSpace(response[startIndex:])
+
+			// 拼接下载路径
+			downloadURL = fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileName))
+		}
+	}
+
 	// 发送结束消息
 	endData := map[string]interface{}{
-		"content": "",
+		"content": downloadURL,
 		"end":     true,
 	}
 	jsonData, err := json.Marshal(endData)

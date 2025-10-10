@@ -101,6 +101,25 @@
           </div>
           <div class="card-overlay"></div>
         </div>
+
+        <!-- 简历优化入口 -->
+        <div
+          class="entrance-card resume-card"
+          :class="{ 'card-hover': hoveredCard === 'resume' }"
+          @click="navigateToResume"
+          @mouseenter="handleHover('resume')"
+          @mouseleave="handleHover(null)"
+        >
+          <div class="card-content">
+            <el-icon class="card-icon"><Document /></el-icon>
+            <h2>AI简历优化</h2>
+            <p>智能优化简历，提升求职竞争力</p>
+            <div class="card-action">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -113,7 +132,8 @@ import {
   ChatRound,
   Shop,
   ArrowRight,
-  Link
+  Link,
+  Document
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
@@ -201,6 +221,10 @@ const navigateToMarket = () => {
 
 const navigateToWebsites = () => {
   router.push('/websites')
+}
+
+const navigateToResume = () => {
+  router.push('/resume')
 }
 </script>
 

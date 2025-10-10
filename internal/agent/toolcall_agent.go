@@ -66,7 +66,7 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 }
 
 func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	input string, filePath string, callback func(chunk *global.Chunk) error) error {
+	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: endpoint,
@@ -74,19 +74,18 @@ func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey 
 		APIKey:  apiKey,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to create chat model: %w", err)
+		return "", fmt.Errorf("Failed to create chat model: %w", err)
 	}
 
 	// 创建一个包含工具的执行图
 	graph, err := newGraph(context.Background(), chatModel, a.tools, callback)
 	if err != nil {
 		log.Error("Failed to create graph", zap.Error(err))
-		return err
+		return "", err
 	}
 	a.SetGraph(graph)
 
-	err = a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
-	return err
+	return a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
 }
 
 func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseTool,

@@ -54,7 +54,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	}
 
 	// 构建保存路径
-	savePath := filepath.Join(currentDir, "runtime", "temp")
+	savePath := filepath.Join(currentDir, "runtime", "temp_files")
 	if err := os.MkdirAll(savePath, 0755); err != nil {
 		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
 		return "", fmt.Errorf("创建保存目录失败: %v", err)

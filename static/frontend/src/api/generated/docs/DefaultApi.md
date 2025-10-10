@@ -26,6 +26,8 @@ Method | HTTP request | Description
 [**apiChatConversationsIdGet**](DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
 [**apiChatWsGet**](DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+[**apiFileDownloadGet**](DefaultApi.md#apiFileDownloadGet) | **GET** /api/file/download | 下载文件
+[**apiFileUploadPost**](DefaultApi.md#apiFileUploadPost) | **POST** /api/file/upload | 上传文件
 [**apiModelIdGet**](DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
 [**apiModelListGet**](DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
 [**apiPresetIdDelete**](DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
@@ -1056,6 +1058,96 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiFileDownloadGet
+
+> File apiFileDownloadGet(filePath)
+
+下载文件
+
+从服务器下载文件
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let filePath = "filePath_example"; // String | 文件相对路径
+apiInstance.apiFileDownloadGet(filePath).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **filePath** | **String**| 文件相对路径 | 
+
+### Return type
+
+**File**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/octet-stream
+
+
+## apiFileUploadPost
+
+> ApiFileUploadPost200Response apiFileUploadPost(authorization, file)
+
+上传文件
+
+上传文件到服务器本地
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let authorization = "authorization_example"; // String | 用户令牌
+let file = "/path/to/file"; // File | 文件
+apiInstance.apiFileUploadPost(authorization, file).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **authorization** | **String**| 用户令牌 | 
+ **file** | **File**| 文件 | 
+
+### Return type
+
+[**ApiFileUploadPost200Response**](ApiFileUploadPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: multipart/form-data
 - **Accept**: application/json
 
 

@@ -66,8 +66,8 @@ func NewResumeAgent(res iface.ResourceProvider) *ResumeAgent {
 ### 真实性
 在任何情况下都不应编造经验、伪造数据或夸大资格。所有增强必须基于用户提供的信息，只能涉及重新表述和改写以获得更大影响力。
 
-### 变更日志
-在优化后的简历之后，提供所做主要更改的简要摘要，解释它们如何与职位描述保持一致。
+### 最后输出
+提供所做主要更改的简要摘要，解释它们如何与职位描述保持一致。同时在最后一行给出保存的 PDF 文件，格式示例为："文件：优化简历_lzw_腾讯后台开发工程师.pdf"
 `)
 	return a
 }
@@ -92,13 +92,13 @@ func (a *ResumeAgent) Execute(ctx context.Context,
 }
 
 func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	input string, filePath string, callback func(chunk *global.Chunk) error) error {
+	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	text, err1 := tool.ReadPdfText(ctx, &tool.PdfReadParams{
 		FilePath: filePath,
 	})
 	if err1 != nil {
-		return err1
+		return "", err1
 	}
 
 	// 构建最终 prompt
@@ -108,10 +108,5 @@ func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey st
 	}
 	prompt += "简历原始内容：\n\n" + text
 
-	err := a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, prompt, "", callback)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, prompt, "", callback)
 }

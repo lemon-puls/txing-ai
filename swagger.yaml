@@ -1,0 +1,2080 @@
+basePath: /
+definitions:
+  dto.AgentExecReq:
+    properties:
+      agentType:
+        description: 智能体类型
+        example: general
+        type: string
+      content:
+        description: 请求内容
+        example: 生成一份深圳旅游攻略
+        type: string
+    required:
+    - agentType
+    type: object
+  dto.BatchDeleteRequest:
+    properties:
+      ids:
+        description: 会话ID列表
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
+  dto.ConversationListRequest:
+    properties:
+      cursor:
+        type: string
+      pageSize:
+        type: integer
+    type: object
+  dto.CreateChannelReq:
+    properties:
+      endpoint:
+        description: 服务地址 Service endpoint
+        type: string
+      mappings:
+        description: 模型映射关系 Mappings
+        items:
+          $ref: '#/definitions/global.ModelMapping'
+        type: array
+      models:
+        description: 支持的模型列表 Supported models
+        items:
+          type: string
+        type: array
+      name:
+        description: 渠道名称 Channel name
+        type: string
+      priority:
+        description: 优先级 Priority
+        type: integer
+      retry:
+        description: 重试次数 Retry times
+        type: integer
+      secret:
+        description: 密钥 Secret key
+        type: string
+      status:
+        description: 启用状态 Enable status
+        type: boolean
+      type:
+        description: 渠道类型 Channel type
+        type: string
+      weight:
+        description: 权重 Weight
+        type: integer
+    required:
+    - endpoint
+    - models
+    - name
+    - secret
+    - type
+    type: object
+  dto.CreateModelReq:
+    properties:
+      avatar:
+        description: 模型头像
+        example: https://example.com/avatar.png
+        type: string
+      default:
+        description: 是否为默认模型
+        example: false
+        type: boolean
+      description:
+        description: 模型描述
+        example: GPT-3.5 Turbo模型
+        type: string
+      high_context:
+        description: 是否支持高上下文
+        example: false
+        type: boolean
+      name:
+        description: 模型名称
+        example: gpt-3.5-turbo
+        type: string
+      tag:
+        description: 模型标签
+        example: GPT,对话
+        type: string
+    required:
+    - name
+    type: object
+  dto.CreatePresetReq:
+    properties:
+      avatar:
+        description: 预设头像
+        example: https://example.com/avatar.png
+        type: string
+      context:
+        description: 预设上下文
+        example: 你是一个智能助手,能够帮助用户解决各种问题...
+        type: string
+      description:
+        description: 预设描述
+        example: 一个智能的GPT助手
+        type: string
+      name:
+        description: 预设名称
+        example: GPT助手
+        type: string
+      official:
+        description: 是否官方预设
+        example: false
+        type: boolean
+      tags:
+        description: 预设标签
+        example: popular,tools
+        type: string
+      userId:
+        description: 用户ID
+        example: 1
+        type: integer
+    required:
+    - name
+    type: object
+  dto.CreateWebsiteReq:
+    properties:
+      avatar:
+        description: 网站头像
+        example: https://github.githubassets.com/favicons/favicon.svg
+        type: string
+      description:
+        description: 网站描述
+        example: 全球最大的代码托管平台
+        maxLength: 200
+        type: string
+      name:
+        description: 网站名称
+        example: GitHub
+        maxLength: 50
+        minLength: 2
+        type: string
+      sort:
+        description: 排序
+        example: 0
+        type: integer
+      status:
+        description: 状态 1启用 0禁用
+        enum:
+        - 0
+        - 1
+        example: 1
+        type: integer
+      tags:
+        description: 标签数组
+        example: 开发,代码,开源
+        type: string
+      url:
+        description: 网站地址
+        example: https://github.com
+        type: string
+    required:
+    - description
+    - name
+    - tags
+    - url
+    type: object
+  dto.GetFaviconReq:
+    properties:
+      url:
+        description: 网站地址
+        example: https://github.com
+        type: string
+    required:
+    - url
+    type: object
+  dto.GetPresignedURLReq:
+    properties:
+      key:
+        description: 对象键
+        type: string
+      type:
+        description: 类型：upload/download
+        type: string
+    required:
+    - key
+    - type
+    type: object
+  dto.LoginReq:
+    properties:
+      captcha:
+        description: 验证码 Captcha
+        example: "1234"
+        type: string
+      captchaId:
+        description: 验证码ID Captcha ID
+        example: abc123
+        type: string
+      password:
+        description: 密码 Password
+        example: password123
+        type: string
+      username:
+        description: 用户名 Username
+        example: johndoe
+        type: string
+    required:
+    - captcha
+    - captchaId
+    - password
+    - username
+    type: object
+  dto.RegisterReq:
+    properties:
+      captcha:
+        description: 验证码 Captcha
+        example: "1234"
+        type: string
+      captchaId:
+        description: 验证码ID Captcha ID
+        example: abc123
+        type: string
+      email:
+        description: 邮箱 Email
+        example: john@example.com
+        type: string
+      password:
+        description: 密码 Password
+        example: password123
+        maxLength: 32
+        minLength: 6
+        type: string
+      phone:
+        description: 手机号 Phone number
+        example: "13800138000"
+        type: string
+      username:
+        description: 用户名 Username
+        example: johndoe
+        maxLength: 32
+        minLength: 2
+        type: string
+    required:
+    - captcha
+    - captchaId
+    - email
+    - password
+    - username
+    type: object
+  dto.ResetPasswordReq:
+    properties:
+      email:
+        description: 邮箱 Email
+        example: john@example.com
+        type: string
+    required:
+    - email
+    type: object
+  dto.UpdateChannelReq:
+    properties:
+      endpoint:
+        description: 服务地址 Service endpoint
+        type: string
+      mappings:
+        description: 模型映射关系 Mappings
+        items:
+          $ref: '#/definitions/global.ModelMapping'
+        type: array
+      models:
+        description: 支持的模型列表 Supported models
+        items:
+          type: string
+        type: array
+      name:
+        description: 渠道名称 Channel name
+        type: string
+      priority:
+        description: 优先级 Priority
+        type: integer
+      retry:
+        description: 重试次数 Retry times
+        type: integer
+      secret:
+        description: 密钥 Secret key
+        type: string
+      status:
+        description: 启用状态 Enable status
+        type: boolean
+      type:
+        description: 渠道类型 Channel type
+        type: string
+      weight:
+        description: 权重 Weight
+        type: integer
+    type: object
+  dto.UpdateModelReq:
+    properties:
+      avatar:
+        description: 模型头像
+        example: https://example.com/avatar.png
+        type: string
+      default:
+        description: 是否为默认模型
+        example: false
+        type: boolean
+      description:
+        description: 模型描述
+        example: GPT-3.5 Turbo模型
+        type: string
+      high_context:
+        description: 是否支持高上下文
+        example: false
+        type: boolean
+      name:
+        description: 模型名称
+        example: gpt-3.5-turbo
+        type: string
+      tag:
+        description: 模型标签
+        example: GPT,对话
+        type: string
+    type: object
+  dto.UpdatePasswordReq:
+    properties:
+      new_password:
+        description: 新密码 New password
+        example: newpass123
+        type: string
+      old_password:
+        description: 原密码 Old password
+        example: oldpass123
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  dto.UpdatePresetReq:
+    properties:
+      avatar:
+        description: 预设头像
+        example: https://example.com/avatar.png
+        type: string
+      context:
+        description: 预设上下文
+        example: 你是一个智能助手,能够帮助用户解决各种问题...
+        type: string
+      description:
+        description: 预设描述
+        example: 一个智能的GPT助手
+        type: string
+      name:
+        description: 预设名称
+        example: GPT助手
+        type: string
+      official:
+        description: 是否官方预设
+        example: false
+        type: boolean
+      tags:
+        description: 预设标签
+        example: popular,tools
+        type: string
+      userId:
+        description: 用户ID
+        example: 1
+        type: integer
+    type: object
+  dto.UpdateProfileReq:
+    properties:
+      age:
+        description: 年龄 Age
+        example: 18
+        type: integer
+      avatar:
+        description: 头像 Avatar URL
+        example: https://example.com/avatar.jpg
+        type: string
+      email:
+        description: 邮箱 Email
+        example: john@example.com
+        type: string
+      gender:
+        description: '性别 Gender: 0-未知 1-男 2-女'
+        example: 1
+        type: integer
+      phone:
+        description: 手机号 Phone number
+        example: "13800138000"
+        type: string
+    type: object
+  dto.UpdateWebsiteReq:
+    properties:
+      avatar:
+        description: 网站头像
+        example: https://github.githubassets.com/favicons/favicon.svg
+        type: string
+      description:
+        description: 网站描述
+        example: 全球最大的代码托管平台
+        maxLength: 200
+        type: string
+      name:
+        description: 网站名称
+        example: GitHub
+        maxLength: 50
+        minLength: 2
+        type: string
+      sort:
+        description: 排序
+        example: 0
+        type: integer
+      status:
+        description: 状态 1启用 0禁用
+        enum:
+        - 0
+        - 1
+        example: 1
+        type: integer
+      tags:
+        description: 标签数组
+        example: 开发,代码,开源
+        type: string
+      url:
+        description: 网站地址
+        example: https://github.com
+        type: string
+    type: object
+  file.UploadResponse:
+    properties:
+      fileName:
+        description: 文件名
+        type: string
+      fileSize:
+        description: 文件大小
+        type: integer
+      fileUrl:
+        description: 文件下载URL
+        type: string
+    type: object
+  global.ModelMapping:
+    properties:
+      conditions:
+        description: 条件列表
+        items:
+          $ref: '#/definitions/global.ModelMappingCondition'
+        type: array
+      sourceModel:
+        description: 源模型
+        type: string
+    type: object
+  global.ModelMappingCondition:
+    properties:
+      conditions:
+        additionalProperties: true
+        description: 条件映射，key 为条件名称，value 为条件值
+        type: object
+      targetModel:
+        description: 目标模型
+        type: string
+    type: object
+  utils.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      msg:
+        type: string
+    type: object
+  vo.ChannelVO:
+    properties:
+      create_at:
+        description: 创建时间 Create time
+        type: string
+      endpoint:
+        description: 服务地址 Service endpoint
+        type: string
+      id:
+        description: 渠道ID Channel ID
+        type: integer
+      mappings:
+        description: 模型映射关系 Mappings
+        items:
+          $ref: '#/definitions/global.ModelMapping'
+        type: array
+      models:
+        description: 支持的模型列表 Supported models
+        items:
+          type: string
+        type: array
+      name:
+        description: 渠道名称 Channel name
+        type: string
+      priority:
+        description: 优先级 Priority
+        type: integer
+      retry:
+        description: 重试次数 Retry times
+        type: integer
+      secret:
+        description: 密钥 Secret key
+        type: string
+      status:
+        description: 启用状态 Enable status
+        type: boolean
+      type:
+        description: 渠道类型 Channel type
+        type: string
+      update_at:
+        description: 更新时间 Update time
+        type: string
+      weight:
+        description: 权重 Weight
+        type: integer
+    type: object
+  vo.ConversationDetailVO:
+    properties:
+      context:
+        type: integer
+      enableWeb:
+        type: boolean
+      frequencyPenalty:
+        type: number
+      id:
+        description: 会话ID
+        type: integer
+      maxTokens:
+        description: 可选的模型参数
+        type: integer
+      messages:
+        description: 消息列表
+        items:
+          $ref: '#/definitions/vo.MessageVO'
+        type: array
+      model:
+        type: string
+      name:
+        type: string
+      presencePenalty:
+        type: number
+      preset:
+        allOf:
+        - $ref: '#/definitions/vo.PresetVO'
+        description: 预设信息
+      repetitionPenalty:
+        type: number
+      temperature:
+        type: number
+      topK:
+        type: integer
+      topP:
+        type: number
+      userId:
+        type: integer
+    type: object
+  vo.GetFaviconVO:
+    properties:
+      favicon:
+        description: 网站图标URL
+        example: https://github.githubassets.com/favicons/favicon.svg
+        type: string
+    type: object
+  vo.GetPresignedURLVO:
+    properties:
+      expireAt:
+        description: 过期时间戳
+        type: integer
+      key:
+        description: 对象键
+        type: string
+      url:
+        description: 预签名URL
+        type: string
+    type: object
+  vo.LoginVO:
+    properties:
+      age:
+        description: 年龄
+        example: 18
+        type: integer
+      avatar:
+        description: 头像
+        example: https://example.com/avatar.png
+        type: string
+      createdAt:
+        description: 创建时间
+        type: string
+      email:
+        description: 邮箱
+        example: a@b.com
+        type: string
+      gender:
+        description: 性别(0:未知 1:男 2:女)
+        example: 1
+        type: integer
+      id:
+        description: 主键ID
+        type: integer
+      phone:
+        description: 手机号
+        example: "13800138000"
+        type: string
+      refreshToken:
+        description: refresh token
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      role:
+        description: 角色(0:普通用户 1:超管)
+        example: 0
+        type: integer
+      status:
+        description: 状态(0:正常 1:禁用)
+        example: 0
+        type: integer
+      token:
+        description: access token
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      updatedAt:
+        description: 更新时间
+        type: string
+      username:
+        description: 用户名
+        example: zhangsan
+        type: string
+    type: object
+  vo.MessageVO:
+    properties:
+      content:
+        type: string
+      name:
+        type: string
+      reasoningContent:
+        type: string
+      role:
+        type: string
+    type: object
+  vo.ModelVO:
+    properties:
+      avatar:
+        description: 模型头像
+        example: https://example.com/avatar.png
+        type: string
+      created_at:
+        description: 创建时间
+        type: string
+      default:
+        description: 是否为默认模型
+        example: false
+        type: boolean
+      description:
+        description: 模型描述
+        example: GPT-3.5 Turbo模型
+        type: string
+      high_context:
+        description: 是否支持高上下文
+        example: false
+        type: boolean
+      id:
+        description: 主键ID
+        type: integer
+      name:
+        description: 模型名称
+        example: gpt-3.5-turbo
+        type: string
+      tag:
+        description: 模型标签
+        example: GPT,对话
+        type: string
+      updated_at:
+        description: 更新时间
+        type: string
+    type: object
+  vo.PresetVO:
+    properties:
+      avatar:
+        description: 预设头像
+        example: https://example.com/avatar.png
+        type: string
+      context:
+        description: 预设上下文
+        example: 你是一个智能助手...
+        type: string
+      createdAt:
+        description: 创建时间
+        type: string
+      description:
+        description: 预设描述
+        example: 一个智能的GPT助手
+        type: string
+      id:
+        description: 主键ID
+        type: integer
+      name:
+        description: 预设名称
+        example: GPT助手
+        type: string
+      official:
+        description: 是否官方预设
+        example: false
+        type: boolean
+      tags:
+        description: 预设标签
+        example: popular,tools
+        type: string
+      updatedAt:
+        description: 更新时间
+        type: string
+      userId:
+        description: 用户ID
+        example: 1
+        type: integer
+    type: object
+  vo.TokenPair:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  vo.UserVO:
+    properties:
+      age:
+        description: 年龄
+        example: 18
+        type: integer
+      avatar:
+        description: 头像
+        example: https://example.com/avatar.png
+        type: string
+      createdAt:
+        description: 创建时间
+        type: string
+      email:
+        description: 邮箱
+        example: a@b.com
+        type: string
+      gender:
+        description: 性别(0:未知 1:男 2:女)
+        example: 1
+        type: integer
+      id:
+        description: 主键ID
+        type: integer
+      phone:
+        description: 手机号
+        example: "13800138000"
+        type: string
+      role:
+        description: 角色(0:普通用户 1:超管)
+        example: 0
+        type: integer
+      status:
+        description: 状态(0:正常 1:禁用)
+        example: 0
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: string
+      username:
+        description: 用户名
+        example: zhangsan
+        type: string
+    type: object
+  vo.WebsiteVO:
+    properties:
+      avatar:
+        description: 网站头像
+        example: https://github.githubassets.com/favicons/favicon.svg
+        type: string
+      createdAt:
+        description: 创建时间
+        type: string
+      description:
+        description: 网站描述
+        example: 全球最大的代码托管平台
+        type: string
+      id:
+        description: 主键ID
+        type: integer
+      name:
+        description: 网站名称
+        example: GitHub
+        type: string
+      sort:
+        description: 排序
+        example: 0
+        type: integer
+      status:
+        description: 状态 1启用 0禁用
+        example: 1
+        type: integer
+      tags:
+        description: 标签数组
+        example: 开发,代码,开源
+        type: string
+      updatedAt:
+        description: 更新时间
+        type: string
+      url:
+        description: 网站地址
+        example: https://github.com
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Txing AI API文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Txing AI API
+  version: "1.0"
+paths:
+  /api/admin/channel:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的渠道
+      parameters:
+      - description: 渠道信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateChannelReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ChannelVO'
+              type: object
+      summary: 创建渠道
+      tags:
+      - 渠道管理
+  /api/admin/channel/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定渠道
+      parameters:
+      - description: 渠道ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除渠道
+      tags:
+      - 渠道管理
+    get:
+      consumes:
+      - application/json
+      description: 获取指定渠道的详细信息
+      parameters:
+      - description: 渠道ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ChannelVO'
+              type: object
+      summary: 获取渠道详情
+      tags:
+      - 渠道管理
+    put:
+      consumes:
+      - application/json
+      description: 更新渠道信息
+      parameters:
+      - description: 渠道ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 渠道信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateChannelReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ChannelVO'
+              type: object
+      summary: 更新渠道
+      tags:
+      - 渠道管理
+  /api/admin/channel/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取渠道列表，支持分页
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式(asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: 渠道类型
+        in: query
+        name: type
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: boolean
+      - description: 渠道名称
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取渠道列表
+      tags:
+      - 渠道管理
+  /api/admin/model:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的模型
+      parameters:
+      - description: 模型信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateModelReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ModelVO'
+              type: object
+      summary: 创建模型
+      tags:
+      - 模型管理
+  /api/admin/model/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定模型
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除模型
+      tags:
+      - 模型管理
+    put:
+      consumes:
+      - application/json
+      description: 更新模型信息
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 模型信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateModelReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ModelVO'
+              type: object
+      summary: 更新模型
+      tags:
+      - 模型管理
+  /api/admin/user/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取用户列表，支持分页
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式(asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 状态(0:启用, 1:禁用)
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取用户列表
+      tags:
+      - 用户管理
+  /api/admin/user/status/{id}:
+    put:
+      consumes:
+      - application/json
+      description: 启用或禁用指定用户
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 切换用户状态
+      tags:
+      - 用户管理
+  /api/admin/websites:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的网站
+      parameters:
+      - description: 网站信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateWebsiteReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.WebsiteVO'
+              type: object
+      summary: 创建网站
+      tags:
+      - 网站管理
+  /api/admin/websites/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除网站
+      parameters:
+      - description: 网站ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除网站
+      tags:
+      - 网站管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取网站详情
+      parameters:
+      - description: 网站ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.WebsiteVO'
+              type: object
+      summary: 获取网站详情
+      tags:
+      - 网站管理
+    put:
+      consumes:
+      - application/json
+      description: 更新网站信息
+      parameters:
+      - description: 网站ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 网站信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateWebsiteReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.WebsiteVO'
+              type: object
+      summary: 更新网站
+      tags:
+      - 网站管理
+  /api/admin/websites/favicon:
+    post:
+      consumes:
+      - application/json
+      description: 自动获取网站的favicon图标
+      parameters:
+      - description: 网站地址
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetFaviconReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.GetFaviconVO'
+              type: object
+      summary: 获取网站图标
+      tags:
+      - 网站管理
+  /api/admin/websites/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取网站列表，支持分页和搜索
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式(asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: 网站名称
+        in: query
+        name: name
+        type: string
+      - description: 标签
+        in: query
+        name: tag
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取网站列表
+      tags:
+      - 网站管理
+  /api/agent/exec:
+    post:
+      consumes:
+      - application/json
+      description: 调用智能体
+      parameters:
+      - description: 请求信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AgentExecReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 调用智能体
+      tags:
+      - agent
+  /api/agent/exec/stream:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 使用 Server-Sent Events 流式调用智能体
+      parameters:
+      - description: 智能体类型
+        in: formData
+        name: agentType
+        required: true
+        type: string
+      - description: 请求内容
+        in: formData
+        name: content
+        type: string
+      - description: 上传文件
+        in: formData
+        name: file
+        type: file
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 基于 SSE 调用智能体
+      tags:
+      - agent
+  /api/captcha:
+    get:
+      consumes:
+      - application/json
+      description: 生成图片验证码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 生成验证码
+      tags:
+      - 验证码
+  /api/chat/conversation/list:
+    post:
+      consumes:
+      - application/json
+      description: 获取用户的会话列表
+      parameters:
+      - description: 请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ConversationListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取会话列表
+      tags:
+      - 聊天
+  /api/chat/conversations/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定会话的详细信息，包括基本信息和消息列表
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ConversationDetailVO'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: 会话不存在
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取会话详情
+      tags:
+      - 聊天会话
+  /api/chat/conversations/deletebatch:
+    post:
+      consumes:
+      - application/json
+      description: 批量删除指定的会话
+      parameters:
+      - description: 会话ID列表
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BatchDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 批量删除会话
+      tags:
+      - 聊天会话
+  /api/chat/ws:
+    get:
+      consumes:
+      - application/json
+      description: 建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回
+        AI 回复
+      parameters:
+      - description: 会话ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: 用户令牌
+        in: query
+        name: token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols 切换到 WebSocket 协议
+          schema:
+            type: string
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 建立聊天 WebSocket 连接
+      tags:
+      - 聊天会话
+      x-message-error:
+        message: 错误信息
+        type: error
+      x-message-request:
+        content: 聊天内容
+        context: 1
+        enableWeb: false
+        frequency_penalty: 0
+        max_tokens: 2048
+        model: 模型标识
+        presence_penalty: 0
+        repetition_penalty: 1
+        temperature: 1
+        top_k: 50
+        top_p: 0.7
+        type: chat
+      x-message-response:
+        content: AI回复内容
+        conversationId: 123
+        end: false
+        reasoning_content: 思考过程
+      x-message-stop:
+        type: stop
+  /api/cos/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: 获取文件上传或下载的预签名URL
+      parameters:
+      - description: 请求参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetPresignedURLReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.GetPresignedURLVO'
+              type: object
+      summary: 获取预签名URL
+      tags:
+      - 对象存储相关
+  /api/file/download:
+    get:
+      description: 从服务器下载文件
+      parameters:
+      - description: 文件相对路径
+        in: query
+        name: filePath
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: 文件内容
+          schema:
+            type: file
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "404":
+          description: 文件不存在
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 下载文件
+      tags:
+      - 文件
+  /api/file/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传文件到服务器本地
+      parameters:
+      - description: 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/file.UploadResponse'
+              type: object
+        "400":
+          description: 请求错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 上传文件
+      tags:
+      - 文件
+  /api/model/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定模型的详细信息
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ModelVO'
+              type: object
+      summary: 获取模型详情
+      tags:
+      - 模型管理
+  /api/model/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取模型列表，支持分页
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式(asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: 标签
+        in: query
+        name: tag
+        type: string
+      - description: 是否默认
+        in: query
+        name: default
+        type: boolean
+      - description: 模型名称
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取模型列表
+      tags:
+      - 模型管理
+  /api/preset:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的预设
+      parameters:
+      - description: 预设信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePresetReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.PresetVO'
+              type: object
+      summary: 创建预设
+      tags:
+      - 预设管理
+  /api/preset/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定预设
+      parameters:
+      - description: 预设ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除预设
+      tags:
+      - 预设管理
+    get:
+      consumes:
+      - application/json
+      description: 获取指定预设的详细信息
+      parameters:
+      - description: 预设ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.PresetVO'
+              type: object
+      summary: 获取预设详情
+      tags:
+      - 预设管理
+    put:
+      consumes:
+      - application/json
+      description: 更新预设信息
+      parameters:
+      - description: 预设ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 预设信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePresetReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.PresetVO'
+              type: object
+      summary: 更新预设
+      tags:
+      - 预设管理
+  /api/preset/list:
+    get:
+      consumes:
+      - application/json
+      description: 获取预设列表，支持分页
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式(asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: 是否官方预设
+        in: query
+        name: official
+        type: boolean
+      - description: 用户ID
+        in: query
+        name: user_id
+        type: integer
+      - description: 预设名称
+        in: query
+        name: name
+        type: string
+      - description: 预设标签
+        in: query
+        name: tags
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 获取预设列表
+      tags:
+      - 预设管理
+  /api/user/info:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的详细信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.UserVO'
+              type: object
+      summary: 获取当前用户信息
+      tags:
+      - 用户管理
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录并返回token
+      parameters:
+      - description: 登录信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.LoginVO'
+              type: object
+      summary: 用户登录
+      tags:
+      - 用户管理
+  /api/user/logout:
+    post:
+      consumes:
+      - application/json
+      description: 清除用户登录状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 退出登录
+      tags:
+      - 用户管理
+  /api/user/password:
+    put:
+      consumes:
+      - application/json
+      description: 修改当前登录用户的密码
+      parameters:
+      - description: 密码信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 修改密码
+      tags:
+      - 用户管理
+  /api/user/profile:
+    put:
+      consumes:
+      - application/json
+      description: 更新当前登录用户的个人信息
+      parameters:
+      - description: 个人信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.UserVO'
+              type: object
+      summary: 更新个人信息
+      tags:
+      - 用户管理
+  /api/user/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌
+      parameters:
+      - description: Bearer 刷新令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.TokenPair'
+              type: object
+      summary: 刷新访问令牌
+      tags:
+      - 用户管理
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: 新用户注册
+      parameters:
+      - description: 注册信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.UserVO'
+              type: object
+      summary: 用户注册
+      tags:
+      - 用户管理
+  /api/user/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: 通过邮箱重置密码
+      parameters:
+      - description: 重置密码信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 重置密码
+      tags:
+      - 用户管理
+  /api/websites/list:
+    get:
+      consumes:
+      - application/json
+      description: 用户端获取启用状态的网站列表，支持搜索和过滤
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        minimum: 1
+        name: limit
+        type: integer
+      - description: 网站名称
+        in: query
+        name: name
+        type: string
+      - description: 标签
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 用户端获取网站列表
+      tags:
+      - 网站
+schemes:
+- http
+swagger: "2.0"

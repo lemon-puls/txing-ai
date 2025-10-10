@@ -50,8 +50,8 @@ class VoWebsiteVO {
             if (data.hasOwnProperty('avatar')) {
                 obj['avatar'] = ApiClient.convertToType(data['avatar'], 'String');
             }
-            if (data.hasOwnProperty('created_at')) {
-                obj['created_at'] = ApiClient.convertToType(data['created_at'], 'String');
+            if (data.hasOwnProperty('createdAt')) {
+                obj['createdAt'] = ApiClient.convertToType(data['createdAt'], 'String');
             }
             if (data.hasOwnProperty('description')) {
                 obj['description'] = ApiClient.convertToType(data['description'], 'String');
@@ -71,8 +71,8 @@ class VoWebsiteVO {
             if (data.hasOwnProperty('tags')) {
                 obj['tags'] = ApiClient.convertToType(data['tags'], 'String');
             }
-            if (data.hasOwnProperty('updated_at')) {
-                obj['updated_at'] = ApiClient.convertToType(data['updated_at'], 'String');
+            if (data.hasOwnProperty('updatedAt')) {
+                obj['updatedAt'] = ApiClient.convertToType(data['updatedAt'], 'String');
             }
             if (data.hasOwnProperty('url')) {
                 obj['url'] = ApiClient.convertToType(data['url'], 'String');
@@ -92,8 +92,8 @@ class VoWebsiteVO {
             throw new Error("Expected the field `avatar` to be a primitive type in the JSON string but got " + data['avatar']);
         }
         // ensure the json data is a string
-        if (data['created_at'] && !(typeof data['created_at'] === 'string' || data['created_at'] instanceof String)) {
-            throw new Error("Expected the field `created_at` to be a primitive type in the JSON string but got " + data['created_at']);
+        if (data['createdAt'] && !(typeof data['createdAt'] === 'string' || data['createdAt'] instanceof String)) {
+            throw new Error("Expected the field `createdAt` to be a primitive type in the JSON string but got " + data['createdAt']);
         }
         // ensure the json data is a string
         if (data['description'] && !(typeof data['description'] === 'string' || data['description'] instanceof String)) {
@@ -108,8 +108,8 @@ class VoWebsiteVO {
             throw new Error("Expected the field `tags` to be a primitive type in the JSON string but got " + data['tags']);
         }
         // ensure the json data is a string
-        if (data['updated_at'] && !(typeof data['updated_at'] === 'string' || data['updated_at'] instanceof String)) {
-            throw new Error("Expected the field `updated_at` to be a primitive type in the JSON string but got " + data['updated_at']);
+        if (data['updatedAt'] && !(typeof data['updatedAt'] === 'string' || data['updatedAt'] instanceof String)) {
+            throw new Error("Expected the field `updatedAt` to be a primitive type in the JSON string but got " + data['updatedAt']);
         }
         // ensure the json data is a string
         if (data['url'] && !(typeof data['url'] === 'string' || data['url'] instanceof String)) {
@@ -132,9 +132,9 @@ VoWebsiteVO.prototype['avatar'] = undefined;
 
 /**
  * 创建时间
- * @member {String} created_at
+ * @member {String} createdAt
  */
-VoWebsiteVO.prototype['created_at'] = undefined;
+VoWebsiteVO.prototype['createdAt'] = undefined;
 
 /**
  * 网站描述
@@ -174,9 +174,9 @@ VoWebsiteVO.prototype['tags'] = undefined;
 
 /**
  * 更新时间
- * @member {String} updated_at
+ * @member {String} updatedAt
  */
-VoWebsiteVO.prototype['updated_at'] = undefined;
+VoWebsiteVO.prototype['updatedAt'] = undefined;
 
 /**
  * 网站地址

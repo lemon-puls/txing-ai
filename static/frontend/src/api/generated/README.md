@@ -142,6 +142,8 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
 *TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
+*TxingAiApi.DefaultApi* | [**apiFileDownloadGet**](docs/DefaultApi.md#apiFileDownloadGet) | **GET** /api/file/download | 下载文件
+*TxingAiApi.DefaultApi* | [**apiFileUploadPost**](docs/DefaultApi.md#apiFileUploadPost) | **POST** /api/file/upload | 上传文件
 *TxingAiApi.DefaultApi* | [**apiModelIdGet**](docs/DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
 *TxingAiApi.DefaultApi* | [**apiModelListGet**](docs/DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
 *TxingAiApi.DefaultApi* | [**apiPresetIdDelete**](docs/DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
@@ -158,6 +160,8 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 *TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 *TxingAiApi.DefaultApi* | [**apiWebsitesListGet**](docs/DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
+*TxingAiApi.AgentApi* | [**apiAgentExecPost**](docs/AgentApi.md#apiAgentExecPost) | **POST** /api/agent/exec | 调用智能体
+*TxingAiApi.AgentApi* | [**apiAgentExecStreamPost**](docs/AgentApi.md#apiAgentExecStreamPost) | **POST** /api/agent/exec/stream | 基于 SSE 调用智能体
 
 
 ## Documentation for Models
@@ -168,10 +172,12 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiAdminWebsitesPost200Response](docs/ApiAdminWebsitesPost200Response.md)
  - [TxingAiApi.ApiChatConversationsIdGet200Response](docs/ApiChatConversationsIdGet200Response.md)
  - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
+ - [TxingAiApi.ApiFileUploadPost200Response](docs/ApiFileUploadPost200Response.md)
  - [TxingAiApi.ApiPresetPost200Response](docs/ApiPresetPost200Response.md)
  - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
  - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
  - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)
+ - [TxingAiApi.DtoAgentExecReq](docs/DtoAgentExecReq.md)
  - [TxingAiApi.DtoBatchDeleteRequest](docs/DtoBatchDeleteRequest.md)
  - [TxingAiApi.DtoConversationListRequest](docs/DtoConversationListRequest.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
@@ -189,6 +195,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
  - [TxingAiApi.DtoUpdateWebsiteReq](docs/DtoUpdateWebsiteReq.md)
+ - [TxingAiApi.FileUploadResponse](docs/FileUploadResponse.md)
  - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
  - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
