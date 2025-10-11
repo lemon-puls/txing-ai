@@ -85,7 +85,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	//	zap.Int("contentLength", len(params.Content)),
 	//	zap.Time("timestamp", time.Now()))
 
-	return fmt.Sprintf("PDF文件已成功生成: ./%s", filename), nil
+	return fmt.Sprintf("PDF已成功保存: ./%s", filename), nil
 }
 
 // processMarkdownImages 处理Markdown中的图片，下载远程图片到本地

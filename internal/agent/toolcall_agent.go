@@ -129,10 +129,16 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 		for _, msg := range input {
 			log.Debug("model input", zap.String("role", string(msg.Role)), zap.String("content", msg.Content))
 			if msg.ToolCallID != "" {
+				var showMsg string
+				showMsg, err = mytool.BuildResponseShowMsg(msg.ToolName, msg.Content)
+				if err != nil {
+					showMsg = "完成工具调用：" + msg.Content
+				}
 				callback(&global.Chunk{
 					ToolCallId: msg.ToolCallID,
 					ToolName:   msg.ToolName,
 					ToolResult: msg.Content,
+					ShowMsg:    showMsg,
 				})
 			}
 		}
@@ -145,10 +151,16 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 		// 打印工具调用信息
 		for _, call := range input.ToolCalls {
 			log.Debug("tool call", zap.String("name", call.Function.Name), zap.Any("args", call.Function.Arguments))
+			var showMsg string
+			showMsg, err = mytool.BuildRequestShowMsg(call.Function.Name, call.Function.Arguments)
+			if err != nil {
+				showMsg = "发起工具调用：" + call.Function.Name
+			}
 			callback(&global.Chunk{
 				ToolCallId: call.ID,
 				ToolName:   call.Function.Name,
 				ToolParams: call.Function.Arguments,
+				ShowMsg:    showMsg,
 			})
 		}
 		state.Messages = append(state.Messages, input)

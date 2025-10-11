@@ -2,148 +2,121 @@
   <div class="resume-container">
     <div class="resume-header">
       <h1 class="title">AI简历优化</h1>
-      <p class="subtitle">上传您的简历，AI将为您进行针对性优化</p>
+      <p class="subtitle">上传您的简历，并填写目标公司与岗位（可选），右侧实时展示优化进度与结果</p>
     </div>
 
     <div class="resume-content">
       <el-card class="resume-card">
-        <div class="steps-container">
-          <el-steps :active="currentStep" finish-status="success" align-center>
-            <el-step title="上传简历" />
-            <el-step title="填写信息" />
-            <el-step title="优化中" />
-            <el-step title="查看结果" />
-          </el-steps>
-        </div>
-
-        <!-- 步骤1: 上传简历 -->
-        <div v-if="currentStep === 0" class="step-content">
-          <div class="upload-area">
-            <el-upload
-              class="resume-upload"
-              drag
-              action="#"
-              :auto-upload="false"
-              :on-change="handleFileChange"
-              :limit="1"
-              :file-list="fileList"
-              accept=".pdf,.doc,.docx"
-            >
-              <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-              <div class="el-upload__text">
-                拖拽文件到此处或 <em>点击上传</em>
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">
-                  支持 PDF、Word 格式的简历文件
+        <div class="two-column">
+          <!-- 左侧：上传与输入 -->
+          <div class="left-panel">
+            <div class="upload-area">
+              <el-upload
+                class="resume-upload"
+                drag
+                action="#"
+                :auto-upload="false"
+                :on-change="handleFileChange"
+                :limit="1"
+                :file-list="fileList"
+                accept=".pdf,.doc,.docx"
+              >
+                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                <div class="el-upload__text">
+                  拖拽文件到此处或 <em>点击上传</em>
                 </div>
-              </template>
-            </el-upload>
-          </div>
-          <div class="step-actions">
-            <el-button type="primary" :disabled="!resumeFile" @click="nextStep">下一步</el-button>
-          </div>
-        </div>
-
-        <!-- 步骤2: 填写信息 -->
-        <div v-if="currentStep === 1" class="step-content">
-          <el-form :model="formData" label-position="top">
-            <el-form-item label="目标公司">
-              <el-input v-model="formData.company" placeholder="请输入目标公司名称" />
-            </el-form-item>
-            <el-form-item label="目标岗位">
-              <el-input v-model="formData.position" placeholder="请输入目标岗位名称" />
-            </el-form-item>
-            <el-form-item label="其他要求（可选）">
-              <el-input
-                v-model="formData.requirements"
-                type="textarea"
-                :rows="4"
-                placeholder="请输入其他优化要求，如突出某些技能、经历等"
-              />
-            </el-form-item>
-          </el-form>
-          <div class="step-actions">
-            <el-button @click="prevStep">上一步</el-button>
-            <el-button
-              type="primary"
-              :disabled="!formData.company || !formData.position"
-              @click="startOptimize"
-            >开始优化</el-button>
-          </div>
-        </div>
-
-        <!-- 步骤3: 优化中 -->
-        <div v-if="currentStep === 2" class="step-content">
-          <div class="optimization-progress">
-            <div class="progress-header">
-              <el-icon class="loading-icon"><loading /></el-icon>
-              <span>AI正在优化您的简历...</span>
+                <template #tip>
+                  <div class="el-upload__tip">
+                    支持 PDF、Word 格式的简历文件
+                  </div>
+                </template>
+              </el-upload>
             </div>
 
-            <div class="progress-details">
-              <div class="progress-steps">
-                <div v-for="(step, index) in optimizationSteps" :key="index" class="progress-step">
-                  <div class="step-icon" :class="{ 'active': step.active, 'completed': step.completed }">
-                    <el-icon v-if="step.completed"><check /></el-icon>
-                    <el-icon v-else-if="step.active"><loading /></el-icon>
-                    <span v-else>{{ index + 1 }}</span>
-                  </div>
-                  <div class="step-info">
-                    <div class="step-title">{{ step.title }}</div>
-                    <div class="step-description">{{ step.description }}</div>
+            <el-form :model="formData" label-position="top" class="input-form">
+              <el-form-item label="目标公司与岗位（可选）">
+                <el-input v-model="formData.target" placeholder="请输入目标公司和岗位描述（可选）" />
+              </el-form-item>
+              <el-form-item label="其他要求（可选）">
+                <el-input
+                  v-model="formData.requirements"
+                  type="textarea"
+                  :rows="4"
+                  placeholder="请输入其他优化要求，如突出某些技能、经历等"
+                />
+              </el-form-item>
+              <div class="action-buttons">
+                <el-button @click="resetProcess">重置</el-button>
+                <el-button type="primary" :disabled="!resumeFile" @click="startOptimize">开始优化</el-button>
+              </div>
+            </el-form>
+          </div>
+
+          <!-- 右侧：过程与结果展示 -->
+          <div class="right-panel">
+            <div class="optimization-progress" v-if="isOptimizing">
+              <div class="progress-header">
+                <el-icon class="loading-icon"><loading /></el-icon>
+                <span>AI正在优化您的简历...</span>
+              </div>
+
+              <div class="progress-details">
+                <div class="progress-steps">
+                  <div v-for="(step, index) in optimizationSteps" :key="index" class="progress-step">
+                    <div class="step-icon" :class="{ 'active': step.active, 'completed': step.completed }">
+                      <el-icon v-if="step.completed"><check /></el-icon>
+                      <el-icon v-else-if="step.active"><loading /></el-icon>
+                      <span v-else>{{ index + 1 }}</span>
+                    </div>
+                    <div class="step-info">
+                      <div class="step-title">{{ step.title }}</div>
+                      <div class="step-description">{{ step.description }}</div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="agent-reasoning" v-if="agentReasoning">
-              <h3>AI分析过程</h3>
-              <div class="reasoning-content">
-                <pre>{{ agentReasoning }}</pre>
+              <div class="agent-reasoning" v-if="agentReasoning">
+                <h3>AI分析过程</h3>
+                <div class="reasoning-content">
+                  <pre>{{ agentReasoning }}</pre>
+                </div>
+              </div>
+
+              <div class="tool-calls" v-if="toolCallsList.length > 0">
+                <h3>工具调用</h3>
+                <div v-for="(tool, index) in toolCallsList" :key="tool.id" class="tool-call">
+                  <div class="tool-header">
+                    <span class="tool-name">{{ tool.name }}</span>
+                    <span class="tool-status" :class="{ 'completed': tool.result }">
+                      {{ tool.result ? '已完成' : '处理中...' }}
+                    </span>
+                  </div>
+                  <div class="tool-message">
+                    <pre>{{ tool.showMsg }}</pre>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="tool-calls" v-if="toolCalls.length > 0">
-              <h3>工具调用</h3>
-              <div v-for="(tool, index) in toolCalls" :key="index" class="tool-call">
-                <div class="tool-header">
-                  <span class="tool-name">{{ tool.name }}</span>
-                </div>
-                <div class="tool-params" v-if="tool.params">
-                  <pre>{{ formatJSON(tool.params) }}</pre>
-                </div>
-                <div class="tool-result" v-if="tool.result">
-                  <pre>{{ tool.result }}</pre>
-                </div>
+            <div class="optimization-result" v-if="isCompleted">
+              <div class="result-header">
+                <el-icon class="success-icon"><circle-check /></el-icon>
+                <h2>简历优化完成！</h2>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- 步骤4: 查看结果 -->
-        <div v-if="currentStep === 3" class="step-content">
-          <div class="optimization-result">
-            <div class="result-header">
-              <el-icon class="success-icon"><circle-check /></el-icon>
-              <h2>简历优化完成！</h2>
-            </div>
+              <div class="result-summary" v-if="optimizationSummary">
+                <h3>优化总结</h3>
+                <div class="summary-content" v-html="formattedSummary"></div>
+              </div>
 
-            <div class="result-summary" v-if="optimizationSummary">
-              <h3>优化总结</h3>
-              <div class="summary-content" v-html="formattedSummary"></div>
-            </div>
-
-            <div class="download-section">
-              <h3>下载优化后的简历</h3>
-              <el-button type="primary" @click="downloadResume" :disabled="!downloadUrl">
-                <el-icon><download /></el-icon>
-                下载简历
-              </el-button>
-            </div>
-
-            <div class="action-buttons">
-              <el-button @click="resetProcess">重新开始</el-button>
+              <div class="download-section">
+                <h3>下载优化后的简历</h3>
+                <el-button type="primary" @click="downloadResume" :disabled="!downloadUrl">
+                  <el-icon><download /></el-icon>
+                  下载简历
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,19 +135,15 @@ import {
   CircleCheck,
   Download
 } from '@element-plus/icons-vue'
-import {agentApi, defaultApi} from '@/api'
 import { marked } from 'marked'
 
-// 当前步骤
-const currentStep = ref(0)
 // 文件列表
 const fileList = ref([])
 // 简历文件
 const resumeFile = ref(null)
-// 表单数据
+// 表单数据（合并公司与岗位为一个可选输入）
 const formData = ref({
-  company: '',
-  position: '',
+  target: '',
   requirements: ''
 })
 // 优化步骤
@@ -186,8 +155,10 @@ const optimizationSteps = ref([
 ])
 // AI推理过程
 const agentReasoning = ref('')
-// 工具调用
-const toolCalls = ref([])
+// 工具调用映射 (toolCallId -> 工具调用对象)
+const toolCallsMap = ref(new Map())
+// 用于模板渲染的工具调用数组
+const toolCallsList = computed(() => Array.from(toolCallsMap.value.values()))
 // 优化总结
 const optimizationSummary = ref('')
 // 下载链接
@@ -200,30 +171,23 @@ const formattedSummary = computed(() => {
   return optimizationSummary.value ? marked(optimizationSummary.value) : ''
 })
 
+// 是否正在优化（有任一步骤处于 active）
+const isOptimizing = computed(() => optimizationSteps.value.some(step => step.active))
+// 是否优化完成（所有步骤 completed）
+const isCompleted = computed(() => optimizationSteps.value.length > 0 && optimizationSteps.value.every(step => step.completed))
+
 // 处理文件变更
 const handleFileChange = (file) => {
   fileList.value = [file]
   resumeFile.value = file.raw
 }
 
-// 下一步
-const nextStep = () => {
-  currentStep.value++
-}
-
-// 上一步
-const prevStep = () => {
-  currentStep.value--
-}
-
 // 重置流程
 const resetProcess = () => {
-  currentStep.value = 0
   fileList.value = []
   resumeFile.value = null
   formData.value = {
-    company: '',
-    position: '',
+    target: '',
     requirements: ''
   }
   optimizationSteps.value.forEach(step => {
@@ -231,7 +195,7 @@ const resetProcess = () => {
     step.completed = false
   })
   agentReasoning.value = ''
-  toolCalls.value = []
+  toolCallsMap.value.clear()
   optimizationSummary.value = ''
   downloadUrl.value = ''
 }
@@ -246,23 +210,18 @@ const formatJSON = (jsonString) => {
   }
 }
 
-// 开始优化
+// 开始优化（公司与岗位输入为可选）
 const startOptimize = async () => {
   if (!resumeFile.value) {
     ElMessage.error('请先上传简历文件')
     return
   }
 
-  if (!formData.value.company || !formData.value.position) {
-    ElMessage.error('请填写目标公司和岗位')
-    return
-  }
-
-  // 更新步骤
-  currentStep.value = 2
-
-  // 构建请求内容
-  const content = `目标公司：${formData.value.company}\n目标岗位：${formData.value.position}${formData.value.requirements ? '\n其他要求：' + formData.value.requirements : ''}`
+  // 构建请求内容（可选项）
+  const parts = []
+  if (formData.value.target) parts.push(`目标信息：${formData.value.target}`)
+  if (formData.value.requirements) parts.push(`其他要求：${formData.value.requirements}`)
+  const content = parts.join('\n') || '请优化我的简历'
 
   // 创建表单数据
   const formDataObj = new FormData()
@@ -308,12 +267,29 @@ const startOptimize = async () => {
               agentReasoning.value += data.reasoningContent
             }
 
-            if (data.toolName) {
-              toolCalls.value.push({
-                name: data.toolName,
-                params: data.toolParams,
-                result: data.toolResult
-              })
+            if (data.toolName && data.toolCallId) {
+              // 处理工具调用
+              if (!toolCallsMap.value.has(data.toolCallId)) {
+                // 新的工具调用请求
+                toolCallsMap.value.set(data.toolCallId, {
+                  id: data.toolCallId,
+                  name: data.toolName,
+                  showMsg: data.showMsg || '',
+                  result: false
+                })
+              } else if (data.toolResult) {
+                // 工具调用响应
+                const tool = toolCallsMap.value.get(data.toolCallId)
+                if (tool) {
+                  // 创建新对象以触发响应式更新
+                  const updatedTool = {
+                    ...tool,
+                    showMsg: data.showMsg || data.toolResult,
+                    result: true
+                  }
+                  toolCallsMap.value.set(data.toolCallId, updatedTool)
+                }
+              }
 
               if (data.toolName === 'markdown_to_pdf_file_tool') {
                 optimizationSteps.value[3].active = true
@@ -358,8 +334,6 @@ const startOptimize = async () => {
               if (data.content) {
                 downloadUrl.value = data.content
               }
-
-              currentStep.value = 3
             }
           } catch (e) {
             console.error('处理SSE消息时出错:', e)
@@ -369,10 +343,19 @@ const startOptimize = async () => {
     }
 
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      processBuffer()
+      try {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        processBuffer()
+      } catch (error) {
+        console.error('读取SSE流时出错:', error)
+        if (downloadUrl.value) {
+          console.error("优化完成")
+          break
+        }
+        throw error
+      }
     }
     processBuffer()
   } catch (error) {
@@ -399,9 +382,13 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .resume-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 40px 20px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 20px;
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
 }
 
 .resume-header {
@@ -428,15 +415,43 @@ onBeforeUnmount(() => {
   border-radius: 20px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
+
+  :deep(.el-card__body) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px; /* 保持与外层一致的内边距 */
+  }
 }
 
-.steps-container {
-  margin-bottom: 30px;
+/* 使内容区域填充剩余空间 */
+.resume-content {
+  flex: 1;
+  display: flex;
+  width: 100%;
 }
 
-.step-content {
+/* 两栏布局 */
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+  height: 100%;
+}
+
+.left-panel {
   padding: 20px 0;
-  min-height: 300px;
+  overflow: auto;
+}
+
+.right-panel {
+  padding: 20px 0;
+  overflow: auto;
 }
 
 .upload-area {
@@ -456,7 +471,7 @@ onBeforeUnmount(() => {
   }
 }
 
-.step-actions {
+.action-buttons {
   display: flex;
   justify-content: center;
   gap: 20px;
@@ -565,25 +580,42 @@ onBeforeUnmount(() => {
 
       .tool-header {
         margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
         .tool-name {
           font-weight: bold;
           color: var(--el-color-primary);
         }
+
+        .tool-status {
+          font-size: 12px;
+          padding: 2px 8px;
+          border-radius: 10px;
+          background-color: var(--el-color-warning-light-9);
+          color: var(--el-color-warning-dark-2);
+
+          &.completed {
+            background-color: var(--el-color-success-light-9);
+            color: var(--el-color-success-dark-2);
+          }
+        }
       }
 
-      .tool-params, .tool-result {
+      .tool-message {
         background-color: var(--el-bg-color);
-        border-radius: 4px;
-        padding: 10px;
+        border-radius: 8px;
+        padding: 12px;
         margin-bottom: 10px;
+        border-left: 3px solid var(--el-color-primary-light-5);
 
         pre {
           white-space: pre-wrap;
           word-break: break-word;
           font-family: monospace;
           margin: 0;
-          font-size: 12px;
+          font-size: 13px;
         }
       }
     }
@@ -685,8 +717,8 @@ onBeforeUnmount(() => {
     }
   }
 
-  .step-content {
-    min-height: 200px;
+  .two-column {
+    grid-template-columns: 1fr;
   }
 }
 </style>

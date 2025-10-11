@@ -159,6 +159,7 @@ func ExecStream(ctx *gin.Context) {
 			"toolName":         chunk.ToolName,
 			"toolParams":       chunk.ToolParams,
 			"toolResult":       chunk.ToolResult,
+			"showMsg":          chunk.ShowMsg,
 			"end":              false,
 		}
 
