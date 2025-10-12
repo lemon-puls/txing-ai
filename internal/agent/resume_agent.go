@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"txing-ai/internal/global"
 	"txing-ai/internal/iface"
 	"txing-ai/internal/tool"
@@ -99,6 +100,9 @@ func (a *ResumeAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey
 	if err1 != nil {
 		return "", err1
 	}
+	callback(&global.Chunk{
+		Content: "分析简历完成",
+	})
 
 	// 构建最终 prompt
 	prompt := ""

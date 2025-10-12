@@ -54,17 +54,24 @@
 
           <!-- 右侧：过程与结果展示 -->
           <div class="right-panel">
-            <div class="optimization-progress" v-if="isOptimizing">
+            <div class="optimization-progress" v-if="resumeFile || isOptimizing || isCompleted || hasError">
               <div class="progress-header">
-                <el-icon class="loading-icon"><loading /></el-icon>
-                <span>AI正在优化您的简历...</span>
+                <el-icon class="loading-icon" v-if="isOptimizing"><loading /></el-icon>
+                <el-icon class="success-icon" v-else-if="isCompleted"><circle-check /></el-icon>
+                <el-icon class="error-icon" v-else-if="hasError"><circle-close /></el-icon>
+                <el-icon v-else><info-filled /></el-icon>
+                <span v-if="isOptimizing">AI正在优化您的简历...</span>
+                <span v-else-if="isCompleted">简历优化已完成！</span>
+                <span v-else-if="hasError">简历优化失败</span>
+                <span v-else>准备优化您的简历</span>
               </div>
 
               <div class="progress-details">
                 <div class="progress-steps">
                   <div v-for="(step, index) in optimizationSteps" :key="index" class="progress-step">
-                    <div class="step-icon" :class="{ 'active': step.active, 'completed': step.completed }">
+                    <div class="step-icon" :class="{ 'active': step.active, 'completed': step.completed, 'failed': step.failed }">
                       <el-icon v-if="step.completed"><check /></el-icon>
+                      <el-icon v-else-if="step.failed"><close /></el-icon>
                       <el-icon v-else-if="step.active"><loading /></el-icon>
                       <span v-else>{{ index + 1 }}</span>
                     </div>
@@ -148,10 +155,9 @@ const formData = ref({
 })
 // 优化步骤
 const optimizationSteps = ref([
-  { title: '分析简历', description: '分析您的简历内容和结构', active: false, completed: false },
-  { title: '匹配岗位', description: '根据目标岗位提取关键要求', active: false, completed: false },
-  { title: '优化内容', description: '针对性调整简历内容和格式', active: false, completed: false },
-  { title: '生成文档', description: '生成优化后的简历文档', active: false, completed: false }
+  { title: '分析简历', description: '分析您的简历内容和结构', active: false, completed: false, failed: false },
+  { title: '优化内容', description: '针对性调整简历内容和格式', active: false, completed: false, failed: false },
+  { title: '生成文档', description: '生成优化后的简历文档', active: false, completed: false, failed: false }
 ])
 // AI推理过程
 const agentReasoning = ref('')
@@ -175,6 +181,7 @@ const formattedSummary = computed(() => {
 const isOptimizing = computed(() => optimizationSteps.value.some(step => step.active))
 // 是否优化完成（所有步骤 completed）
 const isCompleted = computed(() => optimizationSteps.value.length > 0 && optimizationSteps.value.every(step => step.completed))
+const hasError = computed(() => optimizationSteps.value.some(step => step.failed))
 
 // 处理文件变更
 const handleFileChange = (file) => {
@@ -193,6 +200,7 @@ const resetProcess = () => {
   optimizationSteps.value.forEach(step => {
     step.active = false
     step.completed = false
+    step.failed = false
   })
   agentReasoning.value = ''
   toolCallsMap.value.clear()
@@ -292,29 +300,21 @@ const startOptimize = async () => {
               }
 
               if (data.toolName === 'markdown_to_pdf_file_tool') {
-                optimizationSteps.value[3].active = true
+                optimizationSteps.value[2].active = true
                 optimizationSteps.value[0].active = false
                 optimizationSteps.value[0].completed = true
                 optimizationSteps.value[1].active = false
                 optimizationSteps.value[1].completed = true
-                optimizationSteps.value[2].active = false
-                optimizationSteps.value[2].completed = true
               }
             }
 
             if (data.content && !data.end) {
               optimizationSummary.value = data.content
 
-              if (data.content.includes('分析简历')) {
-                optimizationSteps.value[0].active = true
-              } else if (data.content.includes('匹配岗位')) {
+              if (data.content.includes('分析简历完成')) {
                 optimizationSteps.value[0].active = false
                 optimizationSteps.value[0].completed = true
                 optimizationSteps.value[1].active = true
-              } else if (data.content.includes('优化内容')) {
-                optimizationSteps.value[1].active = false
-                optimizationSteps.value[1].completed = true
-                optimizationSteps.value[2].active = true
               }
             }
 
@@ -326,13 +326,28 @@ const startOptimize = async () => {
               }
               abortController = null
 
-              optimizationSteps.value.forEach(step => {
-                step.active = false
-                step.completed = true
-              })
+              if (data.error) {
+                // 错误处理：将当前活动步骤标记为失败
+                const activeStepIndex = optimizationSteps.value.findIndex(step => step.active)
+                if (activeStepIndex !== -1) {
+                  optimizationSteps.value[activeStepIndex].active = false
+                  optimizationSteps.value[activeStepIndex].failed = true
+                }
+                
+                // 显示错误提示
+                ElMessage.error('简历优化失败：' + (data.error || '未知错误'))
+                console.error('简历优化失败:', data.error)
+                isOptimizing.value = false
+              } else {
+                // 成功处理：所有步骤标记为完成
+                optimizationSteps.value.forEach(step => {
+                  step.active = false
+                  step.completed = true
+                })
 
-              if (data.content) {
-                downloadUrl.value = data.content
+                if (data.content) {
+                  downloadUrl.value = data.content
+                }
               }
             }
           } catch (e) {
@@ -520,6 +535,11 @@ onBeforeUnmount(() => {
 
         &.completed {
           background-color: var(--el-color-success);
+          color: white;
+        }
+        
+        &.failed {
+          background-color: var(--el-color-danger);
           color: white;
         }
       }
