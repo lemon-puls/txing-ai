@@ -7,7 +7,6 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -65,7 +64,7 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
+func (a *ToolCallAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
@@ -78,7 +77,7 @@ func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey 
 	}
 
 	// 创建一个包含工具的执行图
-	graph, err := newGraph(context.Background(), chatModel, a.tools, callback)
+	graph, err := newGraph(ctx, chatModel, a.tools, callback)
 	if err != nil {
 		log.Error("Failed to create graph", zap.Error(err))
 		return "", err

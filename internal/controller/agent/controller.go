@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -149,6 +150,8 @@ func ExecStream(ctx *gin.Context) {
 	// 获取请求中的内容
 	content := req.Content
 
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+
 	// 创建一个回调函数，用于处理流式响应
 	callback := func(chunk *global.Chunk) error {
 		// 构建 SSE 消息
@@ -166,13 +169,15 @@ func ExecStream(ctx *gin.Context) {
 		// 发送 SSE 消息
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			log.Error("json marshal data failed", zap.Error(err))
+			log.Error("json marshal data failed, cancel context", zap.Error(err))
+			cancel()
 			return err
 		}
 
 		_, err = fmt.Fprintf(ctx.Writer, "data: %s\n\n", jsonData)
 		if err != nil {
-			log.Error("write sse message failed", zap.Error(err))
+			log.Error("write sse message failed, cancel context", zap.Error(err))
+			cancel()
 			return err
 		}
 		ctx.Writer.Flush()
@@ -199,10 +204,16 @@ func ExecStream(ctx *gin.Context) {
 
 	// 执行智能体，传入上下文、渠道、模型、内容和回调函数
 	response := ""
-	response, err = agent.ExecuteStream(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, filePath, callback)
+	response, err = agent.ExecuteStream(ctxWithCancel, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, filePath, callback)
 	if err != nil {
 		// 如果执行智能体失败，记录错误日志
 		log.Error("execute agent stream failed", zap.Error(err))
+		//// 判断上下文是否已经被取消
+		//if ctxWithCancel.Err() != nil {
+		//	log.Info("context canceled")
+		//	return
+		//}
+
 		// 发送错误消息
 		errData := map[string]interface{}{
 			"error": err.Error(),

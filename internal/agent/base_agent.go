@@ -7,10 +7,7 @@ import (
 	_ "github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"txing-ai/internal/global"
-	"txing-ai/internal/global/logging/log"
 )
 
 // Agent 定义智能体接口
@@ -21,7 +18,7 @@ type Agent interface {
 	GetName() string
 	// GetDescription 获取智能体描述
 	GetDescription() string
-	ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
+	ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 		content string, filePath string, callback func(chunk *global.Chunk) error) (string, error)
 }
 
@@ -100,12 +97,11 @@ func (a *BaseAgent) Execute(ctx context.Context,
 	return response.Content, nil
 }
 
-func (a *BaseAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
+func (a *BaseAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	content string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	response, err := a.Execute(ctx, endpoint, apiKey, model, content)
 	if err != nil {
-		log.Error("execute agent stream failed", zap.Error(err))
 		return "", err
 	}
 	chunk := global.Chunk{

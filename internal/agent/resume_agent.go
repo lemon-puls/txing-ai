@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"txing-ai/internal/global"
 	"txing-ai/internal/iface"
 	"txing-ai/internal/tool"
@@ -91,7 +90,7 @@ func (a *ResumeAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func (a *ResumeAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
+func (a *ResumeAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	text, err1 := tool.ReadPdfText(ctx, &tool.PdfReadParams{
