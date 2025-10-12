@@ -307,12 +307,10 @@ const startOptimize = async () => {
     // 通过POST携带FormData并解析SSE流
     const url = '/api/api/agent/exec/stream'
     abortController = new AbortController()
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { Accept: 'text/event-stream' },
-      body: formDataObj,
-      signal: abortController.signal
-    })
+    
+    // 使用带认证和拦截功能的SSE请求函数
+    const { fetchSSEWithAuth } = await import('@/api/sseRequest')
+    const response = await fetchSSEWithAuth(url, formDataObj, abortController)
 
     if (!response.ok || !response.body) {
       throw new Error('连接服务器失败')
