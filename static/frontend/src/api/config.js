@@ -5,13 +5,15 @@ import {defaultApi} from "@/api/index.js";
 const apiClient = new ApiClient()
 
 // 根据环境设置基础路径
-if (import.meta.env.MODE === 'development') {
-  // 开发环境，使用代理
-  apiClient.basePath = '/api'
-} else {
-  // 生产环境，使用相对路径
-  apiClient.basePath = ''
-}
+// if (import.meta.env.MODE === 'development') {
+//   // 开发环境，使用代理
+//   apiClient.basePath = ''
+// } else {
+//   // 生产环境，使用相对路径
+//   apiClient.basePath = ''
+// }
+
+apiClient.basePath = ''
 
 // 设置默认请求头
 apiClient.defaultHeaders = {
