@@ -45,7 +45,8 @@ apiClient.callApi = async function (...args) {
       (newToken) => {
         this.defaultHeaders['Authorization'] = `Bearer ${newToken}`
         return originalCallApi.apply(this, args)
-      }
+      },
+      null // 添加onError参数
     )
   }
 }

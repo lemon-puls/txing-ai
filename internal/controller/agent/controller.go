@@ -112,6 +112,7 @@ func ExecStream(ctx *gin.Context) {
 	// 从上下文中获取智能体工厂和数据库连接
 	agentFactory := utils.GetAgentFactoryFromContext(ctx)
 	db := utils.GetDBFromContext(ctx)
+	userId := utils.GetUIDFromContext(ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型
 	agentType := agent.AgentType(req.AgentType)
@@ -189,8 +190,6 @@ func ExecStream(ctx *gin.Context) {
 	// 文件路径
 	filePath := ""
 	if err == nil && file != nil {
-		// 获取用户ID
-		userId := int64(123456)
 		// 保存文件到本地
 		saveFilePath, fileSize, saveErr := utils.SaveUploadedFile(file, header.Filename, userId, "", "")
 		if saveErr != nil {

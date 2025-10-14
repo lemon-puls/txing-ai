@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"txing-ai/internal/global"
 	"txing-ai/internal/iface"
 	"txing-ai/internal/tool"

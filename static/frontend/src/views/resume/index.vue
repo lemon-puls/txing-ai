@@ -41,8 +41,8 @@
               <h2 class="section-title">优化选项</h2>
               <el-form :model="formData" label-position="top" class="input-form">
                 <el-form-item label="目标公司与岗位（可选）">
-                  <el-input 
-                    v-model="formData.target" 
+                  <el-input
+                    v-model="formData.target"
                     placeholder="请输入目标公司和岗位描述（可选）"
                     type="textarea"
                     :rows="4"
@@ -60,17 +60,17 @@
                   />
                 </el-form-item>
                 <div class="action-buttons">
-                  <el-button 
-                    @click="resetProcess" 
+                  <el-button
+                    @click="resetProcess"
                     class="reset-button"
                     :icon="RefreshRight"
                     :disabled="isFormDisabled"
                   >
                     重置
                   </el-button>
-                  <el-button 
-                    type="primary" 
-                    :disabled="!resumeFile || isFormDisabled" 
+                  <el-button
+                    type="primary"
+                    :disabled="!resumeFile || isFormDisabled"
                     @click="startOptimize"
                     class="optimize-button"
                     :icon="Promotion"
@@ -89,7 +89,7 @@
                 <el-icon class="empty-icon"><Document /></el-icon>
                 <p>请上传您的简历开始优化</p>
               </div>
-              
+
               <div class="optimization-progress" v-else-if="resumeFile || isOptimizing || isCompleted || hasError">
                 <div class="progress-header" :class="{'optimizing': isOptimizing, 'completed': isCompleted, 'error': hasError}">
                   <el-icon class="status-icon loading-icon" v-if="isOptimizing"><loading /></el-icon>
@@ -189,6 +189,7 @@ import {
   Promotion
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
+import fetchSSEWithAuth from "@/api/sseRequest.js";
 
 // 文件列表
 const fileList = ref([])
@@ -276,7 +277,7 @@ const startOptimize = async () => {
   // 先重置之前的优化状态，保留当前的文件和表单输入
   const currentFile = resumeFile.value
   const currentFormData = { ...formData.value }
-  
+
   // 重置状态但保留当前文件和表单数据
   optimizationSteps.value.forEach(step => {
     step.active = false
@@ -287,7 +288,7 @@ const startOptimize = async () => {
   toolCallsMap.value.clear()
   optimizationSummary.value = ''
   downloadUrl.value = ''
-  
+
   // 构建请求内容（可选项）
   const parts = []
   if (currentFormData.target) parts.push(`目标信息：${currentFormData.target}`)
@@ -305,135 +306,108 @@ const startOptimize = async () => {
     optimizationSteps.value[0].active = true
 
     // 通过POST携带FormData并解析SSE流
-    const url = '/api/api/agent/exec/stream'
-    abortController = new AbortController()
-    
+    const url = '/api/agent/exec/stream'
+
     // 使用带认证和拦截功能的SSE请求函数
-    const { fetchSSEWithAuth } = await import('@/api/sseRequest')
-    const response = await fetchSSEWithAuth(url, formDataObj, abortController)
+    abortController = await fetchSSEWithAuth(url, formDataObj, function (msg) {
+      console.log('SSE消息:', msg)
+      if (!msg.startsWith('data:')) {
+        throw new Error('非法的SSE消息格式')
+      }
+      const payload = msg.slice(5).trim()
+      if (!payload) {
+        return
+      }
+      try {
+        const data = JSON.parse(payload)
 
-    if (!response.ok || !response.body) {
-      throw new Error('连接服务器失败')
-    }
+        if (data.reasoningContent) {
+          agentReasoning.value += data.reasoningContent
+        }
 
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let buffer = ''
-
-    const processBuffer = () => {
-      const parts = buffer.split('\n\n')
-      buffer = parts.pop() || ''
-      for (const part of parts) {
-        const lines = part.split('\n')
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue
-          const payload = line.slice(5).trim()
-          if (!payload) continue
-          try {
-            const data = JSON.parse(payload)
-
-            if (data.reasoningContent) {
-              agentReasoning.value += data.reasoningContent
+        if (data.toolName && data.toolCallId) {
+          // 处理工具调用
+          if (!toolCallsMap.value.has(data.toolCallId)) {
+            // 新的工具调用请求
+            toolCallsMap.value.set(data.toolCallId, {
+              id: data.toolCallId,
+              name: data.toolName,
+              showMsg: data.showMsg || '',
+              result: false
+            })
+          } else if (data.toolResult) {
+            // 工具调用响应
+            const tool = toolCallsMap.value.get(data.toolCallId)
+            if (tool) {
+              // 创建新对象以触发响应式更新
+              const updatedTool = {
+                ...tool,
+                showMsg: data.showMsg || data.toolResult,
+                result: true
+              }
+              toolCallsMap.value.set(data.toolCallId, updatedTool)
             }
+          }
 
-            if (data.toolName && data.toolCallId) {
-              // 处理工具调用
-              if (!toolCallsMap.value.has(data.toolCallId)) {
-                // 新的工具调用请求
-                toolCallsMap.value.set(data.toolCallId, {
-                  id: data.toolCallId,
-                  name: data.toolName,
-                  showMsg: data.showMsg || '',
-                  result: false
-                })
-              } else if (data.toolResult) {
-                // 工具调用响应
-                const tool = toolCallsMap.value.get(data.toolCallId)
-                if (tool) {
-                  // 创建新对象以触发响应式更新
-                  const updatedTool = {
-                    ...tool,
-                    showMsg: data.showMsg || data.toolResult,
-                    result: true
-                  }
-                  toolCallsMap.value.set(data.toolCallId, updatedTool)
-                }
-              }
-
-              if (data.toolName === 'markdown_to_pdf_file_tool') {
-                optimizationSteps.value[2].active = true
-                optimizationSteps.value[0].active = false
-                optimizationSteps.value[0].completed = true
-                optimizationSteps.value[1].active = false
-                optimizationSteps.value[1].completed = true
-              }
-            }
-
-            if (data.content && !data.end) {
-              optimizationSummary.value = data.content
-
-              if (data.content.includes('分析简历完成')) {
-                optimizationSteps.value[0].active = false
-                optimizationSteps.value[0].completed = true
-                optimizationSteps.value[1].active = true
-              }
-            }
-
-            if (data.end) {
-              try {
-                abortController?.abort()
-              } catch (e) {
-                console.error('关闭SSE连接时出错:', e)
-              }
-              abortController = null
-
-              if (data.error) {
-                // 错误处理：将当前活动步骤标记为失败
-                const activeStepIndex = optimizationSteps.value.findIndex(step => step.active)
-                if (activeStepIndex !== -1) {
-                  optimizationSteps.value[activeStepIndex].active = false
-                  optimizationSteps.value[activeStepIndex].failed = true
-                }
-                
-                // 显示错误提示
-                ElMessage.error('简历优化失败：' + (data.error || '未知错误'))
-                console.error('简历优化失败:', data.error)
-                isOptimizing.value = false
-              } else {
-                // 成功处理：所有步骤标记为完成
-                optimizationSteps.value.forEach(step => {
-                  step.active = false
-                  step.completed = true
-                })
-
-                if (data.content) {
-                  downloadUrl.value = data.content
-                }
-              }
-            }
-          } catch (e) {
-            console.error('处理SSE消息时出错:', e)
+          if (data.toolName === 'markdown_to_pdf_file_tool') {
+            optimizationSteps.value[2].active = true
+            optimizationSteps.value[0].active = false
+            optimizationSteps.value[0].completed = true
+            optimizationSteps.value[1].active = false
+            optimizationSteps.value[1].completed = true
           }
         }
-      }
-    }
 
-    while (true) {
-      try {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        processBuffer()
-      } catch (error) {
-        console.error('读取SSE流时出错:', error)
-        if (downloadUrl.value) {
-          console.error("优化完成")
-          break
+        if (data.content && !data.end) {
+          optimizationSummary.value = data.content
+
+          if (data.content.includes('分析简历完成')) {
+            optimizationSteps.value[0].active = false
+            optimizationSteps.value[0].completed = true
+            optimizationSteps.value[1].active = true
+          }
         }
-        throw error
+
+        if (data.end) {
+          try {
+            abortController?.abort()
+          } catch (e) {
+            console.error('关闭SSE连接时出错:', e)
+          }
+          abortController = null
+
+          if (data.error) {
+            // 错误处理：将当前活动步骤标记为失败
+            const activeStepIndex = optimizationSteps.value.findIndex(step => step.active)
+            if (activeStepIndex !== -1) {
+              optimizationSteps.value[activeStepIndex].active = false
+              optimizationSteps.value[activeStepIndex].failed = true
+            }
+
+            // 显示错误提示
+            ElMessage.error('简历优化失败：' + (data.error || '未知错误'))
+            console.error('简历优化失败:', data.error)
+            isOptimizing.value = false
+          } else {
+            // 成功处理：所有步骤标记为完成
+            optimizationSteps.value.forEach(step => {
+              step.active = false
+              step.completed = true
+            })
+
+            if (data.content) {
+              downloadUrl.value = data.content
+            }
+          }
+        }
+      } catch (e) {
+        console.error('处理SSE消息时出错:', e)
       }
-    }
-    processBuffer()
+    }, function (error) {
+      console.error('SSE请求出错:', error)
+    }, function () {
+      console.log('SSE连接关闭')
+    })
   } catch (error) {
     console.error('优化简历时出错:', error)
     ElMessage.error('优化简历失败，请稍后重试')
@@ -555,7 +529,7 @@ onBeforeUnmount(() => {
     color: var(--el-text-color-primary);
     position: relative;
     padding-left: 15px;
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -585,7 +559,7 @@ onBeforeUnmount(() => {
 
   .resume-upload {
     width: 100%;
-    
+
     :deep(.el-upload-dragger) {
       width: 100%;
       height: 180px;
@@ -595,7 +569,7 @@ onBeforeUnmount(() => {
       border: 2px dashed var(--el-border-color);
       border-radius: 12px;
       transition: all 0.3s;
-      
+
       &:hover {
         border-color: var(--el-color-primary);
         background-color: var(--el-color-primary-light-9);
@@ -608,17 +582,17 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    
+
     .el-icon--upload {
       font-size: 48px;
       color: var(--el-color-primary);
       margin-bottom: 15px;
     }
-    
+
     .el-upload__text {
       font-size: 16px;
       margin-bottom: 10px;
-      
+
       em {
         color: var(--el-color-primary);
         font-style: normal;
@@ -639,18 +613,18 @@ onBeforeUnmount(() => {
     font-weight: 500;
     padding-bottom: 8px;
   }
-  
+
   :deep(.el-input__wrapper),
   :deep(.el-textarea__inner) {
     border-radius: 8px;
     box-shadow: 0 0 0 1px var(--el-border-color-light) inset;
     transition: all 0.3s;
-    
+
     &:hover, &:focus {
       box-shadow: 0 0 0 1px var(--el-color-primary-light-5) inset;
     }
   }
-  
+
   :deep(.el-input__prefix-inner) {
     color: var(--el-color-primary);
   }
@@ -661,27 +635,27 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 20px;
   margin-top: 30px;
-  
+
   .reset-button, .optimize-button {
     min-width: 120px;
     border-radius: 8px;
     font-weight: 500;
     transition: all 0.3s;
-    
+
     .el-icon {
       margin-right: 6px;
     }
   }
-  
+
   .optimize-button {
     background: linear-gradient(45deg, var(--el-color-primary), var(--el-color-primary-light-3));
     border: none;
-    
+
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(var(--el-color-primary-rgb), 0.3);
     }
-    
+
     &:disabled {
       background: var(--el-button-disabled-bg-color);
       transform: none;
@@ -697,13 +671,13 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: 100%;
   color: var(--el-text-color-secondary);
-  
+
   .empty-icon {
     font-size: 64px;
     margin-bottom: 20px;
     color: var(--el-color-info-light-5);
   }
-  
+
   p {
     font-size: 16px;
   }
@@ -722,36 +696,36 @@ onBeforeUnmount(() => {
     background-color: var(--el-bg-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.3s;
-    
+
     &.optimizing {
       background-color: var(--el-color-primary-light-9);
     }
-    
+
     &.completed {
       background-color: var(--el-color-success-light-9);
     }
-    
+
     &.error {
       background-color: var(--el-color-danger-light-9);
     }
 
     .status-icon {
       font-size: 28px;
-      
+
       &.loading-icon {
         color: var(--el-color-primary);
         animation: rotate 1s linear infinite;
       }
-      
+
       &.success-icon {
         color: var(--el-color-success);
       }
-      
+
       &.error-icon {
         color: var(--el-color-danger);
       }
     }
-    
+
     .status-text {
       font-weight: 500;
     }
@@ -769,7 +743,7 @@ onBeforeUnmount(() => {
         border-radius: 12px;
         background-color: var(--el-bg-color);
         transition: all 0.3s;
-        
+
         &:hover {
           transform: translateY(-2px);
           box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
@@ -798,7 +772,7 @@ onBeforeUnmount(() => {
             background-color: var(--el-color-success);
             color: white;
           }
-          
+
           &.failed {
             background-color: var(--el-color-danger);
             color: white;
@@ -820,12 +794,12 @@ onBeforeUnmount(() => {
       }
     }
   }
-  
+
   .details-collapse {
     margin-top: 20px;
     border-radius: 12px;
     overflow: hidden;
-    
+
     :deep(.el-collapse-item__header) {
       font-weight: 500;
       font-size: 16px;
@@ -833,7 +807,7 @@ onBeforeUnmount(() => {
       background-color: var(--el-bg-color);
       border-radius: 12px;
     }
-    
+
     :deep(.el-collapse-item__content) {
       padding: 20px;
       background-color: var(--el-bg-color);
@@ -924,7 +898,7 @@ onBeforeUnmount(() => {
   background-color: var(--el-bg-color);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  
+
   .result-header {
     display: flex;
     flex-direction: column;
@@ -954,7 +928,7 @@ onBeforeUnmount(() => {
       color: var(--el-text-color-primary);
       position: relative;
       padding-left: 15px;
-      
+
       &::before {
         content: '';
         position: absolute;
@@ -981,16 +955,16 @@ onBeforeUnmount(() => {
       :deep(ul) {
         padding-left: 20px;
       }
-      
+
       :deep(p) {
         margin-bottom: 12px;
         line-height: 1.6;
       }
-      
+
       :deep(a) {
         color: var(--el-color-primary);
         text-decoration: none;
-        
+
         &:hover {
           text-decoration: underline;
         }
@@ -1001,7 +975,7 @@ onBeforeUnmount(() => {
   .download-section {
     text-align: center;
     margin-top: 30px;
-    
+
     .download-button {
       min-width: 200px;
       height: 48px;
@@ -1011,12 +985,12 @@ onBeforeUnmount(() => {
       background: linear-gradient(45deg, var(--el-color-success), var(--el-color-success-light-3));
       border: none;
       transition: all 0.3s;
-      
+
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(var(--el-color-success-rgb), 0.3);
       }
-      
+
       .el-icon {
         margin-right: 8px;
         font-size: 18px;
@@ -1058,18 +1032,18 @@ onBeforeUnmount(() => {
     height: auto;
     min-height: calc(100vh - 64px);
   }
-  
+
   .two-column {
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  
+
   .left-panel {
     border-right: none;
     border-bottom: 1px solid var(--el-border-color-light);
     padding-bottom: 30px;
   }
-  
+
   .right-panel {
     padding-top: 0;
   }
@@ -1091,19 +1065,19 @@ onBeforeUnmount(() => {
       font-size: 14px;
     }
   }
-  
+
   .left-panel, .right-panel {
     padding: 20px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
-    
+
     .reset-button, .optimize-button {
       width: 100%;
     }
   }
-  
+
   .optimization-result {
     padding: 20px;
   }
@@ -1113,10 +1087,10 @@ onBeforeUnmount(() => {
   .resume-header .title {
     font-size: 22px;
   }
-  
+
   .progress-step {
      flex-direction: column;
-     
+
      .step-icon {
        margin-bottom: 10px;
        margin-right: 0;
