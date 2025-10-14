@@ -43,7 +43,7 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 	messageLimiter := utils.GetMessageLimiterFromContext(ctx)
 
 	// 检查消息限制
-	allowed, err := messageLimiter.CheckAndIncrement(ctx, uid, role)
+	allowed, err := messageLimiter.CheckAndIncrement(ctx, uid, role, utils.BusinessTypeChat)
 	if err != nil {
 		log.Error("check message limit error", zap.Error(err))
 		conn.Send(dto.WsMessageResponse{
@@ -56,7 +56,7 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 
 	// 如果不允许发送消息，返回提示信息
 	if !allowed {
-		limitMessage := fmt.Sprintf(exceedMessageLimit, utils.DailyMessageLimit)
+		limitMessage := fmt.Sprintf(exceedMessageLimit, utils.BusinessUseLimits[utils.BusinessTypeChat])
 		conn.Send(dto.WsMessageResponse{
 			Content:        limitMessage,
 			End:            true,

@@ -16,6 +16,8 @@ import (
 	"txing-ai/internal/utils"
 )
 
+const exceedUseLimit = "您今日的使用次数已达上限（%d次），请明天再来尝试啦！"
+
 // Generate 调用智能体
 // @Summary 调用智能体
 // @Description 调用智能体
@@ -113,6 +115,8 @@ func ExecStream(ctx *gin.Context) {
 	agentFactory := utils.GetAgentFactoryFromContext(ctx)
 	db := utils.GetDBFromContext(ctx)
 	userId := utils.GetUIDFromContext(ctx)
+	messageLimiter := utils.GetMessageLimiterFromContext(ctx)
+	role := utils.GetRoleFromContext(ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型
 	agentType := agent.AgentType(req.AgentType)
@@ -199,6 +203,30 @@ func ExecStream(ctx *gin.Context) {
 			filePath = saveFilePath
 		}
 		defer file.Close()
+	}
+
+	// 检查使用次数是否达到上限
+	allowed, err := messageLimiter.CheckAndIncrement(ctx, userId, role, utils.BusinessTypeResume)
+	limitMsg := ""
+	if err != nil {
+		log.Error("check use limit error", zap.Error(err))
+		limitMsg = "check use limit error"
+	}
+	// 如果不允许发送消息，返回提示信息
+	if !allowed {
+		limitMsg = fmt.Sprintf(exceedUseLimit, utils.BusinessUseLimits[utils.BusinessTypeResume])
+	}
+
+	if limitMsg != "" {
+		// 发送错误消息
+		errData := map[string]interface{}{
+			"error": limitMsg,
+			"end":   true,
+		}
+		jsonData, _ := json.Marshal(errData)
+		_, _ = fmt.Fprintf(ctx.Writer, "data: %s\n\n", jsonData)
+		ctx.Writer.Flush()
+		return
 	}
 
 	// 执行智能体，传入上下文、渠道、模型、内容和回调函数
