@@ -78,11 +78,18 @@ const router = createRouter({
         {
           path: 'resume',
           name: 'resume',
-          component: () => import('@/views/resume/index.vue'),
-          meta: {
-            title: 'AI简历优化',
-            icon: 'document'
-          }
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              component: () => import('@/views/resume/index.vue'),
+              path: '',
+              meta: {
+                title: 'AI简历优化',
+                icon: 'document'
+              }
+            }
+          ]
+
         }
       ]
     },

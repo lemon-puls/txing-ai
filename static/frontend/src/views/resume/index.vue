@@ -1,15 +1,14 @@
 <template>
   <div class="resume-container">
-    <div class="resume-header">
-      <h1 class="title">AI简历优化</h1>
-      <p class="subtitle">上传您的简历，并填写目标公司与岗位（可选），右侧实时展示优化进度与结果</p>
-    </div>
-
     <div class="resume-content">
       <el-card class="resume-card">
         <div class="two-column">
           <!-- 左侧：上传与输入 -->
           <div class="left-panel">
+            <div class="panel-section page-intro">
+              <h2 class="intro-title">AI 简历优化</h2>
+              <p class="intro-subtitle">上传您的简历，并填写目标公司与岗位（可选），右侧实时展示优化进度与结果</p>
+            </div>
             <div class="panel-section">
               <h2 class="section-title">上传简历</h2>
               <div class="upload-area">
@@ -45,7 +44,7 @@
                     v-model="formData.target"
                     placeholder="请输入目标公司和岗位描述（可选）"
                     type="textarea"
-                    :rows="4"
+                    :rows="10"
                     prefix-icon="Aim"
                     :disabled="isFormDisabled"
                   />
@@ -54,7 +53,7 @@
                   <el-input
                     v-model="formData.requirements"
                     type="textarea"
-                    :rows="4"
+                    :rows="5"
                     placeholder="请输入其他优化要求，如突出某些技能、经历等"
                     :disabled="isFormDisabled"
                   />
@@ -119,7 +118,7 @@
                   </div>
                 </div>
 
-                <el-collapse v-if="agentReasoning || toolCallsList.length > 0" class="details-collapse">
+                <el-collapse v-model="detailsActiveNames" v-if="agentReasoning || toolCallsList.length > 0" class="details-collapse">
                   <el-collapse-item title="查看详细过程" name="1">
                     <div class="agent-reasoning" v-if="agentReasoning">
                       <h3 class="detail-title">AI分析过程</h3>
@@ -133,8 +132,12 @@
                       <div v-for="(tool, index) in toolCallsList" :key="tool.id" class="tool-call">
                         <div class="tool-header">
                           <span class="tool-name">{{ tool.name }}</span>
-                          <span class="tool-status" :class="{ 'completed': tool.result }">
-                            {{ tool.result ? '已完成' : '处理中...' }}
+                          <span class="tool-status" :class="[ tool.result ? 'completed' : 'loading' ]">
+                            <template v-if="tool.result">已完成</template>
+                            <template v-else>
+                              <el-icon class="status-spinner"><loading /></el-icon>
+                              请求中<span class="dot dot-1">.</span><span class="dot dot-2">.</span><span class="dot dot-3">.</span>
+                            </template>
                           </span>
                         </div>
                         <div class="tool-message">
@@ -212,6 +215,8 @@ const agentReasoning = ref('')
 const toolCallsMap = ref(new Map())
 // 用于模板渲染的工具调用数组
 const toolCallsList = computed(() => Array.from(toolCallsMap.value.values()))
+// 折叠面板默认展开项
+const detailsActiveNames = ref(['1'])
 // 优化总结
 const optimizationSummary = ref('')
 // 下载链接
@@ -257,16 +262,6 @@ const resetProcess = () => {
   downloadUrl.value = ''
 }
 
-// 格式化JSON
-const formatJSON = (jsonString) => {
-  try {
-    const obj = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString
-    return JSON.stringify(obj, null, 2)
-  } catch (e) {
-    return jsonString
-  }
-}
-
 // 开始优化（公司与岗位输入为可选）
 const startOptimize = async () => {
   if (!resumeFile.value) {
@@ -291,8 +286,8 @@ const startOptimize = async () => {
 
   // 构建请求内容（可选项）
   const parts = []
-  if (currentFormData.target) parts.push(`目标信息：${currentFormData.target}`)
-  if (currentFormData.requirements) parts.push(`其他要求：${currentFormData.requirements}`)
+  if (currentFormData.target) parts.push(`目标公司、岗位信息：\n ${currentFormData.target}`)
+  if (currentFormData.requirements) parts.push(`用户优化要求：\n ${currentFormData.requirements}`)
   const content = parts.join('\n') || '请优化我的简历'
 
   // 创建表单数据
@@ -332,7 +327,7 @@ const startOptimize = async () => {
             toolCallsMap.value.set(data.toolCallId, {
               id: data.toolCallId,
               name: data.toolName,
-              showMsg: data.showMsg || '',
+              showMsg: data.showMsg ? `【请求】\n${data.showMsg}` : '',
               result: false
             })
           } else if (data.toolResult) {
@@ -340,9 +335,13 @@ const startOptimize = async () => {
             const tool = toolCallsMap.value.get(data.toolCallId)
             if (tool) {
               // 创建新对象以触发响应式更新
+              const responseText = data.showMsg || data.toolResult || ''
+              const combinedMsg = tool.showMsg
+                ? `${tool.showMsg}\n\n【响应】\n${responseText}`
+                : `【响应】\n${responseText}`
               const updatedTool = {
                 ...tool,
-                showMsg: data.showMsg || data.toolResult,
+                showMsg: combinedMsg,
                 result: true
               }
               toolCallsMap.value.set(data.toolCallId, updatedTool)
@@ -435,38 +434,35 @@ onBeforeUnmount(() => {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 20px;
+  padding-top: 5px;
   height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
   background-color: var(--el-bg-color-page, #f5f7fa);
 }
 
-.resume-header {
-  text-align: center;
-  margin-bottom: 30px;
+.page-intro {
+  margin-bottom: 10px;
 
-  .title {
-    font-size: 32px;
-    font-weight: bold;
-    margin-bottom: 10px;
+  .intro-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
     background: linear-gradient(45deg, var(--el-color-primary), var(--el-color-primary-light-3));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
   }
 
-  .subtitle {
-    font-size: 16px;
+  .intro-subtitle {
+    font-size: 14px;
     color: var(--el-text-color-secondary);
-    max-width: 700px;
-    margin: 0 auto;
   }
 }
 
 .resume-card {
-  border-radius: 16px;
+  //border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   height: 100%;
@@ -684,6 +680,19 @@ onBeforeUnmount(() => {
 }
 
 .optimization-progress {
+  //:deep(.el-collapse-item__header) {
+  //  border-radius: initial;
+  //  border-top-left-radius: 12px;
+  //  border-top-right-radius: 12px;
+  //}
+  //.details-collapse {
+  //  .el-collapse-item__header {
+  //    border-radius: initial;
+  //    border-top-left-radius: 12px;
+  //    border-top-right-radius: 12px;
+  //  }
+  //}
+
   .progress-header {
     display: flex;
     align-items: center;
@@ -692,7 +701,7 @@ onBeforeUnmount(() => {
     margin-bottom: 30px;
     font-size: 18px;
     padding: 20px;
-    border-radius: 12px;
+    //border-radius: 12px;
     background-color: var(--el-bg-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.3s;
@@ -805,7 +814,7 @@ onBeforeUnmount(() => {
       font-size: 16px;
       padding: 15px;
       background-color: var(--el-bg-color);
-      border-radius: 12px;
+      //border-radius: 12px;
     }
 
     :deep(.el-collapse-item__content) {
@@ -870,6 +879,27 @@ onBeforeUnmount(() => {
             background-color: var(--el-color-success-light-9);
             color: var(--el-color-success-dark-2);
           }
+
+          &.loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .status-spinner {
+            font-size: 14px;
+            color: var(--el-color-warning);
+            animation: rotate 1s linear infinite;
+          }
+
+          .dot {
+            display: inline-block;
+            width: 2px;
+            color: var(--el-color-warning-dark-2);
+            animation: blink 1s infinite;
+          }
+          .dot-2 { animation-delay: 0.2s; }
+          .dot-3 { animation-delay: 0.4s; }
         }
       }
 
@@ -1020,6 +1050,12 @@ onBeforeUnmount(() => {
   }
 }
 
+@keyframes blink {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 // 响应式设计
 @media screen and (max-width: 1200px) {
   .two-column {
@@ -1054,18 +1090,6 @@ onBeforeUnmount(() => {
     padding: 15px 10px;
   }
 
-  .resume-header {
-    margin-bottom: 20px;
-
-    .title {
-      font-size: 24px;
-    }
-
-    .subtitle {
-      font-size: 14px;
-    }
-  }
-
   .left-panel, .right-panel {
     padding: 20px;
   }
@@ -1084,8 +1108,8 @@ onBeforeUnmount(() => {
 }
 
 @media screen and (max-width: 480px) {
-  .resume-header .title {
-    font-size: 22px;
+  .page-intro .intro-title {
+    font-size: 20px;
   }
 
   .progress-step {

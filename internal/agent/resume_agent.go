@@ -103,11 +103,7 @@ func (a *ResumeAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey
 	})
 
 	// 构建最终 prompt
-	prompt := ""
-	if input != "" {
-		prompt += "目标公司、岗位信息：\n\n" + input + "\n\n"
-	}
-	prompt += "简历原始内容：\n\n" + text
+	prompt := input + "\n\n简历原始内容：\n\n" + text
 
 	return a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, prompt, "", callback)
 }
