@@ -403,6 +403,43 @@ const startOptimize = async () => {
         console.error('处理SSE消息时出错:', e)
       }
     }, function (error) {
+      // 连接或网络层错误：标记流程失败并记录详细错误信息
+      try {
+        abortController?.abort()
+      } catch (e) {
+        console.error('关闭SSE连接时出错:', e)
+      }
+      abortController = null
+
+      // 将当前活动步骤标记为失败
+      const activeStepIndex = optimizationSteps.value.findIndex(step => step.active)
+      if (activeStepIndex !== -1) {
+        optimizationSteps.value[activeStepIndex].active = false
+        optimizationSteps.value[activeStepIndex].failed = true
+      } else if (optimizationSteps.value.length > 0) {
+        // 若无活动步骤，标记第一个步骤为失败以触发错误状态展示
+        optimizationSteps.value[0].failed = true
+      }
+
+      // 汇总错误信息并展示到详细过程
+      const errText = typeof error === 'string' ? error : (error?.message || JSON.stringify(error))
+
+      // 将错误信息附加到尚未完成的工具调用上，便于定位问题
+      try {
+        for (const tool of toolCallsMap.value.values()) {
+          if (!tool.result) {
+            const updatedTool = {
+              ...tool,
+              showMsg: tool.showMsg ? `${tool.showMsg}\n\n【错误】\n${errText}` : `【错误】\n${errText}`
+            }
+            toolCallsMap.value.set(tool.id, updatedTool)
+          }
+        }
+      } catch (e) {
+        console.error('更新工具调用错误信息时出错:', e)
+      }
+
+      ElMessage.error('系统繁忙，请稍后重试')
       console.error('SSE请求出错:', error)
     }, function () {
       console.log('SSE连接关闭')
@@ -442,7 +479,7 @@ onBeforeUnmount(() => {
 }
 
 .page-intro {
-  margin-bottom: 10px;
+  //margin-bottom: 10px;
 
   .intro-title {
     font-size: 24px;
@@ -516,7 +553,7 @@ onBeforeUnmount(() => {
 }
 
 .panel-section {
-  margin-bottom: 25px;
+  //margin-bottom: 25px;
 
   .section-title {
     font-size: 18px;

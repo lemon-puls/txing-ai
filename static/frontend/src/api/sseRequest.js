@@ -17,13 +17,13 @@ export async function fetchSSEWithAuth(url, data, onMessage, onError, onComplete
   try {
     // 获取认证头
     const authHeaders = authService.getAuthHeaders()
-    
+
     // 准备请求头
     const headers = {
       'Accept': 'text/event-stream',
       ...authHeaders
     }
-    
+
     // 准备请求体
     let body
     if (data instanceof FormData) {
@@ -32,7 +32,7 @@ export async function fetchSSEWithAuth(url, data, onMessage, onError, onComplete
       headers['Content-Type'] = 'application/json'
       body = JSON.stringify(data)
     }
-    
+
     // 发送请求
     const response = await fetch(url, {
       method: 'POST',
@@ -53,15 +53,15 @@ export async function fetchSSEWithAuth(url, data, onMessage, onError, onComplete
             body,
             signal,
           })
-          
+
           if (!retryResponse.ok) {
             throw new Error(`HTTP error! status: ${retryResponse.status}`)
           }
-          
+
           handleSSEResponse(retryResponse, onMessage, onError, onComplete)
           return controller
         }
-        
+
         // 调用公共模块处理401错误
         return await authService.handle401Error(
           { status: 401 },
@@ -75,21 +75,20 @@ export async function fetchSSEWithAuth(url, data, onMessage, onError, onComplete
         return controller
       }
     }
-    
+
     // 处理其他 HTTP 错误
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
-    
+
     // 处理 SSE 响应
     handleSSEResponse(response, onMessage, onError, onComplete)
-    
+
   } catch (error) {
     // 处理网络错误或其他异常
-    authService.handleError(error)
     if (onError) onError(error)
   }
-  
+
   return controller
 }
 
@@ -104,37 +103,37 @@ function handleSSEResponse(response, onMessage, onError, onComplete) {
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
-  
+
   function processChunk({ done, value }) {
     if (done) {
       // 处理缓冲区中剩余的数据
       if (buffer.trim() && onMessage) {
         onMessage(buffer.trim())
       }
-      
+
       if (onComplete) onComplete()
       return
     }
-    
+
     // 解码并添加到缓冲区
     buffer += decoder.decode(value, { stream: true })
-    
+
     // 处理完整的 SSE 消息
     const lines = buffer.split('\n\n')
     buffer = lines.pop() // 保留最后一个可能不完整的消息
-    
+
     for (const line of lines) {
       if (line.trim() && onMessage) {
         onMessage(line.trim())
       }
     }
-    
+
     // 继续读取下一个数据块
     reader.read().then(processChunk).catch(error => {
       if (onError) onError(error)
     })
   }
-  
+
   reader.read().then(processChunk).catch(error => {
     if (onError) onError(error)
   })
