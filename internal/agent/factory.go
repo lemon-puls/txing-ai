@@ -37,7 +37,7 @@ func NewSimpleAgentFactory(res iface.ResourceProvider) AgentFactory {
 	}
 	// 注册一个通用 agent 类型
 	factory.RegisterAgentType(GeneralAgentType, func() Agent {
-		return NewResumeAgent(res)
+		return NewGeneralAgent(res)
 	})
 	factory.RegisterAgentType(ResumeAgentType, func() Agent {
 		return NewResumeAgent(res)
