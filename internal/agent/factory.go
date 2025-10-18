@@ -13,6 +13,8 @@ const (
 	GeneralAgentType AgentType = "general"
 	// ResumeAgentType is an agent for resume optimation
 	ResumeAgentType = "resume"
+	// TravelAgentType is an agent for travel guide generation
+	TravelAgentType = "travel"
 )
 
 // AgentFactory creates agents of different types
@@ -41,6 +43,9 @@ func NewSimpleAgentFactory(res iface.ResourceProvider) AgentFactory {
 	})
 	factory.RegisterAgentType(ResumeAgentType, func() Agent {
 		return NewResumeAgent(res)
+	})
+	factory.RegisterAgentType(TravelAgentType, func() Agent {
+		return NewTravelAgent(res)
 	})
 	return &factory
 }

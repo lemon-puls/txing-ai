@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/url"
 	"strings"
 	"txing-ai/internal/agent"
@@ -41,8 +42,8 @@ func Exec(ctx *gin.Context) {
 	}
 
 	// 从上下文中获取智能体工厂和数据库连接
-	agentFactory := utils.GetAgentFactoryFromContext(ctx)
-	db := utils.GetDBFromContext(ctx)
+	agentFactory := utils.GetAgentFactoryFromContext[agent.AgentFactory](ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型
 	agentType := agent.AgentType(req.AgentType)
@@ -112,10 +113,10 @@ func ExecStream(ctx *gin.Context) {
 	}
 
 	// 从上下文中获取智能体工厂和数据库连接
-	agentFactory := utils.GetAgentFactoryFromContext(ctx)
-	db := utils.GetDBFromContext(ctx)
+	agentFactory := utils.GetAgentFactoryFromContext[agent.AgentFactory](ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	userId := utils.GetUIDFromContext(ctx)
-	messageLimiter := utils.GetMessageLimiterFromContext(ctx)
+	messageLimiter := utils.GetMessageLimiterFromContext[*utils.MessageLimiter](ctx)
 	role := utils.GetRoleFromContext(ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型

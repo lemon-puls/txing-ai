@@ -3,6 +3,8 @@ package tool
 import (
 	"context"
 	"fmt"
+	"github.com/russross/blackfriday/v2"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,9 +13,6 @@ import (
 	"strings"
 	"time"
 	"txing-ai/internal/global/logging/log"
-
-	"github.com/russross/blackfriday/v2"
-	"go.uber.org/zap"
 )
 
 // markdownToPDFParams 转换Markdown到PDF的参数
@@ -24,40 +23,27 @@ type markdownToPDFParams struct {
 
 // saveMarkdownToPDF 将Markdown内容转换为PDF并保存到本地文件
 func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string, error) {
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
-	if err != nil {
-		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
-	}
 
-	// 创建临时目录用于存放中间文件
-	tempDir, err := ioutil.TempDir("", "markdown_to_pdf_")
+	savePath, err := buildSaveDir(ctx)
 	if err != nil {
-		log.Error("创建临时目录失败", zap.Error(err))
-		return "", fmt.Errorf("创建临时目录失败: %v", err)
+		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
-	defer os.RemoveAll(tempDir)
 
 	// 处理Markdown中的图片
-	content, imagePaths, err := processMarkdownImages(params.Content, tempDir)
+	content, imagePaths, err := processMarkdownImages(params.Content, savePath)
 	if err != nil {
 		log.Error("处理Markdown图片失败", zap.Error(err))
-		return "", fmt.Errorf("处理Markdown图片失败: %v", err)
+		return fmt.Sprintf("处理Markdown图片失败: %v", err), nil
 	}
 	defer cleanupTempImages(imagePaths)
 
 	// 确保文件名有.pdf扩展名
 	filename := params.Filename
+	// 文件名加上时间戳
+	unixNano := time.Now().UnixNano()
+	filename = fmt.Sprintf("%s_%d", filename, unixNano)
 	if filepath.Ext(filename) != ".pdf" {
 		filename = filename + ".pdf"
-	}
-
-	// 构建保存路径
-	savePath := filepath.Join(currentDir, "runtime", "temp_files")
-	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "", fmt.Errorf("创建保存目录失败: %v", err)
 	}
 
 	// 构建完整的文件路径
@@ -66,17 +52,19 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	// 将Markdown转换为HTML
 	html := markdownToHTML(content, filepath.Base(filename))
 
+	tempHtmlFile := fmt.Sprintf("%s_%d.html", "temp", unixNano)
+	defer os.Remove(tempHtmlFile)
 	// 将HTML保存到临时文件
-	htmlPath := filepath.Join(tempDir, "temp.html")
+	htmlPath := filepath.Join(savePath, tempHtmlFile)
 	if err := ioutil.WriteFile(htmlPath, []byte(html), 0644); err != nil {
 		log.Error("保存HTML临时文件失败", zap.Error(err))
-		return "", fmt.Errorf("保存HTML临时文件失败: %v", err)
+		return fmt.Sprintf("保存HTML临时文件失败: %v", err), nil
 	}
 
 	// 将HTML转换为PDF
 	if err := convertHTMLToPDF(htmlPath, fullPath); err != nil {
 		log.Error("HTML转PDF失败", zap.Error(err))
-		return "", fmt.Errorf("HTML转PDF失败: %v", err)
+		return fmt.Sprintf("HTML转PDF失败: %v", err), nil
 	}
 
 	// 记录成功日志

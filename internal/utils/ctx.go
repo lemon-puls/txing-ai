@@ -1,55 +1,83 @@
 package utils
 
 import (
-	"txing-ai/internal/agent"
-	"txing-ai/internal/enum"
-
-	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
+	"context"
 )
 
-func GetDBFromContext(c *gin.Context) *gorm.DB {
-	return c.MustGet("db").(*gorm.DB)
+// GetFromContext 从Context中获取指定类型的值
+func GetFromContext[T any](ctx context.Context, key any) T {
+	return ctx.Value(key).(T)
 }
 
-func GetUIDFromContext(c *gin.Context) int64 {
-	return c.MustGet("userId").(int64)
-}
-
-// 从 context 中获取 userId， 允许为空
-func GetUIDFromContextAllowEmpty(c *gin.Context) (int64, bool) {
-	uid, ok := c.Get("userId")
-	if ok {
-		return uid.(int64), true
+// GetFromContextWithDefault 从Context中获取指定类型的值，如果不存在则返回默认值
+func GetFromContextWithDefault[T any](ctx context.Context, key any, defaultValue T) T {
+	value := ctx.Value(key)
+	if value == nil {
+		return defaultValue
 	}
-	return -1, false
+	return value.(T)
 }
 
-func GetCosClientFromContext(c *gin.Context) *COSClient {
-	return c.MustGet("cos").(*COSClient)
+// GetFromContextWithOK 从Context中获取指定类型的值，并返回是否存在
+func GetFromContextWithOK[T any](ctx context.Context, key any) (T, bool) {
+	var defaultValue T
+	value := ctx.Value(key)
+	if value == nil {
+		return defaultValue, false
+	}
+	return value.(T), true
 }
 
-func GetAgentFactoryFromContext(c *gin.Context) agent.AgentFactory {
-	return c.MustGet("agentFactory").(agent.AgentFactory)
+// 以下是基于泛型函数的具体应用
+
+// GetDBFromContext 获取数据库连接
+func GetDBFromContext[T any](ctx context.Context) T {
+	return GetFromContext[T](ctx, "db")
 }
 
-func GetMessageLimiterFromContext(c *gin.Context) *MessageLimiter {
-	return c.MustGet("messageLimiter").(*MessageLimiter)
+// GetUIDFromContext 获取用户ID
+func GetUIDFromContext(ctx context.Context) int64 {
+	return GetFromContext[int64](ctx, "userId")
 }
 
-func GetRoleFromContext(c *gin.Context) int8 {
-	return c.MustGet("role").(int8)
+// GetUIDFromContextAllowEmpty 从 context 中获取 userId，允许为空
+func GetUIDFromContextAllowEmpty(ctx context.Context) (int64, bool) {
+	return GetFromContextWithOK[int64](ctx, "userId")
 }
 
-func GetIsAdminFromContext(c *gin.Context) bool {
-	return c.MustGet("role").(int8) == enum.UserTypeSuper
+// GetCosClientFromContext 获取COS客户端
+func GetCosClientFromContext[T any](ctx context.Context) T {
+	return GetFromContext[T](ctx, "cos")
 }
 
-func GetRDBFromContext(c *gin.Context) *redis.Client {
-	return c.MustGet("redis").(*redis.Client)
+// GetAgentFactoryFromContext 获取Agent工厂
+func GetAgentFactoryFromContext[T any](ctx context.Context) T {
+	return GetFromContext[T](ctx, "agentFactory")
 }
 
-func GetAgentFromContext(c *gin.Context) string {
-	return c.MustGet("agent").(string)
+// GetMessageLimiterFromContext 获取消息限制器
+func GetMessageLimiterFromContext[T any](ctx context.Context) T {
+	return GetFromContext[T](ctx, "messageLimiter")
+}
+
+// GetRoleFromContext 获取角色
+func GetRoleFromContext(ctx context.Context) int8 {
+	return GetFromContext[int8](ctx, "role")
+}
+
+// GetIsAdminFromContext 判断是否为管理员
+func GetIsAdminFromContext(ctx context.Context) bool {
+	// 这里不再依赖enum包，而是使用常量值
+	const UserTypeSuper int8 = 1
+	return GetFromContext[int8](ctx, "role") == UserTypeSuper
+}
+
+// GetRDBFromContext 获取Redis客户端
+func GetRDBFromContext[T any](ctx context.Context) T {
+	return GetFromContext[T](ctx, "redis")
+}
+
+// GetAgentFromContext 获取Agent名称
+func GetAgentFromContext(ctx context.Context) string {
+	return GetFromContext[string](ctx, "agent")
 }

@@ -22,8 +22,8 @@ func GetPresetByID(db *gorm.DB, cosClient *utils.COSClient, id int64) (*domain.P
 
 // GetPresetsByIds 批量获取预设信息
 func GetPresetsByIds(ctx *gin.Context, ids []int64) ([]*domain.Preset, error) {
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var presets []*domain.Preset
 	if err := db.Where("id IN ?", ids).Find(&presets).Error; err != nil {

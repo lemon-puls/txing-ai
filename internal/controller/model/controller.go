@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gorm.io/gorm"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/utils"
@@ -28,8 +29,8 @@ func Create(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	model := &domain.Model{
 		Name:        req.Name,
@@ -65,8 +66,8 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var model domain.Model
 	if err := db.First(&model, ctx.Param("id")).Error; err != nil {
@@ -113,7 +114,7 @@ func Update(ctx *gin.Context) {
 func Delete(ctx *gin.Context) {
 	var model domain.Model
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	if err := db.First(&model, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "模型不存在", err)
@@ -140,14 +141,14 @@ func Delete(ctx *gin.Context) {
 func Get(ctx *gin.Context) {
 	var model domain.Model
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	if err := db.First(&model, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "模型不存在", err)
 		return
 	}
 
 	if model.Avatar != "" {
-		cosClient := utils.GetCosClientFromContext(ctx)
+		cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 		model.Avatar, _ = cosClient.GenerateDownloadPresignedURL(model.Avatar)
 	}
 
@@ -176,8 +177,8 @@ func List(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Model{})

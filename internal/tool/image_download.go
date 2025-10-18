@@ -26,18 +26,9 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		return "保存失败，图片URL不能为空", nil
 	}
 
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
+	savePath, err := buildSaveDir(ctx)
 	if err != nil {
-		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "保存失败，获取当前工作目录失败", nil
-	}
-	savePath := currentDir
-	savePath = filepath.Join(savePath, "runtime", "temp")
-	// 确保目录存在
-	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "创建保存目录失败", nil
+		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
 
 	// 确定文件名

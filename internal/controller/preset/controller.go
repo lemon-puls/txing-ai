@@ -2,6 +2,7 @@ package preset
 
 import (
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -33,10 +34,10 @@ func Create(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	userId := utils.GetUIDFromContext(ctx)
 	isAdmin := utils.GetIsAdminFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 非管理员只能创建非官方（社区）预设
 	if !isAdmin {
@@ -78,10 +79,10 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	userId := utils.GetUIDFromContext(ctx)
 	isAdmin := utils.GetIsAdminFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var preset domain.Preset
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
@@ -134,7 +135,7 @@ func Update(ctx *gin.Context) {
 func Delete(ctx *gin.Context) {
 	var preset domain.Preset
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	userId := utils.GetUIDFromContext(ctx)
 
 	if err := db.First(&preset, ctx.Param("id")).Error; err != nil {
@@ -168,8 +169,8 @@ func Delete(ctx *gin.Context) {
 // @Router /api/preset/{id} [get]
 func Get(ctx *gin.Context) {
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	id := ctx.Param("id")
 	parseInt64 := utils.SafeParseInt64(id, 0)
@@ -209,8 +210,8 @@ func List(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Preset{})

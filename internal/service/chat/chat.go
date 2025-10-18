@@ -40,7 +40,7 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 		role = utils.GetRoleFromContext(ctx)
 	}
 
-	messageLimiter := utils.GetMessageLimiterFromContext(ctx)
+	messageLimiter := utils.GetMessageLimiterFromContext[*utils.MessageLimiter](ctx)
 
 	// 检查消息限制
 	allowed, err := messageLimiter.CheckAndIncrement(ctx, uid, role, utils.BusinessTypeChat)

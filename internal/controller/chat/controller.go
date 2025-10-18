@@ -61,7 +61,7 @@ func Chat(c *gin.Context) {
 	var userId int64 = -1
 	userId, _ = utils.GetUIDFromContextAllowEmpty(c)
 
-	db := utils.GetDBFromContext(c)
+	db := utils.GetDBFromContext[*gorm.DB](c)
 
 	// 获取预设 id
 	presetId := c.Query("presetId")
@@ -129,8 +129,8 @@ func GetConversationList(c *gin.Context) {
 		req.PageSize = 20
 	}
 
-	db := utils.GetDBFromContext(c)
-	cosClient := utils.GetCosClientFromContext(c)
+	db := utils.GetDBFromContext[*gorm.DB](c)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](c)
 
 	// 使用游标分页查询
 	result, err := page.GetCursorPageByMySQL[domain.Conversation](
@@ -243,8 +243,8 @@ func GetConversationDetail(c *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(c)
-	cosClient := utils.GetCosClientFromContext(c)
+	db := utils.GetDBFromContext[*gorm.DB](c)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](c)
 
 	entity, err := conversation.QueryConversationById(db, conversationId)
 	if err != nil {
@@ -312,7 +312,7 @@ func BatchDeleteConversations(c *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(c)
+	db := utils.GetDBFromContext[*gorm.DB](c)
 
 	// 删除会话
 	if err := db.Where("id IN ? AND user_id = ?", req.Ids, userId).Delete(&domain.Conversation{}).Error; err != nil {
