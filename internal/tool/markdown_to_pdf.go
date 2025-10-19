@@ -45,9 +45,18 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	if filepath.Ext(filename) != ".pdf" {
 		filename = filename + ".pdf"
 	}
+	
 
 	// 构建完整的文件路径
 	fullPath := filepath.Join(savePath, filename)
+
+	// 在转换为HTML前，规范化换行：将所有单个 \n 替换为 \n\n，已有 \n\n 保持不变
+	normalized := strings.ReplaceAll(content, "\r\n", "\n")
+	const nl2Placeholder = "<<<<TXING_NL2_PLACEHOLDER_#_DO_NOT_TOUCH_>>>>"
+	normalized = strings.ReplaceAll(normalized, "\n\n", nl2Placeholder)
+	normalized = strings.ReplaceAll(normalized, "\n", "\n\n")
+	normalized = strings.ReplaceAll(normalized, nl2Placeholder, "\n\n")
+	content = normalized
 
 	// 将Markdown转换为HTML
 	html := markdownToHTML(content, filepath.Base(filename))
