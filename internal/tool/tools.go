@@ -77,60 +77,61 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		}
 		tools = append(tools, webScrapingTool)
 
-		// 注册文件读取工具
-		fileReadTool, err := utils.InferTool(
-			"file_read_tool",
-			"Read content from a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
-			readFile)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, fileReadTool)
-
-		// 注册文件写入工具
-		fileWriteTool, err := utils.InferTool(
-			"file_write_tool",
-			"Write content to a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
-			writeFile)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, fileWriteTool)
-
-		// 注册文件内容替换工具
-		fileReplaceTool, err := utils.InferTool(
-			"file_replace_tool",
-			"Replace content in a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
-			replaceFileContent)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, fileReplaceTool)
-
-		// 注册文件删除工具
-		fileDeleteTool, err := utils.InferTool(
-			"file_delete_tool",
-			"Delete a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
-			deleteFile)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, fileDeleteTool)
-
-		// 注册文件列表工具
-		fileListTool, err := utils.InferTool(
-			"file_list_tool",
-			"List files in a directory using relative path (only directories in runtime directory are allowed, e.g. runtime, runtime/folder)",
-			listFiles)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, fileListTool)
+		// TODO 文件操作相关工具还需要完善，暂时注释掉，避免 LLM 误用
+		//// 注册文件读取工具
+		//fileReadTool, err := utils.InferTool(
+		//	"file_read_tool",
+		//	"Read content from a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+		//	readFile)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, fileReadTool)
+		//
+		//// 注册文件写入工具
+		//fileWriteTool, err := utils.InferTool(
+		//	"file_write_tool",
+		//	"Write content to a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+		//	writeFile)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, fileWriteTool)
+		//
+		//// 注册文件内容替换工具
+		//fileReplaceTool, err := utils.InferTool(
+		//	"file_replace_tool",
+		//	"Replace content in a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+		//	replaceFileContent)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, fileReplaceTool)
+		//
+		//// 注册文件删除工具
+		//fileDeleteTool, err := utils.InferTool(
+		//	"file_delete_tool",
+		//	"Delete a file using relative path (only files in runtime directory are allowed, e.g. runtime/test.txt, runtime/folder/file.txt)",
+		//	deleteFile)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, fileDeleteTool)
+		//
+		//// 注册文件列表工具
+		//fileListTool, err := utils.InferTool(
+		//	"file_list_tool",
+		//	"List files in a directory using relative path (only directories in runtime directory are allowed, e.g. runtime, runtime/folder)",
+		//	listFiles)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, fileListTool)
 
 		// 注册Markdown转PDF工具
 		markdownToPDFTool, err := utils.InferTool(
 			"markdown_to_pdf_file_tool",
-			"Convert markdown content to PDF, and save it to local file",
+			"Convert markdown content to PDF, and save it to local file. Note: use \\n\\n for line breaks; single \\n will not render as a line break in the PDF.",
 			saveMarkdownToPDF)
 		if err != nil {
 			panic(err)
@@ -148,14 +149,14 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		tools = append(tools, pdfReadTool)
 
 		// 注册PDF验证工具
-		pdfValidateTool, err := utils.InferTool(
-			"pdf_validate_tool",
-			"Validate if a file is a valid PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/folder/file.pdf)",
-			validatePdf)
-		if err != nil {
-			panic(err)
-		}
-		tools = append(tools, pdfValidateTool)
+		//pdfValidateTool, err := utils.InferTool(
+		//	"pdf_validate_tool",
+		//	"Validate if a file is a valid PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/folder/file.pdf)",
+		//	validatePdf)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//tools = append(tools, pdfValidateTool)
 
 		// 添加MCP工具（如果已初始化）
 		mcpClientManager := res.GetMCPClientManager()
