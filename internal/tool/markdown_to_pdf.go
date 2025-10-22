@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/russross/blackfriday/v2"
 	"go.uber.org/zap"
@@ -45,7 +46,6 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	if filepath.Ext(filename) != ".pdf" {
 		filename = filename + ".pdf"
 	}
-	
 
 	// 构建完整的文件路径
 	fullPath := filepath.Join(savePath, filename)
@@ -106,9 +106,14 @@ func processMarkdownImages(content string, tempDir string) (string, []string, er
 				log.Error("下载图片失败", zap.String("url", imageURL), zap.Error(err))
 				continue
 			}
+			// 获取相对路径
+			relPath, err := filepath.Rel(tempDir, localPath)
+			if err != nil {
+				log.Error("获取相对路径失败", zap.Error(err))
+			}
 
 			// 替换图片链接为本地路径
-			content = strings.Replace(content, match[0], fmt.Sprintf("![image](%s)", localPath), 1)
+			content = strings.Replace(content, match[0], fmt.Sprintf("![image](%s)", relPath), 1)
 			imagePaths = append(imagePaths, localPath)
 		}
 	}
@@ -124,6 +129,9 @@ func downloadImageFromURL(url string, dir string) (string, error) {
 
 	// 确保文件名唯一
 	filename = fmt.Sprintf("%d_%s", time.Now().UnixNano(), filename)
+	if filepath.Ext(filename) == "" {
+		filename = filename + ".jpg"
+	}
 	localPath := filepath.Join(dir, filename)
 
 	// 使用curl下载图片
@@ -320,4 +328,24 @@ func convertHTMLToPDF(htmlPath string, pdfPath string) error {
 	}
 
 	return nil
+}
+
+// 展示消息构造：将逻辑内聚到工具文件
+type markdownToPDFShowBuilder struct{}
+
+func (markdownToPDFShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var params markdownToPDFParams
+	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
+		log.Error("构建Markdown转PDF请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "保存为 PDF 文件：" + params.Filename, nil
+}
+
+func (markdownToPDFShowBuilder) BuildResponse(response string) (string, error) {
+	return response, nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(markdownToPDFToolName, markdownToPDFShowBuilder{})
 }

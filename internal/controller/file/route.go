@@ -14,6 +14,6 @@ func Register(router gin.IRouter) {
 		fileRouter.POST("/upload", middleware.AuthMiddleware(), Upload)
 
 		// 下载文件接口，不需要登录验证
-		fileRouter.GET("/download", Download)
+		fileRouter.GET("/download", middleware.AuthMiddleware(), Download)
 	}
 }

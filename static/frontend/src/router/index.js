@@ -90,6 +90,21 @@ const router = createRouter({
             }
           ]
 
+        },
+        {
+          path: 'travel',
+          name: 'travel',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              component: () => import('@/views/travel/index.vue'),
+              path: '',
+              meta: {
+                title: 'AI旅游攻略',
+                icon: 'document'
+              }
+            }
+          ]
         }
       ]
     },

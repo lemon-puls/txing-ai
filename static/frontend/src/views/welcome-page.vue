@@ -120,6 +120,25 @@
           </div>
           <div class="card-overlay"></div>
         </div>
+
+        <!-- 旅游攻略入口 -->
+        <div
+          class="entrance-card travel-card"
+          :class="{ 'card-hover': hoveredCard === 'travel' }"
+          @click="navigateToTravel"
+          @mouseenter="handleHover('travel')"
+          @mouseleave="handleHover(null)"
+        >
+          <div class="card-content">
+            <el-icon class="card-icon"><Location /></el-icon>
+            <h2>AI旅游攻略</h2>
+            <p>输入目的地和偏好，生成专业旅游攻略</p>
+            <div class="card-action">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -133,7 +152,8 @@ import {
   Shop,
   ArrowRight,
   Link,
-  Document
+  Document,
+  Location
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
@@ -225,6 +245,10 @@ const navigateToWebsites = () => {
 
 const navigateToResume = () => {
   router.push('/resume')
+}
+
+const navigateToTravel = () => {
+  router.push('/travel')
 }
 </script>
 

@@ -1,21 +1,28 @@
 package tool
 
 import (
-	"encoding/json"
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
-	"go.uber.org/zap"
-	"strconv"
-	"strings"
 	"sync"
-	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 )
 
 const (
 	// 工具名称
-	webSearchToolName     = "web_search_tool"
-	markdownToPDFToolName = "markdown_to_pdf_file_tool"
+	webSearchToolName            = "web_search_tool"
+	markdownToPDFToolName        = "markdown_to_pdf_file_tool"
+	mapsGeoToolName              = "maps_geo"
+	mapsTextSearchToolName       = "maps_text_search"
+	mapsDirectionToolName        = "maps_direction_transit_integrated"
+	imageSearchToolName          = "image_search_tool"
+	imageDownloadToolName        = "image_download_tool"
+	markdownSaveToolName         = "markdown_save_tool"
+	mapsSearchDetailToolName     = "maps_search_detail"
+	mapsDistanceToolName         = "maps_distance"
+	mapsWeatherToolName          = "maps_weather"
+	mapsDirectionDrivingToolName = "maps_direction_driving"
+	mapsDirectionWalkingToolName = "maps_direction_walking"
+	mapsAroundSearchToolName     = "maps_around_search"
 )
 
 var (
@@ -131,7 +138,8 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		// 注册Markdown转PDF工具
 		markdownToPDFTool, err := utils.InferTool(
 			"markdown_to_pdf_file_tool",
-			"Convert markdown content to PDF, and save it to local file. Note: use \\n\\n for line breaks; single \\n will not render as a line break in the PDF.",
+			"Convert markdown content to PDF, and save it to local file. Note: use \\n\\n for line breaks; single \\n will not render as a line break in the PDF."+
+				"fileName will be automatically appended with timestamp",
 			saveMarkdownToPDF)
 		if err != nil {
 			panic(err)
@@ -170,58 +178,10 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 
 // 构建指定工具的调用请求信息（用于前端展示）
 func BuildRequestShowMsg(toolName string, paramsStr string) (string, error) {
-	if toolName == webSearchToolName {
-		// 将 paramsStr 解析为 webSearchParams
-		var searchParams webSearchParams
-		if err := json.Unmarshal([]byte(paramsStr), &searchParams); err != nil {
-			log.Error("构建网页搜搜请求显示信息失败", zap.Error(err))
-			return "", err
-		}
-		return "网页搜索：" + searchParams.Query, nil
-	} else if toolName == markdownToPDFToolName {
-		var params markdownToPDFParams
-		if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
-			log.Error("构建Markdown转PDF请求显示信息失败", zap.Error(err))
-			return "", err
-		}
-		return "保存为 PDF 文件：" + params.Filename, nil
-	} else {
-		return "", nil
-	}
+	return buildRequestShowMsgInner(toolName, paramsStr)
 }
 
 // 构建指定工具的调用响应信息（用于前端展示）
-
 func BuildResponseShowMsg(toolName string, response string) (string, error) {
-	if toolName == webSearchToolName {
-		// 处理网页搜索工具的响应，统计结果数量
-		r := strings.TrimSpace(response)
-		if r == "" {
-			return "共找到 0 个相关网页", nil
-		}
-
-		// 如果是提示语或错误
-		if strings.Contains(r, "搜索结果为空") {
-			return "共找到 0 个相关网页", nil
-		}
-
-		// 优先尝试按JSON数组解析；如果不是数组则包裹为数组
-		var arr []map[string]interface{}
-		raw := r
-		// 去掉可能的末尾逗号
-		raw = strings.TrimSuffix(raw, ",")
-		if !strings.HasPrefix(strings.TrimLeft(raw, " \n\t"), "[") {
-			raw = "[" + raw + "]"
-		}
-
-		if err := json.Unmarshal([]byte(raw), &arr); err != nil {
-			log.Error("构建网页搜搜响应显示信息失败, 无法解析JSON", zap.Error(err))
-			return "", err
-		}
-
-		return "共找到 " + strconv.Itoa(len(arr)) + " 个相关网页", nil
-	} else if toolName == markdownToPDFToolName {
-		return response, nil
-	}
-	return "", nil
+	return buildResponseShowMsgInner(toolName, response)
 }

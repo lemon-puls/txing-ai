@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -100,4 +101,24 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		zap.Time("timestamp", time.Now()))
 
 	return fmt.Sprintf("下载完成: ./%s", filename), nil
+}
+
+// 展示消息构造
+type imageDownloadShowBuilder struct{}
+
+func (imageDownloadShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var params imageDownloadParams
+	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
+		log.Error("构建图片下载请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "图片保存到本地：" + params.Filename + "(" + params.ImageURL + ")", nil
+}
+
+func (imageDownloadShowBuilder) BuildResponse(response string) (string, error) {
+	return response, nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(imageDownloadToolName, imageDownloadShowBuilder{})
 }
