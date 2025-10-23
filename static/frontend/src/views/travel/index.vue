@@ -77,83 +77,68 @@
                   <span class="status-text" v-else>准备生成攻略</span>
                 </div>
 
-                <div class="progress-details">
-                  <div class="progress-steps">
-                    <div v-for="(step, idx) in steps" :key="idx" class="progress-step">
-                      <div class="step-icon"
-                           :class="{ 'active': step.active, 'completed': step.completed, 'failed': step.failed }">
-                        <el-icon v-if="step.completed">
-                          <check/>
-                        </el-icon>
-                        <el-icon v-else-if="step.failed">
-                          <close/>
-                        </el-icon>
-                        <el-icon v-else-if="step.active">
-                          <loading/>
-                        </el-icon>
-                        <span v-else>{{ idx + 1 }}</span>
-                      </div>
-                      <div class="step-info">
-                        <div class="step-title">{{ step.title }}</div>
-                        <div class="step-description">{{ step.description }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <el-collapse v-model="detailsActiveNames" v-if="agentReasoning || toolCallsList.length > 0"
-                             class="details-collapse">
-                  <el-collapse-item title="查看详细过程" name="1">
+                <div class="process-details-container">
+                  <div class="process-details" ref="processDetailsContainer">
                     <div class="agent-reasoning" v-if="agentReasoning">
-                      <h3 class="detail-title">AI分析过程</h3>
                       <div class="reasoning-content">
                         <pre>{{ agentReasoning }}</pre>
                       </div>
                     </div>
+
                     <div class="tool-calls" v-if="toolCallsList.length > 0">
-                      <h3 class="detail-title">工具调用</h3>
-                      <div v-for="tool in toolCallsList" :key="tool.id" class="tool-call">
-                        <div class="tool-header">
+                      <div v-for="(tool, index) in toolCallsList" :key="tool.id" class="tool-call"
+                           :class="{'expanded': expandedToolIds.has(tool.id) || (!tool.result && index === toolCallsList.length - 1)}">
+                        <div class="tool-header" @click="toggleToolExpand(tool.id)">
                           <span class="tool-name">{{ tool.name }}</span>
                           <span class="tool-status" :class="[ tool.result ? 'completed' : 'loading' ]">
                             <template v-if="tool.result">已完成</template>
                             <template v-else>
                               <el-icon class="status-spinner"><loading/></el-icon>
-                              请求中<span class="dot dot-1">.</span><span class="dot dot-2">.</span><span
-                              class="dot dot-3">.</span>
                             </template>
                           </span>
                         </div>
-                        <div class="tool-message">
+                        <div class="tool-request-info" v-if="!expandedToolIds.has(tool.id) && (tool.result || index !== toolCallsList.length - 1)">
+                          <div v-if="tool.showMsg" class="request-preview">
+                            {{ getRequestPreview(tool.showMsg) }}
+                          </div>
+                        </div>
+                        <div class="tool-message" v-show="expandedToolIds.has(tool.id) || (!tool.result && index === toolCallsList.length - 1)">
                           <div v-if="containsHtml(tool.showMsg)" v-html="tool.showMsg"></div>
                           <pre v-else>{{ tool.showMsg }}</pre>
                         </div>
                       </div>
                     </div>
-                  </el-collapse-item>
-                </el-collapse>
+
+                    <div v-if="isOptimizing && !hasActiveToolCall" class="center-loading">
+                      <el-icon class="loading-icon"><loading/></el-icon>
+                    </div>
+
+
+                    <div class="optimization-result" v-if="isCompleted">
+                      <div class="result-header">
+                        <el-icon class="success-icon">
+                          <circle-check/>
+                        </el-icon>
+                        <h2>旅游攻略生成完成！</h2>
+                      </div>
+                      <div class="result-summary" v-if="summary">
+                        <h3 class="summary-title">生成总结</h3>
+                        <div class="summary-content" v-html="formattedSummary"></div>
+                      </div>
+                      <div class="download-section">
+                        <el-button type="primary" @click="downloadGuide" :disabled="!downloadUrl" class="download-button">
+                          <el-icon>
+                            <download/>
+                          </el-icon>
+                          下载旅游攻略 PDF
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
-              <div class="optimization-result" v-if="isCompleted">
-                <div class="result-header">
-                  <el-icon class="success-icon">
-                    <circle-check/>
-                  </el-icon>
-                  <h2>旅游攻略生成完成！</h2>
-                </div>
-                <div class="result-summary" v-if="summary">
-                  <h3 class="summary-title">生成总结</h3>
-                  <div class="summary-content" v-html="formattedSummary"></div>
-                </div>
-                <div class="download-section">
-                  <el-button type="primary" @click="downloadGuide" :disabled="!downloadUrl" class="download-button">
-                    <el-icon>
-                      <download/>
-                    </el-icon>
-                    下载旅游攻略 PDF
-                  </el-button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -202,7 +187,11 @@ const steps = ref([
 const agentReasoning = ref('')
 const toolCallsMap = ref(new Map())
 const toolCallsList = computed(() => Array.from(toolCallsMap.value.values()))
-const detailsActiveNames = ref(['1'])
+const processDetailsContainer = ref(null)
+const expandedToolIds = ref(new Set())
+
+// 检查是否有正在进行中的工具调用
+const hasActiveToolCall = computed(() => toolCallsList.value.some(tool => !tool.result))
 
 // 总结与下载
 const summary = ref('')
@@ -211,6 +200,38 @@ const downloadUrl = ref('')
 
 // 检测工具消息是否包含 HTML（当前只检测 img 标签）
 const containsHtml = (msg) => typeof msg === 'string' && /<\s*img\b/i.test(msg)
+
+// 获取请求预览信息
+const getRequestPreview = (msg) => {
+  if (!msg) return ''
+  // 提取【请求】后的内容，最多显示50个字符
+  const requestPart = msg.split('【请求】')[1]?.split('【响应】')[0] || msg
+  const preview = requestPart.trim().substring(0, 50)
+  return preview + (preview.length >= 50 ? '...' : '')
+}
+
+// 切换工具调用展开/折叠状态
+const toggleToolExpand = (toolId) => {
+  if (expandedToolIds.value.has(toolId)) {
+    expandedToolIds.value.delete(toolId)
+  } else {
+    expandedToolIds.value.add(toolId)
+  }
+}
+
+// 滚动到最新位置
+const scrollToBottom = () => {
+  if (processDetailsContainer.value) {
+    setTimeout(() => {
+      processDetailsContainer.value.scrollTop = processDetailsContainer.value.scrollHeight
+    }, 50)
+  }
+}
+
+// 监听内容变化自动滚动到底部
+const autoScrollToBottom = () => {
+  scrollToBottom()
+}
 
 let abortController = null
 
@@ -279,6 +300,7 @@ const startGenerate = async () => {
 
         if (data.reasoningContent) {
           agentReasoning.value += data.reasoningContent
+          scrollToBottom()
         }
 
         if (data.toolName && data.toolCallId) {
@@ -289,6 +311,7 @@ const startGenerate = async () => {
               showMsg: data.showMsg ? `【请求】\n${data.showMsg}` : '',
               result: false
             })
+            scrollToBottom()
           } else if (data.toolResult) {
             const tool = toolCallsMap.value.get(data.toolCallId)
             if (tool) {
@@ -297,6 +320,7 @@ const startGenerate = async () => {
               var breakLine = isHtml ? '<br>' : '\n'
               const combinedMsg = tool.showMsg ? `${tool.showMsg}${breakLine}【响应】${breakLine}${responseText}` : `【响应】${breakLine}${responseText}`
               toolCallsMap.value.set(data.toolCallId, {...tool, showMsg: combinedMsg, result: true})
+              scrollToBottom()
             }
           }
 
@@ -318,6 +342,7 @@ const startGenerate = async () => {
             steps.value[0].completed = true
             steps.value[1].active = true
           }
+          scrollToBottom()
         }
 
         if (data.end) {
@@ -486,6 +511,7 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   width: 100%;
+  height: 100%;
 }
 
 /* 两栏布局 */
@@ -507,9 +533,13 @@ onBeforeUnmount(() => {
 }
 
 .right-panel {
-  padding: 30px;
-  overflow: auto;
+  //padding: 5px;
+  height: 100%;
+  min-height: 0; /* 允许在网格/弹性布局中收缩以显示滚动 */
+  overflow-y: auto; /* 让 right-panel 自身滚动 */
   background-color: var(--el-bg-color-page, #f5f7fa);
+  display: flex;
+  flex-direction: column;
 }
 
 .page-intro {
@@ -554,9 +584,30 @@ onBeforeUnmount(() => {
 }
 
 .panel-content {
-  height: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1; /* 占满剩余空间 */
+  overflow: visible; /* 允许内容超出，由 right-panel 控制滚动 */
+  min-height: 0;
+  //padding: 10px 0;
+
+  .generation-progress {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+.process-details-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.process-details {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .date-row {
@@ -578,7 +629,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  //margin-bottom: 12px;
+  background-color: white;
+  padding: 15px;
+  box-sizing: border-box;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.15); /* 下边界阴影 */
+  z-index: 1; /* 提升层级，避免被后续内容遮挡 */
 
   &.optimizing .status-text {
     color: var(--el-color-primary);
@@ -617,14 +673,148 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.step-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+.process-details-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 40px);
+  //margin-top: 20px;
+}
+
+.process-details {
+  //flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  //border-radius: 8px;
+  background-color: var(--el-bg-color);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+
+  border-top: 10px solid white;
+  border-bottom: 10px solid white;
+}
+
+.agent-reasoning {
+  margin-bottom: 20px;
+}
+
+.reasoning-content {
+  background-color: var(--el-fill-color-lighter);
+  padding: 12px;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.reasoning-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--el-font-family);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.tool-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tool-call {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.tool-call.expanded {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: var(--el-fill-color-light);
+  cursor: pointer;
+}
+
+.tool-name {
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.tool-status {
   display: flex;
   align-items: center;
+  gap: 5px;
+  font-size: 13px;
+}
+
+.tool-status.completed {
+  color: var(--el-color-success);
+}
+
+.tool-status.loading {
+  color: var(--el-color-primary);
+}
+
+.status-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.tool-request-info {
+  padding: 8px 15px;
+  background-color: var(--el-fill-color-lighter);
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.request-preview {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+}
+
+.tool-message {
+  padding: 12px 15px;
+  background-color: var(--el-fill-color-lighter);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tool-message pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--el-font-family);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.center-loading {
+  display: flex;
   justify-content: center;
-  background: var(--el-fill-color);
+  align-items: center;
+  padding: 30px 0;
+}
+
+.center-loading .loading-icon {
+  font-size: 24px;
+  color: var(--el-color-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .step-icon.active {
