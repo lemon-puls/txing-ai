@@ -7,7 +7,9 @@ import (
 	_ "github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
+	"go.uber.org/zap"
 	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 )
 
 // Agent 定义智能体接口
@@ -87,7 +89,11 @@ func (a *BaseAgent) Execute(ctx context.Context,
 	}
 
 	// 4. 编译Graph，并设置最大步数防止无限循环
-	agent, err := a.graph.Compile(ctx, compose.WithMaxRunSteps(500))
+	agent, err := a.graph.Compile(ctx, compose.WithMaxRunSteps(30))
+
+	if err != nil {
+		log.Error("agent graph compile failed", zap.Error(err))
+	}
 
 	response, err := agent.Invoke(ctx, messages)
 	if err != nil {
