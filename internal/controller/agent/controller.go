@@ -132,6 +132,8 @@ func ExecStream(ctx *gin.Context) {
 
 	// TODO 支持后台配置，然后从数据库中查询出要使用的模型，暂时先用默认模型qwen-plus
 	// 设置默认使用的模型为 qwen-plus
+	//model := "doubao-seed-1-6-251015"
+	//model := "deepseek-r1-250528"
 	model := "deepseek-v3"
 	// 构建映射参数
 	mappingParams := map[string]interface{}{
