@@ -1,5 +1,5 @@
 # 前端构建阶段
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 # 设置 npm 镜像源
 RUN npm config set registry https://registry.npmmirror.com
@@ -24,7 +24,7 @@ RUN npm run build && \
     touch /tmp/frontend_build_complete
 
 # Go 构建阶段
-FROM golang:1.23 as backend-builder
+FROM golang:1.24.1 AS backend-builder
 
 # 设置工作目录
 WORKDIR /app
@@ -56,7 +56,7 @@ RUN make docker && \
     touch build_complete
 
 # 最终运行阶段
-FROM node:18-alpine as final
+FROM node:18-alpine AS final
 
 # 安装必要的系统依赖
 RUN apk add --no-cache ca-certificates tzdata
