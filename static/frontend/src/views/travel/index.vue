@@ -166,6 +166,8 @@ import {marked} from 'marked'
 import fetchSSEWithAuth from '@/api/sseRequest.js'
 import apiClient from "@/api/config.js";
 import {defaultApi} from "@/api/index.js";
+import auth from "@/api/auth.js";
+import {useUserStore} from "@/stores/user.js";
 
 // 表单数据
 const formData = ref({
@@ -413,55 +415,28 @@ const startGenerate = async () => {
   }
 }
 
+// TODO 后续抽取公共的下载工具函数，实现 token 刷新逻辑等
 const downloadGuide = async () => {
   if (!downloadUrl.value) {
     ElMessage.error('下载链接不可用')
     return
   }
+
   try {
-    // 兼容相对与绝对 URL，确保解析成功
-    const urlObj = new URL(downloadUrl.value, window.location.origin)
+    let url = downloadUrl.value
 
-    // 将被转义的查询参数解码后再传入，避免二次编码
-    const queryParams = {}
-    urlObj.searchParams.forEach((v, k) => {
-      try {
-        queryParams[k] = decodeURIComponent(v)
-      } catch (_) {
-        queryParams[k] = v
-      }
-    })
+    const token = localStorage.getItem('token')
+    if (!token) {
+      ElMessage.error('请先登录后再下载')
+      useUserStore().logout()
+      return
+    }
+    const sep = url.includes('?') ? '&' : '?'
+    url = `${url}${sep}Authorization=${encodeURIComponent(`Bearer ${token}`)}`
 
-    const filePath = queryParams.filePath
-    const response = await defaultApi.apiFileDownloadGet(filePath)
-
-    // 处理文件下载（response 即为文件内容/Blob）
-    if (response) {
-      // 优先使用后端返回的文件名（若为 File 对象则有 name），否则使用请求的文件名或从路径推断
-      const fallbackName = (typeof filePath === 'string' && filePath) ? filePath.split('/').pop() || filePath : "download.pdf"
-      const filename = (response && response.name) ? response.name : fallbackName
-
-       // 创建 Blob（response 为 Blob/File 时直接使用，否则包裹）
-       const blob = response instanceof Blob ? response : new Blob([response], { type: 'application/octet-stream' })
-
-       // 创建下载链接并触发下载
-       const downloadLink = document.createElement('a')
-       const objectUrl = URL.createObjectURL(blob)
-       downloadLink.href = objectUrl
-       downloadLink.download = filename
-       document.body.appendChild(downloadLink)
-       downloadLink.click()
-
-       // 清理
-       URL.revokeObjectURL(objectUrl)
-       document.body.removeChild(downloadLink)
-
-       ElMessage.success('下载成功')
-     } else {
-       ElMessage.error('下载失败：未获取到文件数据')
-     }
-  } catch (err) {
-    console.warn('下载失败', err)
+    window.open(url, '_blank')
+  } catch (e) {
+    console.error('触发下载时出错:', e)
     ElMessage.error('下载失败，请稍后重试')
   }
 }
