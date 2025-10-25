@@ -1,5 +1,5 @@
 # 前端构建阶段
-FROM node:18-alpine AS frontend-builder
+FROM node:18-alpine as frontend-builder
 
 # 设置 npm 镜像源
 RUN npm config set registry https://registry.npmmirror.com
@@ -24,7 +24,7 @@ RUN npm run build && \
     touch /tmp/frontend_build_complete
 
 # Go 构建阶段
-FROM golang:1.24.1 AS backend-builder
+FROM golang:1.24.1 as backend-builder
 
 # 设置工作目录
 WORKDIR /app
@@ -56,14 +56,29 @@ RUN make docker && \
     touch build_complete
 
 # 最终运行阶段
-FROM node:18-alpine AS final
+FROM node:18-bookworm-slim as final
 
-# 安装必要的系统依赖
-RUN apk add --no-cache ca-certificates tzdata
+# 安装 CA 证书、时区数据、wkhtmltopdf、curl 与字体依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    tzdata \
+    wkhtmltopdf \
+    curl \
+    fontconfig \
+    fonts-noto-color-emoji \
+    fonts-noto-cjk \
+    xfonts-base \
+    xfonts-75dpi && \
+    rm -rf /var/lib/apt/lists/*
 
 # 设置时区
 ENV TZ=Asia/Shanghai
-RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
+# 更新 CA 证书
+RUN update-ca-certificates
 
 # 设置 npm 镜像源
 RUN npm config set registry https://registry.npmmirror.com
