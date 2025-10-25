@@ -19,6 +19,7 @@ import ApiAdminWebsitesFaviconPost200Response from '../model/ApiAdminWebsitesFav
 import ApiAdminWebsitesPost200Response from '../model/ApiAdminWebsitesPost200Response';
 import ApiChatConversationsIdGet200Response from '../model/ApiChatConversationsIdGet200Response';
 import ApiCosPresignedUrlPost200Response from '../model/ApiCosPresignedUrlPost200Response';
+import ApiFileUploadPost200Response from '../model/ApiFileUploadPost200Response';
 import ApiPresetPost200Response from '../model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
@@ -1194,6 +1195,109 @@ export default class DefaultApi {
      */
     apiCosPresignedUrlPost(data) {
       return this.apiCosPresignedUrlPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 下载文件
+     * 从服务器下载文件
+     * @param {String} filePath 文件相对路径
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link File} and HTTP response
+     */
+    apiFileDownloadGetWithHttpInfo(filePath) {
+      let postBody = null;
+      // verify the required parameter 'filePath' is set
+      if (filePath === undefined || filePath === null) {
+        throw new Error("Missing the required parameter 'filePath' when calling apiFileDownloadGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'filePath': filePath
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/octet-stream'];
+      let returnType = File;
+      return this.apiClient.callApi(
+        '/api/file/download', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 下载文件
+     * 从服务器下载文件
+     * @param {String} filePath 文件相对路径
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link File}
+     */
+    apiFileDownloadGet(filePath) {
+      return this.apiFileDownloadGetWithHttpInfo(filePath)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 上传文件
+     * 上传文件到服务器本地
+     * @param {String} authorization 用户令牌
+     * @param {File} file 文件
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiFileUploadPost200Response} and HTTP response
+     */
+    apiFileUploadPostWithHttpInfo(authorization, file) {
+      let postBody = null;
+      // verify the required parameter 'authorization' is set
+      if (authorization === undefined || authorization === null) {
+        throw new Error("Missing the required parameter 'authorization' when calling apiFileUploadPost");
+      }
+      // verify the required parameter 'file' is set
+      if (file === undefined || file === null) {
+        throw new Error("Missing the required parameter 'file' when calling apiFileUploadPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+        'Authorization': authorization
+      };
+      let formParams = {
+        'file': file
+      };
+
+      let authNames = [];
+      let contentTypes = ['multipart/form-data'];
+      let accepts = ['application/json'];
+      let returnType = ApiFileUploadPost200Response;
+      return this.apiClient.callApi(
+        '/api/file/upload', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 上传文件
+     * 上传文件到服务器本地
+     * @param {String} authorization 用户令牌
+     * @param {File} file 文件
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiFileUploadPost200Response}
+     */
+    apiFileUploadPost(authorization, file) {
+      return this.apiFileUploadPostWithHttpInfo(authorization, file)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

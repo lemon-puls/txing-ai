@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,18 +27,9 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		return "保存失败，图片URL不能为空", nil
 	}
 
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
+	savePath, err := buildSaveDir(ctx)
 	if err != nil {
-		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "保存失败，获取当前工作目录失败", nil
-	}
-	savePath := currentDir
-	savePath = filepath.Join(savePath, "runtime", "temp")
-	// 确保目录存在
-	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "创建保存目录失败", nil
+		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
 
 	// 确定文件名
@@ -109,4 +101,24 @@ func downloadImage(ctx context.Context, params *imageDownloadParams) (string, er
 		zap.Time("timestamp", time.Now()))
 
 	return fmt.Sprintf("下载完成: ./%s", filename), nil
+}
+
+// 展示消息构造
+type imageDownloadShowBuilder struct{}
+
+func (imageDownloadShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var params imageDownloadParams
+	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
+		log.Error("构建图片下载请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "图片保存到本地：" + params.Filename + "(" + params.ImageURL + ")", nil
+}
+
+func (imageDownloadShowBuilder) BuildResponse(response string) (string, error) {
+	return response, nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(imageDownloadToolName, imageDownloadShowBuilder{})
 }

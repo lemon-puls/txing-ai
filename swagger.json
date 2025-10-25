@@ -1,0 +1,3091 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Txing AI API文档",
+        "title": "Txing AI API",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/admin/channel": {
+            "post": {
+                "description": "创建新的渠道",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "渠道管理"
+                ],
+                "summary": "创建渠道",
+                "parameters": [
+                    {
+                        "description": "渠道信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateChannelReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ChannelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/channel/list": {
+            "get": {
+                "description": "获取渠道列表，支持分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "渠道管理"
+                ],
+                "summary": "获取渠道列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式(asc/desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "渠道类型",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "渠道名称",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/channel/{id}": {
+            "get": {
+                "description": "获取指定渠道的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "渠道管理"
+                ],
+                "summary": "获取渠道详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "渠道ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ChannelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新渠道信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "渠道管理"
+                ],
+                "summary": "更新渠道",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "渠道ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "渠道信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateChannelReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ChannelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定渠道",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "渠道管理"
+                ],
+                "summary": "删除渠道",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "渠道ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/model": {
+            "post": {
+                "description": "创建新的模型",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "模型管理"
+                ],
+                "summary": "创建模型",
+                "parameters": [
+                    {
+                        "description": "模型信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateModelReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ModelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/model/{id}": {
+            "put": {
+                "description": "更新模型信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "模型管理"
+                ],
+                "summary": "更新模型",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "模型信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateModelReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ModelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定模型",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "模型管理"
+                ],
+                "summary": "删除模型",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/list": {
+            "get": {
+                "description": "获取用户列表，支持分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "获取用户列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式(asc/desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名",
+                        "name": "username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "状态(0:启用, 1:禁用)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/status/{id}": {
+            "put": {
+                "description": "启用或禁用指定用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "切换用户状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/websites": {
+            "post": {
+                "description": "创建新的网站",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "创建网站",
+                "parameters": [
+                    {
+                        "description": "网站信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateWebsiteReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.WebsiteVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/websites/favicon": {
+            "post": {
+                "description": "自动获取网站的favicon图标",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "获取网站图标",
+                "parameters": [
+                    {
+                        "description": "网站地址",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetFaviconReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.GetFaviconVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/websites/list": {
+            "get": {
+                "description": "获取网站列表，支持分页和搜索",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "获取网站列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式(asc/desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "网站名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "标签",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/websites/{id}": {
+            "get": {
+                "description": "根据ID获取网站详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "获取网站详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "网站ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.WebsiteVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新网站信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "更新网站",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "网站ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "网站信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateWebsiteReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.WebsiteVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除网站",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站管理"
+                ],
+                "summary": "删除网站",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "网站ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/agent/exec": {
+            "post": {
+                "description": "调用智能体",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "调用智能体",
+                "parameters": [
+                    {
+                        "description": "请求信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AgentExecReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/agent/exec/stream": {
+            "post": {
+                "description": "使用 Server-Sent Events 流式调用智能体",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "agent"
+                ],
+                "summary": "基于 SSE 调用智能体",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "智能体类型",
+                        "name": "agentType",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "请求内容",
+                        "name": "content",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "上传文件",
+                        "name": "file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/captcha": {
+            "get": {
+                "description": "生成图片验证码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "验证码"
+                ],
+                "summary": "生成验证码",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/conversation/list": {
+            "post": {
+                "description": "获取用户的会话列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "聊天"
+                ],
+                "summary": "获取会话列表",
+                "parameters": [
+                    {
+                        "description": "请求参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ConversationListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/conversations/deletebatch": {
+            "post": {
+                "description": "批量删除指定的会话",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "聊天会话"
+                ],
+                "summary": "批量删除会话",
+                "parameters": [
+                    {
+                        "description": "会话ID列表",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BatchDeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/conversations/{id}": {
+            "get": {
+                "description": "获取指定会话的详细信息，包括基本信息和消息列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "聊天会话"
+                ],
+                "summary": "获取会话详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ConversationDetailVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "会话不存在",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/ws": {
+            "get": {
+                "description": "建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回 AI 回复",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "聊天会话"
+                ],
+                "summary": "建立聊天 WebSocket 连接",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户令牌",
+                        "name": "token",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols 切换到 WebSocket 协议",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                },
+                "x-message-error": {
+                    "message": "错误信息",
+                    "type": "error"
+                },
+                "x-message-request": {
+                    "content": "聊天内容",
+                    "context": 1,
+                    "enableWeb": false,
+                    "frequency_penalty": 0,
+                    "max_tokens": 2048,
+                    "model": "模型标识",
+                    "presence_penalty": 0,
+                    "repetition_penalty": 1,
+                    "temperature": 1,
+                    "top_k": 50,
+                    "top_p": 0.7,
+                    "type": "chat"
+                },
+                "x-message-response": {
+                    "content": "AI回复内容",
+                    "conversationId": 123,
+                    "end": false,
+                    "reasoning_content": "思考过程"
+                },
+                "x-message-stop": {
+                    "type": "stop"
+                }
+            }
+        },
+        "/api/cos/presigned-url": {
+            "post": {
+                "description": "获取文件上传或下载的预签名URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "对象存储相关"
+                ],
+                "summary": "获取预签名URL",
+                "parameters": [
+                    {
+                        "description": "请求参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetPresignedURLReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.GetPresignedURLVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/file/download": {
+            "get": {
+                "description": "从服务器下载文件",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "文件"
+                ],
+                "summary": "下载文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文件相对路径",
+                        "name": "filePath",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "文件内容",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "请求错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "文件不存在",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/file/upload": {
+            "post": {
+                "description": "上传文件到服务器本地",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件"
+                ],
+                "summary": "上传文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户令牌",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/file.UploadResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/model/list": {
+            "get": {
+                "description": "获取模型列表，支持分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "模型管理"
+                ],
+                "summary": "获取模型列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式(asc/desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "标签",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否默认",
+                        "name": "default",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "模型名称",
+                        "name": "name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/model/{id}": {
+            "get": {
+                "description": "获取指定模型的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "模型管理"
+                ],
+                "summary": "获取模型详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ModelVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/preset": {
+            "post": {
+                "description": "创建新的预设",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预设管理"
+                ],
+                "summary": "创建预设",
+                "parameters": [
+                    {
+                        "description": "预设信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreatePresetReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.PresetVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/preset/list": {
+            "get": {
+                "description": "获取预设列表，支持分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预设管理"
+                ],
+                "summary": "获取预设列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式(asc/desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否官方预设",
+                        "name": "official",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "预设名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "预设标签",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/preset/{id}": {
+            "get": {
+                "description": "获取指定预设的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预设管理"
+                ],
+                "summary": "获取预设详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "预设ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.PresetVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新预设信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预设管理"
+                ],
+                "summary": "更新预设",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "预设ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "预设信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdatePresetReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.PresetVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定预设",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "预设管理"
+                ],
+                "summary": "删除预设",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "预设ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/info": {
+            "get": {
+                "description": "获取当前登录用户的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "获取当前用户信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.UserVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/login": {
+            "post": {
+                "description": "用户登录并返回token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LoginReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.LoginVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/logout": {
+            "post": {
+                "description": "清除用户登录状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "退出登录",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/password": {
+            "put": {
+                "description": "修改当前登录用户的密码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "修改密码",
+                "parameters": [
+                    {
+                        "description": "密码信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdatePasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/profile": {
+            "put": {
+                "description": "更新当前登录用户的个人信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "更新个人信息",
+                "parameters": [
+                    {
+                        "description": "个人信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateProfileReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.UserVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/refresh": {
+            "post": {
+                "description": "使用刷新令牌获取新的访问令牌",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "刷新访问令牌",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer 刷新令牌",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功响应",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.TokenPair"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/register": {
+            "post": {
+                "description": "新用户注册",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "用户注册",
+                "parameters": [
+                    {
+                        "description": "注册信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.UserVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/reset-password": {
+            "post": {
+                "description": "通过邮箱重置密码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "重置密码",
+                "parameters": [
+                    {
+                        "description": "重置密码信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/websites/list": {
+            "get": {
+                "description": "用户端获取启用状态的网站列表，支持搜索和过滤",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "网站"
+                ],
+                "summary": "用户端获取网站列表",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "网站名称",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "标签",
+                        "name": "tag",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.AgentExecReq": {
+            "type": "object",
+            "required": [
+                "agentType"
+            ],
+            "properties": {
+                "agentType": {
+                    "description": "智能体类型",
+                    "type": "string",
+                    "example": "general"
+                },
+                "content": {
+                    "description": "请求内容",
+                    "type": "string",
+                    "example": "生成一份深圳旅游攻略"
+                }
+            }
+        },
+        "dto.BatchDeleteRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "description": "会话ID列表",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "dto.ConversationListRequest": {
+            "type": "object",
+            "properties": {
+                "cursor": {
+                    "type": "string"
+                },
+                "pageSize": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CreateChannelReq": {
+            "type": "object",
+            "required": [
+                "endpoint",
+                "models",
+                "name",
+                "secret",
+                "type"
+            ],
+            "properties": {
+                "endpoint": {
+                    "description": "服务地址 Service endpoint",
+                    "type": "string"
+                },
+                "mappings": {
+                    "description": "模型映射关系 Mappings",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/global.ModelMapping"
+                    }
+                },
+                "models": {
+                    "description": "支持的模型列表 Supported models",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "渠道名称 Channel name",
+                    "type": "string"
+                },
+                "priority": {
+                    "description": "优先级 Priority",
+                    "type": "integer"
+                },
+                "retry": {
+                    "description": "重试次数 Retry times",
+                    "type": "integer"
+                },
+                "secret": {
+                    "description": "密钥 Secret key",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "启用状态 Enable status",
+                    "type": "boolean"
+                },
+                "type": {
+                    "description": "渠道类型 Channel type",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "权重 Weight",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CreateModelReq": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "avatar": {
+                    "description": "模型头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "default": {
+                    "description": "是否为默认模型",
+                    "type": "boolean",
+                    "example": false
+                },
+                "description": {
+                    "description": "模型描述",
+                    "type": "string",
+                    "example": "GPT-3.5 Turbo模型"
+                },
+                "high_context": {
+                    "description": "是否支持高上下文",
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "description": "模型名称",
+                    "type": "string",
+                    "example": "gpt-3.5-turbo"
+                },
+                "tag": {
+                    "description": "模型标签",
+                    "type": "string",
+                    "example": "GPT,对话"
+                }
+            }
+        },
+        "dto.CreatePresetReq": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "avatar": {
+                    "description": "预设头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "context": {
+                    "description": "预设上下文",
+                    "type": "string",
+                    "example": "你是一个智能助手,能够帮助用户解决各种问题..."
+                },
+                "description": {
+                    "description": "预设描述",
+                    "type": "string",
+                    "example": "一个智能的GPT助手"
+                },
+                "name": {
+                    "description": "预设名称",
+                    "type": "string",
+                    "example": "GPT助手"
+                },
+                "official": {
+                    "description": "是否官方预设",
+                    "type": "boolean",
+                    "example": false
+                },
+                "tags": {
+                    "description": "预设标签",
+                    "type": "string",
+                    "example": "popular,tools"
+                },
+                "userId": {
+                    "description": "用户ID",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.CreateWebsiteReq": {
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "tags",
+                "url"
+            ],
+            "properties": {
+                "avatar": {
+                    "description": "网站头像",
+                    "type": "string",
+                    "example": "https://github.githubassets.com/favicons/favicon.svg"
+                },
+                "description": {
+                    "description": "网站描述",
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "全球最大的代码托管平台"
+                },
+                "name": {
+                    "description": "网站名称",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2,
+                    "example": "GitHub"
+                },
+                "sort": {
+                    "description": "排序",
+                    "type": "integer",
+                    "example": 0
+                },
+                "status": {
+                    "description": "状态 1启用 0禁用",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "example": 1
+                },
+                "tags": {
+                    "description": "标签数组",
+                    "type": "string",
+                    "example": "开发,代码,开源"
+                },
+                "url": {
+                    "description": "网站地址",
+                    "type": "string",
+                    "example": "https://github.com"
+                }
+            }
+        },
+        "dto.GetFaviconReq": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
+                    "description": "网站地址",
+                    "type": "string",
+                    "example": "https://github.com"
+                }
+            }
+        },
+        "dto.GetPresignedURLReq": {
+            "type": "object",
+            "required": [
+                "key",
+                "type"
+            ],
+            "properties": {
+                "key": {
+                    "description": "对象键",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "类型：upload/download",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.LoginReq": {
+            "type": "object",
+            "required": [
+                "captcha",
+                "captchaId",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "captcha": {
+                    "description": "验证码 Captcha",
+                    "type": "string",
+                    "example": "1234"
+                },
+                "captchaId": {
+                    "description": "验证码ID Captcha ID",
+                    "type": "string",
+                    "example": "abc123"
+                },
+                "password": {
+                    "description": "密码 Password",
+                    "type": "string",
+                    "example": "password123"
+                },
+                "username": {
+                    "description": "用户名 Username",
+                    "type": "string",
+                    "example": "johndoe"
+                }
+            }
+        },
+        "dto.RegisterReq": {
+            "type": "object",
+            "required": [
+                "captcha",
+                "captchaId",
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "captcha": {
+                    "description": "验证码 Captcha",
+                    "type": "string",
+                    "example": "1234"
+                },
+                "captchaId": {
+                    "description": "验证码ID Captcha ID",
+                    "type": "string",
+                    "example": "abc123"
+                },
+                "email": {
+                    "description": "邮箱 Email",
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "password": {
+                    "description": "密码 Password",
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 6,
+                    "example": "password123"
+                },
+                "phone": {
+                    "description": "手机号 Phone number",
+                    "type": "string",
+                    "example": "13800138000"
+                },
+                "username": {
+                    "description": "用户名 Username",
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 2,
+                    "example": "johndoe"
+                }
+            }
+        },
+        "dto.ResetPasswordReq": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "description": "邮箱 Email",
+                    "type": "string",
+                    "example": "john@example.com"
+                }
+            }
+        },
+        "dto.UpdateChannelReq": {
+            "type": "object",
+            "properties": {
+                "endpoint": {
+                    "description": "服务地址 Service endpoint",
+                    "type": "string"
+                },
+                "mappings": {
+                    "description": "模型映射关系 Mappings",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/global.ModelMapping"
+                    }
+                },
+                "models": {
+                    "description": "支持的模型列表 Supported models",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "渠道名称 Channel name",
+                    "type": "string"
+                },
+                "priority": {
+                    "description": "优先级 Priority",
+                    "type": "integer"
+                },
+                "retry": {
+                    "description": "重试次数 Retry times",
+                    "type": "integer"
+                },
+                "secret": {
+                    "description": "密钥 Secret key",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "启用状态 Enable status",
+                    "type": "boolean"
+                },
+                "type": {
+                    "description": "渠道类型 Channel type",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "权重 Weight",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UpdateModelReq": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "模型头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "default": {
+                    "description": "是否为默认模型",
+                    "type": "boolean",
+                    "example": false
+                },
+                "description": {
+                    "description": "模型描述",
+                    "type": "string",
+                    "example": "GPT-3.5 Turbo模型"
+                },
+                "high_context": {
+                    "description": "是否支持高上下文",
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "description": "模型名称",
+                    "type": "string",
+                    "example": "gpt-3.5-turbo"
+                },
+                "tag": {
+                    "description": "模型标签",
+                    "type": "string",
+                    "example": "GPT,对话"
+                }
+            }
+        },
+        "dto.UpdatePasswordReq": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "新密码 New password",
+                    "type": "string",
+                    "example": "newpass123"
+                },
+                "old_password": {
+                    "description": "原密码 Old password",
+                    "type": "string",
+                    "example": "oldpass123"
+                }
+            }
+        },
+        "dto.UpdatePresetReq": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "预设头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "context": {
+                    "description": "预设上下文",
+                    "type": "string",
+                    "example": "你是一个智能助手,能够帮助用户解决各种问题..."
+                },
+                "description": {
+                    "description": "预设描述",
+                    "type": "string",
+                    "example": "一个智能的GPT助手"
+                },
+                "name": {
+                    "description": "预设名称",
+                    "type": "string",
+                    "example": "GPT助手"
+                },
+                "official": {
+                    "description": "是否官方预设",
+                    "type": "boolean",
+                    "example": false
+                },
+                "tags": {
+                    "description": "预设标签",
+                    "type": "string",
+                    "example": "popular,tools"
+                },
+                "userId": {
+                    "description": "用户ID",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.UpdateProfileReq": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "description": "年龄 Age",
+                    "type": "integer",
+                    "example": 18
+                },
+                "avatar": {
+                    "description": "头像 Avatar URL",
+                    "type": "string",
+                    "example": "https://example.com/avatar.jpg"
+                },
+                "email": {
+                    "description": "邮箱 Email",
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "gender": {
+                    "description": "性别 Gender: 0-未知 1-男 2-女",
+                    "type": "integer",
+                    "example": 1
+                },
+                "phone": {
+                    "description": "手机号 Phone number",
+                    "type": "string",
+                    "example": "13800138000"
+                }
+            }
+        },
+        "dto.UpdateWebsiteReq": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "网站头像",
+                    "type": "string",
+                    "example": "https://github.githubassets.com/favicons/favicon.svg"
+                },
+                "description": {
+                    "description": "网站描述",
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "全球最大的代码托管平台"
+                },
+                "name": {
+                    "description": "网站名称",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2,
+                    "example": "GitHub"
+                },
+                "sort": {
+                    "description": "排序",
+                    "type": "integer",
+                    "example": 0
+                },
+                "status": {
+                    "description": "状态 1启用 0禁用",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "example": 1
+                },
+                "tags": {
+                    "description": "标签数组",
+                    "type": "string",
+                    "example": "开发,代码,开源"
+                },
+                "url": {
+                    "description": "网站地址",
+                    "type": "string",
+                    "example": "https://github.com"
+                }
+            }
+        },
+        "file.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "fileName": {
+                    "description": "文件名",
+                    "type": "string"
+                },
+                "fileSize": {
+                    "description": "文件大小",
+                    "type": "integer"
+                },
+                "fileUrl": {
+                    "description": "文件下载URL",
+                    "type": "string"
+                }
+            }
+        },
+        "global.ModelMapping": {
+            "type": "object",
+            "properties": {
+                "conditions": {
+                    "description": "条件列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/global.ModelMappingCondition"
+                    }
+                },
+                "sourceModel": {
+                    "description": "源模型",
+                    "type": "string"
+                }
+            }
+        },
+        "global.ModelMappingCondition": {
+            "type": "object",
+            "properties": {
+                "conditions": {
+                    "description": "条件映射，key 为条件名称，value 为条件值",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "targetModel": {
+                    "description": "目标模型",
+                    "type": "string"
+                }
+            }
+        },
+        "utils.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.ChannelVO": {
+            "type": "object",
+            "properties": {
+                "create_at": {
+                    "description": "创建时间 Create time",
+                    "type": "string"
+                },
+                "endpoint": {
+                    "description": "服务地址 Service endpoint",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "渠道ID Channel ID",
+                    "type": "integer"
+                },
+                "mappings": {
+                    "description": "模型映射关系 Mappings",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/global.ModelMapping"
+                    }
+                },
+                "models": {
+                    "description": "支持的模型列表 Supported models",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "渠道名称 Channel name",
+                    "type": "string"
+                },
+                "priority": {
+                    "description": "优先级 Priority",
+                    "type": "integer"
+                },
+                "retry": {
+                    "description": "重试次数 Retry times",
+                    "type": "integer"
+                },
+                "secret": {
+                    "description": "密钥 Secret key",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "启用状态 Enable status",
+                    "type": "boolean"
+                },
+                "type": {
+                    "description": "渠道类型 Channel type",
+                    "type": "string"
+                },
+                "update_at": {
+                    "description": "更新时间 Update time",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "权重 Weight",
+                    "type": "integer"
+                }
+            }
+        },
+        "vo.ConversationDetailVO": {
+            "type": "object",
+            "properties": {
+                "context": {
+                    "type": "integer"
+                },
+                "enableWeb": {
+                    "type": "boolean"
+                },
+                "frequencyPenalty": {
+                    "type": "number"
+                },
+                "id": {
+                    "description": "会话ID",
+                    "type": "integer"
+                },
+                "maxTokens": {
+                    "description": "可选的模型参数",
+                    "type": "integer"
+                },
+                "messages": {
+                    "description": "消息列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.MessageVO"
+                    }
+                },
+                "model": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "presencePenalty": {
+                    "type": "number"
+                },
+                "preset": {
+                    "description": "预设信息",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/vo.PresetVO"
+                        }
+                    ]
+                },
+                "repetitionPenalty": {
+                    "type": "number"
+                },
+                "temperature": {
+                    "type": "number"
+                },
+                "topK": {
+                    "type": "integer"
+                },
+                "topP": {
+                    "type": "number"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "vo.GetFaviconVO": {
+            "type": "object",
+            "properties": {
+                "favicon": {
+                    "description": "网站图标URL",
+                    "type": "string",
+                    "example": "https://github.githubassets.com/favicons/favicon.svg"
+                }
+            }
+        },
+        "vo.GetPresignedURLVO": {
+            "type": "object",
+            "properties": {
+                "expireAt": {
+                    "description": "过期时间戳",
+                    "type": "integer"
+                },
+                "key": {
+                    "description": "对象键",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "预签名URL",
+                    "type": "string"
+                }
+            }
+        },
+        "vo.LoginVO": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "description": "年龄",
+                    "type": "integer",
+                    "example": 18
+                },
+                "avatar": {
+                    "description": "头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "邮箱",
+                    "type": "string",
+                    "example": "a@b.com"
+                },
+                "gender": {
+                    "description": "性别(0:未知 1:男 2:女)",
+                    "type": "integer",
+                    "example": 1
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "phone": {
+                    "description": "手机号",
+                    "type": "string",
+                    "example": "13800138000"
+                },
+                "refreshToken": {
+                    "description": "refresh token",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "role": {
+                    "description": "角色(0:普通用户 1:超管)",
+                    "type": "integer",
+                    "example": 0
+                },
+                "status": {
+                    "description": "状态(0:正常 1:禁用)",
+                    "type": "integer",
+                    "example": 0
+                },
+                "token": {
+                    "description": "access token",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "用户名",
+                    "type": "string",
+                    "example": "zhangsan"
+                }
+            }
+        },
+        "vo.MessageVO": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "reasoningContent": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.ModelVO": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "模型头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "default": {
+                    "description": "是否为默认模型",
+                    "type": "boolean",
+                    "example": false
+                },
+                "description": {
+                    "description": "模型描述",
+                    "type": "string",
+                    "example": "GPT-3.5 Turbo模型"
+                },
+                "high_context": {
+                    "description": "是否支持高上下文",
+                    "type": "boolean",
+                    "example": false
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "模型名称",
+                    "type": "string",
+                    "example": "gpt-3.5-turbo"
+                },
+                "tag": {
+                    "description": "模型标签",
+                    "type": "string",
+                    "example": "GPT,对话"
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "vo.PresetVO": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "预设头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "context": {
+                    "description": "预设上下文",
+                    "type": "string",
+                    "example": "你是一个智能助手..."
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "预设描述",
+                    "type": "string",
+                    "example": "一个智能的GPT助手"
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "预设名称",
+                    "type": "string",
+                    "example": "GPT助手"
+                },
+                "official": {
+                    "description": "是否官方预设",
+                    "type": "boolean",
+                    "example": false
+                },
+                "tags": {
+                    "description": "预设标签",
+                    "type": "string",
+                    "example": "popular,tools"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "userId": {
+                    "description": "用户ID",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "vo.TokenPair": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.UserVO": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "description": "年龄",
+                    "type": "integer",
+                    "example": 18
+                },
+                "avatar": {
+                    "description": "头像",
+                    "type": "string",
+                    "example": "https://example.com/avatar.png"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "邮箱",
+                    "type": "string",
+                    "example": "a@b.com"
+                },
+                "gender": {
+                    "description": "性别(0:未知 1:男 2:女)",
+                    "type": "integer",
+                    "example": 1
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "phone": {
+                    "description": "手机号",
+                    "type": "string",
+                    "example": "13800138000"
+                },
+                "role": {
+                    "description": "角色(0:普通用户 1:超管)",
+                    "type": "integer",
+                    "example": 0
+                },
+                "status": {
+                    "description": "状态(0:正常 1:禁用)",
+                    "type": "integer",
+                    "example": 0
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "用户名",
+                    "type": "string",
+                    "example": "zhangsan"
+                }
+            }
+        },
+        "vo.WebsiteVO": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "网站头像",
+                    "type": "string",
+                    "example": "https://github.githubassets.com/favicons/favicon.svg"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "网站描述",
+                    "type": "string",
+                    "example": "全球最大的代码托管平台"
+                },
+                "id": {
+                    "description": "主键ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "网站名称",
+                    "type": "string",
+                    "example": "GitHub"
+                },
+                "sort": {
+                    "description": "排序",
+                    "type": "integer",
+                    "example": 0
+                },
+                "status": {
+                    "description": "状态 1启用 0禁用",
+                    "type": "integer",
+                    "example": 1
+                },
+                "tags": {
+                    "description": "标签数组",
+                    "type": "string",
+                    "example": "开发,代码,开源"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "网站地址",
+                    "type": "string",
+                    "example": "https://github.com"
+                }
+            }
+        }
+    }
+}

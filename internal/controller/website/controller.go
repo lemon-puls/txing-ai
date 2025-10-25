@@ -2,6 +2,7 @@ package website
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/url"
@@ -34,9 +35,9 @@ func Create(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	website := &domain.Website{
 		Name:        req.Name,
@@ -73,8 +74,8 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var website domain.Website
 	if err := db.First(&website, ctx.Param("id")).Error; err != nil {
@@ -122,7 +123,7 @@ func Update(ctx *gin.Context) {
 // @Success 200 {object} utils.Response
 // @Router /api/admin/websites/{id} [delete]
 func Delete(ctx *gin.Context) {
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	var website domain.Website
 	if err := db.First(&website, ctx.Param("id")).Error; err != nil {
@@ -148,8 +149,8 @@ func Delete(ctx *gin.Context) {
 // @Success 200 {object} utils.Response{data=vo.WebsiteVO}
 // @Router /api/admin/websites/{id} [get]
 func Get(ctx *gin.Context) {
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var website domain.Website
 	if err := db.First(&website, ctx.Param("id")).Error; err != nil {
@@ -187,8 +188,8 @@ func List(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Website{})
@@ -252,8 +253,8 @@ func UserList(ctx *gin.Context) {
 		req.Limit = 20
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 构建查询条件，只查询启用状态的网站
 	query := db.Model(&domain.Website{}).Where("status = ?", 1)
@@ -306,7 +307,7 @@ func GetFavicon(ctx *gin.Context) {
 		return
 	}
 
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 解析URL
 	parsedURL, err := url.Parse(req.Url)

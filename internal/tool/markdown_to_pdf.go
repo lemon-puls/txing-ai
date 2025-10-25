@@ -2,7 +2,10 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/russross/blackfriday/v2"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,9 +14,6 @@ import (
 	"strings"
 	"time"
 	"txing-ai/internal/global/logging/log"
-
-	"github.com/russross/blackfriday/v2"
-	"go.uber.org/zap"
 )
 
 // markdownToPDFParams 转换Markdown到PDF的参数
@@ -24,59 +24,56 @@ type markdownToPDFParams struct {
 
 // saveMarkdownToPDF 将Markdown内容转换为PDF并保存到本地文件
 func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string, error) {
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
-	if err != nil {
-		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
-	}
 
-	// 创建临时目录用于存放中间文件
-	tempDir, err := ioutil.TempDir("", "markdown_to_pdf_")
+	savePath, err := buildSaveDir(ctx)
 	if err != nil {
-		log.Error("创建临时目录失败", zap.Error(err))
-		return "", fmt.Errorf("创建临时目录失败: %v", err)
+		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
-	defer os.RemoveAll(tempDir)
 
 	// 处理Markdown中的图片
-	content, imagePaths, err := processMarkdownImages(params.Content, tempDir)
+	content, imagePaths, err := processMarkdownImages(params.Content, savePath)
 	if err != nil {
 		log.Error("处理Markdown图片失败", zap.Error(err))
-		return "", fmt.Errorf("处理Markdown图片失败: %v", err)
+		return fmt.Sprintf("处理Markdown图片失败: %v", err), nil
 	}
 	defer cleanupTempImages(imagePaths)
 
 	// 确保文件名有.pdf扩展名
 	filename := params.Filename
+	// 文件名加上时间戳
+	unixNano := time.Now().UnixNano()
+	filename = fmt.Sprintf("%s_%d", filename, unixNano)
 	if filepath.Ext(filename) != ".pdf" {
 		filename = filename + ".pdf"
-	}
-
-	// 构建保存路径
-	savePath := filepath.Join(currentDir, "runtime", "temp")
-	if err := os.MkdirAll(savePath, 0755); err != nil {
-		log.Error("创建保存目录失败", zap.String("dir", savePath), zap.Error(err))
-		return "", fmt.Errorf("创建保存目录失败: %v", err)
 	}
 
 	// 构建完整的文件路径
 	fullPath := filepath.Join(savePath, filename)
 
+	// 在转换为HTML前，规范化换行：将所有单个 \n 替换为 \n\n，已有 \n\n 保持不变
+	normalized := strings.ReplaceAll(content, "\r\n", "\n")
+	const nl2Placeholder = "<<<<TXING_NL2_PLACEHOLDER_#_DO_NOT_TOUCH_>>>>"
+	normalized = strings.ReplaceAll(normalized, "\n\n", nl2Placeholder)
+	normalized = strings.ReplaceAll(normalized, "\n", "\n\n")
+	normalized = strings.ReplaceAll(normalized, nl2Placeholder, "\n\n")
+	content = normalized
+
 	// 将Markdown转换为HTML
 	html := markdownToHTML(content, filepath.Base(filename))
 
+	tempHtmlFile := fmt.Sprintf("%s_%d.html", "temp", unixNano)
+	defer os.Remove(tempHtmlFile)
 	// 将HTML保存到临时文件
-	htmlPath := filepath.Join(tempDir, "temp.html")
+	htmlPath := filepath.Join(savePath, tempHtmlFile)
 	if err := ioutil.WriteFile(htmlPath, []byte(html), 0644); err != nil {
 		log.Error("保存HTML临时文件失败", zap.Error(err))
-		return "", fmt.Errorf("保存HTML临时文件失败: %v", err)
+		return fmt.Sprintf("保存HTML临时文件失败: %v", err), nil
 	}
 
 	// 将HTML转换为PDF
 	if err := convertHTMLToPDF(htmlPath, fullPath); err != nil {
 		log.Error("HTML转PDF失败", zap.Error(err))
-		return "", fmt.Errorf("HTML转PDF失败: %v", err)
+		return fmt.Sprintf("HTML转PDF失败: %v", err), nil
 	}
 
 	// 记录成功日志
@@ -85,7 +82,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	//	zap.Int("contentLength", len(params.Content)),
 	//	zap.Time("timestamp", time.Now()))
 
-	return fmt.Sprintf("PDF文件已成功生成: ./%s", filename), nil
+	return fmt.Sprintf("PDF已成功保存: ./%s", filename), nil
 }
 
 // processMarkdownImages 处理Markdown中的图片，下载远程图片到本地
@@ -109,9 +106,14 @@ func processMarkdownImages(content string, tempDir string) (string, []string, er
 				log.Error("下载图片失败", zap.String("url", imageURL), zap.Error(err))
 				continue
 			}
+			// 获取相对路径
+			relPath, err := filepath.Rel(tempDir, localPath)
+			if err != nil {
+				log.Error("获取相对路径失败", zap.Error(err))
+			}
 
 			// 替换图片链接为本地路径
-			content = strings.Replace(content, match[0], fmt.Sprintf("![image](%s)", localPath), 1)
+			content = strings.Replace(content, match[0], fmt.Sprintf("![image](%s)", relPath), 1)
 			imagePaths = append(imagePaths, localPath)
 		}
 	}
@@ -127,6 +129,9 @@ func downloadImageFromURL(url string, dir string) (string, error) {
 
 	// 确保文件名唯一
 	filename = fmt.Sprintf("%d_%s", time.Now().UnixNano(), filename)
+	if filepath.Ext(filename) == "" {
+		filename = filename + ".jpg"
+	}
 	localPath := filepath.Join(dir, filename)
 
 	// 使用curl下载图片
@@ -323,4 +328,24 @@ func convertHTMLToPDF(htmlPath string, pdfPath string) error {
 	}
 
 	return nil
+}
+
+// 展示消息构造：将逻辑内聚到工具文件
+type markdownToPDFShowBuilder struct{}
+
+func (markdownToPDFShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var params markdownToPDFParams
+	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
+		log.Error("构建Markdown转PDF请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "保存为 PDF 文件：" + params.Filename, nil
+}
+
+func (markdownToPDFShowBuilder) BuildResponse(response string) (string, error) {
+	return response, nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(markdownToPDFToolName, markdownToPDFShowBuilder{})
 }

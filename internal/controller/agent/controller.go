@@ -1,10 +1,14 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
+	"net/url"
+	"strings"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
@@ -12,6 +16,8 @@ import (
 	"txing-ai/internal/service/channel"
 	"txing-ai/internal/utils"
 )
+
+const exceedUseLimit = "您今日的使用次数已达上限（%d次），请明天再来尝试啦！"
 
 // Generate 调用智能体
 // @Summary 调用智能体
@@ -36,8 +42,8 @@ func Exec(ctx *gin.Context) {
 	}
 
 	// 从上下文中获取智能体工厂和数据库连接
-	agentFactory := utils.GetAgentFactoryFromContext(ctx)
-	db := utils.GetDBFromContext(ctx)
+	agentFactory := utils.GetAgentFactoryFromContext[agent.AgentFactory](ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型
 	agentType := agent.AgentType(req.AgentType)
@@ -85,24 +91,33 @@ func Exec(ctx *gin.Context) {
 // @Summary 基于 SSE 调用智能体
 // @Description 使用 Server-Sent Events 流式调用智能体
 // @Tags agent
-// @Accept json
+// @Accept multipart/form-data
 // @Produce text/event-stream
-// @Param data body dto.AgentExecReq true "请求信息"
+// @Param agentType formData string true "智能体类型"
+// @Param content formData string false "请求内容"
+// @Param file formData file false "上传文件"
 // @Success 200 {object} utils.Response
 // @Router /api/agent/exec/stream [POST]
 func ExecStream(ctx *gin.Context) {
-	// 定义一个 AgentExecReq 结构体变量 req，用于存储请求中的 JSON 数据
+
+	// 定义一个 AgentExecReq 结构体变量 req，用于存储请求中的 form-data 数据
 	var req dto.AgentExecReq
-	// 将请求中的 JSON 数据绑定到 req 结构体上
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		// 如果绑定失败，则返回验证错误信息
-		utils.ValidateError(ctx, err)
+	// 从 form-data 中获取参数
+	req.AgentType = ctx.PostForm("agentType")
+	req.Content = ctx.PostForm("content")
+
+	// 验证必填字段
+	if req.AgentType == "" {
+		utils.ErrorWithMsg(ctx, "智能体类型不能为空", nil)
 		return
 	}
 
 	// 从上下文中获取智能体工厂和数据库连接
-	agentFactory := utils.GetAgentFactoryFromContext(ctx)
-	db := utils.GetDBFromContext(ctx)
+	agentFactory := utils.GetAgentFactoryFromContext[agent.AgentFactory](ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	userId := utils.GetUIDFromContext(ctx)
+	messageLimiter := utils.GetMessageLimiterFromContext[*utils.MessageLimiter](ctx)
+	role := utils.GetRoleFromContext(ctx)
 
 	// 将请求中的 AgentType 字符串转换为 AgentType 类型
 	agentType := agent.AgentType(req.AgentType)
@@ -141,6 +156,8 @@ func ExecStream(ctx *gin.Context) {
 	// 获取请求中的内容
 	content := req.Content
 
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+
 	// 创建一个回调函数，用于处理流式响应
 	callback := func(chunk *global.Chunk) error {
 		// 构建 SSE 消息
@@ -151,30 +168,80 @@ func ExecStream(ctx *gin.Context) {
 			"toolName":         chunk.ToolName,
 			"toolParams":       chunk.ToolParams,
 			"toolResult":       chunk.ToolResult,
+			"showMsg":          chunk.ShowMsg,
 			"end":              false,
 		}
 
 		// 发送 SSE 消息
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			log.Error("json marshal data failed", zap.Error(err))
+			log.Error("json marshal data failed, cancel context", zap.Error(err))
+			cancel()
 			return err
 		}
 
 		_, err = fmt.Fprintf(ctx.Writer, "data: %s\n\n", jsonData)
 		if err != nil {
-			log.Error("write sse message failed", zap.Error(err))
+			log.Error("write sse message failed, cancel context", zap.Error(err))
+			cancel()
 			return err
 		}
 		ctx.Writer.Flush()
 		return nil
 	}
 
+	// 获取上传的文件
+	file, header, err := ctx.Request.FormFile("file")
+	// 文件路径
+	filePath := ""
+	if err == nil && file != nil {
+		// 保存文件到本地
+		saveFilePath, fileSize, saveErr := utils.SaveUploadedFile(file, header.Filename, userId, "", "")
+		if saveErr != nil {
+			log.Error("save uploaded file failed", zap.Error(saveErr))
+		} else {
+			log.Info("file saved successfully", zap.String("path", filePath), zap.Int64("size", fileSize))
+			filePath = saveFilePath
+		}
+		defer file.Close()
+	}
+
+	// 检查使用次数是否达到上限
+	allowed, err := messageLimiter.CheckAndIncrement(ctx, userId, role, utils.BusinessTypeResume)
+	limitMsg := ""
+	if err != nil {
+		log.Error("check use limit error", zap.Error(err))
+		limitMsg = "check use limit error"
+	}
+	// 如果不允许发送消息，返回提示信息
+	if !allowed {
+		limitMsg = fmt.Sprintf(exceedUseLimit, utils.BusinessUseLimits[utils.BusinessTypeResume])
+	}
+
+	if limitMsg != "" {
+		// 发送错误消息
+		errData := map[string]interface{}{
+			"error": limitMsg,
+			"end":   true,
+		}
+		jsonData, _ := json.Marshal(errData)
+		_, _ = fmt.Fprintf(ctx.Writer, "data: %s\n\n", jsonData)
+		ctx.Writer.Flush()
+		return
+	}
+
 	// 执行智能体，传入上下文、渠道、模型、内容和回调函数
-	err = agent.ExecuteStream(ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, callback)
+	response := ""
+	response, err = agent.ExecuteStream(ctxWithCancel, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, filePath, callback)
 	if err != nil {
 		// 如果执行智能体失败，记录错误日志
 		log.Error("execute agent stream failed", zap.Error(err))
+		//// 判断上下文是否已经被取消
+		//if ctxWithCancel.Err() != nil {
+		//	log.Info("context canceled")
+		//	return
+		//}
+
 		// 发送错误消息
 		errData := map[string]interface{}{
 			"error": err.Error(),
@@ -191,9 +258,26 @@ func ExecStream(ctx *gin.Context) {
 		return
 	}
 
+	downloadURL := ""
+	// 从响应中获取文件路径
+	if response != "" {
+		// response 中包含文件的格式："文件：优化简历_lzw_腾讯后台开发工程师.pdf"
+		// 从中获取文件名，然后拼接下载路径，再更新到 response 中
+		// 下载路径 /api/file/download?filePath={文件名}
+		if strings.Contains(response, "文件：") {
+			// 提取文件名
+			filePrefix := "文件："
+			startIndex := strings.Index(response, filePrefix) + len(filePrefix)
+			fileName := strings.TrimSpace(response[startIndex:])
+
+			// 拼接下载路径
+			downloadURL = fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileName))
+		}
+	}
+
 	// 发送结束消息
 	endData := map[string]interface{}{
-		"content": "",
+		"content": downloadURL,
 		"end":     true,
 	}
 	jsonData, err := json.Marshal(endData)

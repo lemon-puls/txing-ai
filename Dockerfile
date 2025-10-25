@@ -56,22 +56,17 @@ RUN make docker && \
     touch build_complete
 
 # 最终运行阶段
-FROM debian:bookworm-slim as final
+FROM node:18-alpine as final
 
-# 安装CA证书和时区数据 否则最终容器无法通过 https 访问外部接口
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    ca-certificates \
-    tzdata && \
-    rm -rf /var/lib/apt/lists/*
+# 安装必要的系统依赖
+RUN apk add --no-cache ca-certificates tzdata
 
 # 设置时区
 ENV TZ=Asia/Shanghai
-RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime
 
-# 更新CA证书
-RUN update-ca-certificates
+# 设置 npm 镜像源
+RUN npm config set registry https://registry.npmmirror.com
 
 # 设置工作目录
 WORKDIR /app

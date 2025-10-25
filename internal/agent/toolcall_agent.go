@@ -7,7 +7,6 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -65,8 +64,8 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
-func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey string, model string,
-	input string, callback func(chunk *global.Chunk) error) error {
+func (a *ToolCallAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
+	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
 	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: endpoint,
@@ -74,19 +73,18 @@ func (a *ToolCallAgent) ExecuteStream(ctx *gin.Context, endpoint string, apiKey 
 		APIKey:  apiKey,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to create chat model: %w", err)
+		return "", fmt.Errorf("Failed to create chat model: %w", err)
 	}
 
 	// 创建一个包含工具的执行图
-	graph, err := newGraph(context.Background(), chatModel, a.tools, callback)
+	graph, err := newGraph(ctx, chatModel, a.tools, callback)
 	if err != nil {
 		log.Error("Failed to create graph", zap.Error(err))
-		return err
+		return "", err
 	}
 	a.SetGraph(graph)
 
-	err = a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, callback)
-	return err
+	return a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
 }
 
 func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseTool,
@@ -130,10 +128,16 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 		for _, msg := range input {
 			log.Debug("model input", zap.String("role", string(msg.Role)), zap.String("content", msg.Content))
 			if msg.ToolCallID != "" {
+				var showMsg string
+				showMsg, err = mytool.BuildResponseShowMsg(msg.ToolName, msg.Content)
+				if err != nil {
+					showMsg = "完成工具调用：" + msg.Content
+				}
 				callback(&global.Chunk{
 					ToolCallId: msg.ToolCallID,
 					ToolName:   msg.ToolName,
 					ToolResult: msg.Content,
+					ShowMsg:    showMsg,
 				})
 			}
 		}
@@ -146,10 +150,16 @@ func newGraph(ctx context.Context, model *openai.ChatModel, tools []tool.BaseToo
 		// 打印工具调用信息
 		for _, call := range input.ToolCalls {
 			log.Debug("tool call", zap.String("name", call.Function.Name), zap.Any("args", call.Function.Arguments))
+			var showMsg string
+			showMsg, err = mytool.BuildRequestShowMsg(call.Function.Name, call.Function.Arguments)
+			if err != nil {
+				showMsg = "发起工具调用：" + call.Function.Name
+			}
 			callback(&global.Chunk{
 				ToolCallId: call.ID,
 				ToolName:   call.Function.Name,
 				ToolParams: call.Function.Arguments,
+				ShowMsg:    showMsg,
 			})
 		}
 		state.Messages = append(state.Messages, input)

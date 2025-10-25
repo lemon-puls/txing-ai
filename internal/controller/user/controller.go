@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"strings"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -39,7 +40,7 @@ func userRegister(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 检查用户名是否已存在
 	var count int64
@@ -102,8 +103,8 @@ func Login(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var user domain.User
 	if err := db.Where("username = ?", req.Username).First(&user).Error; err != nil {
@@ -153,10 +154,10 @@ func UpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	// 获取当前用户信息
 	userId := utils.GetUIDFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	var user domain.User
 	if err := db.First(&user, userId).Error; err != nil {
@@ -214,7 +215,7 @@ func UpdatePassword(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	// 获取当前用户信息
 	userId := utils.GetUIDFromContext(ctx)
 
@@ -256,7 +257,7 @@ func ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	var user domain.User
 	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
@@ -306,7 +307,7 @@ func List(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.User{})
@@ -330,7 +331,7 @@ func List(ctx *gin.Context) {
 	userVOs := vo.ToUserVOs(users)
 
 	// 使用 lo 包遍历进行头像URL预签名
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 	userVOs = lo.Map(userVOs, func(user vo.UserVO, _ int) vo.UserVO {
 		if user.Avatar != "" {
 			user.Avatar, _ = cosClient.GenerateDownloadPresignedURL(user.Avatar)
@@ -353,7 +354,7 @@ func List(ctx *gin.Context) {
 // @Success 200 {object} utils.Response
 // @Router /api/admin/user/status/{id} [put]
 func ToggleUserStatus(ctx *gin.Context) {
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	var user domain.User
 	if err := db.First(&user, ctx.Param("id")).Error; err != nil {
@@ -404,7 +405,7 @@ func RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 调用业务层处理刷新token
 	tokens, err := userservice.RefreshToken(parts[1], db)
@@ -424,8 +425,8 @@ func RefreshToken(ctx *gin.Context) {
 // @Success 200 {object} utils.Response{data=vo.UserVO}
 // @Router /api/user/info [get]
 func GetCurrentUser(ctx *gin.Context) {
-	db := utils.GetDBFromContext(ctx)
-	cosClient := utils.GetCosClientFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 	// 获取当前用户ID
 	userId := utils.GetUIDFromContext(ctx)
 

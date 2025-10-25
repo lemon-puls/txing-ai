@@ -46,8 +46,8 @@ func ChooseChannelAndModel(db *gorm.DB, model string, mappingParams map[string]i
 	}
 
 	// 根据 mappingParams 过滤出最终满足条件的 channel
-	filteredSequence := lo.Filter(*sequence, func(channel domain.Channel, _ int) bool {
-		return channel.GetMappingModel(model, mappingParams) != ""
+	filteredSequence := lo.Filter(*sequence, func(c domain.Channel, _ int) bool {
+		return c.GetMappingModel(model, mappingParams) != ""
 	})
 
 	// TODO 后续优化为根据优先级和权重选择 以及实现重试机制

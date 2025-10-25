@@ -117,7 +117,7 @@ func (m *MCPClientManager) CloseAllMCPServers() error {
 // loadMCPServerConfigs 加载MCP服务器配置
 func loadMCPServerConfigs(configPath string) (*mCPServerConfigs, error) {
 	if configPath == "" {
-		configPath = "./" + global.RuntimeDir + "/mcp_config.json.sample"
+		configPath = "./" + global.RuntimeDir + "/mcp_config.json"
 	}
 
 	// 确保配置文件存在

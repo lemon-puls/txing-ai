@@ -2,6 +2,7 @@ package tool
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,14 +20,11 @@ type markdownSaveParams struct {
 
 // saveMarkdown 将Markdown内容保存到本地文件
 func saveMarkdown(ctx context.Context, params *markdownSaveParams) (string, error) {
-	// 获取当前工作目录
-	currentDir, err := os.Getwd()
+
+	savePath, err := buildSaveDir(ctx)
 	if err != nil {
-		log.Error("获取当前工作目录失败", zap.Error(err))
-		return "", fmt.Errorf("获取当前工作目录失败: %v", err)
+		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
-	savePath := currentDir
-	savePath = filepath.Join(savePath, "runtime", "temp")
 
 	// 确保文件名有.md扩展名
 	filename := params.Filename
@@ -58,4 +56,24 @@ func saveMarkdown(ctx context.Context, params *markdownSaveParams) (string, erro
 		zap.Time("timestamp", time.Now()))
 
 	return fmt.Sprintf("Markdown文件已成功保存到: ./%s", filename), nil
+}
+
+// 展示消息构造
+type markdownSaveShowBuilder struct{}
+
+func (markdownSaveShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var params markdownSaveParams
+	if err := json.Unmarshal([]byte(paramsStr), &params); err != nil {
+		log.Error("构建 Markdown 保存请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "保存 Markdown 文件：" + params.Filename, nil
+}
+
+func (markdownSaveShowBuilder) BuildResponse(response string) (string, error) {
+	return response, nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(markdownSaveToolName, markdownSaveShowBuilder{})
 }

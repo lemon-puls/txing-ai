@@ -26,7 +26,7 @@ func GetPresignedURL(ctx *gin.Context) {
 		return
 	}
 
-	cosClient := utils.GetCosClientFromContext(ctx)
+	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
 
 	// 默认过期时间 1 小时
 	expire := 3600

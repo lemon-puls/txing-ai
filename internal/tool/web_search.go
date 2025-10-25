@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -69,4 +70,40 @@ func searchWeb(ctx context.Context, params *webSearchParams) (string, error) {
 	// 拼接结果
 	log.Debug("Web搜索完成", zap.Int("resultCount", resultCount))
 	return strings.Join(resultStrings, ","), nil
+}
+
+// 展示消息构造：将逻辑内聚到工具文件
+type webSearchShowBuilder struct{}
+
+func (webSearchShowBuilder) BuildRequest(paramsStr string) (string, error) {
+	var searchParams webSearchParams
+	if err := json.Unmarshal([]byte(paramsStr), &searchParams); err != nil {
+		log.Error("构建网页搜搜请求显示信息失败", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "网页搜索：" + searchParams.Query, nil
+}
+
+func (webSearchShowBuilder) BuildResponse(response string) (string, error) {
+	r := strings.TrimSpace(response)
+	if r == "" {
+		return "共找到 0 个相关网页", nil
+	}
+	if strings.Contains(r, "搜索结果为空") {
+		return "共找到 0 个相关网页", nil
+	}
+	var arr []map[string]interface{}
+	raw := strings.TrimSuffix(r, ",")
+	if !strings.HasPrefix(strings.TrimLeft(raw, " \n\t"), "[") {
+		raw = "[" + raw + "]"
+	}
+	if err := json.Unmarshal([]byte(raw), &arr); err != nil {
+		log.Error("构建网页搜搜响应显示信息失败, 无法解析JSON", zap.Error(err))
+		return "", ErrInvalidJSON
+	}
+	return "共找到 " + strconv.Itoa(len(arr)) + " 个相关网页", nil
+}
+
+func init() {
+	RegisterShowMsgBuilder(webSearchToolName, webSearchShowBuilder{})
 }

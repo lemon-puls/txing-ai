@@ -95,9 +95,8 @@ func (c *Channel) GetMappingModel(model string, mappingParams map[string]interfa
 				checkedKeys[key] = struct{}{}
 
 				actualValue, exists := mappingParams[key]
-				if !exists || actualValue != expectedValue {
+				if allConditionsMet && (!exists || actualValue != expectedValue) {
 					allConditionsMet = false
-					break
 				}
 			}
 
@@ -123,6 +122,11 @@ func (c *Channel) GetMappingModel(model string, mappingParams map[string]interfa
 				return condition.TargetModel
 			}
 		}
+	}
+
+	// 如果 channel 配置了映射规则，但是没有找到匹配的模型，则返回空字符串
+	if len(c.Mappings) > 0 {
+		return ""
 	}
 
 	// 通过映射关系没有找到匹配的模型，判断 mappingParams 中的条件是否均为默认值，如果是则返回原始模型，否则返回空字符串

@@ -2,17 +2,20 @@
 .gitignore
 .travis.yml
 README.md
+docs/AgentApi.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
 docs/ApiAdminWebsitesFaviconPost200Response.md
 docs/ApiAdminWebsitesPost200Response.md
 docs/ApiChatConversationsIdGet200Response.md
 docs/ApiCosPresignedUrlPost200Response.md
+docs/ApiFileUploadPost200Response.md
 docs/ApiPresetPost200Response.md
 docs/ApiUserInfoGet200Response.md
 docs/ApiUserLoginPost200Response.md
 docs/ApiUserRefreshPost200Response.md
 docs/DefaultApi.md
+docs/DtoAgentExecReq.md
 docs/DtoBatchDeleteRequest.md
 docs/DtoConversationListRequest.md
 docs/DtoCreateChannelReq.md
@@ -30,6 +33,7 @@ docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
 docs/DtoUpdateWebsiteReq.md
+docs/FileUploadResponse.md
 docs/GlobalModelMapping.md
 docs/GlobalModelMappingCondition.md
 docs/UtilsResponse.md
@@ -48,6 +52,7 @@ git_push.sh
 mocha.opts
 package.json
 src/ApiClient.js
+src/api/AgentApi.js
 src/api/DefaultApi.js
 src/index.js
 src/model/ApiAdminChannelPost200Response.js
@@ -56,10 +61,12 @@ src/model/ApiAdminWebsitesFaviconPost200Response.js
 src/model/ApiAdminWebsitesPost200Response.js
 src/model/ApiChatConversationsIdGet200Response.js
 src/model/ApiCosPresignedUrlPost200Response.js
+src/model/ApiFileUploadPost200Response.js
 src/model/ApiPresetPost200Response.js
 src/model/ApiUserInfoGet200Response.js
 src/model/ApiUserLoginPost200Response.js
 src/model/ApiUserRefreshPost200Response.js
+src/model/DtoAgentExecReq.js
 src/model/DtoBatchDeleteRequest.js
 src/model/DtoConversationListRequest.js
 src/model/DtoCreateChannelReq.js
@@ -77,6 +84,7 @@ src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
 src/model/DtoUpdateWebsiteReq.js
+src/model/FileUploadResponse.js
 src/model/GlobalModelMapping.js
 src/model/GlobalModelMappingCondition.js
 src/model/UtilsResponse.js
@@ -91,3 +99,7 @@ src/model/VoPresetVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
 src/model/VoWebsiteVO.js
+test/api/AgentApi.spec.js
+test/model/ApiFileUploadPost200Response.spec.js
+test/model/DtoAgentExecReq.spec.js
+test/model/FileUploadResponse.spec.js

@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"gorm.io/gorm"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/utils"
@@ -26,7 +27,7 @@ func Create(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	channel := &domain.Channel{
 		Name:     req.Name,
@@ -66,7 +67,7 @@ func Update(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	var channel domain.Channel
 	if err := db.First(&channel, ctx.Param("id")).Error; err != nil {
@@ -106,7 +107,7 @@ func Update(ctx *gin.Context) {
 func Delete(ctx *gin.Context) {
 	var channel domain.Channel
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	if err := db.First(&channel, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "渠道不存在", err)
@@ -133,7 +134,7 @@ func Delete(ctx *gin.Context) {
 func Get(ctx *gin.Context) {
 	var channel domain.Channel
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	if err := db.First(&channel, ctx.Param("id")).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "渠道不存在", err)
 		return
@@ -164,7 +165,7 @@ func List(ctx *gin.Context) {
 		return
 	}
 
-	db := utils.GetDBFromContext(ctx)
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	// 构建查询条件
 	query := db.Model(&domain.Channel{})

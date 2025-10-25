@@ -56,7 +56,6 @@ func Upload(c *gin.Context) {
 	}
 
 	userId := utils.GetUIDFromContext(c)
-
 	// 获取当前工作目录
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -152,6 +151,11 @@ func Download(c *gin.Context) {
 		return
 	}
 
+	userId := utils.GetUIDFromContext(c)
+	// 获取当前日期作为目录名
+	currentDate := time.Now().Format("2006-01-02")
+	filePath = filepath.Join(strconv.FormatInt(userId, 10), currentDate, filePath)
+
 	// 构建文件路径
 	absFilePath := filepath.Join(currentDir, config.Dir, filePath)
 
@@ -179,7 +183,7 @@ func Download(c *gin.Context) {
 	c.File(absFilePath)
 
 	// 记录下载日志
-	log.Info("File downloaded",
+	log.Info("",
 		zap.String("filename", originalFileName),
 		zap.String("path", absFilePath),
 		zap.Time("timestamp", time.Now()))
