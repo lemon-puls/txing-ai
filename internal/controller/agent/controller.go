@@ -271,6 +271,8 @@ func ExecStream(ctx *gin.Context) {
 			filePrefix := "文件："
 			startIndex := strings.Index(response, filePrefix) + len(filePrefix)
 			fileName := strings.TrimSpace(response[startIndex:])
+			// 去掉后面可能有的 ** 符号
+			fileName = strings.Split(fileName, "**")[0]
 
 			// 拼接下载路径
 			downloadURL = fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileName))
