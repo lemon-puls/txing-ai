@@ -65,11 +65,6 @@ RUN apt-get update && \
     tzdata \
     wkhtmltopdf \
     curl \
-    fontconfig \
-    fonts-noto-color-emoji \
-    fonts-noto-cjk \
-    xfonts-base \
-    xfonts-75dpi && \
     rm -rf /var/lib/apt/lists/*
 
 # 设置时区
