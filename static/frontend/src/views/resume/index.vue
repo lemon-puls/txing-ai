@@ -193,6 +193,7 @@ import {
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import fetchSSEWithAuth from "@/api/sseRequest.js";
+import {useUserStore} from "@/stores/user.js";
 
 // 文件列表
 const fileList = ref([])
@@ -305,7 +306,6 @@ const startOptimize = async () => {
 
     // 使用带认证和拦截功能的SSE请求函数
     abortController = await fetchSSEWithAuth(url, formDataObj, function (msg) {
-      console.log('SSE消息:', msg)
       if (!msg.startsWith('data:')) {
         throw new Error('非法的SSE消息格式')
       }
@@ -403,6 +403,9 @@ const startOptimize = async () => {
         console.error('处理SSE消息时出错:', e)
       }
     }, function (error) {
+      if (isCompleted.value) {
+        return
+      }
       // 连接或网络层错误：标记流程失败并记录详细错误信息
       try {
         abortController?.abort()
@@ -450,12 +453,29 @@ const startOptimize = async () => {
   }
 }
 
-// 下载简历
-const downloadResume = () => {
-  if (downloadUrl.value) {
-    window.open(downloadUrl.value, '_blank')
-  } else {
+// TODO 后续抽取公共的下载工具函数，实现 token 刷新逻辑等
+const downloadResume = async () => {
+  if (!downloadUrl.value) {
     ElMessage.error('下载链接不可用')
+    return
+  }
+
+  try {
+    let url = downloadUrl.value
+
+    const token = localStorage.getItem('token')
+    if (!token) {
+      ElMessage.error('请先登录后再下载')
+      useUserStore().logout()
+      return
+    }
+    const sep = url.includes('?') ? '&' : '?'
+    url = `${url}${sep}Authorization=${encodeURIComponent(`Bearer ${token}`)}`
+
+    window.open(url, '_blank')
+  } catch (e) {
+    console.error('触发下载时出错:', e)
+    ElMessage.error('下载失败，请稍后重试')
   }
 }
 
