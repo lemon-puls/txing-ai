@@ -201,7 +201,7 @@ func generateHTML(body string, title string) string {
         }
         
         body {
-            font-family: 'Segoe UI', 'Apple Color Emoji', 'Noto Color Emoji', 'NotoEmoji', Arial, sans-serif;
+            font-family: 'Noto Sans', 'Noto Sans CJK SC', 'Microsoft YaHei', 'Segoe UI', 'Arial', 'Helvetica', 'DejaVu Sans', sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 800px;
@@ -283,7 +283,7 @@ func generateHTML(body string, title string) string {
         }
         
         .emoji {
-            font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'NotoEmoji', sans-serif;
+            font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'NotoEmoji', sans-serif;
             font-size: 1.2em;
             line-height: 1;
             vertical-align: middle;

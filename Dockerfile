@@ -58,14 +58,32 @@ RUN make docker && \
 # 最终运行阶段
 FROM node:18-bookworm-slim as final
 
-# 安装 CA 证书、时区数据、wkhtmltopdf、curl 与字体依赖
+# 安装 CA 证书、时区、wkhtmltopdf、curl、字体与本地化依赖
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     tzdata \
+    locales \
+    fontconfig \
     wkhtmltopdf \
     curl \
+    fonts-noto \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
+    fonts-dejavu-core \
+    ttf-wqy-microhei \
+    xfonts-base \
+    xfonts-75dpi && \
     rm -rf /var/lib/apt/lists/*
+
+# 生成 UTF-8 本地化，保证中文与 emoji 一致渲染
+RUN sed -i 's/^# \(zh_CN\.UTF-8\)/\1/' /etc/locale.gen && \
+    sed -i 's/^# \(en_US\.UTF-8\)/\1/' /etc/locale.gen && \
+    locale-gen zh_CN.UTF-8 en_US.UTF-8 && \
+    fc-cache -f -v
+
+# 统一默认语言环境为 UTF-8
+ENV LANG=zh_CN.UTF-8 LC_ALL=zh_CN.UTF-8
 
 # 设置时区
 ENV TZ=Asia/Shanghai
