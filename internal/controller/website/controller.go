@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"txing-ai/internal/domain"
@@ -340,8 +342,22 @@ func GetFavicon(ctx *gin.Context) {
 		}
 	}
 
-	// 基于随机数生成 key
-	key, _ := cosClient.PutFromURL(ctx, "test/favicon.ico", faviconURL)
+	userId := utils.GetUIDFromContext(ctx)
+	currentDate := time.Now().Format("2006-01-02")
+	// 拼接文件保存地址 <用户 id>/<日期>/文件名
+	// 解析原始文件名并生成唯一文件名
+	u, _ := url.Parse(faviconURL)
+	base := path.Base(u.Path)
+	if base == "" || base == "/" {
+		base = "favicon.ico"
+	}
+	if path.Ext(base) == "" {
+		base = base + ".ico"
+	}
+	fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), base)
+	keyPath := path.Join(strconv.FormatInt(userId, 10), currentDate, fileName)
+
+	key, _ := cosClient.PutFromURL(ctx, keyPath, faviconURL)
 	presignedURL, _ := cosClient.GenerateDownloadPresignedURL(key)
 
 	utils.OkWithData(ctx, vo.GetFaviconVO{
