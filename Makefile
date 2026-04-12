@@ -8,15 +8,20 @@ PKG_NAME := ${BIN_NAME}_${GIT_HASH}
 # 构建标志
 BUILD_FLAGS := -trimpath -ldflags="-s -w"
 
-.PHONY: win build docker gen
+.PHONY: win build docker gen all
 
 win: build-win
+
+all: gen frontend build
 
 docker: gen build-docker
 
 gen:
 	which swag || go install github.com/swaggo/swag/cmd/swag@latest
 	go generate ./...
+
+frontend:
+	cd static/frontend && pnpm install && pnpm build
 
 # 快速构建，跳过生成代码步骤；仅供调试时确定没有改动生成代码用，供生产的构建务必用 build
 build:
