@@ -1,0 +1,4 @@
+# Claude Code local files
+local/
+.cache/
+*.log
