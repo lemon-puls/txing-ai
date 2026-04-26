@@ -485,7 +485,7 @@ cd txing-ai
 1. 配置数据库
 ```bash
 # 创建配置文件
-cp config.toml.sample runtime/config.toml
+cp config.yaml.sample runtime/config.yaml
 # 根据实际情况修改配置
 ```
 
@@ -499,9 +499,9 @@ swag init -g cmd/main.go
 # 进入前端目录下
 cd static/frontend
 # 安装依赖
-npm install
+pnpm install
 # 项目打包
-npm run build
+pnpm build
 ```
 > 注意：前端部分的打包生成目录 dist 会在 GO 项目中嵌入作为静态资源对外提供服务，所以不需单独启动前端项目。
 
@@ -512,7 +512,124 @@ go run cmd/main.go
 ```
 5. 访问地址
 
-   项目启动后会打印出 swgger 和网站的访问地址。
+   项目启动后会打印出 Swagger 和网站的访问地址。
+
+## 🔨 项目构建
+
+项目使用 Makefile 管理构建流程，支持多种构建目标：
+
+| 命令 | 说明 |
+|------|------|
+| `make all` | 完整构建：生成 Swagger 文档 → 前端打包 → 后端编译 |
+| `make gen` | 生成 Swagger API 文档（`swag init` + `go generate`） |
+| `make frontend` | 前端项目安装依赖并打包（`pnpm install && pnpm build`） |
+| `make build` | 编译后端（跳过代码生成步骤，仅用于调试） |
+| `make docker` | 生成 Swagger 文档 + 编译后端（用于 Docker 构建） |
+| `make win` | 交叉编译 Windows 版本 |
+
+> 构建产物输出到 `output/` 目录，文件名格式为 `txing-ai_<git-hash>`。
+
+### 一键构建
+
+```bash
+make all
+```
+
+### 单独构建
+
+```bash
+# 仅生成 API 文档
+make gen
+
+# 仅构建前端
+make frontend
+
+# 仅编译后端（需先完成 gen 和 frontend）
+make build
+```
+
+## 🧪 测试
+
+### 运行后端测试
+
+```bash
+# 运行所有测试
+go test ./...
+
+# 运行特定包的测试
+go test ./internal/tool/...
+
+# 查看详细测试输出
+go test -v ./...
+```
+
+### 前端代码检查
+
+```bash
+cd static/frontend
+
+# ESLint 检查并自动修复
+pnpm lint
+
+# Prettier 格式化
+pnpm format
+```
+
+## 🐳 Docker 部署
+
+项目提供多阶段 Dockerfile，将前端和后端构建整合到一个镜像中，最终镜像基于 `node:18-bookworm-slim`。
+
+### 构建镜像
+
+```bash
+docker build -t txing-ai .
+```
+
+### 运行容器
+
+```bash
+docker run -d \
+  --name txing-ai \
+  -p 8080:8080 \
+  -v $(pwd)/runtime:/app/runtime \
+  txing-ai
+```
+
+> 需要确保 `runtime/config.yaml` 配置文件已正确创建，可通过挂载卷的方式将配置文件映射到容器内。
+
+### 环境变量配置（CI/CD）
+
+CI/CD 构建时需要配置以下前端环境变量（存储在 GitHub Secrets 中）：
+
+| 变量名 | 说明 |
+|--------|------|
+| `ANALYTICS_SCRIPT_URL` | 网站统计脚本地址 |
+| `ANALYTICS_WEBSITE_ID` | 网站统计站点 ID |
+
+## 🔄 CI/CD
+
+项目使用 GitHub Actions 实现自动化构建和发布，配置文件位于 `.github/workflows/docker-build.yml`。
+
+### 触发条件
+
+| 事件 | 触发条件 | 行为 |
+|------|----------|------|
+| Push | `master` 分支推送 | 构建并推送镜像 |
+| Tag | `v*` 格式的标签推送 | 构建并推送带版本号的镜像 |
+| Pull Request | `master` 分支的 PR | 仅构建不推送 |
+| 手动触发 | `workflow_dispatch` | 手动触发构建 |
+
+### 镜像标签策略
+
+- `latest` — 默认分支最新构建
+- `master` — 分支名标签
+- `v1.2.3` — 语义化版本号（来自 git tag）
+- `1.2` — 主.次版本号
+- `abc1234` — 提交 SHA 短哈希
+
+### 镜像仓库
+
+Docker 镜像推送到 [GitHub Container Registry (ghcr.io)](https://github.com/lemon-puls/txing-ai/pkgs/container/txing-ai)。
 
 ## 📚 项目结构
 
