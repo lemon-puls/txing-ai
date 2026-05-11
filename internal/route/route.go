@@ -12,6 +12,7 @@ import (
 	"txing-ai/internal/controller/preset"
 	"txing-ai/internal/controller/user"
 	"txing-ai/internal/controller/website"
+	"txing-ai/internal/controller/workflow"
 	"txing-ai/internal/iface"
 	"txing-ai/static"
 
@@ -41,6 +42,8 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	preset.Register(group)
 
 	website.Register(group)
+
+	workflow.Register(group, res)
 
 	// 验证码相关路由
 	captcha.Register(group.Group("/captcha"))

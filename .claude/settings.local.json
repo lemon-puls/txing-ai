@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find static/frontend/src/views/admin/workflow -type f -name *.vue)",
+      "Bash(find internal/controller/workflow -type f -name *.go)",
+      "Bash(find internal/service/workflow -type f -name *.go)",
+      "Bash(find internal:*)",
+      "Bash(find static/frontend/src/components -type f -name *.vue)",
+      "Bash(go build:*)",
+      "Bash(grep -A 20 \"INSERT INTO \\\\`users\\\\`\")",
+      "Bash(npm run:*)",
+      "Bash(pnpm build:*)"
+    ]
+  }
+}

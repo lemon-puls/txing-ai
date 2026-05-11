@@ -166,6 +166,25 @@ const router = createRouter({
           }
         },
         {
+          path: 'workflow',
+          name: 'WorkflowList',
+          component: () => import('@/views/admin/workflow/WorkflowList.vue'),
+          meta: {
+            title: '工作流管理',
+            icon: 'Share',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'workflow/editor/:id?',
+          name: 'WorkflowEditor',
+          component: () => import('@/views/admin/workflow/WorkflowEditor.vue'),
+          meta: {
+            title: '工作流编辑',
+            roles: ['admin']
+          }
+        },
+        {
           path: 'websites',
           name: 'AdminWebsites',
           component: () => import('@/views/admin/websites/WebsiteList.vue'),

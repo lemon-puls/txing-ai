@@ -1,0 +1,418 @@
+package agent
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino/schema"
+	"go.uber.org/zap"
+
+	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/iface"
+	mytool "txing-ai/internal/tool"
+)
+
+// WorkflowAgent 工作流智能体
+type WorkflowAgent struct {
+	*BaseAgent
+	tools    []tool.BaseTool
+	topology string
+}
+
+// ModelConfig 模型配置
+type ModelConfig struct {
+	Model          string  `json:"model"`
+	SystemPrompt   string  `json:"systemPrompt"`
+	Temperature    float64 `json:"temperature"`
+	MaxTokens      int     `json:"maxTokens"`
+	ContextEnabled bool    `json:"contextEnabled"`
+}
+
+// ToolConfig 工具配置
+type ToolConfig struct {
+	Tools  []string               `json:"tools"`
+	Params map[string]interface{} `json:"params"`
+}
+
+// ConditionConfig 条件配置
+type ConditionConfig struct {
+	Type          string `json:"type"` // expression | llm | tool_result
+	Expression    string `json:"expression,omitempty"`
+	LLMPrompt     string `json:"llmPrompt,omitempty"`
+	ToolName      string `json:"toolName,omitempty"`
+	ToolResultKey string `json:"toolResultKey,omitempty"`
+}
+
+// NodeConfig 节点配置
+type NodeConfig struct {
+	ModelConfig   *ModelConfig     `json:"modelConfig,omitempty"`
+	ToolConfig    *ToolConfig      `json:"toolConfig,omitempty"`
+	ConditionConf *ConditionConfig `json:"conditionConfig,omitempty"`
+}
+
+// NodeData 节点数据
+type NodeData struct {
+	NodeType   string      `json:"nodeType"`
+	Label      string      `json:"label"`
+	NodeConfig *NodeConfig `json:"nodeConfig,omitempty"`
+}
+
+// TopoNode 拓扑节点
+type TopoNode struct {
+	Id       string   `json:"id"`
+	Type     string   `json:"type"`
+	Position Position `json:"position"`
+	Data     NodeData `json:"data"`
+}
+
+// Position 节点位置
+type Position struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+// TopoEdge 拓扑边
+type TopoEdge struct {
+	Id           string `json:"id"`
+	Source       string `json:"source"`
+	Target       string `json:"target"`
+	SourceHandle string `json:"sourceHandle,omitempty"`
+	TargetHandle string `json:"targetHandle,omitempty"`
+}
+
+// Topology 工作流拓扑图结构
+type Topology struct {
+	Nodes []TopoNode `json:"nodes"`
+	Edges []TopoEdge `json:"edges"`
+}
+
+// WorkflowAgentState 工作流状态
+type WorkflowAgentState struct {
+	Messages []*schema.Message
+}
+
+// NewWorkflowAgent 创建一个新的工作流智能体
+func NewWorkflowAgent(res iface.ResourceProvider, topology string) *WorkflowAgent {
+	baseAgent := NewBaseAgent("WorkflowAgent", "A dynamic workflow agent based on JSON topology")
+	baseAgent.SetSystemPrompt("You are a helpful AI assistant executing a workflow.")
+
+	return &WorkflowAgent{
+		BaseAgent: baseAgent,
+		tools:     mytool.ProvideTools(res),
+		topology:  topology,
+	}
+}
+
+// getToolsByNames 根据名称列表获取工具
+func (a *WorkflowAgent) getToolsByNames(names []string) []tool.BaseTool {
+	if len(names) == 0 {
+		return a.tools
+	}
+
+	toolMap := make(map[string]tool.BaseTool)
+	for _, t := range a.tools {
+		info, _ := t.Info(context.Background())
+		if info != nil {
+			toolMap[info.Name] = t
+		}
+	}
+
+	var result []tool.BaseTool
+	for _, name := range names {
+		if t, ok := toolMap[name]; ok {
+			result = append(result, t)
+		}
+	}
+	return result
+}
+
+// BuildGraph 构建执行图（简化版本，使用 DAG 模式）
+func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model string, callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
+	var topo Topology
+	if err := json.Unmarshal([]byte(a.topology), &topo); err != nil {
+		return nil, fmt.Errorf("解析拓扑图失败: %w", err)
+	}
+
+	// 默认模型配置
+	defaultMaxTokens := 8192
+	defaultTemperature := float32(0.7)
+
+	// 创建默认的聊天模型
+	defaultChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		BaseURL:     endpoint,
+		Model:       model,
+		APIKey:      apiKey,
+		MaxTokens:   &defaultMaxTokens,
+		Temperature: &defaultTemperature,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("创建模型失败: %w", err)
+	}
+
+	// 绑定所有工具到默认模型
+	toolInfos := make([]*schema.ToolInfo, 0, len(a.tools))
+	for _, t := range a.tools {
+		info, err := t.Info(ctx)
+		if err != nil {
+			continue
+		}
+		toolInfos = append(toolInfos, info)
+	}
+	if err := defaultChatModel.BindTools(toolInfos); err != nil {
+		log.Warn("绑定工具失败", zap.Error(err))
+	}
+
+	// 使用 DAG 构建工作流
+	graph := compose.NewGraph[[]*schema.Message, *schema.Message](
+		compose.WithGenLocalState(func(ctx context.Context) *WorkflowAgentState {
+			return &WorkflowAgentState{Messages: make([]*schema.Message, 0)}
+		}))
+
+	var startNodeId, endNodeId string
+
+	// 添加节点
+	for _, node := range topo.Nodes {
+		nodeId := node.Id
+		nodeConfig := node.Data.NodeConfig
+
+		switch node.Data.NodeType {
+		case "start":
+			startNodeId = nodeId
+			// 开始节点：将输入消息转换为消息列表
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) (*schema.Message, error) {
+				log.Info("Executing start node", zap.String("nodeId", nodeId))
+				if len(input) > 0 {
+					return input[len(input)-1], nil
+				}
+				return schema.UserMessage(""), nil
+			}))
+
+		case "end":
+			endNodeId = nodeId
+			// 结束节点：直接返回输入
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				log.Info("Executing end node", zap.String("nodeId", nodeId))
+				return input, nil
+			}))
+
+		case "llm":
+			// LLM 节点：根据配置创建模型
+			nodeModel := model
+			nodeMaxTokens := defaultMaxTokens
+			var nodeTemperature float32 = 0.7
+			systemPrompt := ""
+
+			if nodeConfig != nil && nodeConfig.ModelConfig != nil {
+				mc := nodeConfig.ModelConfig
+				if mc.Model != "" {
+					nodeModel = mc.Model
+				}
+				if mc.MaxTokens > 0 {
+					nodeMaxTokens = mc.MaxTokens
+				}
+				if mc.Temperature > 0 {
+					nodeTemperature = float32(mc.Temperature)
+				}
+				systemPrompt = mc.SystemPrompt
+			}
+
+			// 创建节点专属的模型
+			nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+				BaseURL:     endpoint,
+				Model:       nodeModel,
+				APIKey:      apiKey,
+				MaxTokens:   &nodeMaxTokens,
+				Temperature: &nodeTemperature,
+			})
+			if err != nil {
+				log.Error("创建节点模型失败", zap.String("nodeId", nodeId), zap.Error(err))
+				// 使用默认模型
+				nodeChatModel = defaultChatModel
+			}
+
+			// 如果有系统提示词，创建包含系统提示的 Lambda
+			if systemPrompt != "" {
+				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
+
+					// 构建消息列表
+					messages := []*schema.Message{
+						schema.SystemMessage(systemPrompt),
+					}
+					if input != nil && input.Content != "" {
+						messages = append(messages, input)
+					}
+
+					// 调用模型
+					response, err := nodeChatModel.Generate(ctx, messages)
+					if err != nil {
+						log.Error("LLM generate error", zap.Error(err))
+						return nil, err
+					}
+
+					// 回调
+					if callback != nil && response.Content != "" {
+						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
+					}
+
+					return response, nil
+				}))
+			} else {
+				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
+
+					var messages []*schema.Message
+					if input != nil && input.Content != "" {
+						messages = []*schema.Message{input}
+					}
+
+					response, err := nodeChatModel.Generate(ctx, messages)
+					if err != nil {
+						log.Error("LLM generate error", zap.Error(err))
+						return nil, err
+					}
+
+					if callback != nil && response.Content != "" {
+						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
+					}
+
+					return response, nil
+				}))
+			}
+
+		case "tool":
+			// 工具节点：使用 LLM 调用工具
+			var nodeTools []tool.BaseTool
+			if nodeConfig != nil && nodeConfig.ToolConfig != nil {
+				nodeTools = a.getToolsByNames(nodeConfig.ToolConfig.Tools)
+			} else {
+				nodeTools = a.tools
+			}
+
+			// 为工具创建一个带工具绑定的模型
+			toolChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+				BaseURL:     endpoint,
+				Model:       model,
+				APIKey:      apiKey,
+				MaxTokens:   &defaultMaxTokens,
+				Temperature: &defaultTemperature,
+			})
+			if err != nil {
+				log.Error("创建工具模型失败", zap.String("nodeId", nodeId), zap.Error(err))
+				continue
+			}
+
+			// 绑定工具
+			nodeToolInfos := make([]*schema.ToolInfo, 0, len(nodeTools))
+			for _, t := range nodeTools {
+				info, err := t.Info(ctx)
+				if err != nil {
+					continue
+				}
+				nodeToolInfos = append(nodeToolInfos, info)
+			}
+			if err := toolChatModel.BindTools(nodeToolInfos); err != nil {
+				log.Warn("绑定工具失败", zap.String("nodeId", nodeId), zap.Error(err))
+			}
+
+			// 创建工具节点执行器
+			toolNode, err := compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
+				Tools:               nodeTools,
+				ExecuteSequentially: true,
+			})
+			if err != nil {
+				log.Error("创建工具节点失败", zap.String("nodeId", nodeId), zap.Error(err))
+				continue
+			}
+
+			// 使用 Lambda 包装工具调用
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				log.Info("Executing Tool node", zap.String("nodeId", nodeId), zap.Strings("tools", func() []string {
+					names := make([]string, len(nodeTools))
+					for i, t := range nodeTools {
+						info, _ := t.Info(ctx)
+						if info != nil {
+							names[i] = info.Name
+						}
+					}
+					return names
+				}()))
+
+				// 让模型决定调用哪些工具
+				response, err := toolChatModel.Generate(ctx, []*schema.Message{input})
+				if err != nil {
+					return nil, err
+				}
+
+				// 检查是否有工具调用
+				if len(response.ToolCalls) > 0 {
+					if callback != nil {
+						callback(&global.Chunk{ShowMsg: fmt.Sprintf("[%s] 正在调用工具...", node.Data.Label)})
+					}
+
+					// 执行工具调用
+					results, err := toolNode.Invoke(ctx, response)
+					if err != nil {
+						log.Error("工具执行失败", zap.Error(err))
+						return response, nil
+					}
+
+					if callback != nil {
+						callback(&global.Chunk{ShowMsg: fmt.Sprintf("[%s] 工具执行完成", node.Data.Label)})
+					}
+
+					// 返回最后一个结果
+					if len(results) > 0 {
+						return results[len(results)-1], nil
+					}
+					return response, nil
+				}
+
+				return response, nil
+			}))
+
+		case "condition":
+			// 条件节点：简单透传
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				log.Info("Executing Condition node", zap.String("nodeId", nodeId))
+				return input, nil
+			}))
+		}
+	}
+
+	// 添加边
+	for _, edge := range topo.Edges {
+		err := graph.AddEdge(edge.Source, edge.Target)
+		if err != nil {
+			log.Warn("添加边失败", zap.String("source", edge.Source), zap.String("target", edge.Target), zap.Error(err))
+		}
+	}
+
+	if startNodeId != "" {
+		graph.AddEdge(compose.START, startNodeId)
+	}
+	if endNodeId != "" {
+		graph.AddEdge(endNodeId, compose.END)
+	}
+
+	return graph, nil
+}
+
+// ExecuteStream 覆写流式执行方法
+func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
+	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
+
+	graph, err := a.BuildGraph(ctx, endpoint, apiKey, model, callback)
+	if err != nil {
+		log.Error("构建执行图失败", zap.Error(err))
+		return "", err
+	}
+	a.SetGraph(graph)
+
+	return a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
+}
