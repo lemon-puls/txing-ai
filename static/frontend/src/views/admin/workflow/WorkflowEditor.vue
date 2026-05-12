@@ -271,7 +271,10 @@ const onDrop = (event) => {
           expression: '',
           llmPrompt: '',
           toolName: '',
-          toolResultKey: ''
+          toolResultKey: '',
+          expectedValue: '',
+          failureAction: 'default_false',
+          failureBranch: 'false'
         }
       } : {})
     }

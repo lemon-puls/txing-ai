@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/tool"
@@ -39,27 +40,25 @@ type ToolConfig struct {
 	Params map[string]interface{} `json:"params"`
 }
 
-// ConditionConfig 条件配置
+// ConditionConfig 条件配置（旧版本，保持兼容）
 type ConditionConfig struct {
 	Type          string `json:"type"` // expression | llm | tool_result
 	Expression    string `json:"expression,omitempty"`
 	LLMPrompt     string `json:"llmPrompt,omitempty"`
 	ToolName      string `json:"toolName,omitempty"`
 	ToolResultKey string `json:"toolResultKey,omitempty"`
+	ExpectedValue string `json:"expectedValue,omitempty"` // 新增：期望值
+	FailureAction string `json:"failureAction,omitempty"` // 新增：错误处理策略
+	FailureBranch string `json:"failureBranch,omitempty"` // 新增：错误时的默认分支
 }
 
-// NodeConfig 节点配置
-type NodeConfig struct {
+// NodeData 节点数据（配置直接放在 data 层级，与前端 JSON 结构一致）
+type NodeData struct {
+	NodeType      string           `json:"nodeType"`
+	Label         string           `json:"label"`
 	ModelConfig   *ModelConfig     `json:"modelConfig,omitempty"`
 	ToolConfig    *ToolConfig      `json:"toolConfig,omitempty"`
 	ConditionConf *ConditionConfig `json:"conditionConfig,omitempty"`
-}
-
-// NodeData 节点数据
-type NodeData struct {
-	NodeType   string      `json:"nodeType"`
-	Label      string      `json:"label"`
-	NodeConfig *NodeConfig `json:"nodeConfig,omitempty"`
 }
 
 // TopoNode 拓扑节点
@@ -178,7 +177,6 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 	// 添加节点
 	for _, node := range topo.Nodes {
 		nodeId := node.Id
-		nodeConfig := node.Data.NodeConfig
 
 		switch node.Data.NodeType {
 		case "start":
@@ -207,8 +205,8 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			var nodeTemperature float32 = 0.7
 			systemPrompt := ""
 
-			if nodeConfig != nil && nodeConfig.ModelConfig != nil {
-				mc := nodeConfig.ModelConfig
+			if node.Data.ModelConfig != nil {
+				mc := node.Data.ModelConfig
 				if mc.Model != "" {
 					nodeModel = mc.Model
 				}
@@ -288,8 +286,8 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 		case "tool":
 			// 工具节点：使用 LLM 调用工具
 			var nodeTools []tool.BaseTool
-			if nodeConfig != nil && nodeConfig.ToolConfig != nil {
-				nodeTools = a.getToolsByNames(nodeConfig.ToolConfig.Tools)
+			if node.Data.ToolConfig != nil {
+				nodeTools = a.getToolsByNames(node.Data.ToolConfig.Tools)
 			} else {
 				nodeTools = a.tools
 			}
@@ -377,19 +375,201 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}))
 
 		case "condition":
-			// 条件节点：简单透传
+			// 条件节点：执行条件判断并添加分支
+			conditionConfig := DefaultConditionConfig()
+			if node.Data.ConditionConf != nil {
+				oldConfig := node.Data.ConditionConf
+				conditionConfig.Type = ConditionType(oldConfig.Type)
+				conditionConfig.Expression = oldConfig.Expression
+				conditionConfig.LLMPrompt = oldConfig.LLMPrompt
+				conditionConfig.ToolName = oldConfig.ToolName
+				conditionConfig.ToolResultKey = oldConfig.ToolResultKey
+				conditionConfig.ExpectedValue = oldConfig.ExpectedValue
+				if oldConfig.FailureAction != "" {
+					conditionConfig.FailureAction = FailureAction(oldConfig.FailureAction)
+				}
+				conditionConfig.FailureBranch = oldConfig.FailureBranch
+			}
+
+			// 添加条件判断节点
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				log.Info("Executing Condition node", zap.String("nodeId", nodeId))
-				return input, nil
+				log.Info("Executing Condition node",
+					zap.String("nodeId", nodeId),
+					zap.String("type", string(conditionConfig.Type)))
+
+				if input == nil {
+					log.Warn("Condition node received nil input")
+					// 返回带错误标记的消息
+					return schema.UserMessage("ERROR:EMPTY_INPUT"), nil
+				}
+
+				var result *ConditionResult
+
+				switch conditionConfig.Type {
+				case ConditionTypeExpression:
+					// 表达式判断
+					eval := NewExpressionEvaluator()
+					result = eval.Evaluate(conditionConfig.Expression, input.Content)
+
+				case ConditionTypeLLM:
+					// AI判断 - 使用 LLM 判断
+					llmResult, err := a.executeLLMCondition(ctx, endpoint, apiKey, model, conditionConfig.LLMPrompt, input.Content, callback)
+					if err != nil {
+						result = NewConditionError(err, conditionConfig)
+					} else {
+						result = llmResult
+					}
+
+				case ConditionTypeToolResult:
+					// 工具结果判断 - 需要结合前面的工具执行结果
+					toolResult := a.executeToolResultCondition(ctx, conditionConfig, input)
+					result = toolResult
+
+				default:
+					result = NewConditionError(fmt.Errorf("未知的条件类型: %s", conditionConfig.Type), conditionConfig)
+				}
+
+				log.Info("Condition result",
+					zap.Bool("result", result.Result),
+					zap.String("branch", result.Branch),
+					zap.String("reason", result.Reason))
+
+				if result.Error != nil {
+					log.Error("Condition evaluation error", zap.Error(result.Error))
+				}
+
+				// 根据结果设置分支
+				branchId := conditionConfig.GetFalseHandle()
+				if result.Result {
+					branchId = conditionConfig.GetTrueHandle()
+				}
+				if result.Error != nil && result.Branch != "" {
+					branchId = result.Branch
+				}
+
+				// 在消息的 Extra 中存储分支信息
+				outputMsg := schema.AssistantMessage(input.Content, nil)
+				outputMsg.Extra = map[string]interface{}{
+					"condition_branch": branchId,
+					"condition_result": result.Result,
+					"condition_reason": result.Reason,
+				}
+
+				return outputMsg, nil
 			}))
+
 		}
 	}
 
-	// 添加边
+	// 收集条件节点的分支映射
+	conditionBranches := make(map[string]map[string]string) // nodeId -> {handle: targetId}
 	for _, edge := range topo.Edges {
+		// 查找源节点类型
+		var sourceNodeType string
+		for _, n := range topo.Nodes {
+			if n.Id == edge.Source {
+				sourceNodeType = n.Data.NodeType
+				break
+			}
+		}
+
+		// 如果是条件节点的边，记录分支映射
+		if sourceNodeType == "condition" {
+			if conditionBranches[edge.Source] == nil {
+				conditionBranches[edge.Source] = make(map[string]string)
+			}
+			handle := edge.SourceHandle
+			if handle == "" {
+				handle = "false" // 默认走 false 分支
+			}
+			conditionBranches[edge.Source][handle] = edge.Target
+		}
+	}
+
+	// 添加边（跳过条件节点的边，改用 Branch）
+	for _, edge := range topo.Edges {
+		// 查找源节点类型
+		var sourceNodeType string
+		for _, n := range topo.Nodes {
+			if n.Id == edge.Source {
+				sourceNodeType = n.Data.NodeType
+				break
+			}
+		}
+
+		// 条件节点使用 Branch 而不是 Edge
+		if sourceNodeType == "condition" {
+			continue
+		}
+
 		err := graph.AddEdge(edge.Source, edge.Target)
 		if err != nil {
 			log.Warn("添加边失败", zap.String("source", edge.Source), zap.String("target", edge.Target), zap.Error(err))
+		}
+	}
+
+	// 为条件节点添加 Branch
+	for conditionNodeId, branches := range conditionBranches {
+		// 构建分支条件函数
+		branchCondition := func(ctx context.Context, in *schema.StreamReader[*schema.Message]) (string, error) {
+			msg, err := in.Recv()
+			if err != nil {
+				return "", err
+			}
+
+			// 从消息 Extra 中获取分支信息
+			branch := ""
+			if msg.Extra != nil {
+				if b, ok := msg.Extra["condition_branch"].(string); ok {
+					branch = b
+				}
+			}
+
+			// 如果没有分支信息，默认走 false 分支
+			if branch == "" {
+				branch = "false"
+			}
+
+			log.Info("Condition branch selected",
+				zap.String("nodeId", conditionNodeId),
+				zap.String("branch", branch))
+
+			// 返回目标节点 ID
+			if targetId, ok := branches[branch]; ok {
+				return targetId, nil
+			}
+
+			// 如果找不到对应分支，尝试走 false 分支
+			if targetId, ok := branches["false"]; ok {
+				return targetId, nil
+			}
+
+			// 最后尝试走 true 分支
+			if targetId, ok := branches["true"]; ok {
+				return targetId, nil
+			}
+
+			return compose.END, nil
+		}
+
+		// 构建可能的目标节点映射
+		possibleTargets := make(map[string]bool)
+		for _, targetId := range branches {
+			possibleTargets[targetId] = true
+		}
+		possibleTargets[compose.END] = true // 允许结束
+
+		// 添加分支
+		err := graph.AddBranch(conditionNodeId, compose.NewStreamGraphBranch[*schema.Message](branchCondition, possibleTargets))
+		if err != nil {
+			log.Warn("添加条件分支失败",
+				zap.String("conditionNodeId", conditionNodeId),
+				zap.Any("branches", branches),
+				zap.Error(err))
+		} else {
+			log.Info("添加条件分支成功",
+				zap.String("conditionNodeId", conditionNodeId),
+				zap.Any("branches", branches))
 		}
 	}
 
@@ -415,4 +595,150 @@ func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiK
 	a.SetGraph(graph)
 
 	return a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
+}
+
+// executeLLMCondition 使用 LLM 执行条件判断
+func (a *WorkflowAgent) executeLLMCondition(ctx context.Context, endpoint, apiKey, model string, prompt string, input string, callback func(chunk *global.Chunk) error) (*ConditionResult, error) {
+	if prompt == "" {
+		return nil, fmt.Errorf("LLM 判断提示词为空")
+	}
+
+	// 创建 LLM 模型
+	maxTokens := 1024 // 判断结果不需要太长
+	temperature := float32(0.1) // 低温度使结果更确定
+
+	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		BaseURL:     endpoint,
+		Model:       model,
+		APIKey:      apiKey,
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("创建判断模型失败: %w", err)
+	}
+
+	// 构建判断提示
+	systemPrompt := `你是一个条件判断助手。请根据用户的输入内容，判断是否满足指定条件。
+
+你必须严格按照以下 JSON 格式返回结果，不要包含任何其他内容：
+{"result": true, "reason": "判断原因"}
+或
+{"result": false, "reason": "判断原因"}
+
+result 必须是布尔值 true 或 false。
+reason 简要说明判断原因。`
+
+	messages := []*schema.Message{
+		schema.SystemMessage(systemPrompt),
+		schema.UserMessage(fmt.Sprintf("判断条件：%s\n\n输入内容：%s\n\n请判断输入内容是否满足条件。", prompt, input)),
+	}
+
+	if callback != nil {
+		callback(&global.Chunk{ShowMsg: "[条件判断] AI 正在分析..."})
+	}
+
+	response, err := chatModel.Generate(ctx, messages)
+	if err != nil {
+		return nil, fmt.Errorf("LLM 判断失败: %w", err)
+	}
+
+	// 解析 JSON 响应
+	content := strings.TrimSpace(response.Content)
+	// 尝试提取 JSON（处理可能的 markdown 代码块）
+	if strings.HasPrefix(content, "```") {
+		// 移除 markdown 代码块
+		lines := strings.Split(content, "\n")
+		var jsonLines []string
+		inBlock := false
+		for _, line := range lines {
+			if strings.HasPrefix(line, "```") {
+				inBlock = !inBlock
+				continue
+			}
+			if inBlock {
+				jsonLines = append(jsonLines, line)
+			}
+		}
+		content = strings.Join(jsonLines, "\n")
+	}
+
+	var llmResponse LLMJudgmentResponse
+	if err := json.Unmarshal([]byte(content), &llmResponse); err != nil {
+		// 尝试从文本中提取 true/false
+		lowerContent := strings.ToLower(content)
+		if strings.Contains(lowerContent, "true") || strings.Contains(lowerContent, "是") || strings.Contains(lowerContent, "yes") {
+			return NewConditionResult(true, "从响应文本中推断: "+content), nil
+		}
+		if strings.Contains(lowerContent, "false") || strings.Contains(lowerContent, "否") || strings.Contains(lowerContent, "no") {
+			return NewConditionResult(false, "从响应文本中推断: "+content), nil
+		}
+		return nil, fmt.Errorf("解析 LLM 判断结果失败: %w, 响应内容: %s", err, content)
+	}
+
+	if callback != nil {
+		callback(&global.Chunk{ShowMsg: fmt.Sprintf("[条件判断] 结果: %v, 原因: %s", llmResponse.Result, llmResponse.Reason)})
+	}
+
+	return NewConditionResult(llmResponse.Result, llmResponse.Reason), nil
+}
+
+// executeToolResultCondition 基于工具结果执行条件判断
+func (a *WorkflowAgent) executeToolResultCondition(ctx context.Context, config *ConditionConfigV2, input *schema.Message) *ConditionResult {
+	// 工具结果判断需要从消息的 Extra 中获取工具执行结果
+	if input == nil || input.Extra == nil {
+		return NewConditionError(fmt.Errorf("无法获取工具执行结果"), config)
+	}
+
+	// 尝试从 Extra 中获取工具结果
+	var toolResult interface{}
+	var found bool
+
+	// 查找工具结果
+	if config.ToolResultKey != "" {
+		if result, ok := input.Extra[config.ToolResultKey]; ok {
+			toolResult = result
+			found = true
+		}
+	}
+
+	// 如果没有指定 key，尝试从常见字段获取
+	if !found {
+		for _, key := range []string{"result", "output", "data", "tool_result"} {
+			if result, ok := input.Extra[key]; ok {
+				toolResult = result
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		// 如果 Extra 中没有工具结果，尝试使用消息内容
+		toolResult = input.Content
+	}
+
+	// 将结果转为字符串进行比较
+	resultStr := fmt.Sprintf("%v", toolResult)
+
+	// 与期望值比较
+	if config.ExpectedValue != "" {
+		if resultStr == config.ExpectedValue {
+			return NewConditionResult(true, fmt.Sprintf("工具结果 '%s' 等于期望值 '%s'", resultStr, config.ExpectedValue))
+		}
+		return NewConditionResult(false, fmt.Sprintf("工具结果 '%s' 不等于期望值 '%s'", resultStr, config.ExpectedValue))
+	}
+
+	// 如果没有期望值，检查是否有表达式
+	if config.Expression != "" {
+		eval := NewExpressionEvaluator()
+		return eval.Evaluate(config.Expression, resultStr)
+	}
+
+	// 默认：非空即为 true
+	if resultStr != "" && resultStr != "null" && resultStr != "nil" {
+		return NewConditionResult(true, "工具结果非空: "+resultStr)
+	}
+
+	return NewConditionResult(false, "工具结果为空")
 }

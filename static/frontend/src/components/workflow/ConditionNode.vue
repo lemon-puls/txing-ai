@@ -11,8 +11,17 @@
     </div>
 
     <div class="node-content">
+      <!-- 条件类型和配置状态 -->
       <div class="condition-info" v-if="conditionConfig">
-        <el-tag size="small" type="info">{{ conditionTypeLabel }}</el-tag>
+        <div class="condition-type">
+          <el-tag size="small" :type="conditionTypeTag">{{ conditionTypeLabel }}</el-tag>
+        </div>
+        <div class="condition-detail" v-if="conditionDetail">
+          <span class="detail-text">{{ conditionDetail }}</span>
+        </div>
+        <div class="failure-action" v-if="failureActionLabel">
+          <el-tag size="small" type="warning" effect="plain">{{ failureActionLabel }}</el-tag>
+        </div>
       </div>
       <div class="no-condition" v-else>
         点击配置条件
@@ -47,11 +56,65 @@ const conditionConfig = computed(() => props.data?.conditionConfig)
 
 const conditionTypeLabel = computed(() => {
   const typeMap = {
-    'expression': '表达式判断',
+    'expression': '表达式',
     'llm': 'AI判断',
     'tool_result': '工具结果'
   }
-  return typeMap[conditionConfig.value?.type] || '条件判断'
+  return typeMap[conditionConfig.value?.type] || '条件'
+})
+
+const conditionTypeTag = computed(() => {
+  const tagMap = {
+    'expression': 'success',
+    'llm': 'primary',
+    'tool_result': 'warning'
+  }
+  return tagMap[conditionConfig.value?.type] || 'info'
+})
+
+const conditionDetail = computed(() => {
+  const config = conditionConfig.value
+  if (!config) return ''
+
+  switch (config.type) {
+    case 'expression':
+      if (config.expression) {
+        // 截断过长的表达式
+        const expr = config.expression
+        if (expr.length > 20) {
+          return expr.substring(0, 20) + '...'
+        }
+        return expr
+      }
+      return '未配置表达式'
+    case 'llm':
+      if (config.llmPrompt) {
+        const prompt = config.llmPrompt
+        if (prompt.length > 15) {
+          return prompt.substring(0, 15) + '...'
+        }
+        return prompt
+      }
+      return '未配置提示词'
+    case 'tool_result':
+      if (config.toolName) {
+        return config.toolName
+      }
+      return '未选择工具'
+    default:
+      return ''
+  }
+})
+
+const failureActionLabel = computed(() => {
+  const action = conditionConfig.value?.failureAction
+  if (!action || action === 'default_false') return ''
+
+  const actionMap = {
+    'terminate': '失败终止',
+    'configurable': '自定义分支'
+  }
+  return actionMap[action] || ''
 })
 </script>
 
@@ -61,7 +124,7 @@ const conditionTypeLabel = computed(() => {
   background: white;
   border: 2px solid #9c27b0;
   border-radius: 12px;
-  min-width: 160px;
+  min-width: 180px;
   box-shadow: 0 2px 8px rgba(156, 39, 176, 0.15);
   transition: all 0.2s ease;
   overflow: visible;
@@ -104,8 +167,32 @@ const conditionTypeLabel = computed(() => {
 
     .condition-info {
       display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
+      flex-direction: column;
+      gap: 6px;
+
+      .condition-type {
+        display: flex;
+        align-items: center;
+      }
+
+      .condition-detail {
+        .detail-text {
+          font-size: 11px;
+          color: #757575;
+          background: #f5f5f5;
+          padding: 4px 8px;
+          border-radius: 4px;
+          display: inline-block;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+
+      .failure-action {
+        margin-top: 2px;
+      }
     }
 
     .no-condition {

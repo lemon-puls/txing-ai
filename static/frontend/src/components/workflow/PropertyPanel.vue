@@ -86,7 +86,17 @@
                 v-model="localData.conditionConfig.expression"
                 placeholder="例如: {{output}} contains '成功'"
               />
-              <div class="form-tip">支持: contains, equals, starts_with, ends_with, greater_than, less_than</div>
+              <div class="form-tip">
+                支持运算符：<br/>
+                • contains - 包含子串<br/>
+                • equals - 精确匹配<br/>
+                • starts_with - 前缀匹配<br/>
+                • ends_with - 后缀匹配<br/>
+                • matches - 正则匹配<br/>
+                • greater_than - 数值大于<br/>
+                • less_than - 数值小于<br/>
+                • contains_any - 包含任意一个（逗号分隔或JSON数组）
+              </div>
             </el-form-item>
           </template>
 
@@ -99,6 +109,7 @@
                 :rows="3"
                 placeholder="请输入让AI判断的提示词，例如：请判断以下内容是否包含积极的情绪"
               />
+              <div class="form-tip">AI 将返回结构化 JSON 结果 {result: true/false, reason: '判断原因'}</div>
             </el-form-item>
           </template>
 
@@ -111,6 +122,40 @@
             </el-form-item>
             <el-form-item label="结果字段">
               <el-input v-model="localData.conditionConfig.toolResultKey" placeholder="例如: status, code" />
+            </el-form-item>
+            <el-form-item label="期望值">
+              <el-input v-model="localData.conditionConfig.expectedValue" placeholder="与期望值比较，例如: success, 200" />
+              <div class="form-tip">如果结果等于期望值，条件为 true</div>
+            </el-form-item>
+          </template>
+
+          <!-- 错误处理策略 -->
+          <div class="divider"></div>
+          <div class="sub-section-title">错误处理</div>
+          <el-form-item label="判断失败时的处理">
+            <el-radio-group v-model="localData.conditionConfig.failureAction">
+              <el-radio label="default_false">
+                <span>默认走 false 分支</span>
+                <div class="radio-desc">条件判断出错时自动走 false 分支继续执行</div>
+              </el-radio>
+              <el-radio label="terminate">
+                <span>终止工作流</span>
+                <div class="radio-desc">条件判断出错时停止整个工作流，返回错误</div>
+              </el-radio>
+              <el-radio label="configurable">
+                <span>自定义默认分支</span>
+                <div class="radio-desc">条件判断出错时走指定的分支</div>
+              </el-radio>
+            </el-radio-group>
+          </el-form-item>
+
+          <!-- 自定义错误分支 -->
+          <template v-if="localData.conditionConfig.failureAction === 'configurable'">
+            <el-form-item label="错误时的默认分支">
+              <el-radio-group v-model="localData.conditionConfig.failureBranch">
+                <el-radio label="true">走 true 分支</el-radio>
+                <el-radio label="false">走 false 分支</el-radio>
+              </el-radio-group>
             </el-form-item>
           </template>
         </el-form>
@@ -178,7 +223,10 @@ const localData = ref({
     expression: '',
     llmPrompt: '',
     toolName: '',
-    toolResultKey: ''
+    toolResultKey: '',
+    expectedValue: '',
+    failureAction: 'default_false',
+    failureBranch: 'false'
   }
 })
 
@@ -204,7 +252,10 @@ watch(() => props.selectedNode, (newNode) => {
         expression: '',
         llmPrompt: '',
         toolName: '',
-        toolResultKey: ''
+        toolResultKey: '',
+        expectedValue: '',
+        failureAction: 'default_false',
+        failureBranch: 'false'
       }
     }
   }
@@ -346,6 +397,25 @@ const handleApply = () => {
         color: #9e9e9e;
         margin-top: 6px;
         line-height: 1.4;
+      }
+
+      .divider {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 16px 0;
+      }
+
+      .sub-section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #757575;
+        margin-bottom: 12px;
+      }
+
+      .radio-desc {
+        font-size: 11px;
+        color: #9e9e9e;
+        margin-top: 2px;
       }
     }
   }
