@@ -222,6 +222,53 @@ func TestExpressionEvaluator_NotEquals(t *testing.T) {
 	}
 }
 
+func TestExpressionEvaluator_OutputContainsOperator(t *testing.T) {
+	eval := NewExpressionEvaluator()
+
+	// 当输出内容包含运算符子串时，不应错误匹配
+	// 这些测试直接用替换后的表达式（模拟 EvaluateWithVars 的 replaceVars 结果）
+	tests := []struct {
+		name     string
+		expr     string
+		input    string
+		expected bool
+	}{
+		{
+			"输出包含equals子串-not_equals空串",
+			`{"status":"equals","data":"test"} not_equals ''`,
+			`{"status":"equals","data":"test"}`,
+			true,
+		},
+		{
+			"输出包含contains子串-not_equals空串",
+			`{"msg":"contains some data"} not_equals ''`,
+			`{"msg":"contains some data"}`,
+			true,
+		},
+		{
+			"空输出-not_equals空串",
+			` not_equals ''`,
+			``,
+			false,
+		},
+		{
+			"输出包含not_equals子串-contains判断",
+			`{"result":"not_equals","status":"success"} contains 'success'`,
+			`{"result":"not_equals","status":"success"}`,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := eval.Evaluate(tt.expr, tt.input)
+			if result.Result != tt.expected {
+				t.Errorf("期望 %v, 得到 %v, 原因: %s", tt.expected, result.Result, result.Reason)
+			}
+		})
+	}
+}
+
 func TestExpressionEvaluator_EmptyExpression(t *testing.T) {
 	eval := NewExpressionEvaluator()
 

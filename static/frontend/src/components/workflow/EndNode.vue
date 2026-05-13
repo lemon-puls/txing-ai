@@ -1,7 +1,9 @@
 <template>
   <div class="end-node">
     <!-- 输入连接点 - 左侧 -->
-    <Handle type="target" :position="Position.Left" id="input" />
+    <Handle type="target" :position="Position.Left" id="input-left" />
+    <!-- 输入连接点 - 右侧 -->
+    <Handle type="target" :position="Position.Right" id="input-right" />
     <div class="node-icon">
       <el-icon><CircleClose /></el-icon>
     </div>

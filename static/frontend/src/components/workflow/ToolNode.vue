@@ -1,7 +1,9 @@
 <template>
   <div class="tool-node">
     <!-- 输入连接点 - 左侧 -->
-    <Handle type="target" :position="Position.Left" id="input" />
+    <Handle type="target" :position="Position.Left" id="input-left" />
+    <!-- 输入连接点 - 右侧 -->
+    <Handle type="target" :position="Position.Right" id="input-right" />
 
     <div class="node-header">
       <div class="node-icon">
@@ -28,7 +30,9 @@
     </div>
 
     <!-- 输出连接点 - 右侧 -->
-    <Handle type="source" :position="Position.Right" id="output" />
+    <Handle type="source" :position="Position.Right" id="output-right" />
+    <!-- 输出连接点 - 左侧 -->
+    <Handle type="source" :position="Position.Left" id="output-left" />
   </div>
 </template>
 

@@ -12,6 +12,10 @@
         />
       </div>
       <div class="actions">
+        <el-button type="danger" plain :disabled="!selectedNode && !selectedEdgeId" @click="deleteSelected">
+          <el-icon><Delete /></el-icon>
+          删除
+        </el-button>
         <el-button type="success" @click="openTestDialog">
           <el-icon><VideoPlay /></el-icon>
           运行测试
@@ -29,7 +33,7 @@
       <NodeSidebar :saving="saving" @save="saveWorkflow" />
 
       <!-- 中间画布 -->
-      <div class="canvas-area" @drop="onDrop" @dragover.prevent>
+      <div class="canvas-area" @drop="onDrop" @dragover.prevent @keydown="onKeyDown" tabindex="0" ref="canvasRef">
         <VueFlow
           v-model:nodes="nodes"
           v-model:edges="edges"
@@ -43,6 +47,7 @@
           :snap-grid="[15, 15]"
           :fit-view-on-init="true"
           @node-click="onNodeClick"
+          @edge-click="onEdgeClick"
           @pane-click="onPaneClick"
           @connect="onConnect"
           @paneReady="onPaneReady"
@@ -113,13 +118,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, markRaw } from 'vue'
+import { ref, onMounted, onUnmounted, computed, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Check, VideoPlay, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { Check, VideoPlay, Loading, WarningFilled, Delete } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
@@ -146,12 +151,16 @@ const workflowName = ref('')
 const saving = ref(false)
 
 // Vue Flow 实例
-const { project, fitView } = useVueFlow()
+const { project, fitView, addSelectedEdges, removeSelectedEdges } = useVueFlow()
+
+// 画布 ref
+const canvasRef = ref(null)
 
 // 节点和边数据
 const nodes = ref([])
 const edges = ref([])
 const selectedNode = ref(null)
+const selectedEdgeId = ref(null)
 
 // 模型和工具列表
 const modelList = ref([])
@@ -187,6 +196,14 @@ const defaultEdgeOptions = {
   }
 }
 
+// 迁移旧的 handle ID 到新的
+const migrateHandleId = (handleId, type) => {
+  if (!handleId) return type === 'source' ? 'output-right' : 'input-left'
+  if (handleId === 'output') return 'output-right'
+  if (handleId === 'input') return 'input-left'
+  return handleId
+}
+
 // 加载工作流数据
 const loadWorkflow = async () => {
   if (!workflowId) return
@@ -198,7 +215,12 @@ const loadWorkflow = async () => {
         try {
           const flowData = JSON.parse(res.data.topology)
           nodes.value = flowData.nodes || []
-          edges.value = flowData.edges || []
+          // 迁移旧的 handle ID
+          edges.value = (flowData.edges || []).map(edge => ({
+            ...edge,
+            sourceHandle: migrateHandleId(edge.sourceHandle, 'source'),
+            targetHandle: migrateHandleId(edge.targetHandle, 'target')
+          }))
         } catch (e) {
           console.error('解析工作流数据失败:', e)
         }
@@ -297,22 +319,74 @@ const getDefaultLabel = (type) => {
 // 节点点击
 const onNodeClick = ({ node }) => {
   selectedNode.value = node
+  selectedEdgeId.value = null
+  removeSelectedEdges()
+}
+
+// 边点击 - 选中边
+const onEdgeClick = ({ edge }) => {
+  selectedNode.value = null
+  selectedEdgeId.value = edge.id
+  addSelectedEdges([edge])
 }
 
 // 画布点击（取消选中）
 const onPaneClick = () => {
   selectedNode.value = null
+  selectedEdgeId.value = null
+  removeSelectedEdges()
+}
+
+// 删除选中的节点
+const deleteSelectedNode = () => {
+  if (!selectedNode.value) return
+  const nodeId = selectedNode.value.id
+  nodes.value = nodes.value.filter(n => n.id !== nodeId)
+  edges.value = edges.value.filter(e => e.source !== nodeId && e.target !== nodeId)
+  selectedNode.value = null
+}
+
+// 删除选中的边
+const deleteSelectedEdge = () => {
+  if (!selectedEdgeId.value) return
+  edges.value = edges.value.filter(e => e.id !== selectedEdgeId.value)
+  selectedEdgeId.value = null
+  removeSelectedEdges()
+}
+
+// 通用删除（节点优先，其次边）
+const deleteSelected = () => {
+  if (selectedNode.value) {
+    deleteSelectedNode()
+  } else if (selectedEdgeId.value) {
+    deleteSelectedEdge()
+  }
+}
+
+// 键盘事件
+const onKeyDown = (event) => {
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return
+    deleteSelected()
+  }
 }
 
 // 连线事件
 const onConnect = (params) => {
-  // 确保边有正确的 sourceHandle 和 targetHandle
+  // 映射旧的 handle ID 到新的
+  const mapHandle = (handleId, type) => {
+    if (!handleId) return type === 'source' ? 'output-right' : 'input-left'
+    if (handleId === 'output') return 'output-right'
+    if (handleId === 'input') return 'input-left'
+    return handleId
+  }
+
   const newEdge = {
     id: `edge_${Date.now()}`,
     source: params.source,
     target: params.target,
-    sourceHandle: params.sourceHandle || 'output',
-    targetHandle: params.targetHandle || 'input',
+    sourceHandle: mapHandle(params.sourceHandle, 'source'),
+    targetHandle: mapHandle(params.targetHandle, 'target'),
     type: 'smoothstep',
     animated: true
   }
@@ -468,9 +542,22 @@ const runWorkflowTest = async () => {
   }
 }
 
+// 全局键盘事件监听
+const handleGlobalKeyDown = (e) => {
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+    deleteSelected()
+  }
+}
+
 onMounted(() => {
   loadWorkflow()
   loadOptions()
+  document.addEventListener('keydown', handleGlobalKeyDown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleGlobalKeyDown)
 })
 </script>
 
@@ -534,6 +621,11 @@ onMounted(() => {
       flex: 1;
       position: relative;
       background: linear-gradient(135deg, #fafbfc 0%, #f0f2f5 100%);
+      outline: none;
+
+      &:focus {
+        outline: none;
+      }
     }
   }
 }
@@ -567,6 +659,30 @@ onMounted(() => {
   .vue-flow__node.selected {
     outline: 2px solid #1976d2;
     outline-offset: 2px;
+  }
+
+  .vue-flow__edge.selected .vue-flow__edge-path {
+    stroke: #1976d2;
+    stroke-width: 3;
+  }
+
+  .vue-flow__edge.selected {
+    z-index: 10;
+  }
+
+  .vue-flow__handle {
+    width: 12px;
+    height: 12px;
+    transition: all 0.15s ease;
+
+    &:hover {
+      transform: scale(1.3);
+    }
+  }
+
+  .vue-flow__connection-path {
+    stroke: #1976d2;
+    stroke-width: 2;
   }
 
   .vue-flow__controls {

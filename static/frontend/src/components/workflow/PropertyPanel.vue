@@ -379,6 +379,24 @@ const handleApply = () => {
             background: #f5f5f5;
             border-radius: 10px;
             transition: all 0.2s;
+            height: auto !important;
+            align-items: flex-start;
+
+            :deep(.el-radio__content) {
+              display: flex;
+              flex-direction: column;
+              flex: 1;
+              min-width: 0;
+            }
+
+            :deep(.el-radio__label) {
+              display: flex;
+              flex-direction: column;
+              width: 100%;
+              padding-left: 0;
+              white-space: normal;
+              line-height: 1.5;
+            }
 
             &:hover {
               background: #f0f0f0;
@@ -416,6 +434,9 @@ const handleApply = () => {
         font-size: 11px;
         color: #9e9e9e;
         margin-top: 2px;
+        line-height: 1.4;
+        display: block;
+        width: 100%;
       }
     }
   }

@@ -407,9 +407,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 				switch conditionConfig.Type {
 				case ConditionTypeExpression:
-					// 表达式判断
+					// 表达式判断 - 使用变量替换
 					eval := NewExpressionEvaluator()
-					result = eval.Evaluate(conditionConfig.Expression, input.Content)
+					vars := map[string]string{
+						"output": input.Content,
+					}
+					result = eval.EvaluateWithVars(conditionConfig.Expression, vars)
 
 				case ConditionTypeLLM:
 					// AI判断 - 使用 LLM 判断

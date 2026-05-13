@@ -35,3 +35,4 @@ vendor/
 /static/frontend/.vscode/
 !/static/frontend/.vscode/extensions.json
 /static/frontend/.idea/
+.gstack/

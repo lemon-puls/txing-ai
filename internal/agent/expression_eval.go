@@ -75,11 +75,22 @@ func (e *ExpressionEvaluator) parseExpression(expression string) (ExpressionOper
 	}
 
 	for _, op := range operators {
-		// 查找运算符位置
-		idx := strings.Index(strings.ToLower(expression), string(op))
+		// 从右向左查找运算符位置，避免匹配到输出内容中的子串
+		// 运算符前后应该有空格，如 `{{output}} not_equals ''`
+		opStr := " " + string(op) + " "
+		idx := strings.LastIndex(strings.ToLower(expression), opStr)
+		if idx == -1 {
+			// 也尝试匹配值为引号开头的情况，如 `not_equals ''`
+			opQuote := " " + string(op) + " '"
+			idx = strings.LastIndex(strings.ToLower(expression), opQuote)
+		}
+		if idx == -1 {
+			opQuote := " " + string(op) + " \""
+			idx = strings.LastIndex(strings.ToLower(expression), opQuote)
+		}
 		if idx != -1 {
-			// 提取运算符后的值
-			valuePart := strings.TrimSpace(expression[idx+len(op):])
+			// 提取运算符后的值（跳过前导空格 + 运算符 + 空格）
+			valuePart := strings.TrimSpace(expression[idx+len(op)+2:])
 			// 去除引号
 			value := e.extractValue(valuePart)
 			return op, value, nil

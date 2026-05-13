@@ -1,7 +1,9 @@
 <template>
   <div class="condition-node">
     <!-- 输入连接点 - 左侧 -->
-    <Handle type="target" :position="Position.Left" id="input" />
+    <Handle type="target" :position="Position.Left" id="input-left" />
+    <!-- 输入连接点 - 右侧 -->
+    <Handle type="target" :position="Position.Right" id="input-right" />
 
     <div class="node-header">
       <div class="node-icon">
@@ -35,6 +37,12 @@
     <!-- False 输出连接点 - 右下 -->
     <Handle type="source" :position="Position.Right" id="false" :style="{ top: '70%' }" />
     <div class="branch-label branch-false">否</div>
+
+    <!-- True 输出连接点 - 左上 -->
+    <Handle type="source" :position="Position.Left" id="true-left" :style="{ top: '30%' }" />
+
+    <!-- False 输出连接点 - 左下 -->
+    <Handle type="source" :position="Position.Left" id="false-left" :style="{ top: '70%' }" />
   </div>
 </template>
 

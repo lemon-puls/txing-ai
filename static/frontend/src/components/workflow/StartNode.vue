@@ -5,7 +5,9 @@
     </div>
     <div class="node-label">{{ label }}</div>
     <!-- 输出连接点 - 右侧 -->
-    <Handle type="source" :position="Position.Right" id="output" />
+    <Handle type="source" :position="Position.Right" id="output-right" />
+    <!-- 输出连接点 - 左侧 -->
+    <Handle type="source" :position="Position.Left" id="output-left" />
   </div>
 </template>
 
