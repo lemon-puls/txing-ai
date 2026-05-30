@@ -141,10 +141,21 @@ type TopoEdge struct {
 	TargetHandle string `json:"targetHandle,omitempty"`
 }
 
+// SchemaField Schema 字段定义
+type SchemaField struct {
+	Name        string `json:"name"`                  // 字段名称
+	Type        string `json:"type"`                  // 字段类型: string, number, boolean, object, array
+	Required    bool   `json:"required,omitempty"`    // 是否必填
+	Default     string `json:"default,omitempty"`     // 默认值
+	Description string `json:"description,omitempty"` // 字段描述
+}
+
 // WorkflowConfig 工作流级别配置
 type WorkflowConfig struct {
-	DefaultModel string `json:"defaultModel,omitempty"` // 默认模型名称
-	MaxRunSteps  int    `json:"maxRunSteps,omitempty"`  // 最大执行步数
+	DefaultModel string        `json:"defaultModel,omitempty"` // 默认模型名称
+	MaxRunSteps  int           `json:"maxRunSteps,omitempty"`  // 最大执行步数
+	InputSchema  []SchemaField `json:"inputSchema,omitempty"`  // 输入 Schema
+	OutputSchema []SchemaField `json:"outputSchema,omitempty"` // 输出 Schema
 }
 
 // Topology 工作流拓扑图结构
