@@ -160,6 +160,80 @@
           </template>
         </el-form>
       </div>
+
+      <!-- 代码节点配置 -->
+      <div class="config-section" v-if="nodeType === 'code'">
+        <div class="section-title">代码配置</div>
+        <el-form label-position="top" size="small">
+          <el-form-item label="编程语言">
+            <el-select v-model="localData.codeConfig.language" placeholder="请选择语言" style="width: 100%">
+              <el-option label="JavaScript" value="javascript" />
+              <el-option label="Python" value="python" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="代码内容">
+            <el-input
+              v-model="localData.codeConfig.code"
+              type="textarea"
+              :rows="10"
+              placeholder="在此编写代码"
+              style="font-family: monospace;"
+            />
+            <div class="form-tip">
+              可用变量：<br/>
+              • input - 输入内容（字符串）<br/>
+              • output - 等同于 input（兼容其他节点）<br/>
+              使用 return 返回结果
+            </div>
+          </el-form-item>
+          <el-form-item label="超时时间（秒）">
+            <el-input-number v-model="localData.codeConfig.timeout" :min="1" :max="300" :step="1" style="width: 100%" />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <!-- HTTP 节点配置 -->
+      <div class="config-section" v-if="nodeType === 'http'">
+        <div class="section-title">HTTP 配置</div>
+        <el-form label-position="top" size="small">
+          <el-form-item label="请求方法">
+            <el-select v-model="localData.httpConfig.method" placeholder="请选择方法" style="width: 100%">
+              <el-option label="GET" value="GET" />
+              <el-option label="POST" value="POST" />
+              <el-option label="PUT" value="PUT" />
+              <el-option label="DELETE" value="DELETE" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="请求 URL">
+            <el-input
+              v-model="localData.httpConfig.url"
+              placeholder="例如: https://api.example.com/data"
+            />
+            <div class="form-tip">支持变量替换：{{input}}、{{output}}</div>
+          </el-form-item>
+          <el-form-item label="请求头">
+            <el-input
+              v-model="httpHeadersStr"
+              type="textarea"
+              :rows="3"
+              placeholder='每行一个，格式: Key: Value&#10;例如:&#10;Authorization: Bearer token&#10;Content-Type: application/json'
+              @change="parseHttpHeaders"
+            />
+          </el-form-item>
+          <el-form-item label="请求体" v-if="localData.httpConfig.method !== 'GET'">
+            <el-input
+              v-model="localData.httpConfig.body"
+              type="textarea"
+              :rows="4"
+              placeholder="请求体内容（支持 JSON）"
+            />
+            <div class="form-tip">支持变量替换：{{input}}、{{output}}</div>
+          </el-form-item>
+          <el-form-item label="超时时间（秒）">
+            <el-input-number v-model="localData.httpConfig.timeout" :min="1" :max="300" :step="1" style="width: 100%" />
+          </el-form-item>
+        </el-form>
+      </div>
     </div>
 
     <div class="panel-footer">
@@ -227,8 +301,23 @@ const localData = ref({
     expectedValue: '',
     failureAction: 'default_false',
     failureBranch: 'false'
+  },
+  codeConfig: {
+    language: 'javascript',
+    code: '',
+    timeout: 30
+  },
+  httpConfig: {
+    method: 'GET',
+    url: '',
+    headers: {},
+    body: '',
+    timeout: 30
   }
 })
+
+// HTTP 请求头字符串（用于编辑）
+const httpHeadersStr = ref('')
 
 // 监听选中节点变化，更新本地数据
 watch(() => props.selectedNode, (newNode) => {
@@ -256,10 +345,46 @@ watch(() => props.selectedNode, (newNode) => {
         expectedValue: '',
         failureAction: 'default_false',
         failureBranch: 'false'
+      },
+      codeConfig: newNode.data?.codeConfig || {
+        language: 'javascript',
+        code: '',
+        timeout: 30
+      },
+      httpConfig: newNode.data?.httpConfig || {
+        method: 'GET',
+        url: '',
+        headers: {},
+        body: '',
+        timeout: 30
       }
     }
+
+    // 将 headers 对象转为字符串
+    const headers = localData.value.httpConfig.headers || {}
+    httpHeadersStr.value = Object.entries(headers)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n')
   }
 }, { immediate: true })
+
+// 解析 HTTP 请求头字符串
+const parseHttpHeaders = (str) => {
+  const headers = {}
+  if (str) {
+    str.split('\n').forEach(line => {
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const key = line.substring(0, colonIndex).trim()
+        const value = line.substring(colonIndex + 1).trim()
+        if (key && value) {
+          headers[key] = value
+        }
+      }
+    })
+  }
+  localData.value.httpConfig.headers = headers
+}
 
 const handleApply = () => {
   emit('update', {

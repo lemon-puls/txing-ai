@@ -76,6 +76,22 @@ type ConditionConfig struct {
 	FailureBranch string `json:"failureBranch,omitempty"` // 新增：错误时的默认分支
 }
 
+// CodeConfig 代码节点配置
+type CodeConfig struct {
+	Language string `json:"language"`           // 语言: "javascript" | "python" | "go"
+	Code     string `json:"code"`               // 代码内容
+	Timeout  int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 30
+}
+
+// HTTPConfig HTTP 节点配置
+type HTTPConfig struct {
+	Method  string            `json:"method"`            // HTTP 方法: "GET" | "POST" | "PUT" | "DELETE"
+	URL     string            `json:"url"`               // 请求 URL
+	Headers map[string]string `json:"headers,omitempty"` // 请求头
+	Body    string            `json:"body,omitempty"`    // 请求体（支持 {{output}} 变量替换）
+	Timeout int               `json:"timeout,omitempty"` // 超时时间（秒），默认 30
+}
+
 // NodeData 节点数据（配置直接放在 data 层级，与前端 JSON 结构一致）
 type NodeData struct {
 	NodeType      string           `json:"nodeType"`
@@ -83,6 +99,8 @@ type NodeData struct {
 	ModelConfig   *ModelConfig     `json:"modelConfig,omitempty"`
 	ToolConfig    *ToolConfig      `json:"toolConfig,omitempty"`
 	ConditionConf *ConditionConfig `json:"conditionConfig,omitempty"`
+	CodeConfig    *CodeConfig      `json:"codeConfig,omitempty"`
+	HTTPConfig    *HTTPConfig      `json:"httpConfig,omitempty"`
 }
 
 // NodeExecutionLog 节点执行日志
@@ -774,6 +792,46 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 				statusCbCond("completed")
 				return outputMsg, nil
+			}))
+
+		case "code":
+			// 代码节点：执行自定义代码
+			codeConfig := node.Data.CodeConfig
+			if codeConfig == nil {
+				log.Warn("代码节点配置为空，跳过", zap.String("nodeId", nodeId))
+				continue
+			}
+
+			statusCbCode := nodeStatusCallback(callback, nodeId, "code", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCbCode("running")
+				result, err := executeCodeNode(ctx, nodeId, node.Data.Label, codeConfig, input, callback)
+				if err != nil {
+					statusCbCode("failed")
+					return nil, err
+				}
+				statusCbCode("completed")
+				return result, nil
+			}))
+
+		case "http":
+			// HTTP 节点：发送 HTTP 请求
+			httpConfig := node.Data.HTTPConfig
+			if httpConfig == nil {
+				log.Warn("HTTP 节点配置为空，跳过", zap.String("nodeId", nodeId))
+				continue
+			}
+
+			statusCbHTTP := nodeStatusCallback(callback, nodeId, "http", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCbHTTP("running")
+				result, err := executeHTTPNode(ctx, nodeId, node.Data.Label, httpConfig, input, callback)
+				if err != nil {
+					statusCbHTTP("failed")
+					return nil, err
+				}
+				statusCbHTTP("completed")
+				return result, nil
 			}))
 
 		}

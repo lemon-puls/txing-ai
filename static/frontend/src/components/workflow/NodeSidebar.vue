@@ -97,6 +97,33 @@
           </div>
         </div>
       </div>
+
+      <!-- 集成节点 -->
+      <div class="category">
+        <div class="category-title">集成</div>
+        <div class="category-items">
+          <div
+            class="node-item code"
+            draggable="true"
+            @dragstart="onDragStart($event, 'code')"
+          >
+            <div class="item-icon">
+              <el-icon><Monitor /></el-icon>
+            </div>
+            <span>代码节点</span>
+          </div>
+          <div
+            class="node-item http"
+            draggable="true"
+            @dragstart="onDragStart($event, 'http')"
+          >
+            <div class="item-icon">
+              <el-icon><Link /></el-icon>
+            </div>
+            <span>HTTP 节点</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="sidebar-footer">
@@ -110,7 +137,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check } from '@element-plus/icons-vue'
+import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link } from '@element-plus/icons-vue'
 
 const props = defineProps({
   saving: Boolean,
@@ -275,6 +302,14 @@ const onDragStart = (event, nodeType) => {
         &.condition {
           border-left: 3px solid #9c27b0;
           .item-icon { background: #f3e5f5; color: #9c27b0; }
+        }
+        &.code {
+          border-left: 3px solid #607d8b;
+          .item-icon { background: #eceff1; color: #607d8b; }
+        }
+        &.http {
+          border-left: 3px solid #00bcd4;
+          .item-icon { background: #e0f7fa; color: #00bcd4; }
         }
       }
     }

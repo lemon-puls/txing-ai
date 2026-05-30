@@ -250,6 +250,8 @@ import EndNode from '@/components/workflow/EndNode.vue'
 import LLMNode from '@/components/workflow/LLMNode.vue'
 import ToolNode from '@/components/workflow/ToolNode.vue'
 import ConditionNode from '@/components/workflow/ConditionNode.vue'
+import CodeNode from '@/components/workflow/CodeNode.vue'
+import HTTPNode from '@/components/workflow/HTTPNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 
@@ -314,7 +316,9 @@ const nodeTypes = {
   end: markRaw(EndNode),
   llm: markRaw(LLMNode),
   tool: markRaw(ToolNode),
-  condition: markRaw(ConditionNode)
+  condition: markRaw(ConditionNode),
+  code: markRaw(CodeNode),
+  http: markRaw(HTTPNode)
 }
 
 // 连接线样式
@@ -440,6 +444,22 @@ const onDrop = (event) => {
           failureAction: 'default_false',
           failureBranch: 'false'
         }
+      } : {}),
+      ...(type === 'code' ? {
+        codeConfig: {
+          language: 'javascript',
+          code: '// 在此编写代码\n// 输入变量: input\n// 输出: return 结果\nreturn input;',
+          timeout: 30
+        }
+      } : {}),
+      ...(type === 'http' ? {
+        httpConfig: {
+          method: 'GET',
+          url: '',
+          headers: {},
+          body: '',
+          timeout: 30
+        }
       } : {})
     }
   }
@@ -453,7 +473,9 @@ const getDefaultLabel = (type) => {
     end: '结束',
     llm: '大模型',
     tool: '工具',
-    condition: '条件分支'
+    condition: '条件分支',
+    code: '代码',
+    http: 'HTTP'
   }
   return map[type] || '未知节点'
 }
