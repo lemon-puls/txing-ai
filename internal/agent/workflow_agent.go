@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/tool"
@@ -38,19 +40,28 @@ type WorkflowAgent struct {
 	modelResolver ModelResolver
 }
 
+// RetryConfig 重试配置
+type RetryConfig struct {
+	MaxRetries  int    `json:"maxRetries,omitempty"`  // 最大重试次数，默认 0（不重试）
+	RetryDelay  int    `json:"retryDelay,omitempty"`  // 重试间隔（毫秒），默认 1000
+	BackoffType string `json:"backoffType,omitempty"` // 退避策略: "fixed" | "exponential"，默认 "fixed"
+}
+
 // ModelConfig 模型配置
 type ModelConfig struct {
-	Model          string  `json:"model"`
-	SystemPrompt   string  `json:"systemPrompt"`
-	Temperature    float64 `json:"temperature"`
-	MaxTokens      int     `json:"maxTokens"`
-	ContextEnabled bool    `json:"contextEnabled"`
+	Model          string       `json:"model"`
+	SystemPrompt   string       `json:"systemPrompt"`
+	Temperature    float64      `json:"temperature"`
+	MaxTokens      int          `json:"maxTokens"`
+	ContextEnabled bool         `json:"contextEnabled"`
+	Retry          *RetryConfig `json:"retry,omitempty"` // 重试配置
 }
 
 // ToolConfig 工具配置
 type ToolConfig struct {
 	Tools  []string               `json:"tools"`
 	Params map[string]interface{} `json:"params"`
+	Retry  *RetryConfig           `json:"retry,omitempty"` // 重试配置
 }
 
 // ConditionConfig 条件配置（旧版本，保持兼容）
@@ -72,6 +83,21 @@ type NodeData struct {
 	ModelConfig   *ModelConfig     `json:"modelConfig,omitempty"`
 	ToolConfig    *ToolConfig      `json:"toolConfig,omitempty"`
 	ConditionConf *ConditionConfig `json:"conditionConfig,omitempty"`
+}
+
+// NodeExecutionLog 节点执行日志
+type NodeExecutionLog struct {
+	NodeID    string `json:"nodeId"`
+	NodeType  string `json:"nodeType"`
+	NodeLabel string `json:"nodeLabel"`
+	Status    string `json:"status"` // running, completed, failed
+	StartTime int64  `json:"startTime"`
+	EndTime   int64  `json:"endTime"`
+	Duration  int64  `json:"duration"` // 毫秒
+	Input     string `json:"input,omitempty"`
+	Output    string `json:"output,omitempty"`
+	Error     string `json:"error,omitempty"`
+	Retry     int    `json:"retry,omitempty"` // 当前重试次数
 }
 
 // TopoNode 拓扑节点
@@ -151,6 +177,83 @@ func (a *WorkflowAgent) getToolsByNames(names []string) []tool.BaseTool {
 	return result
 }
 
+// calculateRetryDelay 计算重试延迟
+func calculateRetryDelay(retryConfig *RetryConfig, attempt int) time.Duration {
+	if retryConfig == nil {
+		return 0
+	}
+	baseDelay := time.Duration(retryConfig.RetryDelay) * time.Millisecond
+	if baseDelay == 0 {
+		baseDelay = 1000 * time.Millisecond
+	}
+
+	switch retryConfig.BackoffType {
+	case "exponential":
+		return time.Duration(float64(baseDelay) * math.Pow(2, float64(attempt)))
+	default: // "fixed"
+		return baseDelay
+	}
+}
+
+// getMaxRetries 获取最大重试次数
+func getMaxRetries(retryConfig *RetryConfig) int {
+	if retryConfig == nil {
+		return 0
+	}
+	return retryConfig.MaxRetries
+}
+
+// executeWithRetry 带重试的执行函数
+func executeWithRetry(retryConfig *RetryConfig, fn func() error) error {
+	maxRetries := getMaxRetries(retryConfig)
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := calculateRetryDelay(retryConfig, attempt-1)
+			log.Info("重试执行",
+				zap.Int("attempt", attempt),
+				zap.Int("maxRetries", maxRetries),
+				zap.Duration("delay", delay))
+			time.Sleep(delay)
+		}
+
+		lastErr = fn()
+		if lastErr == nil {
+			return nil
+		}
+
+		log.Warn("执行失败",
+			zap.Int("attempt", attempt+1),
+			zap.Error(lastErr))
+	}
+
+	return fmt.Errorf("执行失败（已重试 %d 次）: %w", maxRetries, lastErr)
+}
+
+// sendExecutionLog 发送执行日志到回调
+func sendExecutionLog(callback func(chunk *global.Chunk) error, execLog *NodeExecutionLog) {
+	if callback == nil || execLog == nil {
+		return
+	}
+	callback(&global.Chunk{
+		NodeId:     execLog.NodeID,
+		NodeType:   execLog.NodeType,
+		NodeLabel:  execLog.NodeLabel,
+		NodeStatus: execLog.Status,
+		ShowMsg:    fmt.Sprintf("[%s] %s (耗时: %dms)", execLog.NodeLabel, execLog.Status, execLog.Duration),
+		ExecutionLog: &global.ExecutionLogInfo{
+			StartTime: execLog.StartTime,
+			EndTime:   execLog.EndTime,
+			Duration:  execLog.Duration,
+			Input:     execLog.Input,
+			Output:    execLog.Output,
+			Error:     execLog.Error,
+			Retry:     execLog.Retry,
+		},
+	})
+}
+
 // nodeStatusCallback 创建节点状态回调，包装原始 callback 发送 running/completed/failed 状态
 func nodeStatusCallback(callback func(chunk *global.Chunk) error, nodeId, nodeType, nodeLabel string) func(status string) {
 	return func(status string) {
@@ -222,7 +325,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 	if topo.Config != nil && topo.Config.MaxRunSteps > 0 {
 		maxRunSteps = topo.Config.MaxRunSteps
 	}
-	_ = maxRunSteps // 后续使用
+	a.SetMaxRunSteps(maxRunSteps)
 
 	// 默认模型配置
 	defaultMaxTokens := 8192
@@ -300,6 +403,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			nodeMaxTokens := defaultMaxTokens
 			var nodeTemperature float32 = 0.7
 			systemPrompt := ""
+			var retryConfig *RetryConfig
 
 			if node.Data.ModelConfig != nil {
 				mc := node.Data.ModelConfig
@@ -313,6 +417,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					nodeTemperature = float32(mc.Temperature)
 				}
 				systemPrompt = mc.SystemPrompt
+				retryConfig = mc.Retry
 			}
 
 			// 解析节点模型信息（支持节点级别覆盖）
@@ -335,7 +440,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			// 如果有系统提示词，创建包含系统提示的 Lambda
 			if systemPrompt != "" {
 				statusCb := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
+				llmRetryConfig := retryConfig
 				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					execLog := &NodeExecutionLog{
+						NodeID:    nodeId,
+						NodeType:  "llm",
+						NodeLabel: node.Data.Label,
+						StartTime: time.Now().UnixMilli(),
+					}
 					statusCb("running")
 					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
 
@@ -345,13 +457,25 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					}
 					if input != nil && input.Content != "" {
 						messages = append(messages, input)
+						execLog.Input = input.Content
 					}
 
-					// 调用模型
-					response, err := nodeChatModel.Generate(ctx, messages)
-					if err != nil {
-						log.Error("LLM generate error", zap.Error(err))
-						return nil, err
+					var response *schema.Message
+					// 带重试的执行
+					execErr := executeWithRetry(llmRetryConfig, func() error {
+						var genErr error
+						response, genErr = nodeChatModel.Generate(ctx, messages)
+						return genErr
+					})
+
+					if execErr != nil {
+						log.Error("LLM generate error", zap.Error(execErr))
+						execLog.Status = "failed"
+						execLog.Error = execErr.Error()
+						execLog.EndTime = time.Now().UnixMilli()
+						execLog.Duration = execLog.EndTime - execLog.StartTime
+						sendExecutionLog(callback, execLog)
+						return nil, execErr
 					}
 
 					// 回调
@@ -359,30 +483,59 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
 					}
 
+					execLog.Status = "completed"
+					execLog.Output = response.Content
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
 					statusCb("completed")
 					return response, nil
 				}))
 			} else {
 				statusCb2 := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
+				llmRetryConfig2 := retryConfig
 				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					execLog := &NodeExecutionLog{
+						NodeID:    nodeId,
+						NodeType:  "llm",
+						NodeLabel: node.Data.Label,
+						StartTime: time.Now().UnixMilli(),
+					}
 					statusCb2("running")
 					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
 
 					var messages []*schema.Message
 					if input != nil && input.Content != "" {
 						messages = []*schema.Message{input}
+						execLog.Input = input.Content
 					}
 
-					response, err := nodeChatModel.Generate(ctx, messages)
-					if err != nil {
-						log.Error("LLM generate error", zap.Error(err))
-						return nil, err
+					var response *schema.Message
+					execErr := executeWithRetry(llmRetryConfig2, func() error {
+						var genErr error
+						response, genErr = nodeChatModel.Generate(ctx, messages)
+						return genErr
+					})
+
+					if execErr != nil {
+						log.Error("LLM generate error", zap.Error(execErr))
+						execLog.Status = "failed"
+						execLog.Error = execErr.Error()
+						execLog.EndTime = time.Now().UnixMilli()
+						execLog.Duration = execLog.EndTime - execLog.StartTime
+						sendExecutionLog(callback, execLog)
+						return nil, execErr
 					}
 
 					if callback != nil && response.Content != "" {
 						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
 					}
 
+					execLog.Status = "completed"
+					execLog.Output = response.Content
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
 					statusCb2("completed")
 					return response, nil
 				}))
@@ -391,8 +544,10 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 		case "tool":
 			// 工具节点：使用 LLM 调用工具
 			var nodeTools []tool.BaseTool
+			var toolRetryConfig *RetryConfig
 			if node.Data.ToolConfig != nil {
 				nodeTools = a.getToolsByNames(node.Data.ToolConfig.Tools)
+				toolRetryConfig = node.Data.ToolConfig.Retry
 			} else {
 				nodeTools = a.tools
 			}
@@ -442,7 +597,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			// 使用 Lambda 包装工具调用
 			statusCbTool := nodeStatusCallback(callback, nodeId, "tool", node.Data.Label)
+			nodeToolRetryConfig := toolRetryConfig
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "tool",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
 				statusCbTool("running")
 				log.Info("Executing Tool node", zap.String("nodeId", nodeId), zap.Strings("tools", func() []string {
 					names := make([]string, len(nodeTools))
@@ -455,10 +617,27 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					return names
 				}()))
 
-				// 让模型决定调用哪些工具
-				response, err := toolChatModel.Generate(ctx, []*schema.Message{input})
-				if err != nil {
-					return nil, err
+				if input != nil {
+					execLog.Input = input.Content
+				}
+
+				var response *schema.Message
+				// 带重试的执行
+				execErr := executeWithRetry(nodeToolRetryConfig, func() error {
+					var genErr error
+					response, genErr = toolChatModel.Generate(ctx, []*schema.Message{input})
+					return genErr
+				})
+
+				if execErr != nil {
+					log.Error("工具模型调用失败", zap.Error(execErr))
+					execLog.Status = "failed"
+					execLog.Error = execErr.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbTool("failed")
+					return nil, execErr
 				}
 
 				// 检查是否有工具调用
@@ -471,6 +650,11 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					results, err := toolNode.Invoke(ctx, response)
 					if err != nil {
 						log.Error("工具执行失败", zap.Error(err))
+						execLog.Status = "failed"
+						execLog.Error = err.Error()
+						execLog.EndTime = time.Now().UnixMilli()
+						execLog.Duration = execLog.EndTime - execLog.StartTime
+						sendExecutionLog(callback, execLog)
 						statusCbTool("failed")
 						return response, nil
 					}
@@ -480,7 +664,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					}
 
 					// 返回最后一个结果
+					execLog.Status = "completed"
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
 					if len(results) > 0 {
+						execLog.Output = results[len(results)-1].Content
 						statusCbTool("completed")
 						return results[len(results)-1], nil
 					}
@@ -488,6 +677,11 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					return response, nil
 				}
 
+				execLog.Status = "completed"
+				execLog.Output = response.Content
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
 				statusCbTool("completed")
 				return response, nil
 			}))

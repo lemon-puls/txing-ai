@@ -31,6 +31,19 @@ type Chunk struct {
 	NodeType   string `json:"node_type,omitempty"`
 	NodeLabel  string `json:"node_label,omitempty"`
 	NodeStatus string `json:"node_status,omitempty"` // "running" | "completed" | "failed"
+	// 执行日志信息
+	ExecutionLog *ExecutionLogInfo `json:"execution_log,omitempty"`
+}
+
+// ExecutionLogInfo 执行日志信息
+type ExecutionLogInfo struct {
+	StartTime int64  `json:"startTime"` // 开始时间戳（毫秒）
+	EndTime   int64  `json:"endTime"`   // 结束时间戳（毫秒）
+	Duration  int64  `json:"duration"`  // 执行耗时（毫秒）
+	Input     string `json:"input,omitempty"`
+	Output    string `json:"output,omitempty"`
+	Error     string `json:"error,omitempty"`
+	Retry     int    `json:"retry,omitempty"` // 重试次数
 }
 
 // ModelMapping 模型映射规则

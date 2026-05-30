@@ -301,6 +301,11 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 			"end":              false,
 		}
 
+		// 添加执行日志信息
+		if chunk.ExecutionLog != nil {
+			data["executionLog"] = chunk.ExecutionLog
+		}
+
 		jsonData, err := json.Marshal(data)
 		if err != nil {
 			cancel()
