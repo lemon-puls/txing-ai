@@ -286,6 +286,10 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 			"toolParams":       chunk.ToolParams,
 			"toolResult":       chunk.ToolResult,
 			"showMsg":          chunk.ShowMsg,
+			"nodeId":           chunk.NodeId,
+			"nodeType":         chunk.NodeType,
+			"nodeLabel":        chunk.NodeLabel,
+			"nodeStatus":       chunk.NodeStatus,
 			"end":              false,
 		}
 

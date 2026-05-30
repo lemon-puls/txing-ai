@@ -130,6 +130,21 @@ func (a *WorkflowAgent) getToolsByNames(names []string) []tool.BaseTool {
 	return result
 }
 
+// nodeStatusCallback 创建节点状态回调，包装原始 callback 发送 running/completed/failed 状态
+func nodeStatusCallback(callback func(chunk *global.Chunk) error, nodeId, nodeType, nodeLabel string) func(status string) {
+	return func(status string) {
+		if callback == nil {
+			return
+		}
+		callback(&global.Chunk{
+			NodeId:     nodeId,
+			NodeType:   nodeType,
+			NodeLabel:  nodeLabel,
+			NodeStatus: status,
+		})
+	}
+}
+
 // BuildGraph 构建执行图（简化版本，使用 DAG 模式）
 func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model string, callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
 	var topo Topology
@@ -181,20 +196,29 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 		switch node.Data.NodeType {
 		case "start":
 			startNodeId = nodeId
+			statusCb := nodeStatusCallback(callback, nodeId, "start", node.Data.Label)
 			// 开始节点：将输入消息转换为消息列表
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) (*schema.Message, error) {
+				statusCb("running")
 				log.Info("Executing start node", zap.String("nodeId", nodeId))
+				var result *schema.Message
 				if len(input) > 0 {
-					return input[len(input)-1], nil
+					result = input[len(input)-1]
+				} else {
+					result = schema.UserMessage("")
 				}
-				return schema.UserMessage(""), nil
+				statusCb("completed")
+				return result, nil
 			}))
 
 		case "end":
 			endNodeId = nodeId
+			statusCb := nodeStatusCallback(callback, nodeId, "end", node.Data.Label)
 			// 结束节点：直接返回输入
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCb("running")
 				log.Info("Executing end node", zap.String("nodeId", nodeId))
+				statusCb("completed")
 				return input, nil
 			}))
 
@@ -235,7 +259,9 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			// 如果有系统提示词，创建包含系统提示的 Lambda
 			if systemPrompt != "" {
+				statusCb := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
 				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					statusCb("running")
 					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
 
 					// 构建消息列表
@@ -258,10 +284,13 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
 					}
 
+					statusCb("completed")
 					return response, nil
 				}))
 			} else {
+				statusCb2 := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
 				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+					statusCb2("running")
 					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
 
 					var messages []*schema.Message
@@ -279,6 +308,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
 					}
 
+					statusCb2("completed")
 					return response, nil
 				}))
 			}
@@ -329,7 +359,9 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}
 
 			// 使用 Lambda 包装工具调用
+			statusCbTool := nodeStatusCallback(callback, nodeId, "tool", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCbTool("running")
 				log.Info("Executing Tool node", zap.String("nodeId", nodeId), zap.Strings("tools", func() []string {
 					names := make([]string, len(nodeTools))
 					for i, t := range nodeTools {
@@ -357,6 +389,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					results, err := toolNode.Invoke(ctx, response)
 					if err != nil {
 						log.Error("工具执行失败", zap.Error(err))
+						statusCbTool("failed")
 						return response, nil
 					}
 
@@ -366,11 +399,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 					// 返回最后一个结果
 					if len(results) > 0 {
+						statusCbTool("completed")
 						return results[len(results)-1], nil
 					}
+					statusCbTool("completed")
 					return response, nil
 				}
 
+				statusCbTool("completed")
 				return response, nil
 			}))
 
@@ -392,7 +428,9 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}
 
 			// 添加条件判断节点
+			statusCbCond := nodeStatusCallback(callback, nodeId, "condition", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCbCond("running")
 				log.Info("Executing Condition node",
 					zap.String("nodeId", nodeId),
 					zap.String("type", string(conditionConfig.Type)))
@@ -458,6 +496,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					"condition_reason": result.Reason,
 				}
 
+				statusCbCond("completed")
 				return outputMsg, nil
 			}))
 

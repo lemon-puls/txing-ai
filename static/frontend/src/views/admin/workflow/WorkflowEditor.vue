@@ -55,6 +55,43 @@
           <Background pattern-color="#e0e0e0" :gap="20" />
           <Controls />
         </VueFlow>
+
+        <!-- 运行结果底部面板 -->
+        <transition name="slide-up">
+          <div v-if="testRunning || testResult" class="test-result-panel">
+            <div class="result-panel-header">
+              <div class="result-panel-title">
+                <span class="status-dot" :class="{ running: testRunning, success: !testRunning && !testError, error: testError }"></span>
+                <span>{{ testRunning ? '工作流运行中...' : (testError ? '运行失败' : '运行完成') }}</span>
+              </div>
+              <div class="result-panel-actions">
+                <el-button v-if="!testRunning" text size="small" @click="clearTestResult">
+                  <el-icon><Delete /></el-icon>
+                  清除
+                </el-button>
+                <el-button text size="small" @click="testResultPanelCollapsed = !testResultPanelCollapsed">
+                  <el-icon>
+                    <ArrowDown v-if="testResultPanelCollapsed" />
+                    <ArrowUp v-else />
+                  </el-icon>
+                </el-button>
+              </div>
+            </div>
+            <div v-show="!testResultPanelCollapsed" class="result-panel-body">
+              <div v-if="testRunning" class="running-indicator">
+                <el-icon class="loading-icon"><Loading /></el-icon>
+                <span>正在执行工作流，请观察画布中的节点状态...</span>
+              </div>
+              <div v-else-if="testError" class="error-message">
+                <el-icon><WarningFilled /></el-icon>
+                <span>{{ testError }}</span>
+              </div>
+              <div v-else class="result-text">
+                {{ testResult }}
+              </div>
+            </div>
+          </div>
+        </transition>
       </div>
 
       <!-- 右侧属性面板 -->
@@ -71,45 +108,24 @@
     <el-dialog
       v-model="testDialogVisible"
       title="运行工作流测试"
-      width="600px"
+      width="420px"
       :close-on-click-modal="false"
+      class="test-dialog"
     >
       <el-form label-position="top">
         <el-form-item label="输入内容">
           <el-input
             v-model="testInput"
             type="textarea"
-            :rows="4"
+            :rows="3"
             placeholder="请输入要测试的内容，例如：请介绍一下人工智能的发展历史"
           />
         </el-form-item>
       </el-form>
 
-      <!-- 运行结果显示区域 -->
-      <div class="test-result-area" v-if="testRunning || testResult">
-        <div class="result-header">
-          <span class="status-badge" :class="{ running: testRunning, success: !testRunning && !testError }">
-            {{ testRunning ? '运行中...' : (testError ? '失败' : '完成') }}
-          </span>
-        </div>
-        <div class="result-content">
-          <div v-if="testRunning" class="running-indicator">
-            <el-icon class="loading-icon"><Loading /></el-icon>
-            <span>正在执行工作流...</span>
-          </div>
-          <div v-else-if="testError" class="error-message">
-            <el-icon><WarningFilled /></el-icon>
-            <span>{{ testError }}</span>
-          </div>
-          <div v-else class="result-text">
-            {{ testResult }}
-          </div>
-        </div>
-      </div>
-
       <template #footer>
-        <el-button @click="testDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="runWorkflowTest" :loading="testRunning" :disabled="!testInput">
+        <el-button @click="testDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="startTestRun" :disabled="!testInput">
           开始运行
         </el-button>
       </template>
@@ -118,13 +134,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, markRaw } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Check, VideoPlay, Loading, WarningFilled, Delete } from '@element-plus/icons-vue'
+import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
@@ -166,12 +182,19 @@ const selectedEdgeId = ref(null)
 const modelList = ref([])
 const toolList = ref([])
 
+// 工作流运行状态跟踪
+const runningNodeId = ref(null)
+const completedNodeIds = ref(new Set())
+const failedNodeIds = ref(new Set())
+const activeEdgeIds = ref(new Set())
+
 // 测试相关
 const testDialogVisible = ref(false)
 const testInput = ref('')
 const testRunning = ref(false)
 const testResult = ref('')
 const testError = ref('')
+const testResultPanelCollapsed = ref(false)
 
 // 注册自定义节点类型
 const nodeTypes = {
@@ -442,17 +465,96 @@ const goBack = () => {
   router.push('/admin/workflow')
 }
 
+// 清除运行状态
+const clearExecutionState = () => {
+  runningNodeId.value = null
+  completedNodeIds.value = new Set()
+  failedNodeIds.value = new Set()
+  activeEdgeIds.value = new Set()
+  // 重置所有节点和边的 class
+  nodes.value = nodes.value.map(node => ({ ...node, class: '' }))
+  edges.value = edges.value.map(edge => ({ ...edge, class: '' }))
+}
+
+// 处理节点状态变化
+const handleNodeStatus = (nodeId, nodeStatus) => {
+  if (nodeStatus === 'running') {
+    runningNodeId.value = nodeId
+    completedNodeIds.value.delete(nodeId)
+    failedNodeIds.value.delete(nodeId)
+    // 激活从该节点出发的边
+    const outEdges = edges.value.filter(e => e.source === nodeId)
+    outEdges.forEach(e => activeEdgeIds.value.add(e.id))
+  } else if (nodeStatus === 'completed') {
+    completedNodeIds.value.add(nodeId)
+    if (runningNodeId.value === nodeId) {
+      runningNodeId.value = null
+    }
+    // 将从该节点出发的边标记为已完成（从 active 中移除）
+    const outEdges = edges.value.filter(e => e.source === nodeId)
+    outEdges.forEach(e => activeEdgeIds.value.delete(e.id))
+  } else if (nodeStatus === 'failed') {
+    failedNodeIds.value.add(nodeId)
+    if (runningNodeId.value === nodeId) {
+      runningNodeId.value = null
+    }
+    const outEdges = edges.value.filter(e => e.source === nodeId)
+    outEdges.forEach(e => activeEdgeIds.value.delete(e.id))
+  }
+}
+
+// 更新节点 CSS class
+const updateNodeClasses = () => {
+  nodes.value = nodes.value.map(node => {
+    const classes = []
+    if (node.id === runningNodeId.value) classes.push('node-running')
+    if (completedNodeIds.value.has(node.id)) classes.push('node-completed')
+    if (failedNodeIds.value.has(node.id)) classes.push('node-failed')
+    return { ...node, class: classes.join(' ') }
+  })
+}
+
+// 更新边 CSS class
+const updateEdgeClasses = () => {
+  edges.value = edges.value.map(edge => {
+    const classes = []
+    if (activeEdgeIds.value.has(edge.id)) classes.push('edge-active')
+    return { ...edge, class: classes.join(' ') }
+  })
+}
+
+watch([runningNodeId, completedNodeIds, failedNodeIds], updateNodeClasses, { deep: true })
+watch(activeEdgeIds, updateEdgeClasses, { deep: true })
+
 // 打开测试对话框
 const openTestDialog = () => {
   testInput.value = ''
   testResult.value = ''
   testError.value = ''
+  testResultPanelCollapsed.value = false
   testDialogVisible.value = true
+}
+
+// 从对话框开始运行
+const startTestRun = () => {
+  testDialogVisible.value = false
+  testResultPanelCollapsed.value = false
+  runWorkflowTest()
+}
+
+// 清除测试结果
+const clearTestResult = () => {
+  testResult.value = ''
+  testError.value = ''
+  clearExecutionState()
 }
 
 // 运行工作流测试
 const runWorkflowTest = async () => {
   if (!testInput.value || !workflowId) return
+
+  // 清除上次运行状态
+  clearExecutionState()
 
   testRunning.value = true
   testResult.value = ''
@@ -511,13 +613,22 @@ const runWorkflowTest = async () => {
             console.log('收到事件:', event)
             if (event.end) {
               testRunning.value = false
+              // 运行结束，清除运行中状态
+              runningNodeId.value = null
+              activeEdgeIds.value = new Set()
               ElMessage.success('工作流执行完成')
               return
             }
             if (event.error) {
               testError.value = event.error
               testRunning.value = false
+              runningNodeId.value = null
+              activeEdgeIds.value = new Set()
               return
+            }
+            // 处理节点状态事件
+            if (event.nodeId && event.nodeStatus) {
+              handleNodeStatus(event.nodeId, event.nodeStatus)
             }
             if (event.content) {
               testResult.value += event.content
@@ -649,10 +760,30 @@ onUnmounted(() => {
 
   .vue-flow__node {
     cursor: pointer;
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.3s ease;
 
     &:hover {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    // 运行中 - 呼吸脉冲
+    &.node-running {
+      border: 2px solid #2196f3 !important;
+      box-shadow: 0 0 20px rgba(33, 150, 243, 0.4);
+      animation: nodePulse 1.5s ease-in-out infinite;
+      z-index: 100;
+    }
+
+    // 已完成 - 绿色边框
+    &.node-completed {
+      border: 2px solid #4caf50 !important;
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+
+    // 失败 - 红色边框 + 抖动
+    &.node-failed {
+      border: 2px solid #f44336 !important;
+      animation: nodeShake 0.5s ease-in-out;
     }
   }
 
@@ -668,6 +799,14 @@ onUnmounted(() => {
 
   .vue-flow__edge.selected {
     z-index: 10;
+  }
+
+  // 活跃边 - 流动动画
+  .vue-flow__edge.edge-active .vue-flow__edge-path {
+    stroke: #2196f3;
+    stroke-width: 3;
+    stroke-dasharray: 10 5;
+    animation: edgeFlow 1s linear infinite;
   }
 
   .vue-flow__handle {
@@ -701,48 +840,84 @@ onUnmounted(() => {
   }
 }
 
-// 测试对话框样式
-.test-result-area {
-  margin-top: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  background: #fafafa;
+// 测试对话框 - 缩小宽度，运行时自动关闭
+:deep(.test-dialog) {
+  .el-dialog {
+    border-radius: 14px;
+  }
+}
 
-  .result-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
+// 运行结果底部面板
+.test-result-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+  border-radius: 14px 14px 0 0;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
 
-    .status-badge {
-      display: inline-flex;
+  .result-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+
+    .result-panel-title {
+      display: flex;
       align-items: center;
-      padding: 4px 12px;
-      border-radius: 8px;
+      gap: 8px;
       font-size: 13px;
       font-weight: 500;
+      color: #333;
 
-      &.running {
-        background: #fff3e0;
-        color: #ef6c00;
-      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #bdbdbd;
 
-      &.success {
-        background: #e8f5e9;
-        color: #2e7d32;
+        &.running {
+          background: #ef6c00;
+          animation: dotPulse 1s ease-in-out infinite;
+        }
+
+        &.success {
+          background: #4caf50;
+        }
+
+        &.error {
+          background: #f44336;
+        }
       }
+    }
+
+    .result-panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
   }
 
-  .result-content {
-    padding: 16px;
-    min-height: 100px;
-    max-height: 300px;
+  .result-panel-body {
+    padding: 14px 20px;
     overflow-y: auto;
+    flex: 1;
+    min-height: 0;
 
     .running-indicator {
       display: flex;
       align-items: center;
       gap: 10px;
       color: #ef6c00;
+      font-size: 13px;
 
       .loading-icon {
         animation: rotate 1s linear infinite;
@@ -754,11 +929,11 @@ onUnmounted(() => {
       align-items: center;
       gap: 8px;
       color: #c62828;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .result-text {
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.6;
       white-space: pre-wrap;
       color: #424242;
@@ -766,8 +941,48 @@ onUnmounted(() => {
   }
 }
 
+// 底部面板滑入/滑出动画
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
+
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes nodePulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(33, 150, 243, 0.6), 0 0 40px rgba(33, 150, 243, 0.2);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes nodeShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes edgeFlow {
+  to {
+    stroke-dashoffset: -15;
+  }
 }
 </style>

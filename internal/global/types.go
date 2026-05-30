@@ -26,6 +26,11 @@ type Chunk struct {
 	ToolResult string `json:"tool_result"`
 	// 显示信息（用于前端显示）
 	ShowMsg string `json:"show_msg"`
+	// 工作流节点状态信息
+	NodeId     string `json:"node_id,omitempty"`
+	NodeType   string `json:"node_type,omitempty"`
+	NodeLabel  string `json:"node_label,omitempty"`
+	NodeStatus string `json:"node_status,omitempty"` // "running" | "completed" | "failed"
 }
 
 // ModelMapping 模型映射规则
