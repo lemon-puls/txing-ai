@@ -6,22 +6,28 @@ import (
 )
 
 type AgentFlowVO struct {
-	Id          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Topology    string    `json:"topology"`
-	CreateTime  time.Time `json:"createTime"`
-	UpdateTime  time.Time `json:"updateTime"`
+	Id               int64     `json:"id"`
+	Name             string    `json:"name"`
+	Description      string    `json:"description"`
+	Topology         string    `json:"topology"`
+	CurrentVersion   int       `json:"currentVersion"`
+	PublishedVersion int       `json:"publishedVersion"`
+	IsTemplate       bool      `json:"isTemplate"`
+	CreateTime       time.Time `json:"createTime"`
+	UpdateTime       time.Time `json:"updateTime"`
 }
 
 func ToAgentFlowVO(flow domain.AgentFlow) AgentFlowVO {
 	return AgentFlowVO{
-		Id:          flow.Id,
-		Name:        flow.Name,
-		Description: flow.Description,
-		Topology:    flow.Topology,
-		CreateTime:  flow.CreateTime,
-		UpdateTime:  flow.UpdateTime,
+		Id:               flow.Id,
+		Name:             flow.Name,
+		Description:      flow.Description,
+		Topology:         flow.Topology,
+		CurrentVersion:   flow.CurrentVersion,
+		PublishedVersion: flow.PublishedVersion,
+		IsTemplate:       flow.IsTemplate,
+		CreateTime:       flow.CreateTime,
+		UpdateTime:       flow.UpdateTime,
 	}
 }
 
@@ -29,6 +35,70 @@ func ToAgentFlowVOs(flows []domain.AgentFlow) []AgentFlowVO {
 	var vos []AgentFlowVO
 	for _, flow := range flows {
 		vos = append(vos, ToAgentFlowVO(flow))
+	}
+	return vos
+}
+
+// AgentFlowVersionVO 工作流版本 VO
+type AgentFlowVersionVO struct {
+	Id          int64     `json:"id"`
+	FlowID      int64     `json:"flowId"`
+	Version     int       `json:"version"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Topology    string    `json:"topology"`
+	IsPublished bool      `json:"isPublished"`
+	ChangeLog   string    `json:"changeLog"`
+	CreateTime  time.Time `json:"createTime"`
+}
+
+func ToAgentFlowVersionVO(version domain.AgentFlowVersion) AgentFlowVersionVO {
+	return AgentFlowVersionVO{
+		Id:          version.Id,
+		FlowID:      version.FlowID,
+		Version:     version.Version,
+		Name:        version.Name,
+		Description: version.Description,
+		Topology:    version.Topology,
+		IsPublished: version.IsPublished,
+		ChangeLog:   version.ChangeLog,
+		CreateTime:  version.CreateTime,
+	}
+}
+
+func ToAgentFlowVersionVOs(versions []domain.AgentFlowVersion) []AgentFlowVersionVO {
+	var vos []AgentFlowVersionVO
+	for _, v := range versions {
+		vos = append(vos, ToAgentFlowVersionVO(v))
+	}
+	return vos
+}
+
+// TemplateVO 模板 VO
+type TemplateVO struct {
+	Id          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Category    string    `json:"category"`
+	Topology    string    `json:"topology"`
+	CreateTime  time.Time `json:"createTime"`
+}
+
+func ToTemplateVO(flow domain.AgentFlow) TemplateVO {
+	return TemplateVO{
+		Id:          flow.Id,
+		Name:        flow.Name,
+		Description: flow.Description,
+		Category:    flow.TemplateCategory,
+		Topology:    flow.Topology,
+		CreateTime:  flow.CreateTime,
+	}
+}
+
+func ToTemplateVOs(flows []domain.AgentFlow) []TemplateVO {
+	var vos []TemplateVO
+	for _, flow := range flows {
+		vos = append(vos, ToTemplateVO(flow))
 	}
 	return vos
 }

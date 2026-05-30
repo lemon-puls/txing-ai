@@ -488,3 +488,264 @@ func mergeValidationResults(a, b *agent.ValidationResult) *agent.ValidationResul
 	merged.Warnings = append(a.Warnings, b.Warnings...)
 	return merged
 }
+
+// ==================== 版本管理 ====================
+
+// CreateVersion 创建工作流版本
+// @Summary 创建工作流版本
+// @Description 为指定工作流创建新版本
+// @Tags 工作流版本管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param data body dto.CreateVersionReq true "版本信息"
+// @Success 200 {object} utils.Response{data=vo.AgentFlowVersionVO}
+// @Router /api/workflow/{id}/versions [post]
+func CreateVersion(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	var req dto.CreateVersionReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	version, err := workflowservice.CreateVersion(id, req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "创建版本失败", err)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToAgentFlowVersionVO(*version))
+}
+
+// ListVersions 获取版本列表
+// @Summary 获取版本列表
+// @Description 获取工作流的版本历史
+// @Tags 工作流版本管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param page query int true "页码"
+// @Param limit query int true "每页数量"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/{id}/versions [get]
+func ListVersions(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	var req dto.ListVersionReq
+	req.FlowID = id
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	pageVo, err := workflowservice.ListVersions(req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取版本列表失败", err)
+		return
+	}
+
+	vos := vo.ToAgentFlowVersionVOs(pageVo.Records)
+	result := page.Convert(pageVo, vos)
+	utils.OkWithData(ctx, result)
+}
+
+// GetVersion 获取指定版本
+// @Summary 获取指定版本
+// @Description 获取工作流的指定版本详情
+// @Tags 工作流版本管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param version path int true "版本号"
+// @Success 200 {object} utils.Response{data=vo.AgentFlowVersionVO}
+// @Router /api/workflow/{id}/versions/{version} [get]
+func GetVersion(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	versionStr := ctx.Param("version")
+	version, err := strconv.Atoi(versionStr)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "版本号错误", err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	v, err := workflowservice.GetVersion(id, version, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取版本失败", err)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToAgentFlowVersionVO(*v))
+}
+
+// PublishVersion 发布版本
+// @Summary 发布版本
+// @Description 发布工作流的指定版本
+// @Tags 工作流版本管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param data body dto.PublishVersionReq true "发布信息"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/{id}/versions/publish [post]
+func PublishVersion(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	var req dto.PublishVersionReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	if err := workflowservice.PublishVersion(id, req.Version, db); err != nil {
+		utils.ErrorWithMsg(ctx, "发布版本失败", err)
+		return
+	}
+
+	utils.OkWithMsg(ctx, "发布成功")
+}
+
+// RollbackVersion 回滚版本
+// @Summary 回滚版本
+// @Description 回滚工作流到指定版本
+// @Tags 工作流版本管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param version path int true "版本号"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/{id}/versions/{version}/rollback [post]
+func RollbackVersion(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	versionStr := ctx.Param("version")
+	version, err := strconv.Atoi(versionStr)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "版本号错误", err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	if err := workflowservice.RollbackToVersion(id, version, db); err != nil {
+		utils.ErrorWithMsg(ctx, "回滚失败", err)
+		return
+	}
+
+	utils.OkWithMsg(ctx, "回滚成功")
+}
+
+// ==================== 模板管理 ====================
+
+// CreateTemplate 创建模板
+// @Summary 创建模板
+// @Description 从工作流创建模板
+// @Tags 工作流模板管理
+// @Accept json
+// @Produce json
+// @Param data body dto.CreateTemplateReq true "模板信息"
+// @Success 200 {object} utils.Response{data=vo.TemplateVO}
+// @Router /api/workflow/templates [post]
+func CreateTemplate(ctx *gin.Context) {
+	var req dto.CreateTemplateReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	template, err := workflowservice.CreateTemplate(req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "创建模板失败", err)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToTemplateVO(*template))
+}
+
+// ListTemplates 获取模板列表
+// @Summary 获取模板列表
+// @Description 获取工作流模板市场
+// @Tags 工作流模板管理
+// @Accept json
+// @Produce json
+// @Param page query int true "页码"
+// @Param limit query int true "每页数量"
+// @Param category query string false "模板分类"
+// @Param name query string false "模板名称"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/templates [get]
+func ListTemplates(ctx *gin.Context) {
+	var req dto.ListTemplateReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	pageVo, err := workflowservice.ListTemplates(req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取模板列表失败", err)
+		return
+	}
+
+	vos := vo.ToTemplateVOs(pageVo.Records)
+	result := page.Convert(pageVo, vos)
+	utils.OkWithData(ctx, result)
+}
+
+// CloneTemplate 克隆模板
+// @Summary 克隆模板
+// @Description 从模板创建工作流
+// @Tags 工作流模板管理
+// @Accept json
+// @Produce json
+// @Param data body dto.CloneTemplateReq true "克隆信息"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/templates/clone [post]
+func CloneTemplate(ctx *gin.Context) {
+	var req dto.CloneTemplateReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	flow, err := workflowservice.CloneTemplate(req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "克隆模板失败", err)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToAgentFlowVO(*flow))
+}
