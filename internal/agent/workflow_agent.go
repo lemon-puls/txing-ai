@@ -92,15 +92,23 @@ type HTTPConfig struct {
 	Timeout int               `json:"timeout,omitempty"` // 超时时间（秒），默认 30
 }
 
+// SubWorkflowConfig 子工作流节点配置
+type SubWorkflowConfig struct {
+	WorkflowID int64  `json:"workflowId"`          // 子工作流 ID
+	Input      string `json:"input,omitempty"`     // 输入模板（支持 {{output}} 变量替换）
+	Timeout    int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 60
+}
+
 // NodeData 节点数据（配置直接放在 data 层级，与前端 JSON 结构一致）
 type NodeData struct {
-	NodeType      string           `json:"nodeType"`
-	Label         string           `json:"label"`
-	ModelConfig   *ModelConfig     `json:"modelConfig,omitempty"`
-	ToolConfig    *ToolConfig      `json:"toolConfig,omitempty"`
-	ConditionConf *ConditionConfig `json:"conditionConfig,omitempty"`
-	CodeConfig    *CodeConfig      `json:"codeConfig,omitempty"`
-	HTTPConfig    *HTTPConfig      `json:"httpConfig,omitempty"`
+	NodeType         string              `json:"nodeType"`
+	Label            string              `json:"label"`
+	ModelConfig      *ModelConfig        `json:"modelConfig,omitempty"`
+	ToolConfig       *ToolConfig         `json:"toolConfig,omitempty"`
+	ConditionConf    *ConditionConfig    `json:"conditionConfig,omitempty"`
+	CodeConfig       *CodeConfig         `json:"codeConfig,omitempty"`
+	HTTPConfig       *HTTPConfig         `json:"httpConfig,omitempty"`
+	SubWorkflowConfig *SubWorkflowConfig `json:"subWorkflowConfig,omitempty"`
 }
 
 // NodeExecutionLog 节点执行日志
@@ -843,6 +851,24 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				statusCbHTTP("completed")
 				return result, nil
+			}))
+
+		case "subworkflow":
+			// 子工作流节点：调用其他工作流
+			subWorkflowConfig := node.Data.SubWorkflowConfig
+			if subWorkflowConfig == nil {
+				log.Warn("子工作流节点配置为空，跳过", zap.String("nodeId", nodeId))
+				continue
+			}
+
+			// 暂时跳过子工作流执行，需要注入 SubWorkflowExecutor
+			log.Warn("子工作流节点暂未实现完整执行逻辑", zap.String("nodeId", nodeId))
+			statusCbSub := nodeStatusCallback(callback, nodeId, "subworkflow", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				statusCbSub("running")
+				// TODO: 实现子工作流执行
+				statusCbSub("completed")
+				return input, nil
 			}))
 
 		}
