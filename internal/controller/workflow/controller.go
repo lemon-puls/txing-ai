@@ -253,15 +253,23 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		return
 	}
 
-	// 初始化 WorkflowAgent
-	workflowAgent := agent.NewWorkflowAgent(resProvider, flow.Topology)
+	// 创建模型解析器
+	modelResolver := agent.NewChannelModelResolver(db)
 
-	// 获取默认模型
-	model := "deepseek-v3"
+	// 初始化 WorkflowAgent
+	workflowAgent := agent.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
+
+	// 获取默认模型（优先使用拓扑配置中的模型，否则使用系统默认）
+	defaultModel := "deepseek-v3"
+	var topo agent.Topology
+	if err := json.Unmarshal([]byte(flow.Topology), &topo); err == nil && topo.Config != nil && topo.Config.DefaultModel != "" {
+		defaultModel = topo.Config.DefaultModel
+	}
+
 	mappingParams := map[string]interface{}{
 		"type": global.LLMTypeModel,
 	}
-	channel, mappingModel, err := channelservice.ChooseChannelAndModel(db, model, mappingParams)
+	channel, mappingModel, err := channelservice.ChooseChannelAndModel(db, defaultModel, mappingParams)
 	if err != nil {
 		utils.ErrorWithMsg(ctx, "选择渠道失败", err)
 		return

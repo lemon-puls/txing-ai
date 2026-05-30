@@ -18,11 +18,24 @@ import (
 	mytool "txing-ai/internal/tool"
 )
 
+// ModelInfo 模型信息（包含端点和密钥）
+type ModelInfo struct {
+	Endpoint string
+	APIKey   string
+	Model    string // 映射后的模型名称
+}
+
+// ModelResolver 模型解析器接口，用于根据模型名称获取对应的端点和密钥
+type ModelResolver interface {
+	Resolve(modelName string) (*ModelInfo, error)
+}
+
 // WorkflowAgent 工作流智能体
 type WorkflowAgent struct {
 	*BaseAgent
-	tools    []tool.BaseTool
-	topology string
+	tools         []tool.BaseTool
+	topology      string
+	modelResolver ModelResolver
 }
 
 // ModelConfig 模型配置
@@ -84,10 +97,17 @@ type TopoEdge struct {
 	TargetHandle string `json:"targetHandle,omitempty"`
 }
 
+// WorkflowConfig 工作流级别配置
+type WorkflowConfig struct {
+	DefaultModel string `json:"defaultModel,omitempty"` // 默认模型名称
+	MaxRunSteps  int    `json:"maxRunSteps,omitempty"`  // 最大执行步数
+}
+
 // Topology 工作流拓扑图结构
 type Topology struct {
-	Nodes []TopoNode `json:"nodes"`
-	Edges []TopoEdge `json:"edges"`
+	Nodes  []TopoNode     `json:"nodes"`
+	Edges  []TopoEdge     `json:"edges"`
+	Config *WorkflowConfig `json:"config,omitempty"`
 }
 
 // WorkflowAgentState 工作流状态
@@ -96,14 +116,15 @@ type WorkflowAgentState struct {
 }
 
 // NewWorkflowAgent 创建一个新的工作流智能体
-func NewWorkflowAgent(res iface.ResourceProvider, topology string) *WorkflowAgent {
+func NewWorkflowAgent(res iface.ResourceProvider, topology string, modelResolver ModelResolver) *WorkflowAgent {
 	baseAgent := NewBaseAgent("WorkflowAgent", "A dynamic workflow agent based on JSON topology")
 	baseAgent.SetSystemPrompt("You are a helpful AI assistant executing a workflow.")
 
 	return &WorkflowAgent{
-		BaseAgent: baseAgent,
-		tools:     mytool.ProvideTools(res),
-		topology:  topology,
+		BaseAgent:     baseAgent,
+		tools:         mytool.ProvideTools(res),
+		topology:      topology,
+		modelResolver: modelResolver,
 	}
 }
 
@@ -145,12 +166,63 @@ func nodeStatusCallback(callback func(chunk *global.Chunk) error, nodeId, nodeTy
 	}
 }
 
+// resolveModelInfo 解析模型信息，支持节点级别覆盖
+func (a *WorkflowAgent) resolveModelInfo(nodeModel string, defaultEndpoint, defaultAPIKey, defaultModel string) (endpoint, apiKey, model string) {
+	endpoint = defaultEndpoint
+	apiKey = defaultAPIKey
+	model = defaultModel
+
+	// 如果节点指定了模型，尝试使用 ModelResolver 解析
+	if nodeModel != "" && a.modelResolver != nil {
+		info, err := a.modelResolver.Resolve(nodeModel)
+		if err != nil {
+			log.Warn("解析节点模型失败，使用默认模型",
+				zap.String("nodeModel", nodeModel),
+				zap.Error(err))
+		} else {
+			endpoint = info.Endpoint
+			apiKey = info.APIKey
+			model = info.Model
+		}
+	} else if nodeModel != "" {
+		// 没有 ModelResolver 但节点指定了模型，仅覆盖模型名称
+		model = nodeModel
+	}
+
+	return endpoint, apiKey, model
+}
+
 // BuildGraph 构建执行图（简化版本，使用 DAG 模式）
 func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model string, callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
 	var topo Topology
 	if err := json.Unmarshal([]byte(a.topology), &topo); err != nil {
 		return nil, fmt.Errorf("解析拓扑图失败: %w", err)
 	}
+
+	// 使用拓扑配置中的默认模型（如果有）
+	if topo.Config != nil && topo.Config.DefaultModel != "" {
+		if a.modelResolver != nil {
+			info, err := a.modelResolver.Resolve(topo.Config.DefaultModel)
+			if err != nil {
+				log.Warn("解析工作流默认模型失败，使用传入的默认模型",
+					zap.String("configModel", topo.Config.DefaultModel),
+					zap.Error(err))
+			} else {
+				endpoint = info.Endpoint
+				apiKey = info.APIKey
+				model = info.Model
+			}
+		} else {
+			model = topo.Config.DefaultModel
+		}
+	}
+
+	// 最大执行步数
+	maxRunSteps := 30
+	if topo.Config != nil && topo.Config.MaxRunSteps > 0 {
+		maxRunSteps = topo.Config.MaxRunSteps
+	}
+	_ = maxRunSteps // 后续使用
 
 	// 默认模型配置
 	defaultMaxTokens := 8192
@@ -224,7 +296,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 		case "llm":
 			// LLM 节点：根据配置创建模型
-			nodeModel := model
+			nodeModelName := ""
 			nodeMaxTokens := defaultMaxTokens
 			var nodeTemperature float32 = 0.7
 			systemPrompt := ""
@@ -232,7 +304,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			if node.Data.ModelConfig != nil {
 				mc := node.Data.ModelConfig
 				if mc.Model != "" {
-					nodeModel = mc.Model
+					nodeModelName = mc.Model
 				}
 				if mc.MaxTokens > 0 {
 					nodeMaxTokens = mc.MaxTokens
@@ -243,11 +315,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				systemPrompt = mc.SystemPrompt
 			}
 
+			// 解析节点模型信息（支持节点级别覆盖）
+			nodeEndpoint, nodeAPIKey, nodeModel := a.resolveModelInfo(nodeModelName, endpoint, apiKey, model)
+
 			// 创建节点专属的模型
 			nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-				BaseURL:     endpoint,
+				BaseURL:     nodeEndpoint,
 				Model:       nodeModel,
-				APIKey:      apiKey,
+				APIKey:      nodeAPIKey,
 				MaxTokens:   &nodeMaxTokens,
 				Temperature: &nodeTemperature,
 			})
@@ -322,11 +397,18 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				nodeTools = a.tools
 			}
 
+			// 解析工具节点的模型信息（支持节点级别覆盖）
+			toolModelName := ""
+			if node.Data.ModelConfig != nil && node.Data.ModelConfig.Model != "" {
+				toolModelName = node.Data.ModelConfig.Model
+			}
+			toolEndpoint, toolAPIKey, toolModel := a.resolveModelInfo(toolModelName, endpoint, apiKey, model)
+
 			// 为工具创建一个带工具绑定的模型
 			toolChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-				BaseURL:     endpoint,
-				Model:       model,
-				APIKey:      apiKey,
+				BaseURL:     toolEndpoint,
+				Model:       toolModel,
+				APIKey:      toolAPIKey,
 				MaxTokens:   &defaultMaxTokens,
 				Temperature: &defaultTemperature,
 			})

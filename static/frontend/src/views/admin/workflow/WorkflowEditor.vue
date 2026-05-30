@@ -34,7 +34,13 @@
     <!-- 主体区域 -->
     <div class="editor-main">
       <!-- 左侧节点库 -->
-      <NodeSidebar :saving="saving" @save="saveWorkflow" />
+      <NodeSidebar
+        :saving="saving"
+        :model-list="modelList"
+        :workflow-config="workflowConfig"
+        @save="saveWorkflow"
+        @config-change="handleConfigChange"
+      />
 
       <!-- 中间画布 -->
       <div class="canvas-area" @drop="onDrop" @dragover.prevent @keydown="onKeyDown" tabindex="0" ref="canvasRef">
@@ -275,6 +281,12 @@ const selectedEdgeId = ref(null)
 const modelList = ref([])
 const toolList = ref([])
 
+// 工作流配置
+const workflowConfig = ref({
+  defaultModel: '',
+  maxRunSteps: 30
+})
+
 // 工作流运行状态跟踪
 const runningNodeId = ref(null)
 const completedNodeIds = ref(new Set())
@@ -344,6 +356,13 @@ const loadWorkflow = async () => {
             sourceHandle: migrateHandleId(edge.sourceHandle, 'source'),
             targetHandle: migrateHandleId(edge.targetHandle, 'target')
           }))
+          // 加载工作流配置
+          if (flowData.config) {
+            workflowConfig.value = {
+              defaultModel: flowData.config.defaultModel || '',
+              maxRunSteps: flowData.config.maxRunSteps || 30
+            }
+          }
         } catch (e) {
           console.error('解析工作流数据失败:', e)
         }
@@ -528,6 +547,11 @@ const handleNodeUpdate = ({ id, data }) => {
   }
 }
 
+// 处理工作流配置变更
+const handleConfigChange = (config) => {
+  workflowConfig.value = { ...config }
+}
+
 // 保存工作流（先校验再保存）
 const saveWorkflow = async () => {
   if (!workflowId) return
@@ -546,7 +570,8 @@ const doSaveWorkflow = async () => {
   try {
     const flowData = {
       nodes: nodes.value,
-      edges: edges.value
+      edges: edges.value,
+      config: workflowConfig.value
     }
     const res = await updateWorkflow(workflowId, {
       name: workflowName.value || '未命名工作流',

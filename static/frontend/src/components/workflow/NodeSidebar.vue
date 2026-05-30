@@ -4,6 +4,28 @@
       <h3>节点组件</h3>
     </div>
 
+    <!-- 工作流配置 -->
+    <div class="workflow-config">
+      <div class="config-title">工作流配置</div>
+      <div class="config-item">
+        <label>默认模型</label>
+        <el-select
+          v-model="defaultModel"
+          size="small"
+          placeholder="选择默认模型"
+          clearable
+          @change="onModelChange"
+        >
+          <el-option
+            v-for="model in modelList"
+            :key="model.name"
+            :label="model.displayName || model.name"
+            :value="model.name"
+          />
+        </el-select>
+      </div>
+    </div>
+
     <div class="node-categories">
       <!-- 基础节点 -->
       <div class="category">
@@ -87,13 +109,37 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check } from '@element-plus/icons-vue'
 
-defineProps({
-  saving: Boolean
+const props = defineProps({
+  saving: Boolean,
+  modelList: {
+    type: Array,
+    default: () => []
+  },
+  workflowConfig: {
+    type: Object,
+    default: () => ({})
+  }
 })
 
-defineEmits(['save'])
+const emit = defineEmits(['save', 'config-change'])
+
+const defaultModel = ref(props.workflowConfig?.defaultModel || '')
+
+watch(() => props.workflowConfig, (newConfig) => {
+  if (newConfig) {
+    defaultModel.value = newConfig.defaultModel || ''
+  }
+}, { deep: true })
+
+const onModelChange = (value) => {
+  emit('config-change', {
+    ...props.workflowConfig,
+    defaultModel: value || ''
+  })
+}
 
 const onDragStart = (event, nodeType) => {
   if (event.dataTransfer) {
@@ -121,6 +167,32 @@ const onDragStart = (event, nodeType) => {
       font-size: 16px;
       font-weight: 600;
       color: #424242;
+    }
+  }
+
+  .workflow-config {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f0f7ff;
+
+    .config-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: #1976d2;
+      margin-bottom: 8px;
+    }
+
+    .config-item {
+      label {
+        display: block;
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 4px;
+      }
+
+      .el-select {
+        width: 100%;
+      }
     }
   }
 
