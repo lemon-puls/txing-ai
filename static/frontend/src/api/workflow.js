@@ -74,3 +74,23 @@ export const runWorkflow = async (id, content) => {
   )
   return response.body || response.data
 }
+
+// 结构校验工作流（直接传拓扑 JSON，无需保存）
+export const validateWorkflow = async (data) => {
+  const response = await apiClient.callApi(
+    '/api/workflow/validate', 'POST',
+    {}, {}, {}, {}, data,
+    [], ['application/json'], ['application/json'], Object, null
+  )
+  return response.body || response.data
+}
+
+// 校验已保存的工作流（支持 LLM 语义校验）
+export const validateWorkflowById = async (id, data = {}) => {
+  const response = await apiClient.callApi(
+    '/api/workflow/{id}/validate', 'POST',
+    { id }, {}, {}, {}, data,
+    [], ['application/json'], ['application/json'], Object, null
+  )
+  return response.body || response.data
+}

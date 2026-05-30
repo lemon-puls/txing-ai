@@ -329,3 +329,149 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	_, _ = fmt.Fprintf(ctx.Writer, "data: %s\n\n", endJsonData)
 	ctx.Writer.Flush()
 }
+
+// ValidateTopology 校验工作流拓扑（结构校验，无需保存）
+// @Summary 校验工作流拓扑
+// @Description 对传入的工作流拓扑 JSON 进行结构合法性校验
+// @Tags 工作流管理
+// @Accept json
+// @Produce json
+// @Param data body dto.ValidateWorkflowReq true "拓扑数据"
+// @Success 200 {object} utils.Response{data=vo.ValidationResultVO}
+// @Router /api/workflow/validate [post]
+func ValidateTopology(ctx *gin.Context) {
+	var req dto.ValidateWorkflowReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	if req.Topology == "" {
+		utils.ErrorWithMsg(ctx, "拓扑数据不能为空", nil)
+		return
+	}
+
+	// 结构校验
+	result := agent.ValidateTopology(req.Topology)
+
+	// 转换为 VO
+	utils.OkWithData(ctx, toValidationResultVO(result))
+}
+
+// ValidateById 校验已保存的工作流（支持 LLM 语义校验）
+// @Summary 校验已保存的工作流
+// @Description 校验指定 ID 的工作流，可选启用 LLM 语义校验
+// @Tags 工作流管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param data body dto.ValidateWorkflowReq true "校验选项"
+// @Success 200 {object} utils.Response{data=vo.ValidationResultVO}
+// @Router /api/workflow/{id}/validate [post]
+func ValidateById(ctx *gin.Context, resProvider iface.ResourceProvider) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	var req dto.ValidateWorkflowReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		// 允许空 body，默认不使用 LLM
+		req.UseLLM = false
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	flow, err := workflowservice.Get(id, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取工作流失败", err)
+		return
+	}
+
+	if flow.Topology == "" {
+		utils.ErrorWithMsg(ctx, "工作流拓扑数据为空", nil)
+		return
+	}
+
+	// 第一层：结构校验
+	structResult := agent.ValidateTopology(flow.Topology)
+
+	// 如果不需要 LLM 校验，直接返回结构校验结果
+	if !req.UseLLM {
+		utils.OkWithData(ctx, toValidationResultVO(structResult))
+		return
+	}
+
+	// 第二层：LLM 语义校验
+	// 获取模型配置
+	model := "deepseek-v3"
+	mappingParams := map[string]interface{}{
+		"type": global.LLMTypeModel,
+	}
+	channel, mappingModel, err := channelservice.ChooseChannelAndModel(db, model, mappingParams)
+	if err != nil {
+		// LLM 校验失败不影响结构校验结果，返回结构校验结果 + warning
+		structResult.Warnings = append(structResult.Warnings, agent.ValidationError{
+			Level:   "warning",
+			Code:    "LLM_VALIDATION_UNAVAILABLE",
+			Message: fmt.Sprintf("LLM 校验不可用: %v，已返回结构校验结果", err),
+		})
+		utils.OkWithData(ctx, toValidationResultVO(structResult))
+		return
+	}
+
+	llmResult, err := agent.ValidateTopologyWithLLM(
+		ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, flow.Topology,
+	)
+	if err != nil {
+		structResult.Warnings = append(structResult.Warnings, agent.ValidationError{
+			Level:   "warning",
+			Code:    "LLM_VALIDATION_FAILED",
+			Message: fmt.Sprintf("LLM 校验执行失败: %v，已返回结构校验结果", err),
+		})
+		utils.OkWithData(ctx, toValidationResultVO(structResult))
+		return
+	}
+
+	// 合并结构校验和 LLM 校验结果
+	merged := mergeValidationResults(structResult, llmResult)
+	utils.OkWithData(ctx, toValidationResultVO(merged))
+}
+
+// toValidationResultVO 将 agent.ValidationResult 转换为 vo.ValidationResultVO
+func toValidationResultVO(result *agent.ValidationResult) vo.ValidationResultVO {
+	voResult := vo.ValidationResultVO{
+		Valid: result.Valid,
+	}
+
+	for _, e := range result.Errors {
+		voResult.Errors = append(voResult.Errors, vo.ValidationErrorVO{
+			Level:   string(e.Level),
+			NodeID:  e.NodeID,
+			Code:    e.Code,
+			Message: e.Message,
+		})
+	}
+
+	for _, w := range result.Warnings {
+		voResult.Warnings = append(voResult.Warnings, vo.ValidationErrorVO{
+			Level:   string(w.Level),
+			NodeID:  w.NodeID,
+			Code:    w.Code,
+			Message: w.Message,
+		})
+	}
+
+	return voResult
+}
+
+// mergeValidationResults 合并两个校验结果
+func mergeValidationResults(a, b *agent.ValidationResult) *agent.ValidationResult {
+	merged := &agent.ValidationResult{
+		Valid: a.Valid && b.Valid,
+	}
+	merged.Errors = append(a.Errors, b.Errors...)
+	merged.Warnings = append(a.Warnings, b.Warnings...)
+	return merged
+}

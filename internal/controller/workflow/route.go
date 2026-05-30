@@ -18,6 +18,10 @@ func Register(r *gin.RouterGroup, resProvider iface.ResourceProvider) {
 		workflowGroup.GET("", List)
 		workflowGroup.GET("/models", GetModels)
 		workflowGroup.GET("/tools", GetTools)
+		workflowGroup.POST("/validate", ValidateTopology)
+		workflowGroup.POST("/:id/validate", func(ctx *gin.Context) {
+			ValidateById(ctx, resProvider)
+		})
 		workflowGroup.POST("/:id/run", func(ctx *gin.Context) {
 			Run(ctx, resProvider)
 		})

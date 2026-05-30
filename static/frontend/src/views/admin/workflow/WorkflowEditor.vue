@@ -16,6 +16,10 @@
           <el-icon><Delete /></el-icon>
           删除
         </el-button>
+        <el-button type="warning" plain @click="runLLMValidation" :loading="llmValidating">
+          <el-icon><MagicStick /></el-icon>
+          AI 校验
+        </el-button>
         <el-button type="success" @click="openTestDialog">
           <el-icon><VideoPlay /></el-icon>
           运行测试
@@ -130,6 +134,95 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 校验结果对话框 -->
+    <el-dialog
+      v-model="validationDialogVisible"
+      :title="validationForSave ? '保存前校验结果' : 'AI 校验结果'"
+      width="560px"
+      :close-on-click-modal="false"
+      class="validation-dialog"
+    >
+      <div v-if="validationResult" class="validation-content">
+        <!-- 校验状态 -->
+        <div class="validation-status" :class="{ valid: validationResult.valid, invalid: !validationResult.valid }">
+          <el-icon v-if="validationResult.valid" :size="20"><CircleCheck /></el-icon>
+          <el-icon v-else :size="20"><WarningFilled /></el-icon>
+          <span>{{ validationResult.valid ? '校验通过' : '校验未通过' }}</span>
+        </div>
+
+        <!-- 错误列表 -->
+        <div v-if="validationResult.errors && validationResult.errors.length > 0" class="validation-section">
+          <div class="section-title error-title">
+            <el-icon><WarningFilled /></el-icon>
+            <span>错误 ({{ validationResult.errors.length }})</span>
+          </div>
+          <div class="issue-list">
+            <div
+              v-for="(error, index) in validationResult.errors"
+              :key="'error-' + index"
+              class="issue-item error-item"
+              @click="locateNode(error.nodeId)"
+            >
+              <span class="issue-badge error">错误</span>
+              <span class="issue-message">{{ error.message }}</span>
+              <el-button v-if="error.nodeId" text size="small" type="primary" class="locate-btn">
+                定位
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 警告列表 -->
+        <div v-if="validationResult.warnings && validationResult.warnings.length > 0" class="validation-section">
+          <div class="section-title warning-title">
+            <el-icon><WarningFilled /></el-icon>
+            <span>警告 ({{ validationResult.warnings.length }})</span>
+          </div>
+          <div class="issue-list">
+            <div
+              v-for="(warning, index) in validationResult.warnings"
+              :key="'warning-' + index"
+              class="issue-item warning-item"
+              @click="locateNode(warning.nodeId)"
+            >
+              <span class="issue-badge warning">警告</span>
+              <span class="issue-message">{{ warning.message }}</span>
+              <el-button v-if="warning.nodeId" text size="small" type="primary" class="locate-btn">
+                定位
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 全部通过 -->
+        <div v-if="validationResult.valid && (!validationResult.errors || validationResult.errors.length === 0) && (!validationResult.warnings || validationResult.warnings.length === 0)" class="validation-all-pass">
+          <el-icon :size="48" color="#4caf50"><CircleCheck /></el-icon>
+          <p>所有校验项目均通过</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="validationDialogVisible = false">关闭</el-button>
+          <el-button
+            v-if="validationForSave && !validationResult.valid"
+            type="warning"
+            plain
+            @click="forceSaveWorkflow"
+          >
+            强制保存
+          </el-button>
+          <el-button
+            v-if="validationForSave && validationResult.valid"
+            type="primary"
+            @click="forceSaveWorkflow"
+          >
+            继续保存
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -140,7 +233,7 @@ import { ElMessage } from 'element-plus'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown, CircleCheck, MagicStick } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
@@ -154,7 +247,7 @@ import ConditionNode from '@/components/workflow/ConditionNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 
-import { getWorkflow, updateWorkflow, getWorkflowModels, getWorkflowTools, runWorkflow } from '@/api/workflow'
+import { getWorkflow, updateWorkflow, getWorkflowModels, getWorkflowTools, runWorkflow, validateWorkflow, validateWorkflowById } from '@/api/workflow'
 import { useUserStore } from '@/stores/user'
 import authService from '@/api/auth.js'
 
@@ -195,6 +288,13 @@ const testRunning = ref(false)
 const testResult = ref('')
 const testError = ref('')
 const testResultPanelCollapsed = ref(false)
+
+// 校验相关
+const validating = ref(false)
+const llmValidating = ref(false)
+const validationResult = ref(null)
+const validationDialogVisible = ref(false)
+const validationForSave = ref(false) // 是否是保存前触发的校验
 
 // 注册自定义节点类型
 const nodeTypes = {
@@ -428,8 +528,19 @@ const handleNodeUpdate = ({ id, data }) => {
   }
 }
 
-// 保存工作流
+// 保存工作流（先校验再保存）
 const saveWorkflow = async () => {
+  if (!workflowId) return
+
+  // 先进行结构校验
+  const canSave = await validateBeforeSave()
+  if (!canSave) return
+
+  await doSaveWorkflow()
+}
+
+// 实际保存逻辑
+const doSaveWorkflow = async () => {
   if (!workflowId) return
   saving.value = true
   try {
@@ -650,6 +761,89 @@ const runWorkflowTest = async () => {
     testError.value = error.message || '运行失败，请检查配置'
     testRunning.value = false
     ElMessage.error(error.message || '运行失败')
+  }
+}
+
+// 结构校验工作流
+const runStructValidation = async () => {
+  validating.value = true
+  try {
+    const flowData = {
+      nodes: nodes.value,
+      edges: edges.value
+    }
+    const res = await validateWorkflow({
+      topology: JSON.stringify(flowData)
+    })
+    if (res.code === 0 && res.data) {
+      validationResult.value = res.data
+      return res.data
+    } else {
+      ElMessage.error(res.msg || '校验失败')
+      return null
+    }
+  } catch (error) {
+    console.error('校验失败:', error)
+    ElMessage.error('校验请求失败')
+    return null
+  } finally {
+    validating.value = false
+  }
+}
+
+// LLM 语义校验（需要先保存）
+const runLLMValidation = async () => {
+  if (!workflowId) return
+  llmValidating.value = true
+  try {
+    const res = await validateWorkflowById(workflowId, { useLLM: true })
+    if (res.code === 0 && res.data) {
+      validationResult.value = res.data
+      validationDialogVisible.value = true
+    } else {
+      ElMessage.error(res.msg || 'LLM 校验失败')
+    }
+  } catch (error) {
+    console.error('LLM 校验失败:', error)
+    ElMessage.error('LLM 校验请求失败')
+  } finally {
+    llmValidating.value = false
+  }
+}
+
+// 保存前校验
+const validateBeforeSave = async () => {
+  validationForSave.value = true
+  const result = await runStructValidation()
+  if (!result) return true // 校验请求失败，允许保存
+
+  if (!result.valid) {
+    validationDialogVisible.value = true
+    return false // 有错误，阻止保存
+  }
+
+  if (result.warnings && result.warnings.length > 0) {
+    validationDialogVisible.value = true
+    // 有警告但没有错误，允许保存
+  }
+
+  return true
+}
+
+// 强制保存（跳过校验提示）
+const forceSaveWorkflow = async () => {
+  validationDialogVisible.value = false
+  await doSaveWorkflow()
+}
+
+// 定位到节点
+const locateNode = (nodeId) => {
+  if (!nodeId) return
+  const node = nodes.value.find(n => n.id === nodeId)
+  if (node) {
+    selectedNode.value = node
+    // 飞入视图到该节点
+    fitView({ nodes: [nodeId], padding: 0.5, duration: 500 })
   }
 }
 
@@ -984,5 +1178,137 @@ onUnmounted(() => {
   to {
     stroke-dashoffset: -15;
   }
+}
+
+// 校验结果对话框
+:deep(.validation-dialog) {
+  .el-dialog {
+    border-radius: 14px;
+  }
+
+  .el-dialog__body {
+    padding: 16px 20px;
+  }
+}
+
+.validation-content {
+  .validation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 500;
+    font-size: 14px;
+
+    &.valid {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    &.invalid {
+      background: #ffebee;
+      color: #c62828;
+    }
+  }
+
+  .validation-section {
+    margin-bottom: 16px;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+
+      &.error-title {
+        color: #c62828;
+      }
+
+      &.warning-title {
+        color: #ef6c00;
+      }
+    }
+
+    .issue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .issue-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+
+      &.error-item {
+        background: #fff3f3;
+      }
+
+      &.warning-item {
+        background: #fff8e1;
+      }
+
+      .issue-badge {
+        flex-shrink: 0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+
+        &.error {
+          background: #ffcdd2;
+          color: #c62828;
+        }
+
+        &.warning {
+          background: #ffe0b2;
+          color: #ef6c00;
+        }
+      }
+
+      .issue-message {
+        flex: 1;
+        color: #333;
+      }
+
+      .locate-btn {
+        flex-shrink: 0;
+        padding: 0;
+      }
+    }
+  }
+
+  .validation-all-pass {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    color: #2e7d32;
+
+    p {
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

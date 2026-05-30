@@ -32,3 +32,18 @@ func ToAgentFlowVOs(flows []domain.AgentFlow) []AgentFlowVO {
 	}
 	return vos
 }
+
+// ValidationResultVO 工作流校验结果
+type ValidationResultVO struct {
+	Valid    bool                `json:"valid"`
+	Errors   []ValidationErrorVO `json:"errors,omitempty"`
+	Warnings []ValidationErrorVO `json:"warnings,omitempty"`
+}
+
+// ValidationErrorVO 校验错误详情
+type ValidationErrorVO struct {
+	Level   string `json:"level"`           // "error" | "warning"
+	NodeID  string `json:"nodeId,omitempty"` // 关联节点 ID
+	Code    string `json:"code"`             // 错误码
+	Message string `json:"message"`          // 人类可读描述
+}
