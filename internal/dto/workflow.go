@@ -63,3 +63,15 @@ type CloneTemplateReq struct {
 	TemplateID int64  `json:"templateId" binding:"required" comment:"模板ID"`
 	Name       string `json:"name" comment:"新工作流名称"`
 }
+
+// UpdateWorkflowStatusReq 更新工作流状态请求
+type UpdateWorkflowStatusReq struct {
+	Status string `json:"status" binding:"required,oneof=draft published" comment:"状态: draft/published"`
+}
+
+// ListPublishedWorkflowReq 已发布工作流列表请求（客户端用）
+type ListPublishedWorkflowReq struct {
+	page.PageRequest
+	Name     string `form:"name" comment:"工作流名称"`
+	Category string `form:"category" comment:"模板分类"`
+}

@@ -17,6 +17,7 @@ docs/ApiUserRefreshPost200Response.md
 docs/ApiWorkflowIdGet200Response.md
 docs/ApiWorkflowIdRunPostRequest.md
 docs/ApiWorkflowIdVersionsPost200Response.md
+docs/ApiWorkflowPublicIdGet200Response.md
 docs/ApiWorkflowTemplatesPost200Response.md
 docs/ApiWorkflowValidatePost200Response.md
 docs/DefaultApi.md
@@ -44,6 +45,7 @@ docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
 docs/DtoUpdateProfileReq.md
 docs/DtoUpdateWebsiteReq.md
+docs/DtoUpdateWorkflowStatusReq.md
 docs/DtoValidateWorkflowReq.md
 docs/FileUploadResponse.md
 docs/GlobalModelMapping.md
@@ -59,6 +61,7 @@ docs/VoLoginVO.md
 docs/VoMessageVO.md
 docs/VoModelVO.md
 docs/VoPresetVO.md
+docs/VoPublishedWorkflowVO.md
 docs/VoTemplateVO.md
 docs/VoTokenPair.md
 docs/VoUserVO.md
@@ -86,6 +89,7 @@ src/model/ApiUserRefreshPost200Response.js
 src/model/ApiWorkflowIdGet200Response.js
 src/model/ApiWorkflowIdRunPostRequest.js
 src/model/ApiWorkflowIdVersionsPost200Response.js
+src/model/ApiWorkflowPublicIdGet200Response.js
 src/model/ApiWorkflowTemplatesPost200Response.js
 src/model/ApiWorkflowValidatePost200Response.js
 src/model/DtoAgentExecReq.js
@@ -112,6 +116,7 @@ src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
 src/model/DtoUpdateProfileReq.js
 src/model/DtoUpdateWebsiteReq.js
+src/model/DtoUpdateWorkflowStatusReq.js
 src/model/DtoValidateWorkflowReq.js
 src/model/FileUploadResponse.js
 src/model/GlobalModelMapping.js
@@ -127,26 +132,10 @@ src/model/VoLoginVO.js
 src/model/VoMessageVO.js
 src/model/VoModelVO.js
 src/model/VoPresetVO.js
+src/model/VoPublishedWorkflowVO.js
 src/model/VoTemplateVO.js
 src/model/VoTokenPair.js
 src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
-test/model/ApiWorkflowIdGet200Response.spec.js
-test/model/ApiWorkflowIdRunPostRequest.spec.js
-test/model/ApiWorkflowIdVersionsPost200Response.spec.js
-test/model/ApiWorkflowTemplatesPost200Response.spec.js
-test/model/ApiWorkflowValidatePost200Response.spec.js
-test/model/DtoCloneTemplateReq.spec.js
-test/model/DtoCreateAgentFlowReq.spec.js
-test/model/DtoCreateTemplateReq.spec.js
-test/model/DtoCreateVersionReq.spec.js
-test/model/DtoPublishVersionReq.spec.js
-test/model/DtoUpdateAgentFlowReq.spec.js
-test/model/DtoValidateWorkflowReq.spec.js
-test/model/VoAgentFlowVO.spec.js
-test/model/VoAgentFlowVersionVO.spec.js
-test/model/VoTemplateVO.spec.js
-test/model/VoValidationErrorVO.spec.js
-test/model/VoValidationResultVO.spec.js

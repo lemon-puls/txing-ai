@@ -27,6 +27,7 @@ import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Respons
 import ApiWorkflowIdGet200Response from '../model/ApiWorkflowIdGet200Response';
 import ApiWorkflowIdRunPostRequest from '../model/ApiWorkflowIdRunPostRequest';
 import ApiWorkflowIdVersionsPost200Response from '../model/ApiWorkflowIdVersionsPost200Response';
+import ApiWorkflowPublicIdGet200Response from '../model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from '../model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from '../model/ApiWorkflowValidatePost200Response';
 import DtoBatchDeleteRequest from '../model/DtoBatchDeleteRequest';
@@ -52,6 +53,7 @@ import DtoUpdatePasswordReq from '../model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from '../model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from '../model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from '../model/DtoUpdateWebsiteReq';
+import DtoUpdateWorkflowStatusReq from '../model/DtoUpdateWorkflowStatusReq';
 import DtoValidateWorkflowReq from '../model/DtoValidateWorkflowReq';
 import UtilsResponse from '../model/UtilsResponse';
 
@@ -2396,6 +2398,60 @@ export default class DefaultApi {
 
 
     /**
+     * 更新工作流状态
+     * 更新工作流状态（draft/published）
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoUpdateWorkflowStatusReq} data 状态信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdStatusPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdStatusPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowIdStatusPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/status', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新工作流状态
+     * 更新工作流状态（draft/published）
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoUpdateWorkflowStatusReq} data 状态信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdStatusPut(id, data) {
+      return this.apiWorkflowIdStatusPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
      * 校验已保存的工作流
      * 校验指定 ID 的工作流，可选启用 LLM 语义校验
      * @param {Number} id 工作流ID
@@ -2811,6 +2867,118 @@ export default class DefaultApi {
      */
     apiWorkflowPost(data) {
       return this.apiWorkflowPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取已发布工作流列表
+     * 获取状态为 published 的工作流列表，供客户端浏览
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [name] 工作流名称
+     * @param {String} [category] 分类
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowPublicGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiWorkflowPublicGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiWorkflowPublicGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'name': opts['name'],
+        'category': opts['category']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/public', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取已发布工作流列表
+     * 获取状态为 published 的工作流列表，供客户端浏览
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.name 工作流名称
+     * @param {String} opts.category 分类
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowPublicGet(page, limit, opts) {
+      return this.apiWorkflowPublicGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取已发布工作流详情
+     * 获取已发布工作流详情，不含内部拓扑数据
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowPublicIdGet200Response} and HTTP response
+     */
+    apiWorkflowPublicIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowPublicIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowPublicIdGet200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/public/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取已发布工作流详情
+     * 获取已发布工作流详情，不含内部拓扑数据
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowPublicIdGet200Response}
+     */
+    apiWorkflowPublicIdGet(id) {
+      return this.apiWorkflowPublicIdGetWithHttpInfo(id)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

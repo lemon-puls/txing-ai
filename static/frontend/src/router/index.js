@@ -105,6 +105,30 @@ const router = createRouter({
               }
             }
           ]
+        },
+        {
+          path: 'workflow',
+          name: 'workflowMarket',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              path: '',
+              component: () => import('@/views/workflow/Market.vue'),
+              meta: {
+                title: '工作流市场',
+                icon: 'Share'
+              }
+            }
+          ]
+        },
+        {
+          path: 'workflow/:id/execute',
+          name: 'workflowExecute',
+          component: () => import('@/views/workflow/Execute.vue'),
+          meta: {
+            title: '执行工作流',
+            icon: 'Share'
+          }
         }
       ]
     },

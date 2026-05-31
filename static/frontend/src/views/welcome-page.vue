@@ -139,6 +139,25 @@
           </div>
           <div class="card-overlay"></div>
         </div>
+
+        <!-- 工作流市场入口 -->
+        <div
+          class="entrance-card workflow-card"
+          :class="{ 'card-hover': hoveredCard === 'workflow' }"
+          @click="navigateToWorkflow"
+          @mouseenter="handleHover('workflow')"
+          @mouseleave="handleHover(null)"
+        >
+          <div class="card-content">
+            <el-icon class="card-icon"><Share /></el-icon>
+            <h2>工作流市场</h2>
+            <p>发现并使用 AI 工作流，自动化任务</p>
+            <div class="card-action">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
+          <div class="card-overlay"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -153,7 +172,8 @@ import {
   ArrowRight,
   Link,
   Document,
-  Location
+  Location,
+  Share
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
@@ -249,6 +269,10 @@ const navigateToResume = () => {
 
 const navigateToTravel = () => {
   router.push('/travel')
+}
+
+const navigateToWorkflow = () => {
+  router.push('/workflow')
 }
 </script>
 

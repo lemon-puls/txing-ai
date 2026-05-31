@@ -24,6 +24,13 @@
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="工作流名称" min-width="150" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 'published' ? 'success' : 'info'" size="small">
+              {{ scope.row.status === 'published' ? '已发布' : '草稿' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180">
           <template #default="scope">
             {{ formatTime(scope.row.created_at) }}
@@ -33,6 +40,13 @@
           <template #default="scope">
             <el-button type="primary" link @click="handleEdit(scope.row)">编辑信息</el-button>
             <el-button type="success" link @click="handleDesign(scope.row)">设计流程</el-button>
+            <el-button
+              :type="scope.row.status === 'published' ? 'warning' : 'success'"
+              link
+              @click="handleToggleStatus(scope.row)"
+            >
+              {{ scope.row.status === 'published' ? '取消发布' : '发布' }}
+            </el-button>
             <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
@@ -89,7 +103,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Folder } from '@element-plus/icons-vue'
-import { getWorkflows, createWorkflow, updateWorkflow, deleteWorkflows } from '@/api/workflow'
+import { defaultApi } from '@/api'
 
 const router = useRouter()
 
@@ -138,7 +152,9 @@ const loadData = async () => {
       limit: pageSize.value,
       name: searchForm.value.name || undefined
     }
-    const res = await getWorkflows(params)
+    const res = await defaultApi.apiWorkflowGet(currentPage.value, pageSize.value, {
+      name: searchForm.value.name || undefined
+    })
     if (res.code === 0 && res.data) {
       workflows.value = res.data.records || []
       total.value = res.data.total || 0
@@ -198,7 +214,7 @@ const handleDelete = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await deleteWorkflows(row.id)
+      const res = await defaultApi.apiWorkflowIdDelete(row.id)
       if (res.code === 0) {
         ElMessage.success('删除成功')
         loadData()
@@ -210,6 +226,30 @@ const handleDelete = (row) => {
       ElMessage.error('删除失败')
     }
   }).catch(() => {})
+}
+
+const handleToggleStatus = async (row) => {
+  const newStatus = row.status === 'published' ? 'draft' : 'published'
+  const actionText = newStatus === 'published' ? '发布' : '取消发布'
+  try {
+    await ElMessageBox.confirm(`确认${actionText}该工作流吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+    const res = await defaultApi.apiWorkflowIdStatusPut(row.id, { status: newStatus })
+    if (res.code === 0) {
+      ElMessage.success(`${actionText}成功`)
+      loadData()
+    } else {
+      ElMessage.error(res.msg || `${actionText}失败`)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Toggle status error:', error)
+      ElMessage.error(`${actionText}失败`)
+    }
+  }
 }
 
 const handleSubmit = async () => {
@@ -226,10 +266,10 @@ const handleSubmit = async () => {
         let res
         if (dialogType.value === 'add') {
           data.topology = '' // 默认空拓扑
-          res = await createWorkflow(data)
+          res = await defaultApi.apiWorkflowPost(data)
         } else {
           data.topology = form.value.topology || ''
-          res = await updateWorkflow(form.value.id, data)
+          res = await defaultApi.apiWorkflowIdPut(form.value.id, data)
         }
         
         if (res.code === 0) {

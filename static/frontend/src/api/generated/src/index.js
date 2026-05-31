@@ -27,6 +27,7 @@ import ApiUserRefreshPost200Response from './model/ApiUserRefreshPost200Response
 import ApiWorkflowIdGet200Response from './model/ApiWorkflowIdGet200Response';
 import ApiWorkflowIdRunPostRequest from './model/ApiWorkflowIdRunPostRequest';
 import ApiWorkflowIdVersionsPost200Response from './model/ApiWorkflowIdVersionsPost200Response';
+import ApiWorkflowPublicIdGet200Response from './model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from './model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost200Response';
 import DtoAgentExecReq from './model/DtoAgentExecReq';
@@ -53,6 +54,7 @@ import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from './model/DtoUpdateWebsiteReq';
+import DtoUpdateWorkflowStatusReq from './model/DtoUpdateWorkflowStatusReq';
 import DtoValidateWorkflowReq from './model/DtoValidateWorkflowReq';
 import FileUploadResponse from './model/FileUploadResponse';
 import GlobalModelMapping from './model/GlobalModelMapping';
@@ -68,6 +70,7 @@ import VoLoginVO from './model/VoLoginVO';
 import VoMessageVO from './model/VoMessageVO';
 import VoModelVO from './model/VoModelVO';
 import VoPresetVO from './model/VoPresetVO';
+import VoPublishedWorkflowVO from './model/VoPublishedWorkflowVO';
 import VoTemplateVO from './model/VoTemplateVO';
 import VoTokenPair from './model/VoTokenPair';
 import VoUserVO from './model/VoUserVO';
@@ -199,6 +202,12 @@ export {
      * @property {module:model/ApiWorkflowIdVersionsPost200Response}
      */
     ApiWorkflowIdVersionsPost200Response,
+
+    /**
+     * The ApiWorkflowPublicIdGet200Response model constructor.
+     * @property {module:model/ApiWorkflowPublicIdGet200Response}
+     */
+    ApiWorkflowPublicIdGet200Response,
 
     /**
      * The ApiWorkflowTemplatesPost200Response model constructor.
@@ -357,6 +366,12 @@ export {
     DtoUpdateWebsiteReq,
 
     /**
+     * The DtoUpdateWorkflowStatusReq model constructor.
+     * @property {module:model/DtoUpdateWorkflowStatusReq}
+     */
+    DtoUpdateWorkflowStatusReq,
+
+    /**
      * The DtoValidateWorkflowReq model constructor.
      * @property {module:model/DtoValidateWorkflowReq}
      */
@@ -445,6 +460,12 @@ export {
      * @property {module:model/VoPresetVO}
      */
     VoPresetVO,
+
+    /**
+     * The VoPublishedWorkflowVO model constructor.
+     * @property {module:model/VoPublishedWorkflowVO}
+     */
+    VoPublishedWorkflowVO,
 
     /**
      * The VoTemplateVO model constructor.

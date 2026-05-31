@@ -346,7 +346,6 @@ import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
 import VersionPanel from '@/components/workflow/VersionPanel.vue'
 
-import { getWorkflow, updateWorkflow, getWorkflowModels, getWorkflowTools, runWorkflow, validateWorkflow, validateWorkflowById } from '@/api/workflow'
 import { defaultApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import authService from '@/api/auth.js'
@@ -458,7 +457,7 @@ const migrateHandleId = (handleId, type) => {
 const loadWorkflow = async () => {
   if (!workflowId) return
   try {
-    const res = await getWorkflow(workflowId)
+    const res = await defaultApi.apiWorkflowIdGet(workflowId)
     if (res.code === 0 && res.data) {
       workflowData.value = res.data
       workflowName.value = res.data.name || ''
@@ -497,8 +496,8 @@ const loadOptions = async () => {
   try {
     // 并行加载模型和工具
     const [modelRes, toolRes] = await Promise.all([
-      getWorkflowModels(),
-      getWorkflowTools()
+      defaultApi.apiWorkflowModelsGet(),
+      defaultApi.apiWorkflowToolsGet()
     ])
 
     if (modelRes.code === 0 && modelRes.data) {
@@ -707,7 +706,7 @@ const doSaveWorkflow = async () => {
       edges: edges.value,
       config: workflowConfig.value
     }
-    const res = await updateWorkflow(workflowId, {
+    const res = await defaultApi.apiWorkflowIdPut(workflowId, {
       name: workflowName.value || '未命名工作流',
       description: '',
       topology: JSON.stringify(flowData)
@@ -1127,7 +1126,7 @@ const runStructValidation = async () => {
       nodes: nodes.value,
       edges: edges.value
     }
-    const res = await validateWorkflow({
+    const res = await defaultApi.apiWorkflowValidatePost({
       topology: JSON.stringify(flowData)
     })
     if (res.code === 0 && res.data) {
@@ -1151,7 +1150,7 @@ const runLLMValidation = async () => {
   if (!workflowId) return
   llmValidating.value = true
   try {
-    const res = await validateWorkflowById(workflowId, { useLLM: true })
+    const res = await defaultApi.apiWorkflowIdValidatePost(workflowId, { useLLM: true })
     if (res.code === 0 && res.data) {
       validationResult.value = res.data
       validationDialogVisible.value = true

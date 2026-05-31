@@ -10,6 +10,7 @@ type AgentFlow struct {
 	PublishedVersion int   `gorm:"column:published_version;default:0;comment:已发布版本号" json:"publishedVersion"`
 	IsTemplate      bool   `gorm:"column:is_template;default:false;comment:是否为模板" json:"isTemplate"`
 	TemplateCategory string `gorm:"column:template_category;type:varchar(50);comment:模板分类" json:"templateCategory"`
+	Status          string `gorm:"column:status;type:varchar(20);default:'draft';comment:状态: draft/published" json:"status"`
 }
 
 func (AgentFlow) TableName() string {

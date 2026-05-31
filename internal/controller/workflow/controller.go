@@ -749,3 +749,99 @@ func CloneTemplate(ctx *gin.Context) {
 
 	utils.OkWithData(ctx, vo.ToAgentFlowVO(*flow))
 }
+
+// ListPublished 获取已发布工作流列表（客户端用）
+// @Summary 获取已发布工作流列表
+// @Description 获取状态为 published 的工作流列表，供客户端浏览
+// @Tags 工作流公开接口
+// @Accept json
+// @Produce json
+// @Param page query int true "页码" minimum(1)
+// @Param limit query int true "每页数量" minimum(1)
+// @Param name query string false "工作流名称"
+// @Param category query string false "分类"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/public [get]
+func ListPublished(ctx *gin.Context) {
+	var req dto.ListPublishedWorkflowReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	pageVo, err := workflowservice.ListPublished(req, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取列表失败", err)
+		return
+	}
+
+	vos := vo.ToPublishedWorkflowVOs(pageVo.Records)
+	result := page.Convert(pageVo, vos)
+	utils.OkWithData(ctx, result)
+}
+
+// GetPublishedDetail 获取已发布工作流详情（客户端用）
+// @Summary 获取已发布工作流详情
+// @Description 获取已发布工作流详情，不含内部拓扑数据
+// @Tags 工作流公开接口
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Success 200 {object} utils.Response{data=vo.PublishedWorkflowVO}
+// @Router /api/workflow/public/{id} [get]
+func GetPublishedDetail(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	flow, err := workflowservice.Get(id, db)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "获取工作流失败", err)
+		return
+	}
+
+	if flow.Status != "published" {
+		utils.ErrorWithMsg(ctx, "工作流未发布", nil)
+		return
+	}
+
+	utils.OkWithData(ctx, vo.ToPublishedWorkflowVO(*flow))
+}
+
+// UpdateStatus 更新工作流状态
+// @Summary 更新工作流状态
+// @Description 更新工作流状态（draft/published）
+// @Tags 工作流管理
+// @Accept json
+// @Produce json
+// @Param id path int true "工作流ID"
+// @Param data body dto.UpdateWorkflowStatusReq true "状态信息"
+// @Success 200 {object} utils.Response
+// @Router /api/workflow/{id}/status [put]
+func UpdateStatus(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "参数错误", err)
+		return
+	}
+
+	var req dto.UpdateWorkflowStatusReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ValidateError(ctx, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](ctx)
+	if err := workflowservice.UpdateStatus(id, req.Status, db); err != nil {
+		utils.ErrorWithMsg(ctx, "更新状态失败", err)
+		return
+	}
+
+	utils.OkWithMsg(ctx, "状态更新成功")
+}

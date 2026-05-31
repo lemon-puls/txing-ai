@@ -8,7 +8,7 @@ import (
 )
 
 func Register(r *gin.RouterGroup, resProvider iface.ResourceProvider) {
-	// 工作流路由组
+	// 工作流路由组（管理端）
 	workflowGroup := r.Group("/workflow").Use(middleware.AuthMiddleware())
 	{
 		// 基础 CRUD
@@ -17,6 +17,9 @@ func Register(r *gin.RouterGroup, resProvider iface.ResourceProvider) {
 		workflowGroup.DELETE("/:id", Delete)
 		workflowGroup.GET("/:id", Get)
 		workflowGroup.GET("", List)
+
+		// 状态管理
+		workflowGroup.PUT("/:id/status", UpdateStatus)
 
 		// 配置查询
 		workflowGroup.GET("/models", GetModels)
@@ -44,5 +47,15 @@ func Register(r *gin.RouterGroup, resProvider iface.ResourceProvider) {
 		workflowGroup.POST("/templates", CreateTemplate)
 		workflowGroup.GET("/templates", ListTemplates)
 		workflowGroup.POST("/templates/clone", CloneTemplate)
+	}
+
+	// 工作流公开接口（客户端，需登录但无需 admin 权限）
+	publicGroup := r.Group("/workflow/public").Use(middleware.AuthMiddleware())
+	{
+		publicGroup.GET("", ListPublished)
+		publicGroup.GET("/:id", GetPublishedDetail)
+		publicGroup.POST("/:id/run", func(ctx *gin.Context) {
+			Run(ctx, resProvider)
+		})
 	}
 }

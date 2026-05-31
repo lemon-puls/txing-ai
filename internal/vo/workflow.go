@@ -13,6 +13,7 @@ type AgentFlowVO struct {
 	CurrentVersion   int       `json:"currentVersion"`
 	PublishedVersion int       `json:"publishedVersion"`
 	IsTemplate       bool      `json:"isTemplate"`
+	Status           string    `json:"status"`
 	CreateTime       time.Time `json:"createTime"`
 	UpdateTime       time.Time `json:"updateTime"`
 }
@@ -26,9 +27,37 @@ func ToAgentFlowVO(flow domain.AgentFlow) AgentFlowVO {
 		CurrentVersion:   flow.CurrentVersion,
 		PublishedVersion: flow.PublishedVersion,
 		IsTemplate:       flow.IsTemplate,
+		Status:           flow.Status,
 		CreateTime:       flow.CreateTime,
 		UpdateTime:       flow.UpdateTime,
 	}
+}
+
+// PublishedWorkflowVO 已发布工作流 VO（客户端用，不含拓扑数据）
+type PublishedWorkflowVO struct {
+	Id          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Category    string    `json:"category"`
+	CreateTime  time.Time `json:"createTime"`
+}
+
+func ToPublishedWorkflowVO(flow domain.AgentFlow) PublishedWorkflowVO {
+	return PublishedWorkflowVO{
+		Id:          flow.Id,
+		Name:        flow.Name,
+		Description: flow.Description,
+		Category:    flow.TemplateCategory,
+		CreateTime:  flow.CreateTime,
+	}
+}
+
+func ToPublishedWorkflowVOs(flows []domain.AgentFlow) []PublishedWorkflowVO {
+	var vos []PublishedWorkflowVO
+	for _, flow := range flows {
+		vos = append(vos, ToPublishedWorkflowVO(flow))
+	}
+	return vos
 }
 
 func ToAgentFlowVOs(flows []domain.AgentFlow) []AgentFlowVO {

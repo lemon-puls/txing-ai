@@ -165,6 +165,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdGet**](docs/DefaultApi.md#apiWorkflowIdGet) | **GET** /api/workflow/{id} | 获取单个工作流
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdPut**](docs/DefaultApi.md#apiWorkflowIdPut) | **PUT** /api/workflow/{id} | 更新工作流
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdRunPost**](docs/DefaultApi.md#apiWorkflowIdRunPost) | **POST** /api/workflow/{id}/run | 执行工作流
+*TxingAiApi.DefaultApi* | [**apiWorkflowIdStatusPut**](docs/DefaultApi.md#apiWorkflowIdStatusPut) | **PUT** /api/workflow/{id}/status | 更新工作流状态
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdValidatePost**](docs/DefaultApi.md#apiWorkflowIdValidatePost) | **POST** /api/workflow/{id}/validate | 校验已保存的工作流
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsGet**](docs/DefaultApi.md#apiWorkflowIdVersionsGet) | **GET** /api/workflow/{id}/versions | 获取版本列表
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsPost**](docs/DefaultApi.md#apiWorkflowIdVersionsPost) | **POST** /api/workflow/{id}/versions | 创建工作流版本
@@ -173,6 +174,8 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsVersionRollbackPost**](docs/DefaultApi.md#apiWorkflowIdVersionsVersionRollbackPost) | **POST** /api/workflow/{id}/versions/{version}/rollback | 回滚版本
 *TxingAiApi.DefaultApi* | [**apiWorkflowModelsGet**](docs/DefaultApi.md#apiWorkflowModelsGet) | **GET** /api/workflow/models | 获取可用模型列表
 *TxingAiApi.DefaultApi* | [**apiWorkflowPost**](docs/DefaultApi.md#apiWorkflowPost) | **POST** /api/workflow | 创建工作流
+*TxingAiApi.DefaultApi* | [**apiWorkflowPublicGet**](docs/DefaultApi.md#apiWorkflowPublicGet) | **GET** /api/workflow/public | 获取已发布工作流列表
+*TxingAiApi.DefaultApi* | [**apiWorkflowPublicIdGet**](docs/DefaultApi.md#apiWorkflowPublicIdGet) | **GET** /api/workflow/public/{id} | 获取已发布工作流详情
 *TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesClonePost**](docs/DefaultApi.md#apiWorkflowTemplatesClonePost) | **POST** /api/workflow/templates/clone | 克隆模板
 *TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesGet**](docs/DefaultApi.md#apiWorkflowTemplatesGet) | **GET** /api/workflow/templates | 获取模板列表
 *TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesPost**](docs/DefaultApi.md#apiWorkflowTemplatesPost) | **POST** /api/workflow/templates | 创建模板
@@ -198,6 +201,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiWorkflowIdGet200Response](docs/ApiWorkflowIdGet200Response.md)
  - [TxingAiApi.ApiWorkflowIdRunPostRequest](docs/ApiWorkflowIdRunPostRequest.md)
  - [TxingAiApi.ApiWorkflowIdVersionsPost200Response](docs/ApiWorkflowIdVersionsPost200Response.md)
+ - [TxingAiApi.ApiWorkflowPublicIdGet200Response](docs/ApiWorkflowPublicIdGet200Response.md)
  - [TxingAiApi.ApiWorkflowTemplatesPost200Response](docs/ApiWorkflowTemplatesPost200Response.md)
  - [TxingAiApi.ApiWorkflowValidatePost200Response](docs/ApiWorkflowValidatePost200Response.md)
  - [TxingAiApi.DtoAgentExecReq](docs/DtoAgentExecReq.md)
@@ -224,6 +228,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
  - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
  - [TxingAiApi.DtoUpdateWebsiteReq](docs/DtoUpdateWebsiteReq.md)
+ - [TxingAiApi.DtoUpdateWorkflowStatusReq](docs/DtoUpdateWorkflowStatusReq.md)
  - [TxingAiApi.DtoValidateWorkflowReq](docs/DtoValidateWorkflowReq.md)
  - [TxingAiApi.FileUploadResponse](docs/FileUploadResponse.md)
  - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
@@ -239,6 +244,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoMessageVO](docs/VoMessageVO.md)
  - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
  - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
+ - [TxingAiApi.VoPublishedWorkflowVO](docs/VoPublishedWorkflowVO.md)
  - [TxingAiApi.VoTemplateVO](docs/VoTemplateVO.md)
  - [TxingAiApi.VoTokenPair](docs/VoTokenPair.md)
  - [TxingAiApi.VoUserVO](docs/VoUserVO.md)
