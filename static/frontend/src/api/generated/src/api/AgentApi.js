@@ -86,14 +86,18 @@ export default class AgentApi {
     /**
      * 基于 SSE 调用智能体
      * 使用 Server-Sent Events 流式调用智能体
-     * @param {module:model/DtoAgentExecReq} data 请求信息
+     * @param {String} agentType 智能体类型
+     * @param {Object} opts Optional parameters
+     * @param {String} [content] 请求内容
+     * @param {File} [file] 上传文件
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
      */
-    apiAgentExecStreamPostWithHttpInfo(data) {
-      let postBody = data;
-      // verify the required parameter 'data' is set
-      if (data === undefined || data === null) {
-        throw new Error("Missing the required parameter 'data' when calling apiAgentExecStreamPost");
+    apiAgentExecStreamPostWithHttpInfo(agentType, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'agentType' is set
+      if (agentType === undefined || agentType === null) {
+        throw new Error("Missing the required parameter 'agentType' when calling apiAgentExecStreamPost");
       }
 
       let pathParams = {
@@ -103,10 +107,13 @@ export default class AgentApi {
       let headerParams = {
       };
       let formParams = {
+        'agentType': agentType,
+        'content': opts['content'],
+        'file': opts['file']
       };
 
       let authNames = [];
-      let contentTypes = ['application/json'];
+      let contentTypes = ['multipart/form-data'];
       let accepts = ['text/event-stream'];
       let returnType = UtilsResponse;
       return this.apiClient.callApi(
@@ -119,11 +126,14 @@ export default class AgentApi {
     /**
      * 基于 SSE 调用智能体
      * 使用 Server-Sent Events 流式调用智能体
-     * @param {module:model/DtoAgentExecReq} data 请求信息
+     * @param {String} agentType 智能体类型
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.content 请求内容
+     * @param {File} opts.file 上传文件
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
      */
-    apiAgentExecStreamPost(data) {
-      return this.apiAgentExecStreamPostWithHttpInfo(data)
+    apiAgentExecStreamPost(agentType, opts) {
+      return this.apiAgentExecStreamPostWithHttpInfo(agentType, opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

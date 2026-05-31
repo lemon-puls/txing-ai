@@ -24,23 +24,35 @@ import ApiPresetPost200Response from '../model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Response';
+import ApiWorkflowIdGet200Response from '../model/ApiWorkflowIdGet200Response';
+import ApiWorkflowIdRunPostRequest from '../model/ApiWorkflowIdRunPostRequest';
+import ApiWorkflowIdVersionsPost200Response from '../model/ApiWorkflowIdVersionsPost200Response';
+import ApiWorkflowTemplatesPost200Response from '../model/ApiWorkflowTemplatesPost200Response';
+import ApiWorkflowValidatePost200Response from '../model/ApiWorkflowValidatePost200Response';
 import DtoBatchDeleteRequest from '../model/DtoBatchDeleteRequest';
+import DtoCloneTemplateReq from '../model/DtoCloneTemplateReq';
 import DtoConversationListRequest from '../model/DtoConversationListRequest';
+import DtoCreateAgentFlowReq from '../model/DtoCreateAgentFlowReq';
 import DtoCreateChannelReq from '../model/DtoCreateChannelReq';
 import DtoCreateModelReq from '../model/DtoCreateModelReq';
 import DtoCreatePresetReq from '../model/DtoCreatePresetReq';
+import DtoCreateTemplateReq from '../model/DtoCreateTemplateReq';
+import DtoCreateVersionReq from '../model/DtoCreateVersionReq';
 import DtoCreateWebsiteReq from '../model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from '../model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from '../model/DtoGetPresignedURLReq';
 import DtoLoginReq from '../model/DtoLoginReq';
+import DtoPublishVersionReq from '../model/DtoPublishVersionReq';
 import DtoRegisterReq from '../model/DtoRegisterReq';
 import DtoResetPasswordReq from '../model/DtoResetPasswordReq';
+import DtoUpdateAgentFlowReq from '../model/DtoUpdateAgentFlowReq';
 import DtoUpdateChannelReq from '../model/DtoUpdateChannelReq';
 import DtoUpdateModelReq from '../model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from '../model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from '../model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from '../model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from '../model/DtoUpdateWebsiteReq';
+import DtoValidateWorkflowReq from '../model/DtoValidateWorkflowReq';
 import UtilsResponse from '../model/UtilsResponse';
 
 /**
@@ -2113,6 +2125,938 @@ export default class DefaultApi {
      */
     apiWebsitesListGet(opts) {
       return this.apiWebsitesListGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取工作流列表
+     * 获取工作流分页列表
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [name] 工作流名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiWorkflowGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiWorkflowGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'name': opts['name']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取工作流列表
+     * 获取工作流分页列表
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.name 工作流名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowGet(page, limit, opts) {
+      return this.apiWorkflowGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除工作流
+     * 删除现有的 AgentFlow 工作流
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除工作流
+     * 删除现有的 AgentFlow 工作流
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdDelete(id) {
+      return this.apiWorkflowIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取单个工作流
+     * 获取工作流详情
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowIdGet200Response} and HTTP response
+     */
+    apiWorkflowIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowIdGet200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取单个工作流
+     * 获取工作流详情
+     * @param {Number} id 工作流ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowIdGet200Response}
+     */
+    apiWorkflowIdGet(id) {
+      return this.apiWorkflowIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新工作流
+     * 更新现有的 AgentFlow 工作流
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoUpdateAgentFlowReq} data 更新信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新工作流
+     * 更新现有的 AgentFlow 工作流
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoUpdateAgentFlowReq} data 更新信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdPut(id, data) {
+      return this.apiWorkflowIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 执行工作流
+     * 动态执行工作流，支持流式输出
+     * @param {Number} id 工作流ID
+     * @param {Object} opts Optional parameters
+     * @param {module:model/ApiWorkflowIdRunPostRequest} [apiWorkflowIdRunPostRequest] 
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiWorkflowIdRunPostWithHttpInfo(id, opts) {
+      opts = opts || {};
+      let postBody = opts['apiWorkflowIdRunPostRequest'];
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdRunPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['text/event-stream'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/run', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 执行工作流
+     * 动态执行工作流，支持流式输出
+     * @param {Number} id 工作流ID
+     * @param {Object} opts Optional parameters
+     * @param {module:model/ApiWorkflowIdRunPostRequest} opts.apiWorkflowIdRunPostRequest 
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiWorkflowIdRunPost(id, opts) {
+      return this.apiWorkflowIdRunPostWithHttpInfo(id, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 校验已保存的工作流
+     * 校验指定 ID 的工作流，可选启用 LLM 语义校验
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoValidateWorkflowReq} data 校验选项
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowValidatePost200Response} and HTTP response
+     */
+    apiWorkflowIdValidatePostWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdValidatePost");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowIdValidatePost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowValidatePost200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/validate', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 校验已保存的工作流
+     * 校验指定 ID 的工作流，可选启用 LLM 语义校验
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoValidateWorkflowReq} data 校验选项
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowValidatePost200Response}
+     */
+    apiWorkflowIdValidatePost(id, data) {
+      return this.apiWorkflowIdValidatePostWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取版本列表
+     * 获取工作流的版本历史
+     * @param {Number} id 工作流ID
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdVersionsGetWithHttpInfo(id, page, limit) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdVersionsGet");
+      }
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiWorkflowIdVersionsGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiWorkflowIdVersionsGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/versions', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取版本列表
+     * 获取工作流的版本历史
+     * @param {Number} id 工作流ID
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdVersionsGet(id, page, limit) {
+      return this.apiWorkflowIdVersionsGetWithHttpInfo(id, page, limit)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建工作流版本
+     * 为指定工作流创建新版本
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoCreateVersionReq} data 版本信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowIdVersionsPost200Response} and HTTP response
+     */
+    apiWorkflowIdVersionsPostWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdVersionsPost");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowIdVersionsPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowIdVersionsPost200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/versions', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建工作流版本
+     * 为指定工作流创建新版本
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoCreateVersionReq} data 版本信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowIdVersionsPost200Response}
+     */
+    apiWorkflowIdVersionsPost(id, data) {
+      return this.apiWorkflowIdVersionsPostWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 发布版本
+     * 发布工作流的指定版本
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoPublishVersionReq} data 发布信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdVersionsPublishPostWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdVersionsPublishPost");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowIdVersionsPublishPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/versions/publish', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 发布版本
+     * 发布工作流的指定版本
+     * @param {Number} id 工作流ID
+     * @param {module:model/DtoPublishVersionReq} data 发布信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdVersionsPublishPost(id, data) {
+      return this.apiWorkflowIdVersionsPublishPostWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取指定版本
+     * 获取工作流的指定版本详情
+     * @param {Number} id 工作流ID
+     * @param {Number} version 版本号
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowIdVersionsPost200Response} and HTTP response
+     */
+    apiWorkflowIdVersionsVersionGetWithHttpInfo(id, version) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdVersionsVersionGet");
+      }
+      // verify the required parameter 'version' is set
+      if (version === undefined || version === null) {
+        throw new Error("Missing the required parameter 'version' when calling apiWorkflowIdVersionsVersionGet");
+      }
+
+      let pathParams = {
+        'id': id,
+        'version': version
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowIdVersionsPost200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/versions/{version}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取指定版本
+     * 获取工作流的指定版本详情
+     * @param {Number} id 工作流ID
+     * @param {Number} version 版本号
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowIdVersionsPost200Response}
+     */
+    apiWorkflowIdVersionsVersionGet(id, version) {
+      return this.apiWorkflowIdVersionsVersionGetWithHttpInfo(id, version)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 回滚版本
+     * 回滚工作流到指定版本
+     * @param {Number} id 工作流ID
+     * @param {Number} version 版本号
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowIdVersionsVersionRollbackPostWithHttpInfo(id, version) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdVersionsVersionRollbackPost");
+      }
+      // verify the required parameter 'version' is set
+      if (version === undefined || version === null) {
+        throw new Error("Missing the required parameter 'version' when calling apiWorkflowIdVersionsVersionRollbackPost");
+      }
+
+      let pathParams = {
+        'id': id,
+        'version': version
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/{id}/versions/{version}/rollback', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 回滚版本
+     * 回滚工作流到指定版本
+     * @param {Number} id 工作流ID
+     * @param {Number} version 版本号
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowIdVersionsVersionRollbackPost(id, version) {
+      return this.apiWorkflowIdVersionsVersionRollbackPostWithHttpInfo(id, version)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取可用模型列表
+     * 获取工作流可用的模型列表
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowModelsGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/models', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取可用模型列表
+     * 获取工作流可用的模型列表
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowModelsGet() {
+      return this.apiWorkflowModelsGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建工作流
+     * 创建一个新的 AgentFlow 工作流
+     * @param {module:model/DtoCreateAgentFlowReq} data 创建信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建工作流
+     * 创建一个新的 AgentFlow 工作流
+     * @param {module:model/DtoCreateAgentFlowReq} data 创建信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowPost(data) {
+      return this.apiWorkflowPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 克隆模板
+     * 从模板创建工作流
+     * @param {module:model/DtoCloneTemplateReq} data 克隆信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowTemplatesClonePostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowTemplatesClonePost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/templates/clone', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 克隆模板
+     * 从模板创建工作流
+     * @param {module:model/DtoCloneTemplateReq} data 克隆信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowTemplatesClonePost(data) {
+      return this.apiWorkflowTemplatesClonePostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取模板列表
+     * 获取工作流模板市场
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} [category] 模板分类
+     * @param {String} [name] 模板名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowTemplatesGetWithHttpInfo(page, limit, opts) {
+      opts = opts || {};
+      let postBody = null;
+      // verify the required parameter 'page' is set
+      if (page === undefined || page === null) {
+        throw new Error("Missing the required parameter 'page' when calling apiWorkflowTemplatesGet");
+      }
+      // verify the required parameter 'limit' is set
+      if (limit === undefined || limit === null) {
+        throw new Error("Missing the required parameter 'limit' when calling apiWorkflowTemplatesGet");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': page,
+        'limit': limit,
+        'category': opts['category'],
+        'name': opts['name']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/templates', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取模板列表
+     * 获取工作流模板市场
+     * @param {Number} page 页码
+     * @param {Number} limit 每页数量
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.category 模板分类
+     * @param {String} opts.name 模板名称
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowTemplatesGet(page, limit, opts) {
+      return this.apiWorkflowTemplatesGetWithHttpInfo(page, limit, opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 创建模板
+     * 从工作流创建模板
+     * @param {module:model/DtoCreateTemplateReq} data 模板信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowTemplatesPost200Response} and HTTP response
+     */
+    apiWorkflowTemplatesPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowTemplatesPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowTemplatesPost200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/templates', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 创建模板
+     * 从工作流创建模板
+     * @param {module:model/DtoCreateTemplateReq} data 模板信息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowTemplatesPost200Response}
+     */
+    apiWorkflowTemplatesPost(data) {
+      return this.apiWorkflowTemplatesPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取可用工具列表
+     * 获取工作流可用的工具列表
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiWorkflowToolsGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/workflow/tools', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取可用工具列表
+     * 获取工作流可用的工具列表
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiWorkflowToolsGet() {
+      return this.apiWorkflowToolsGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 校验工作流拓扑
+     * 对传入的工作流拓扑 JSON 进行结构合法性校验
+     * @param {module:model/DtoValidateWorkflowReq} data 拓扑数据
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowValidatePost200Response} and HTTP response
+     */
+    apiWorkflowValidatePostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWorkflowValidatePost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = ApiWorkflowValidatePost200Response;
+      return this.apiClient.callApi(
+        '/api/workflow/validate', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 校验工作流拓扑
+     * 对传入的工作流拓扑 JSON 进行结构合法性校验
+     * @param {module:model/DtoValidateWorkflowReq} data 拓扑数据
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowValidatePost200Response}
+     */
+    apiWorkflowValidatePost(data) {
+      return this.apiWorkflowValidatePostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

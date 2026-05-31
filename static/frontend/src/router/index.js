@@ -185,6 +185,15 @@ const router = createRouter({
           }
         },
         {
+          path: 'workflow/templates',
+          name: 'TemplateMarket',
+          component: () => import('@/views/admin/workflow/TemplateMarket.vue'),
+          meta: {
+            title: '模板市场',
+            roles: ['admin']
+          }
+        },
+        {
           path: 'websites',
           name: 'AdminWebsites',
           component: () => import('@/views/admin/websites/WebsiteList.vue'),

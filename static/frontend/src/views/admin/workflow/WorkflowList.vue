@@ -10,6 +10,10 @@
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
           <el-button type="success" @click="handleAdd">新增工作流</el-button>
+          <el-button type="warning" @click="goToTemplateMarket">
+            <el-icon><Folder /></el-icon>
+            模板市场
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -84,6 +88,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Folder } from '@element-plus/icons-vue'
 import { getWorkflows, createWorkflow, updateWorkflow, deleteWorkflows } from '@/api/workflow'
 
 const router = useRouter()
@@ -180,6 +185,10 @@ const handleEdit = (row) => {
 
 const handleDesign = (row) => {
   router.push(`/admin/workflow/editor/${row.id}`)
+}
+
+const goToTemplateMarket = () => {
+  router.push('/admin/workflow/templates')
 }
 
 const handleDelete = (row) => {

@@ -20,6 +20,11 @@
           <el-icon><MagicStick /></el-icon>
           AI 校验
         </el-button>
+        <el-button type="info" plain @click="openVersionPanel">
+          <el-icon><Clock /></el-icon>
+          版本管理
+          <el-tag v-if="workflowData?.publishedVersion" size="small" type="success" effect="dark" style="margin-left:4px;">v{{ workflowData.publishedVersion }}</el-tag>
+        </el-button>
         <el-button type="success" @click="openTestDialog">
           <el-icon><VideoPlay /></el-icon>
           运行测试
@@ -28,6 +33,20 @@
           <el-icon><Check /></el-icon>
           保存
         </el-button>
+        <el-dropdown @command="handleMoreAction">
+          <el-button type="default" plain>
+            更多
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="saveAsTemplate">
+                <el-icon><FolderAdd /></el-icon>
+                保存为模板
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
@@ -113,6 +132,19 @@
           :logs="executionLogs"
           @close="executionLogVisible = false"
           @clear="clearExecutionLogs"
+        />
+
+        <!-- 版本管理面板 -->
+        <VersionPanel
+          :visible="versionPanelVisible"
+          :versions="versionList"
+          :current-version="workflowData?.currentVersion || 0"
+          :loading="versionLoading"
+          @close="versionPanelVisible = false"
+          @create="handleCreateVersion"
+          @publish="handlePublishVersion"
+          @rollback="handleRollbackVersion"
+          @preview="handlePreviewVersion"
         />
       </div>
 
@@ -241,6 +273,51 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 保存为模板对话框 -->
+    <el-dialog
+      v-model="templateDialogVisible"
+      title="保存为模板"
+      width="480px"
+      :close-on-click-modal="false"
+      class="template-dialog"
+    >
+      <el-form label-position="top" :model="templateForm" :rules="templateRules" ref="templateFormRef">
+        <el-form-item label="模板名称" prop="name">
+          <el-input
+            v-model="templateForm.name"
+            placeholder="请输入模板名称"
+            maxlength="100"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="模板描述">
+          <el-input
+            v-model="templateForm.description"
+            type="textarea"
+            :rows="2"
+            placeholder="简要描述模板的用途（可选）"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="模板分类">
+          <el-select v-model="templateForm.category" placeholder="选择分类（可选）" clearable style="width: 100%;">
+            <el-option label="通用" value="general" />
+            <el-option label="问答" value="qa" />
+            <el-option label="写作" value="writing" />
+            <el-option label="数据分析" value="data" />
+            <el-option label="工具调用" value="tool" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="templateDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveAsTemplate" :loading="templateSaving">保存模板</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -251,7 +328,7 @@ import { ElMessage } from 'element-plus'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown, CircleCheck, MagicStick, Document } from '@element-plus/icons-vue'
+import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown, CircleCheck, MagicStick, Document, Clock, FolderAdd } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
@@ -267,8 +344,10 @@ import HTTPNode from '@/components/workflow/HTTPNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
+import VersionPanel from '@/components/workflow/VersionPanel.vue'
 
 import { getWorkflow, updateWorkflow, getWorkflowModels, getWorkflowTools, runWorkflow, validateWorkflow, validateWorkflowById } from '@/api/workflow'
+import { defaultApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import authService from '@/api/auth.js'
 
@@ -320,6 +399,21 @@ const testResultPanelCollapsed = ref(false)
 const executionLogs = ref([])
 const executionLogVisible = ref(false)
 
+// 版本管理相关
+const versionPanelVisible = ref(false)
+const versionList = ref([])
+const versionLoading = ref(false)
+const workflowData = ref(null)
+
+// 模板相关
+const templateDialogVisible = ref(false)
+const templateSaving = ref(false)
+const templateFormRef = ref(null)
+const templateForm = ref({ name: '', description: '', category: '' })
+const templateRules = {
+  name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }]
+}
+
 // 校验相关
 const validating = ref(false)
 const llmValidating = ref(false)
@@ -366,6 +460,7 @@ const loadWorkflow = async () => {
   try {
     const res = await getWorkflow(workflowId)
     if (res.code === 0 && res.data) {
+      workflowData.value = res.data
       workflowName.value = res.data.name || ''
       if (res.data.topology) {
         try {
@@ -728,6 +823,138 @@ const clearTestResult = () => {
 
 const clearExecutionLogs = () => {
   executionLogs.value = []
+}
+
+// ==================== 版本管理 ====================
+
+// 打开版本面板
+const openVersionPanel = async () => {
+  versionPanelVisible.value = true
+  await loadVersionList()
+}
+
+// 加载版本列表
+const loadVersionList = async () => {
+  versionLoading.value = true
+  try {
+    const res = await defaultApi.apiWorkflowIdVersionsGet(workflowId, 1, 50)
+    const result = res.data || res
+    versionList.value = result.records || []
+  } catch (error) {
+    console.error('加载版本列表失败:', error)
+    ElMessage.error('加载版本列表失败')
+  } finally {
+    versionLoading.value = false
+  }
+}
+
+// 创建版本
+const handleCreateVersion = async (formData) => {
+  try {
+    await defaultApi.apiWorkflowIdVersionsPost(workflowId, formData)
+    ElMessage.success('版本创建成功')
+    await loadVersionList()
+    // 重新加载工作流数据以更新 currentVersion
+    await loadWorkflow()
+  } catch (error) {
+    console.error('创建版本失败:', error)
+    ElMessage.error('创建版本失败')
+  }
+}
+
+// 发布版本
+const handlePublishVersion = async (ver) => {
+  try {
+    await defaultApi.apiWorkflowIdVersionsPublishPost(workflowId, { version: ver.version })
+    ElMessage.success(`版本 v${ver.version} 发布成功`)
+    await loadVersionList()
+    await loadWorkflow()
+  } catch (error) {
+    console.error('发布版本失败:', error)
+    ElMessage.error('发布版本失败')
+  }
+}
+
+// 回滚版本
+const handleRollbackVersion = async (ver) => {
+  try {
+    await defaultApi.apiWorkflowIdVersionsVersionRollbackPost(workflowId, ver.version)
+    ElMessage.success(`已回滚到版本 v${ver.version}`)
+    // 重新加载工作流数据
+    await loadWorkflow()
+    await loadVersionList()
+  } catch (error) {
+    console.error('回滚版本失败:', error)
+    ElMessage.error('回滚版本失败')
+  }
+}
+
+// 预览版本（加载版本的拓扑到画布）
+const handlePreviewVersion = async (ver) => {
+  try {
+    const res = await defaultApi.apiWorkflowIdVersionsVersionGet(workflowId, ver.version)
+    const versionData = res.data || res
+    if (versionData.topology) {
+      const flowData = JSON.parse(versionData.topology)
+      nodes.value = flowData.nodes || []
+      edges.value = (flowData.edges || []).map(edge => ({
+        ...edge,
+        sourceHandle: migrateHandleId(edge.sourceHandle, 'source'),
+        targetHandle: migrateHandleId(edge.targetHandle, 'target')
+      }))
+      ElMessage.info(`已加载版本 v${ver.version} 的拓扑（只读预览，保存后生效）`)
+    }
+  } catch (error) {
+    console.error('加载版本详情失败:', error)
+    ElMessage.error('加载版本详情失败')
+  }
+}
+
+// ==================== 模板管理 ====================
+
+// 更多操作下拉菜单
+const handleMoreAction = (command) => {
+  if (command === 'saveAsTemplate') {
+    openTemplateDialog()
+  }
+}
+
+// 打开保存为模板对话框
+const openTemplateDialog = () => {
+  templateForm.value = {
+    name: workflowName.value ? workflowName.value + ' 模板' : '',
+    description: '',
+    category: ''
+  }
+  templateDialogVisible.value = true
+}
+
+// 保存为模板
+const handleSaveAsTemplate = async () => {
+  if (!templateFormRef.value) return
+  await templateFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    templateSaving.value = true
+    try {
+      const res = await defaultApi.apiWorkflowTemplatesPost({
+        flowId: parseInt(workflowId),
+        name: templateForm.value.name,
+        description: templateForm.value.description,
+        category: templateForm.value.category
+      })
+      if (res.code === 0) {
+        ElMessage.success('模板保存成功')
+        templateDialogVisible.value = false
+      } else {
+        ElMessage.error(res.msg || '保存模板失败')
+      }
+    } catch (error) {
+      console.error('保存模板失败:', error)
+      ElMessage.error('保存模板失败')
+    } finally {
+      templateSaving.value = false
+    }
+  })
 }
 
 // 运行工作流测试
@@ -1310,6 +1537,16 @@ onUnmounted(() => {
 
 // 校验结果对话框
 :deep(.validation-dialog) {
+  .el-dialog {
+    border-radius: 14px;
+  }
+
+  .el-dialog__body {
+    padding: 16px 20px;
+  }
+}
+
+:deep(.template-dialog) {
   .el-dialog {
     border-radius: 14px;
   }

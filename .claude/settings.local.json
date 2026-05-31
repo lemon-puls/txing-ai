@@ -36,7 +36,22 @@
       "Bash(grep -o '\\\\\\\\\\\\\\\\')",
       "Bash(node gen_workflow_sql3.js)",
       "Bash(git commit *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(go run *)",
+      "Bash(mysql -u root -p -e \"DESCRIBE models;\")",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(git restore *)",
+      "Bash(git checkout *)",
+      "Bash(go install *)",
+      "Bash(swag init *)",
+      "Bash(npx openapi-generator-cli *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(pnpm install *)"
     ]
   }
 }
