@@ -174,7 +174,7 @@ func List(ctx *gin.Context) {
 func GetModels(ctx *gin.Context) {
 	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	var models []domain.Model
-	if err := db.Where("status = ?", 1).Find(&models).Error; err != nil {
+	if err := db.Find(&models).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "获取模型列表失败", err)
 		return
 	}
