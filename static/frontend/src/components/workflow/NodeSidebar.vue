@@ -24,6 +24,18 @@
           />
         </el-select>
       </div>
+      <div class="config-item">
+        <label>最大步数 <span class="hint">（可选，默认30）</span></label>
+        <el-input-number
+          v-model="maxRunSteps"
+          size="small"
+          :min="1"
+          :max="1000"
+          placeholder="留空使用默认值"
+          controls-position="right"
+          @change="onMaxRunStepsChange"
+        />
+      </div>
     </div>
 
     <div class="node-categories">
@@ -154,10 +166,12 @@ const props = defineProps({
 const emit = defineEmits(['save', 'config-change'])
 
 const defaultModel = ref(props.workflowConfig?.defaultModel || '')
+const maxRunSteps = ref(props.workflowConfig?.maxRunSteps || null)
 
 watch(() => props.workflowConfig, (newConfig) => {
   if (newConfig) {
     defaultModel.value = newConfig.defaultModel || ''
+    maxRunSteps.value = newConfig.maxRunSteps || null
   }
 }, { deep: true })
 
@@ -165,6 +179,13 @@ const onModelChange = (value) => {
   emit('config-change', {
     ...props.workflowConfig,
     defaultModel: value || ''
+  })
+}
+
+const onMaxRunStepsChange = (value) => {
+  emit('config-change', {
+    ...props.workflowConfig,
+    maxRunSteps: value || null
   })
 }
 
@@ -210,14 +231,29 @@ const onDragStart = (event, nodeType) => {
     }
 
     .config-item {
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
       label {
         display: block;
         font-size: 11px;
         color: #666;
         margin-bottom: 4px;
+
+        .hint {
+          color: #999;
+          font-size: 10px;
+        }
       }
 
       .el-select {
+        width: 100%;
+      }
+
+      .el-input-number {
         width: 100%;
       }
     }
