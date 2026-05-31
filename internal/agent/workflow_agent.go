@@ -411,14 +411,25 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			statusCb := nodeStatusCallback(callback, nodeId, "start", node.Data.Label)
 			// 开始节点：将输入消息转换为消息列表
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "start",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
 				statusCb("running")
 				log.Info("Executing start node", zap.String("nodeId", nodeId))
 				var result *schema.Message
 				if len(input) > 0 {
 					result = input[len(input)-1]
+					execLog.Input = input[len(input)-1].Content
 				} else {
 					result = schema.UserMessage("")
 				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
 				statusCb("completed")
 				return result, nil
 			}))
@@ -428,8 +439,21 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			statusCb := nodeStatusCallback(callback, nodeId, "end", node.Data.Label)
 			// 结束节点：直接返回输入
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "end",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
 				statusCb("running")
 				log.Info("Executing end node", zap.String("nodeId", nodeId))
+				if input != nil {
+					execLog.Input = input.Content
+				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
 				statusCb("completed")
 				return input, nil
 			}))
@@ -702,15 +726,18 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 					// 返回最后一个结果
 					execLog.Status = "completed"
+					if len(results) > 0 {
+						execLog.Output = results[len(results)-1].Content
+					} else {
+						execLog.Output = response.Content
+					}
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					sendExecutionLog(callback, execLog)
+					statusCbTool("completed")
 					if len(results) > 0 {
-						execLog.Output = results[len(results)-1].Content
-						statusCbTool("completed")
 						return results[len(results)-1], nil
 					}
-					statusCbTool("completed")
 					return response, nil
 				}
 
@@ -743,6 +770,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			// 添加条件判断节点
 			statusCbCond := nodeStatusCallback(callback, nodeId, "condition", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "condition",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
 				statusCbCond("running")
 				log.Info("Executing Condition node",
 					zap.String("nodeId", nodeId),
@@ -809,6 +842,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					"condition_reason": result.Reason,
 				}
 
+				execLog.Input = input.Content
+				execLog.Output = fmt.Sprintf("result=%v, branch=%s, reason=%s", result.Result, branchId, result.Reason)
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
 				statusCbCond("completed")
 				return outputMsg, nil
 			}))
@@ -821,15 +860,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				continue
 			}
 
-			statusCbCode := nodeStatusCallback(callback, nodeId, "code", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				statusCbCode("running")
+				// executeCodeNode 内部已处理 running/completed/failed 状态和执行日志
 				result, err := executeCodeNode(ctx, nodeId, node.Data.Label, codeConfig, input, callback)
 				if err != nil {
-					statusCbCode("failed")
 					return nil, err
 				}
-				statusCbCode("completed")
 				return result, nil
 			}))
 
@@ -841,15 +877,12 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				continue
 			}
 
-			statusCbHTTP := nodeStatusCallback(callback, nodeId, "http", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				statusCbHTTP("running")
+				// executeHTTPNode 内部已处理 running/completed/failed 状态和执行日志
 				result, err := executeHTTPNode(ctx, nodeId, node.Data.Label, httpConfig, input, callback)
 				if err != nil {
-					statusCbHTTP("failed")
 					return nil, err
 				}
-				statusCbHTTP("completed")
 				return result, nil
 			}))
 
@@ -865,8 +898,21 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			log.Warn("子工作流节点暂未实现完整执行逻辑", zap.String("nodeId", nodeId))
 			statusCbSub := nodeStatusCallback(callback, nodeId, "subworkflow", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "subworkflow",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
 				statusCbSub("running")
 				// TODO: 实现子工作流执行
+				if input != nil {
+					execLog.Input = input.Content
+				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
 				statusCbSub("completed")
 				return input, nil
 			}))
