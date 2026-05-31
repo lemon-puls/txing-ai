@@ -75,6 +75,10 @@
                 <span>{{ testRunning ? '工作流运行中...' : (testError ? '运行失败' : '运行完成') }}</span>
               </div>
               <div class="result-panel-actions">
+                <el-button v-if="executionLogs.length > 0" text size="small" @click="executionLogVisible = !executionLogVisible">
+                  <el-icon><Document /></el-icon>
+                  {{ executionLogVisible ? '隐藏日志' : '查看日志' }}
+                </el-button>
                 <el-button v-if="!testRunning" text size="small" @click="clearTestResult">
                   <el-icon><Delete /></el-icon>
                   清除
@@ -102,6 +106,14 @@
             </div>
           </div>
         </transition>
+
+        <!-- 执行日志面板 -->
+        <ExecutionLogPanel
+          :visible="executionLogVisible"
+          :logs="executionLogs"
+          @close="executionLogVisible = false"
+          @clear="clearExecutionLogs"
+        />
       </div>
 
       <!-- 右侧属性面板 -->
@@ -239,7 +251,7 @@ import { ElMessage } from 'element-plus'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
-import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown, CircleCheck, MagicStick } from '@element-plus/icons-vue'
+import { Check, VideoPlay, Loading, WarningFilled, Delete, ArrowUp, ArrowDown, CircleCheck, MagicStick, Document } from '@element-plus/icons-vue'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 import '@vue-flow/controls/dist/style.css'
@@ -254,6 +266,7 @@ import CodeNode from '@/components/workflow/CodeNode.vue'
 import HTTPNode from '@/components/workflow/HTTPNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
+import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
 
 import { getWorkflow, updateWorkflow, getWorkflowModels, getWorkflowTools, runWorkflow, validateWorkflow, validateWorkflowById } from '@/api/workflow'
 import { useUserStore } from '@/stores/user'
@@ -302,6 +315,10 @@ const testRunning = ref(false)
 const testResult = ref('')
 const testError = ref('')
 const testResultPanelCollapsed = ref(false)
+
+// 执行日志相关
+const executionLogs = ref([])
+const executionLogVisible = ref(false)
 
 // 校验相关
 const validating = ref(false)
@@ -629,6 +646,8 @@ const clearExecutionState = () => {
   completedNodeIds.value = new Set()
   failedNodeIds.value = new Set()
   activeEdgeIds.value = new Set()
+  executionLogs.value = []
+  executionLogVisible.value = false
   // 重置所有节点和边的 class
   nodes.value = nodes.value.map(node => ({ ...node, class: '' }))
   edges.value = edges.value.map(edge => ({ ...edge, class: '' }))
@@ -707,6 +726,10 @@ const clearTestResult = () => {
   clearExecutionState()
 }
 
+const clearExecutionLogs = () => {
+  executionLogs.value = []
+}
+
 // 运行工作流测试
 const runWorkflowTest = async () => {
   if (!testInput.value || !workflowId) return
@@ -774,6 +797,10 @@ const runWorkflowTest = async () => {
               // 运行结束，清除运行中状态
               runningNodeId.value = null
               activeEdgeIds.value = new Set()
+              // 自动显示执行日志
+              if (executionLogs.value.length > 0) {
+                executionLogVisible.value = true
+              }
               ElMessage.success('工作流执行完成')
               return
             }
@@ -787,6 +814,60 @@ const runWorkflowTest = async () => {
             // 处理节点状态事件
             if (event.nodeId && event.nodeStatus) {
               handleNodeStatus(event.nodeId, event.nodeStatus)
+            }
+            // 收集执行日志
+            if (event.execution_log) {
+              const logIndex = executionLogs.value.findIndex(
+                log => log.nodeId === event.nodeId && log.status === 'running'
+              )
+              if (logIndex !== -1) {
+                // 更新现有的运行中日志
+                executionLogs.value[logIndex] = {
+                  ...executionLogs.value[logIndex],
+                  status: event.nodeStatus || 'completed',
+                  endTime: event.execution_log.endTime,
+                  duration: event.execution_log.duration,
+                  input: event.execution_log.input,
+                  output: event.execution_log.output,
+                  error: event.execution_log.error,
+                  retry: event.execution_log.retry
+                }
+              } else {
+                // 添加新的日志
+                executionLogs.value.push({
+                  nodeId: event.nodeId,
+                  nodeType: event.nodeType,
+                  nodeLabel: event.nodeLabel,
+                  status: event.nodeStatus || 'completed',
+                  startTime: event.execution_log.startTime,
+                  endTime: event.execution_log.endTime,
+                  duration: event.execution_log.duration,
+                  input: event.execution_log.input,
+                  output: event.execution_log.output,
+                  error: event.execution_log.error,
+                  retry: event.execution_log.retry
+                })
+              }
+            } else if (event.nodeId && event.nodeStatus === 'running') {
+              // 节点开始运行时添加日志
+              const existingLog = executionLogs.value.find(
+                log => log.nodeId === event.nodeId && log.status === 'running'
+              )
+              if (!existingLog) {
+                executionLogs.value.push({
+                  nodeId: event.nodeId,
+                  nodeType: event.nodeType,
+                  nodeLabel: event.nodeLabel,
+                  status: 'running',
+                  startTime: Date.now(),
+                  endTime: null,
+                  duration: null,
+                  input: null,
+                  output: null,
+                  error: null,
+                  retry: 0
+                })
+              }
             }
             if (event.content) {
               testResult.value += event.content
