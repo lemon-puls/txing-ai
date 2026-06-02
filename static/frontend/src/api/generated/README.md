@@ -102,16 +102,6 @@ Please follow the [installation](#installation) instruction and execute the foll
 ```javascript
 var TxingAiApi = require('txing_ai_api');
 
-
-var api = new TxingAiApi.DefaultApi()
-var id = 56; // {Number} 渠道ID
-api.apiAdminChannelIdDelete(id).then(function(data) {
-  console.log('API called successfully. Returned data: ' + data);
-}, function(error) {
-  console.error(error);
-});
-
-
 ```
 
 ## Documentation for API Endpoints
@@ -120,137 +110,10 @@ All URIs are relative to *http://localhost:8080*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
-*TxingAiApi.DefaultApi* | [**apiAdminChannelIdDelete**](docs/DefaultApi.md#apiAdminChannelIdDelete) | **DELETE** /api/admin/channel/{id} | 删除渠道
-*TxingAiApi.DefaultApi* | [**apiAdminChannelIdGet**](docs/DefaultApi.md#apiAdminChannelIdGet) | **GET** /api/admin/channel/{id} | 获取渠道详情
-*TxingAiApi.DefaultApi* | [**apiAdminChannelIdPut**](docs/DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
-*TxingAiApi.DefaultApi* | [**apiAdminChannelListGet**](docs/DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
-*TxingAiApi.DefaultApi* | [**apiAdminChannelPost**](docs/DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
-*TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
-*TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
-*TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
-*TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
-*TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesFaviconPost**](docs/DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdDelete**](docs/DefaultApi.md#apiAdminWebsitesIdDelete) | **DELETE** /api/admin/websites/{id} | 删除网站
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdGet**](docs/DefaultApi.md#apiAdminWebsitesIdGet) | **GET** /api/admin/websites/{id} | 获取网站详情
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdPut**](docs/DefaultApi.md#apiAdminWebsitesIdPut) | **PUT** /api/admin/websites/{id} | 更新网站
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesListGet**](docs/DefaultApi.md#apiAdminWebsitesListGet) | **GET** /api/admin/websites/list | 获取网站列表
-*TxingAiApi.DefaultApi* | [**apiAdminWebsitesPost**](docs/DefaultApi.md#apiAdminWebsitesPost) | **POST** /api/admin/websites | 创建网站
-*TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
-*TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
-*TxingAiApi.DefaultApi* | [**apiChatConversationsDeletebatchPost**](docs/DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
-*TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
-*TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
-*TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
-*TxingAiApi.DefaultApi* | [**apiFileDownloadGet**](docs/DefaultApi.md#apiFileDownloadGet) | **GET** /api/file/download | 下载文件
-*TxingAiApi.DefaultApi* | [**apiFileUploadPost**](docs/DefaultApi.md#apiFileUploadPost) | **POST** /api/file/upload | 上传文件
-*TxingAiApi.DefaultApi* | [**apiModelIdGet**](docs/DefaultApi.md#apiModelIdGet) | **GET** /api/model/{id} | 获取模型详情
-*TxingAiApi.DefaultApi* | [**apiModelListGet**](docs/DefaultApi.md#apiModelListGet) | **GET** /api/model/list | 获取模型列表
-*TxingAiApi.DefaultApi* | [**apiPresetIdDelete**](docs/DefaultApi.md#apiPresetIdDelete) | **DELETE** /api/preset/{id} | 删除预设
-*TxingAiApi.DefaultApi* | [**apiPresetIdGet**](docs/DefaultApi.md#apiPresetIdGet) | **GET** /api/preset/{id} | 获取预设详情
-*TxingAiApi.DefaultApi* | [**apiPresetIdPut**](docs/DefaultApi.md#apiPresetIdPut) | **PUT** /api/preset/{id} | 更新预设
-*TxingAiApi.DefaultApi* | [**apiPresetListGet**](docs/DefaultApi.md#apiPresetListGet) | **GET** /api/preset/list | 获取预设列表
-*TxingAiApi.DefaultApi* | [**apiPresetPost**](docs/DefaultApi.md#apiPresetPost) | **POST** /api/preset | 创建预设
-*TxingAiApi.DefaultApi* | [**apiUserInfoGet**](docs/DefaultApi.md#apiUserInfoGet) | **GET** /api/user/info | 获取当前用户信息
-*TxingAiApi.DefaultApi* | [**apiUserLoginPost**](docs/DefaultApi.md#apiUserLoginPost) | **POST** /api/user/login | 用户登录
-*TxingAiApi.DefaultApi* | [**apiUserLogoutPost**](docs/DefaultApi.md#apiUserLogoutPost) | **POST** /api/user/logout | 退出登录
-*TxingAiApi.DefaultApi* | [**apiUserPasswordPut**](docs/DefaultApi.md#apiUserPasswordPut) | **PUT** /api/user/password | 修改密码
-*TxingAiApi.DefaultApi* | [**apiUserProfilePut**](docs/DefaultApi.md#apiUserProfilePut) | **PUT** /api/user/profile | 更新个人信息
-*TxingAiApi.DefaultApi* | [**apiUserRefreshPost**](docs/DefaultApi.md#apiUserRefreshPost) | **POST** /api/user/refresh | 刷新访问令牌
-*TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
-*TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
-*TxingAiApi.DefaultApi* | [**apiWebsitesListGet**](docs/DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowGet**](docs/DefaultApi.md#apiWorkflowGet) | **GET** /api/workflow | 获取工作流列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdDelete**](docs/DefaultApi.md#apiWorkflowIdDelete) | **DELETE** /api/workflow/{id} | 删除工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdGet**](docs/DefaultApi.md#apiWorkflowIdGet) | **GET** /api/workflow/{id} | 获取单个工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdPut**](docs/DefaultApi.md#apiWorkflowIdPut) | **PUT** /api/workflow/{id} | 更新工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdRunPost**](docs/DefaultApi.md#apiWorkflowIdRunPost) | **POST** /api/workflow/{id}/run | 执行工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdStatusPut**](docs/DefaultApi.md#apiWorkflowIdStatusPut) | **PUT** /api/workflow/{id}/status | 更新工作流状态
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdValidatePost**](docs/DefaultApi.md#apiWorkflowIdValidatePost) | **POST** /api/workflow/{id}/validate | 校验已保存的工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsGet**](docs/DefaultApi.md#apiWorkflowIdVersionsGet) | **GET** /api/workflow/{id}/versions | 获取版本列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsPost**](docs/DefaultApi.md#apiWorkflowIdVersionsPost) | **POST** /api/workflow/{id}/versions | 创建工作流版本
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsPublishPost**](docs/DefaultApi.md#apiWorkflowIdVersionsPublishPost) | **POST** /api/workflow/{id}/versions/publish | 发布版本
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsVersionGet**](docs/DefaultApi.md#apiWorkflowIdVersionsVersionGet) | **GET** /api/workflow/{id}/versions/{version} | 获取指定版本
-*TxingAiApi.DefaultApi* | [**apiWorkflowIdVersionsVersionRollbackPost**](docs/DefaultApi.md#apiWorkflowIdVersionsVersionRollbackPost) | **POST** /api/workflow/{id}/versions/{version}/rollback | 回滚版本
-*TxingAiApi.DefaultApi* | [**apiWorkflowModelsGet**](docs/DefaultApi.md#apiWorkflowModelsGet) | **GET** /api/workflow/models | 获取可用模型列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowPost**](docs/DefaultApi.md#apiWorkflowPost) | **POST** /api/workflow | 创建工作流
-*TxingAiApi.DefaultApi* | [**apiWorkflowPublicGet**](docs/DefaultApi.md#apiWorkflowPublicGet) | **GET** /api/workflow/public | 获取已发布工作流列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowPublicIdGet**](docs/DefaultApi.md#apiWorkflowPublicIdGet) | **GET** /api/workflow/public/{id} | 获取已发布工作流详情
-*TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesClonePost**](docs/DefaultApi.md#apiWorkflowTemplatesClonePost) | **POST** /api/workflow/templates/clone | 克隆模板
-*TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesGet**](docs/DefaultApi.md#apiWorkflowTemplatesGet) | **GET** /api/workflow/templates | 获取模板列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowTemplatesPost**](docs/DefaultApi.md#apiWorkflowTemplatesPost) | **POST** /api/workflow/templates | 创建模板
-*TxingAiApi.DefaultApi* | [**apiWorkflowToolsGet**](docs/DefaultApi.md#apiWorkflowToolsGet) | **GET** /api/workflow/tools | 获取可用工具列表
-*TxingAiApi.DefaultApi* | [**apiWorkflowValidatePost**](docs/DefaultApi.md#apiWorkflowValidatePost) | **POST** /api/workflow/validate | 校验工作流拓扑
-*TxingAiApi.AgentApi* | [**apiAgentExecPost**](docs/AgentApi.md#apiAgentExecPost) | **POST** /api/agent/exec | 调用智能体
-*TxingAiApi.AgentApi* | [**apiAgentExecStreamPost**](docs/AgentApi.md#apiAgentExecStreamPost) | **POST** /api/agent/exec/stream | 基于 SSE 调用智能体
 
 
 ## Documentation for Models
 
- - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
- - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
- - [TxingAiApi.ApiAdminWebsitesFaviconPost200Response](docs/ApiAdminWebsitesFaviconPost200Response.md)
- - [TxingAiApi.ApiAdminWebsitesPost200Response](docs/ApiAdminWebsitesPost200Response.md)
- - [TxingAiApi.ApiChatConversationsIdGet200Response](docs/ApiChatConversationsIdGet200Response.md)
- - [TxingAiApi.ApiCosPresignedUrlPost200Response](docs/ApiCosPresignedUrlPost200Response.md)
- - [TxingAiApi.ApiFileUploadPost200Response](docs/ApiFileUploadPost200Response.md)
- - [TxingAiApi.ApiPresetPost200Response](docs/ApiPresetPost200Response.md)
- - [TxingAiApi.ApiUserInfoGet200Response](docs/ApiUserInfoGet200Response.md)
- - [TxingAiApi.ApiUserLoginPost200Response](docs/ApiUserLoginPost200Response.md)
- - [TxingAiApi.ApiUserRefreshPost200Response](docs/ApiUserRefreshPost200Response.md)
- - [TxingAiApi.ApiWorkflowIdGet200Response](docs/ApiWorkflowIdGet200Response.md)
- - [TxingAiApi.ApiWorkflowIdRunPostRequest](docs/ApiWorkflowIdRunPostRequest.md)
- - [TxingAiApi.ApiWorkflowIdVersionsPost200Response](docs/ApiWorkflowIdVersionsPost200Response.md)
- - [TxingAiApi.ApiWorkflowPublicIdGet200Response](docs/ApiWorkflowPublicIdGet200Response.md)
- - [TxingAiApi.ApiWorkflowTemplatesPost200Response](docs/ApiWorkflowTemplatesPost200Response.md)
- - [TxingAiApi.ApiWorkflowValidatePost200Response](docs/ApiWorkflowValidatePost200Response.md)
- - [TxingAiApi.DtoAgentExecReq](docs/DtoAgentExecReq.md)
- - [TxingAiApi.DtoBatchDeleteRequest](docs/DtoBatchDeleteRequest.md)
- - [TxingAiApi.DtoCloneTemplateReq](docs/DtoCloneTemplateReq.md)
- - [TxingAiApi.DtoConversationListRequest](docs/DtoConversationListRequest.md)
- - [TxingAiApi.DtoCreateAgentFlowReq](docs/DtoCreateAgentFlowReq.md)
- - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
- - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
- - [TxingAiApi.DtoCreatePresetReq](docs/DtoCreatePresetReq.md)
- - [TxingAiApi.DtoCreateTemplateReq](docs/DtoCreateTemplateReq.md)
- - [TxingAiApi.DtoCreateVersionReq](docs/DtoCreateVersionReq.md)
- - [TxingAiApi.DtoCreateWebsiteReq](docs/DtoCreateWebsiteReq.md)
- - [TxingAiApi.DtoGetFaviconReq](docs/DtoGetFaviconReq.md)
- - [TxingAiApi.DtoGetPresignedURLReq](docs/DtoGetPresignedURLReq.md)
- - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
- - [TxingAiApi.DtoPublishVersionReq](docs/DtoPublishVersionReq.md)
- - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
- - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)
- - [TxingAiApi.DtoUpdateAgentFlowReq](docs/DtoUpdateAgentFlowReq.md)
- - [TxingAiApi.DtoUpdateChannelReq](docs/DtoUpdateChannelReq.md)
- - [TxingAiApi.DtoUpdateModelReq](docs/DtoUpdateModelReq.md)
- - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
- - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
- - [TxingAiApi.DtoUpdateProfileReq](docs/DtoUpdateProfileReq.md)
- - [TxingAiApi.DtoUpdateWebsiteReq](docs/DtoUpdateWebsiteReq.md)
- - [TxingAiApi.DtoUpdateWorkflowStatusReq](docs/DtoUpdateWorkflowStatusReq.md)
- - [TxingAiApi.DtoValidateWorkflowReq](docs/DtoValidateWorkflowReq.md)
- - [TxingAiApi.FileUploadResponse](docs/FileUploadResponse.md)
- - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
- - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
- - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
- - [TxingAiApi.VoAgentFlowVO](docs/VoAgentFlowVO.md)
- - [TxingAiApi.VoAgentFlowVersionVO](docs/VoAgentFlowVersionVO.md)
- - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
- - [TxingAiApi.VoConversationDetailVO](docs/VoConversationDetailVO.md)
- - [TxingAiApi.VoGetFaviconVO](docs/VoGetFaviconVO.md)
- - [TxingAiApi.VoGetPresignedURLVO](docs/VoGetPresignedURLVO.md)
- - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
- - [TxingAiApi.VoMessageVO](docs/VoMessageVO.md)
- - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
- - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
- - [TxingAiApi.VoPublishedWorkflowVO](docs/VoPublishedWorkflowVO.md)
- - [TxingAiApi.VoTemplateVO](docs/VoTemplateVO.md)
- - [TxingAiApi.VoTokenPair](docs/VoTokenPair.md)
- - [TxingAiApi.VoUserVO](docs/VoUserVO.md)
- - [TxingAiApi.VoValidationErrorVO](docs/VoValidationErrorVO.md)
- - [TxingAiApi.VoValidationResultVO](docs/VoValidationResultVO.md)
- - [TxingAiApi.VoWebsiteVO](docs/VoWebsiteVO.md)
 
 
 ## Documentation for Authorization

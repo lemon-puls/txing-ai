@@ -50,6 +50,18 @@
           <el-form-item label="启用上下文记忆">
             <el-switch v-model="localData.modelConfig.contextEnabled" />
           </el-form-item>
+          <el-form-item label="绑定工具">
+            <el-checkbox-group v-model="localData.modelConfig.tools">
+              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
+                {{ tool.displayName }}
+              </el-checkbox>
+            </el-checkbox-group>
+            <div class="form-tip">LLM 将通过 Function Calling 自主决定是否调用这些工具（支持多轮调用）</div>
+          </el-form-item>
+          <el-form-item label="最大工具调用轮次" v-if="localData.modelConfig.tools && localData.modelConfig.tools.length > 0">
+            <el-input-number v-model="localData.modelConfig.maxToolRounds" :min="1" :max="20" :step="1" style="width: 100%" />
+            <div class="form-tip">控制 LLM 最多执行多少轮工具调用，防止无限循环</div>
+          </el-form-item>
         </el-form>
       </div>
 
@@ -58,11 +70,21 @@
         <div class="section-title">工具配置</div>
         <el-form label-position="top" size="small">
           <el-form-item label="选择工具">
-            <el-checkbox-group v-model="localData.toolConfig.tools">
-              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
-                {{ tool.displayName }}
-              </el-checkbox>
-            </el-checkbox-group>
+            <el-select v-model="localData.toolConfig.toolName" placeholder="请选择工具" style="width: 100%" clearable>
+              <el-option v-for="tool in toolList" :key="tool.name" :label="tool.displayName" :value="tool.name" />
+            </el-select>
+            <div class="form-tip">直接执行工具，不经过大模型，不消耗 Token</div>
+          </el-form-item>
+          <el-form-item label="工具参数">
+            <el-input
+              v-model="toolParamsStr"
+              type="textarea"
+              :rows="4"
+              placeholder='JSON 格式参数，例如: {"query": "北京天气"}'
+              style="font-family: monospace;"
+              @change="parseToolParams"
+            />
+            <div class="form-tip">输入 JSON 格式的工具参数，上游节点的输入内容会自动作为 toolInput 参数传入</div>
           </el-form-item>
         </el-form>
       </div>
@@ -234,6 +256,33 @@
           </el-form-item>
         </el-form>
       </div>
+
+      <!-- Agent 节点配置 -->
+      <div class="config-section" v-if="nodeType === 'agent'">
+        <div class="section-title">Agent 配置</div>
+        <el-form label-position="top" size="small">
+          <el-form-item label="系统提示词">
+            <el-input
+              v-model="localData.agentConfig.systemPrompt"
+              type="textarea"
+              :rows="6"
+              placeholder="请输入系统提示词，指导 Agent 的行为"
+            />
+          </el-form-item>
+          <el-form-item label="选择工具">
+            <el-checkbox-group v-model="localData.agentConfig.tools">
+              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
+                {{ tool.displayName }}
+              </el-checkbox>
+            </el-checkbox-group>
+            <div class="form-tip">Agent 将自动决定何时调用这些工具（支持多轮调用）</div>
+          </el-form-item>
+          <el-form-item label="最大执行步数">
+            <el-input-number v-model="localData.agentConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
+            <div class="form-tip">控制 Agent 最多执行多少轮工具调用，防止无限循环</div>
+          </el-form-item>
+        </el-form>
+      </div>
     </div>
 
     <div class="panel-footer">
@@ -286,11 +335,14 @@ const localData = ref({
     systemPrompt: '',
     temperature: 0.7,
     maxTokens: 4096,
-    contextEnabled: true
+    contextEnabled: true,
+    tools: [],
+    maxToolRounds: 5
   },
   toolConfig: {
-    tools: [],
-    params: {}
+    toolName: '',
+    params: {},
+    tools: []
   },
   conditionConfig: {
     type: 'expression',
@@ -313,11 +365,19 @@ const localData = ref({
     headers: {},
     body: '',
     timeout: 30
+  },
+  agentConfig: {
+    systemPrompt: '',
+    tools: [],
+    maxRunSteps: 30
   }
 })
 
 // HTTP 请求头字符串（用于编辑）
 const httpHeadersStr = ref('')
+
+// 工具参数字符串（用于编辑）
+const toolParamsStr = ref('')
 
 // 监听选中节点变化，更新本地数据
 watch(() => props.selectedNode, (newNode) => {
@@ -330,11 +390,14 @@ watch(() => props.selectedNode, (newNode) => {
         systemPrompt: '',
         temperature: 0.7,
         maxTokens: 4096,
-        contextEnabled: true
+        contextEnabled: true,
+        tools: [],
+        maxToolRounds: 5
       },
       toolConfig: newNode.data?.toolConfig || {
-        tools: [],
-        params: {}
+        toolName: '',
+        params: {},
+        tools: []
       },
       conditionConfig: newNode.data?.conditionConfig || {
         type: 'expression',
@@ -357,6 +420,11 @@ watch(() => props.selectedNode, (newNode) => {
         headers: {},
         body: '',
         timeout: 30
+      },
+      agentConfig: newNode.data?.agentConfig || {
+        systemPrompt: '',
+        tools: [],
+        maxRunSteps: 30
       }
     }
 
@@ -365,6 +433,10 @@ watch(() => props.selectedNode, (newNode) => {
     httpHeadersStr.value = Object.entries(headers)
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n')
+
+    // 将 params 对象转为字符串
+    const params = localData.value.toolConfig.params || {}
+    toolParamsStr.value = Object.keys(params).length > 0 ? JSON.stringify(params, null, 2) : ''
   }
 }, { immediate: true })
 
@@ -384,6 +456,16 @@ const parseHttpHeaders = (str) => {
     })
   }
   localData.value.httpConfig.headers = headers
+}
+
+// 解析工具参数 JSON
+const parseToolParams = () => {
+  try {
+    const parsed = JSON.parse(toolParamsStr.value)
+    localData.value.toolConfig.params = parsed
+  } catch (e) {
+    console.warn('工具参数 JSON 解析失败:', e.message)
+  }
 }
 
 const handleApply = () => {

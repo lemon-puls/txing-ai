@@ -51,7 +51,24 @@
       "Bash(npx openapi-generator-cli *)",
       "Bash(python3 -c ' *)",
       "Bash(python3 *)",
-      "Bash(pnpm install *)"
+      "Bash(pnpm install *)",
+      "Bash(go vet *)",
+      "Bash(make gen *)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://api.github.com/repos/affaan-m/ECC/readme)",
+      "Bash(ECC_GATEGUARD=off echo bypassed *)",
+      "Bash(ECC_GATEGUARD=off echo ok *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:bash:gateguard-fact-force,pre:edit-write:gateguard-fact-force echo GateGuard disabled *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:edit-write:gateguard-fact-force,pre:bash:gateguard-fact-force echo ok *)",
+      "WebSearch",
+      "Bash(ECC_DISABLED_HOOKS=pre:edit-write:gateguard-fact-force,pre:bash:gateguard-fact-force python3 *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:bash:gateguard-fact-force grep -n \"export\\\\|AgentApi\" static/frontend/src/api/generated/src/index.js)",
+      "Bash(timeout 30 pnpm dev)",
+      "WebFetch(domain:docs.dify.ai)",
+      "WebFetch(domain:help.aliyun.com)",
+      "Bash(pnpm rebuild *)",
+      "Bash(node *)"
     ]
   }
 }

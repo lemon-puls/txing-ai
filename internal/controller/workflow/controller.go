@@ -213,6 +213,16 @@ func GetTools(ctx *gin.Context) {
 		{"name": "image_search_tool", "displayName": "图片搜索"},
 		{"name": "web_scraping_tool", "displayName": "网页抓取"},
 		{"name": "pdf_read_tool", "displayName": "PDF读取"},
+		// Maps 相关工具
+		{"name": "maps_geo", "displayName": "地理位置查询"},
+		{"name": "maps_text_search", "displayName": "地点文本搜索"},
+		{"name": "maps_direction_transit_integrated", "displayName": "公交换乘规划"},
+		{"name": "maps_direction_driving", "displayName": "驾车路线规划"},
+		{"name": "maps_direction_walking", "displayName": "步行路线规划"},
+		{"name": "maps_distance", "displayName": "距离测算"},
+		{"name": "maps_search_detail", "displayName": "地点详情查询"},
+		{"name": "maps_weather", "displayName": "天气预报查询"},
+		{"name": "maps_around_search", "displayName": "周边搜索"},
 	}
 	utils.OkWithData(ctx, tools)
 }

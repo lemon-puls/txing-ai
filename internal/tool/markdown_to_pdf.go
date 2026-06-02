@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/russross/blackfriday/v2"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"time"
 	"txing-ai/internal/global/logging/log"
+
+	"github.com/russross/blackfriday/v2"
+	"go.uber.org/zap"
 )
 
 // markdownToPDFParams 转换Markdown到PDF的参数

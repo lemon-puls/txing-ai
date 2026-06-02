@@ -17,6 +17,8 @@ import (
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/captcha"
 
+	workflowservice "txing-ai/internal/service/workflow"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -94,6 +96,11 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	}
 
 	factory := agent.NewSimpleAgentFactory(resProvider)
+
+	// 初始化种子数据（旅游攻略工作流）
+	if err := workflowservice.SeedTravelWorkflow(db); err != nil {
+		log.Error("初始化旅游攻略工作流种子数据失败", zap.Error(err))
+	}
 
 	// 注册全局中间（局部中间件在具体的路由处注册）
 	middleware.RegisterMiddleware(engine, db, redisClient, cosClient, factory)

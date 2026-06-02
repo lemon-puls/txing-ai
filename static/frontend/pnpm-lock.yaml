@@ -11,6 +11,18 @@ importers:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
         version: 2.3.2(vue@3.5.32)
+      '@vue-flow/background':
+        specifier: ^1.3.2
+        version: 1.3.2(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
+      '@vue-flow/controls':
+        specifier: ^1.1.3
+        version: 1.1.3(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
+      '@vue-flow/core':
+        specifier: ^1.48.2
+        version: 1.48.2(vue@3.5.32)
+      '@vue-flow/node-resizer':
+        specifier: ^1.5.1
+        version: 1.5.1(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
       color2k:
         specifier: ^2.0.3
         version: 2.0.3
@@ -886,6 +898,29 @@ packages:
       vite: ^5.0.0 || ^6.0.0
       vue: ^3.2.25
 
+  '@vue-flow/background@1.3.2':
+    resolution: {integrity: sha512-eJPhDcLj1wEo45bBoqTXw1uhl0yK2RaQGnEINqvvBsAFKh/camHJd5NPmOdS1w+M9lggc9igUewxaEd3iCQX2w==}
+    peerDependencies:
+      '@vue-flow/core': ^1.23.0
+      vue: ^3.3.0
+
+  '@vue-flow/controls@1.1.3':
+    resolution: {integrity: sha512-XCf+G+jCvaWURdFlZmOjifZGw3XMhN5hHlfMGkWh9xot+9nH9gdTZtn+ldIJKtarg3B21iyHU8JjKDhYcB6JMw==}
+    peerDependencies:
+      '@vue-flow/core': ^1.23.0
+      vue: ^3.3.0
+
+  '@vue-flow/core@1.48.2':
+    resolution: {integrity: sha512-raxhgKWE+G/mcEvXJjGFUDYW9rAI3GOtiHR3ZkNpwBWuIaCC1EYiBmKGwJOoNzVFgwO7COgErnK7i08i287AFA==}
+    peerDependencies:
+      vue: ^3.3.0
+
+  '@vue-flow/node-resizer@1.5.1':
+    resolution: {integrity: sha512-DNYgXTF39GXPAygVMFmgn5azgFztaWfqbWvv8D/X0HGgeunRrexJ0W94DyXH1rnndGyYAJ0KexEjyelsb+Nlbg==}
+    peerDependencies:
+      '@vue-flow/core': ^1.23.0
+      vue: ^3.3.0
+
   '@vue/babel-helper-vue-transform-on@1.5.0':
     resolution: {integrity: sha512-0dAYkerNhhHutHZ34JtTl2czVQHUNWv6xEbkdF5W+Yrv5pCWsqjeORdOgbtW2I9gWlt+wBmVn+ttqN9ZxR5tzA==}
 
@@ -951,11 +986,20 @@ packages:
   '@vue/shared@3.5.32':
     resolution: {integrity: sha512-ksNyrmRQzWJJ8n3cRDuSF7zNNontuJg1YHnmWRJd2AMu8Ij2bqwiiri2lH5rHtYPZjj4STkNcgcmiQqlOjiYGg==}
 
+  '@vueuse/core@10.11.1':
+    resolution: {integrity: sha512-guoy26JQktXPcz+0n3GukWIy/JDNKti9v6VEMu6kV2sYBsWuGiTU8OWdg+ADfUbHg3/3DlqySDe7JmdHrktiww==}
+
   '@vueuse/core@12.0.0':
     resolution: {integrity: sha512-C12RukhXiJCbx4MGhjmd/gH52TjJsc3G0E0kQj/kb19H3Nt6n1CA4DRWuTdWWcaFRdlTe0npWDS942mvacvNBw==}
 
+  '@vueuse/metadata@10.11.1':
+    resolution: {integrity: sha512-IGa5FXd003Ug1qAZmyE8wF3sJ81xGLSqTqtQ6jaVfkeZ4i5kS2mwQF61yhVqojRnenVew5PldLyRgvdl4YYuSw==}
+
   '@vueuse/metadata@12.0.0':
     resolution: {integrity: sha512-Yzimd1D3sjxTDOlF05HekU5aSGdKjxhuhRFHA7gDWLn57PRbBIh+SF5NmjhJ0WRgF3my7T8LBucyxdFJjIfRJQ==}
+
+  '@vueuse/shared@10.11.1':
+    resolution: {integrity: sha512-LHpC8711VFZlDaYUXEBbFBCQ7GS3dVU9mjOhhMhXP6txTV4EhYQg/KGnQuvt/sPAtoUKq7VVUnL6mVtFoL42sA==}
 
   '@vueuse/shared@12.0.0':
     resolution: {integrity: sha512-3i6qtcq2PIio5i/vVYidkkcgvmTjCqrf26u+Fd4LhnbBmIT6FN8y6q/GJERp8lfcB9zVEfjdV0Br0443qZuJpw==}
@@ -1267,6 +1311,44 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  d3-color@3.1.0:
+    resolution: {integrity: sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA==}
+    engines: {node: '>=12'}
+
+  d3-dispatch@3.0.1:
+    resolution: {integrity: sha512-rzUyPU/S7rwUflMyLc1ETDeBj0NRuHKKAcvukozwhshr6g6c5d8zh4c2gQjY2bZ0dXeGLWc1PF174P2tVvKhfg==}
+    engines: {node: '>=12'}
+
+  d3-drag@3.0.0:
+    resolution: {integrity: sha512-pWbUJLdETVA8lQNJecMxoXfH6x+mO2UQo8rSmZ+QqxcbyA3hfeprFgIT//HW2nlHChWeIIMwS2Fq+gEARkhTkg==}
+    engines: {node: '>=12'}
+
+  d3-ease@3.0.1:
+    resolution: {integrity: sha512-wR/XK3D3XcLIZwpbvQwQ5fK+8Ykds1ip7A2Txe0yxncXSdq1L9skcG7blcedkOX+ZcgxGAmLX1FrRGbADwzi0w==}
+    engines: {node: '>=12'}
+
+  d3-interpolate@3.0.1:
+    resolution: {integrity: sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==}
+    engines: {node: '>=12'}
+
+  d3-selection@3.0.0:
+    resolution: {integrity: sha512-fmTRWbNMmsmWq6xJV8D19U/gw/bwrHfNXxrIN+HfZgnzqTHp9jOmKMhsTUjXOJnZOdZY9Q28y4yebKzqDKlxlQ==}
+    engines: {node: '>=12'}
+
+  d3-timer@3.0.1:
+    resolution: {integrity: sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==}
+    engines: {node: '>=12'}
+
+  d3-transition@3.0.1:
+    resolution: {integrity: sha512-ApKvfjsSR6tg06xrL434C0WydLr7JewBB3V+/39RMHsaXTOG0zmt/OAXeng5M5LBm0ojmxJrpomQVZ1aPvBL4w==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      d3-selection: 2 - 3
+
+  d3-zoom@3.0.0:
+    resolution: {integrity: sha512-b8AmV3kfQaqWAuacbPuNbL6vahnOJflOhexLzMMNLga62+/nh0JzvJ0aO/5a5MVgUFGS7Hu1P9P03o3fJkDCyw==}
+    engines: {node: '>=12'}
 
   data-uri-to-buffer@6.0.2:
     resolution: {integrity: sha512-7hvf7/GW8e86rW0ptuwS3OcBGDjIi6SZva7hCyWC0yYry2cOPmLIjXAUHI6DK2HsnwJd9ifmt57i8eV2n4YNpw==}
@@ -3886,6 +3968,34 @@ snapshots:
       vite: 6.4.2(@types/node@25.6.0)(sass@1.99.0)
       vue: 3.5.32
 
+  '@vue-flow/background@1.3.2(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)':
+    dependencies:
+      '@vue-flow/core': 1.48.2(vue@3.5.32)
+      vue: 3.5.32
+
+  '@vue-flow/controls@1.1.3(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)':
+    dependencies:
+      '@vue-flow/core': 1.48.2(vue@3.5.32)
+      vue: 3.5.32
+
+  '@vue-flow/core@1.48.2(vue@3.5.32)':
+    dependencies:
+      '@vueuse/core': 10.11.1(vue@3.5.32)
+      d3-drag: 3.0.0
+      d3-interpolate: 3.0.1
+      d3-selection: 3.0.0
+      d3-zoom: 3.0.0
+      vue: 3.5.32
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+
+  '@vue-flow/node-resizer@1.5.1(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)':
+    dependencies:
+      '@vue-flow/core': 1.48.2(vue@3.5.32)
+      d3-drag: 3.0.0
+      d3-selection: 3.0.0
+      vue: 3.5.32
+
   '@vue/babel-helper-vue-transform-on@1.5.0': {}
 
   '@vue/babel-plugin-jsx@1.5.0(@babel/core@7.29.0)':
@@ -4006,6 +4116,16 @@ snapshots:
 
   '@vue/shared@3.5.32': {}
 
+  '@vueuse/core@10.11.1(vue@3.5.32)':
+    dependencies:
+      '@types/web-bluetooth': 0.0.20
+      '@vueuse/metadata': 10.11.1
+      '@vueuse/shared': 10.11.1(vue@3.5.32)
+      vue-demi: 0.14.10(vue@3.5.32)
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+      - vue
+
   '@vueuse/core@12.0.0':
     dependencies:
       '@types/web-bluetooth': 0.0.20
@@ -4015,7 +4135,16 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@vueuse/metadata@10.11.1': {}
+
   '@vueuse/metadata@12.0.0': {}
+
+  '@vueuse/shared@10.11.1(vue@3.5.32)':
+    dependencies:
+      vue-demi: 0.14.10(vue@3.5.32)
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+      - vue
 
   '@vueuse/shared@12.0.0':
     dependencies:
@@ -4330,6 +4459,42 @@ snapshots:
       css-tree: 1.1.3
 
   csstype@3.2.3: {}
+
+  d3-color@3.1.0: {}
+
+  d3-dispatch@3.0.1: {}
+
+  d3-drag@3.0.0:
+    dependencies:
+      d3-dispatch: 3.0.1
+      d3-selection: 3.0.0
+
+  d3-ease@3.0.1: {}
+
+  d3-interpolate@3.0.1:
+    dependencies:
+      d3-color: 3.1.0
+
+  d3-selection@3.0.0: {}
+
+  d3-timer@3.0.1: {}
+
+  d3-transition@3.0.1(d3-selection@3.0.0):
+    dependencies:
+      d3-color: 3.1.0
+      d3-dispatch: 3.0.1
+      d3-ease: 3.0.1
+      d3-interpolate: 3.0.1
+      d3-selection: 3.0.0
+      d3-timer: 3.0.1
+
+  d3-zoom@3.0.0:
+    dependencies:
+      d3-dispatch: 3.0.1
+      d3-drag: 3.0.0
+      d3-interpolate: 3.0.1
+      d3-selection: 3.0.0
+      d3-transition: 3.0.1(d3-selection@3.0.0)
 
   data-uri-to-buffer@6.0.2: {}
 
@@ -4885,6 +5050,10 @@ snapshots:
   frontend@file:(@vue/runtime-core@3.5.32)(rollup@4.60.1)(vite@6.4.2(@types/node@25.6.0)(sass@1.99.0)):
     dependencies:
       '@element-plus/icons-vue': 2.3.2(vue@3.5.32)
+      '@vue-flow/background': 1.3.2(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
+      '@vue-flow/controls': 1.1.3(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
+      '@vue-flow/core': 1.48.2(vue@3.5.32)
+      '@vue-flow/node-resizer': 1.5.1(@vue-flow/core@1.48.2(vue@3.5.32))(vue@3.5.32)
       color2k: 2.0.3
       echarts: 5.6.0
       element-plus: 2.13.7(vue@3.5.32)

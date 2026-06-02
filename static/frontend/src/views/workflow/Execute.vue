@@ -97,6 +97,47 @@
                           </span>
                         </div>
                         <div class="node-detail" v-show="expandedNodeIds.has(log.nodeId)">
+                          <!-- 执行细节时间线 -->
+                          <div v-if="log.details && log.details.length > 0" class="node-details-timeline">
+                            <div
+                              v-for="(detail, idx) in log.details"
+                              :key="idx"
+                              class="detail-item"
+                              :class="detail.type"
+                            >
+                              <!-- 工具调用 -->
+                              <div v-if="detail.type === 'tool_call'" class="detail-tool-call">
+                                <div class="detail-header">
+                                  <el-icon class="detail-icon tool-call-icon"><Tools /></el-icon>
+                                  <span class="detail-title">调用工具：{{ detail.toolName }}</span>
+                                </div>
+                                <pre class="detail-params">{{ formatJson(detail.toolParams) }}</pre>
+                              </div>
+                              <!-- 工具结果 -->
+                              <div v-else-if="detail.type === 'tool_result'" class="detail-tool-result">
+                                <div class="detail-header">
+                                  <el-icon class="detail-icon tool-result-icon"><CircleCheck /></el-icon>
+                                  <span class="detail-title">工具结果：{{ detail.toolName }}</span>
+                                </div>
+                                <pre class="detail-result">{{ truncateText(detail.toolResult, 500) }}</pre>
+                              </div>
+                              <!-- 进度消息 -->
+                              <div v-else-if="detail.type === 'progress'" class="detail-progress">
+                                <el-icon class="detail-icon progress-icon"><Loading /></el-icon>
+                                <span class="detail-msg">{{ detail.showMsg }}</span>
+                              </div>
+                              <!-- LLM 输出片段 -->
+                              <div v-else-if="detail.type === 'content'" class="detail-content">
+                                <div class="detail-header">
+                                  <el-icon class="detail-icon content-icon"><ChatDotRound /></el-icon>
+                                  <span class="detail-title">LLM 输出</span>
+                                </div>
+                                <pre class="detail-content-text">{{ truncateText(detail.content, 300) }}</pre>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- 最终执行日志 -->
                           <div v-if="log.executionLog" class="exec-log">
                             <div v-if="log.executionLog.input" class="log-section">
                               <span class="log-label">输入：</span>
@@ -157,7 +198,8 @@ import {
   Setting,
   Tools,
   Edit,
-  Switch
+  Switch,
+  ChatDotRound
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import fetchSSEWithAuth from '@/api/sseRequest.js'
@@ -221,6 +263,24 @@ const getNodeIcon = (nodeType) => {
 const formatDuration = (ms) => {
   if (ms < 1000) return `${ms}ms`
   return `${(ms / 1000).toFixed(1)}s`
+}
+
+// 格式化 JSON
+const formatJson = (str) => {
+  if (!str) return ''
+  try {
+    const obj = typeof str === 'string' ? JSON.parse(str) : str
+    return JSON.stringify(obj, null, 2)
+  } catch {
+    return str
+  }
+}
+
+// 截断文本
+const truncateText = (text, maxLen = 500) => {
+  if (!text) return ''
+  if (text.length <= maxLen) return text
+  return text.substring(0, maxLen) + '...'
 }
 
 // 展开/折叠节点
@@ -330,19 +390,76 @@ const updateNodeLog = (data) => {
   if (existingIndex >= 0) {
     // 更新已有节点
     const existing = nodeLogs.value[existingIndex]
+    const details = [...(existing.details || [])]
+
+    // 收集执行细节事件
+    if (data.toolName && data.toolParams && !data.toolResult) {
+      // 工具调用请求
+      details.push({
+        type: 'tool_call',
+        toolName: data.toolName,
+        toolParams: data.toolParams,
+        showMsg: data.showMsg || '',
+        timestamp: Date.now()
+      })
+    } else if (data.toolName && data.toolResult) {
+      // 工具执行结果
+      details.push({
+        type: 'tool_result',
+        toolName: data.toolName,
+        toolResult: data.toolResult,
+        showMsg: data.showMsg || '',
+        timestamp: Date.now()
+      })
+    } else if (data.showMsg && !data.nodeStatus) {
+      // 进度消息（没有 nodeStatus 的纯 ShowMsg）
+      details.push({
+        type: 'progress',
+        showMsg: data.showMsg,
+        timestamp: Date.now()
+      })
+    } else if (data.content && data.nodeId) {
+      // LLM 输出片段
+      details.push({
+        type: 'content',
+        content: data.content,
+        timestamp: Date.now()
+      })
+    }
+
     nodeLogs.value[existingIndex] = {
       ...existing,
       nodeStatus: data.nodeStatus || existing.nodeStatus,
-      executionLog: data.execution_log || existing.executionLog
+      executionLog: data.execution_log || existing.executionLog,
+      details
     }
   } else {
     // 添加新节点
+    const details = []
+    // 收集首条消息的细节
+    if (data.toolName && data.toolParams) {
+      details.push({
+        type: 'tool_call',
+        toolName: data.toolName,
+        toolParams: data.toolParams,
+        showMsg: data.showMsg || '',
+        timestamp: Date.now()
+      })
+    } else if (data.showMsg && !data.nodeStatus) {
+      details.push({
+        type: 'progress',
+        showMsg: data.showMsg,
+        timestamp: Date.now()
+      })
+    }
+
     nodeLogs.value.push({
       nodeId: data.nodeId,
       nodeType: data.nodeType || 'unknown',
       nodeLabel: data.nodeLabel || '',
       nodeStatus: data.nodeStatus || 'running',
-      executionLog: data.execution_log || null
+      executionLog: data.execution_log || null,
+      details
     })
     // 自动展开正在运行的节点
     expandedNodeIds.value.add(data.nodeId)
@@ -649,6 +766,84 @@ onBeforeUnmount(() => {
   .log-meta {
     font-size: 12px;
     color: var(--el-text-color-secondary);
+  }
+}
+
+// 节点执行细节时间线
+.node-details-timeline {
+  margin-bottom: 12px;
+  border-left: 2px solid var(--el-border-color-lighter);
+  padding-left: 12px;
+
+  .detail-item {
+    margin-bottom: 8px;
+    padding: 6px 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .detail-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+
+    &.tool-call-icon { color: var(--el-color-warning); }
+    &.tool-result-icon { color: var(--el-color-success); }
+    &.progress-icon { color: var(--el-color-primary); animation: spin 1s linear infinite; }
+    &.content-icon { color: var(--el-color-primary); }
+  }
+
+  .detail-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+  }
+
+  .detail-msg {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .detail-params,
+  .detail-result,
+  .detail-content-text {
+    font-size: 12px;
+    line-height: 1.4;
+    background: var(--el-fill-color-lighter);
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin: 4px 0 0 20px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 150px;
+    overflow-y: auto;
+    color: var(--el-text-color-regular);
+  }
+
+  .detail-tool-call {
+    .detail-params {
+      border-left: 2px solid var(--el-color-warning-light-3);
+    }
+  }
+
+  .detail-tool-result {
+    .detail-result {
+      border-left: 2px solid var(--el-color-success-light-3);
+    }
+  }
+
+  .detail-content {
+    .detail-content-text {
+      border-left: 2px solid var(--el-color-primary-light-3);
+    }
   }
 }
 

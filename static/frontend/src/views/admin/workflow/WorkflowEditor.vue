@@ -341,6 +341,7 @@ import ToolNode from '@/components/workflow/ToolNode.vue'
 import ConditionNode from '@/components/workflow/ConditionNode.vue'
 import CodeNode from '@/components/workflow/CodeNode.vue'
 import HTTPNode from '@/components/workflow/HTTPNode.vue'
+import AgentNode from '@/components/workflow/AgentNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
@@ -426,6 +427,7 @@ const nodeTypes = {
   end: markRaw(EndNode),
   llm: markRaw(LLMNode),
   tool: markRaw(ToolNode),
+  agent: markRaw(AgentNode),
   condition: markRaw(ConditionNode),
   code: markRaw(CodeNode),
   http: markRaw(HTTPNode)
@@ -535,13 +537,16 @@ const onDrop = (event) => {
           systemPrompt: '',
           temperature: 0.7,
           maxTokens: 4096,
-          contextEnabled: true
+          contextEnabled: true,
+          tools: [],
+          maxToolRounds: 5
         }
       } : {}),
       ...(type === 'tool' ? {
         toolConfig: {
-          tools: [],
-          params: {}
+          toolName: '',
+          params: {},
+          tools: []
         }
       } : {}),
       ...(type === 'condition' ? {
@@ -571,6 +576,13 @@ const onDrop = (event) => {
           body: '',
           timeout: 30
         }
+      } : {}),
+      ...(type === 'agent' ? {
+        agentConfig: {
+          systemPrompt: '',
+          tools: [],
+          maxRunSteps: 30
+        }
       } : {})
     }
   }
@@ -584,6 +596,7 @@ const getDefaultLabel = (type) => {
     end: '结束',
     llm: '大模型',
     tool: '工具',
+    agent: 'Agent',
     condition: '条件分支',
     code: '代码',
     http: 'HTTP'

@@ -38,6 +38,7 @@ type WorkflowAgent struct {
 	tools         []tool.BaseTool
 	topology      string
 	modelResolver ModelResolver
+	resProvider   iface.ResourceProvider
 }
 
 // RetryConfig 重试配置
@@ -54,14 +55,17 @@ type ModelConfig struct {
 	Temperature    float64      `json:"temperature"`
 	MaxTokens      int          `json:"maxTokens"`
 	ContextEnabled bool         `json:"contextEnabled"`
+	Tools          []string     `json:"tools,omitempty"`  // 绑定的工具列表（LLM 通过 Function Calling 自主调用）
+	MaxToolRounds  int          `json:"maxToolRounds,omitempty"` // 最大工具调用轮次，默认 5
 	Retry          *RetryConfig `json:"retry,omitempty"` // 重试配置
 }
 
 // ToolConfig 工具配置
 type ToolConfig struct {
-	Tools  []string               `json:"tools"`
-	Params map[string]interface{} `json:"params"`
-	Retry  *RetryConfig           `json:"retry,omitempty"` // 重试配置
+	ToolName string                 `json:"toolName,omitempty"` // 单个工具名称（直接执行模式）
+	Params   map[string]interface{} `json:"params,omitempty"`   // 工具参数（直接执行模式）
+	Tools    []string               `json:"tools,omitempty"`    // 工具名称列表（兼容旧配置）
+	Retry    *RetryConfig           `json:"retry,omitempty"`    // 重试配置
 }
 
 // ConditionConfig 条件配置（旧版本，保持兼容）
@@ -99,16 +103,24 @@ type SubWorkflowConfig struct {
 	Timeout    int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 60
 }
 
+// AgentConfig Agent 节点配置（支持多轮工具调用循环）
+type AgentConfig struct {
+	SystemPrompt string   `json:"systemPrompt"`         // 系统提示词
+	Tools        []string `json:"tools,omitempty"`       // 工具名称列表（为空则使用全部工具）
+	MaxRunSteps  int      `json:"maxRunSteps,omitempty"` // 最大执行步数，默认 30
+}
+
 // NodeData 节点数据（配置直接放在 data 层级，与前端 JSON 结构一致）
 type NodeData struct {
-	NodeType         string              `json:"nodeType"`
-	Label            string              `json:"label"`
-	ModelConfig      *ModelConfig        `json:"modelConfig,omitempty"`
-	ToolConfig       *ToolConfig         `json:"toolConfig,omitempty"`
-	ConditionConf    *ConditionConfig    `json:"conditionConfig,omitempty"`
-	CodeConfig       *CodeConfig         `json:"codeConfig,omitempty"`
-	HTTPConfig       *HTTPConfig         `json:"httpConfig,omitempty"`
-	SubWorkflowConfig *SubWorkflowConfig `json:"subWorkflowConfig,omitempty"`
+	NodeType          string              `json:"nodeType"`
+	Label             string              `json:"label"`
+	ModelConfig       *ModelConfig        `json:"modelConfig,omitempty"`
+	ToolConfig        *ToolConfig         `json:"toolConfig,omitempty"`
+	ConditionConf     *ConditionConfig    `json:"conditionConfig,omitempty"`
+	CodeConfig        *CodeConfig         `json:"codeConfig,omitempty"`
+	HTTPConfig        *HTTPConfig         `json:"httpConfig,omitempty"`
+	SubWorkflowConfig *SubWorkflowConfig  `json:"subWorkflowConfig,omitempty"`
+	AgentConfig       *AgentConfig        `json:"agentConfig,omitempty"`
 }
 
 // NodeExecutionLog 节点执行日志
@@ -188,6 +200,7 @@ func NewWorkflowAgent(res iface.ResourceProvider, topology string, modelResolver
 		tools:         mytool.ProvideTools(res),
 		topology:      topology,
 		modelResolver: modelResolver,
+		resProvider:   res,
 	}
 }
 
@@ -459,12 +472,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}))
 
 		case "llm":
-			// LLM 节点：根据配置创建模型
+			// LLM 节点：根据配置创建模型，支持绑定工具（Function Calling 多轮调用）
 			nodeModelName := ""
 			nodeMaxTokens := defaultMaxTokens
 			var nodeTemperature float32 = 0.7
 			systemPrompt := ""
 			var retryConfig *RetryConfig
+			var llmToolNames []string
+			llmMaxToolRounds := 5 // 默认最大工具调用轮次
 
 			if node.Data.ModelConfig != nil {
 				mc := node.Data.ModelConfig
@@ -479,6 +494,10 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				systemPrompt = mc.SystemPrompt
 				retryConfig = mc.Retry
+				llmToolNames = mc.Tools
+				if mc.MaxToolRounds > 0 {
+					llmMaxToolRounds = mc.MaxToolRounds
+				}
 			}
 
 			// 解析节点模型信息（支持节点级别覆盖）
@@ -498,167 +517,226 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				nodeChatModel = defaultChatModel
 			}
 
-			// 如果有系统提示词，创建包含系统提示的 Lambda
-			if systemPrompt != "" {
-				statusCb := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
-				llmRetryConfig := retryConfig
-				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-					execLog := &NodeExecutionLog{
-						NodeID:    nodeId,
-						NodeType:  "llm",
-						NodeLabel: node.Data.Label,
-						StartTime: time.Now().UnixMilli(),
+			// 如果配置了工具，绑定到模型
+			var llmNodeTools []tool.BaseTool
+			var llmToolNode *compose.ToolsNode
+			if len(llmToolNames) > 0 {
+				llmNodeTools = a.getToolsByNames(llmToolNames)
+				if len(llmNodeTools) > 0 {
+					nodeToolInfos := make([]*schema.ToolInfo, 0, len(llmNodeTools))
+					for _, t := range llmNodeTools {
+						info, err := t.Info(ctx)
+						if err != nil {
+							continue
+						}
+						nodeToolInfos = append(nodeToolInfos, info)
 					}
-					statusCb("running")
-					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
-
-					// 构建消息列表
-					messages := []*schema.Message{
-						schema.SystemMessage(systemPrompt),
+					if err := nodeChatModel.BindTools(nodeToolInfos); err != nil {
+						log.Warn("LLM 节点绑定工具失败", zap.String("nodeId", nodeId), zap.Error(err))
+					} else {
+						log.Info("LLM 节点绑定工具成功", zap.String("nodeId", nodeId), zap.Int("toolCount", len(nodeToolInfos)))
+						// 创建工具执行器
+						llmToolNode, err = compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
+							Tools:               llmNodeTools,
+							ExecuteSequentially: true,
+						})
+						if err != nil {
+							log.Error("创建 LLM 节点工具执行器失败", zap.String("nodeId", nodeId), zap.Error(err))
+						}
 					}
-					if input != nil && input.Content != "" {
-						messages = append(messages, input)
-						execLog.Input = input.Content
-					}
-
-					var response *schema.Message
-					// 带重试的执行
-					execErr := executeWithRetry(llmRetryConfig, func() error {
-						var genErr error
-						response, genErr = nodeChatModel.Generate(ctx, messages)
-						return genErr
-					})
-
-					if execErr != nil {
-						log.Error("LLM generate error", zap.Error(execErr))
-						execLog.Status = "failed"
-						execLog.Error = execErr.Error()
-						execLog.EndTime = time.Now().UnixMilli()
-						execLog.Duration = execLog.EndTime - execLog.StartTime
-						sendExecutionLog(callback, execLog)
-						return nil, execErr
-					}
-
-					// 回调
-					if callback != nil && response.Content != "" {
-						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
-					}
-
-					execLog.Status = "completed"
-					execLog.Output = response.Content
-					execLog.EndTime = time.Now().UnixMilli()
-					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
-					statusCb("completed")
-					return response, nil
-				}))
-			} else {
-				statusCb2 := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
-				llmRetryConfig2 := retryConfig
-				graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-					execLog := &NodeExecutionLog{
-						NodeID:    nodeId,
-						NodeType:  "llm",
-						NodeLabel: node.Data.Label,
-						StartTime: time.Now().UnixMilli(),
-					}
-					statusCb2("running")
-					log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
-
-					var messages []*schema.Message
-					if input != nil && input.Content != "" {
-						messages = []*schema.Message{input}
-						execLog.Input = input.Content
-					}
-
-					var response *schema.Message
-					execErr := executeWithRetry(llmRetryConfig2, func() error {
-						var genErr error
-						response, genErr = nodeChatModel.Generate(ctx, messages)
-						return genErr
-					})
-
-					if execErr != nil {
-						log.Error("LLM generate error", zap.Error(execErr))
-						execLog.Status = "failed"
-						execLog.Error = execErr.Error()
-						execLog.EndTime = time.Now().UnixMilli()
-						execLog.Duration = execLog.EndTime - execLog.StartTime
-						sendExecutionLog(callback, execLog)
-						return nil, execErr
-					}
-
-					if callback != nil && response.Content != "" {
-						callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
-					}
-
-					execLog.Status = "completed"
-					execLog.Output = response.Content
-					execLog.EndTime = time.Now().UnixMilli()
-					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
-					statusCb2("completed")
-					return response, nil
-				}))
+				}
 			}
+
+			// 捕获变量供闭包使用
+			llmBoundToolNode := llmToolNode
+			llmBoundMaxRounds := llmMaxToolRounds
+
+			// 创建 LLM 节点 Lambda
+			statusCbLLM := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
+			llmRetryCfg := retryConfig
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "llm",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbLLM("running")
+				log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
+
+				// 构建消息列表
+				var messages []*schema.Message
+				if systemPrompt != "" {
+					messages = append(messages, schema.SystemMessage(systemPrompt))
+				}
+				if input != nil && input.Content != "" {
+					messages = append(messages, input)
+					execLog.Input = input.Content
+				}
+
+				var response *schema.Message
+				// 带重试的首次执行
+				execErr := executeWithRetry(llmRetryCfg, func() error {
+					var genErr error
+					response, genErr = nodeChatModel.Generate(ctx, messages)
+					return genErr
+				})
+				if execErr != nil {
+					log.Error("LLM generate error", zap.Error(execErr))
+					execLog.Status = "failed"
+					execLog.Error = execErr.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbLLM("failed")
+					return nil, execErr
+				}
+
+				// 如果绑定了工具，执行多轮工具调用循环
+				if llmBoundToolNode != nil {
+					for round := 0; round < llmBoundMaxRounds; round++ {
+						// 检查是否有工具调用
+						if len(response.ToolCalls) == 0 {
+							break
+						}
+
+						log.Info("LLM 节点工具调用", zap.String("nodeId", nodeId), zap.Int("round", round+1), zap.Int("toolCallCount", len(response.ToolCalls)))
+
+						// 发送每个工具调用的详细信息
+						if callback != nil {
+							for _, tc := range response.ToolCalls {
+								callback(&global.Chunk{
+									NodeId:     nodeId,
+									NodeType:   "llm",
+									NodeLabel:  node.Data.Label,
+									ToolCallId: tc.ID,
+									ToolName:   tc.Function.Name,
+									ToolParams: tc.Function.Arguments,
+									ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
+								})
+							}
+						}
+
+						// 将 assistant 消息（含 ToolCalls）加入消息列表
+						messages = append(messages, response)
+
+						// 执行工具调用
+						toolResults, toolErr := llmBoundToolNode.Invoke(ctx, response)
+						if toolErr != nil {
+							log.Error("LLM 节点工具执行失败", zap.String("nodeId", nodeId), zap.Error(toolErr))
+							if callback != nil {
+								callback(&global.Chunk{
+									NodeId:    nodeId,
+									NodeType:  "llm",
+									NodeLabel: node.Data.Label,
+									ShowMsg:   fmt.Sprintf("[%s] 工具执行失败: %s", node.Data.Label, toolErr.Error()),
+								})
+							}
+							messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
+						} else {
+							// 发送工具执行结果
+							if callback != nil {
+								for _, tr := range toolResults {
+									callback(&global.Chunk{
+										NodeId:     nodeId,
+										NodeType:   "llm",
+										NodeLabel:  node.Data.Label,
+										ToolCallId: tr.ToolCallID,
+										ToolName:   tr.ToolName,
+										ToolResult: tr.Content,
+										ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
+									})
+								}
+							}
+							messages = append(messages, toolResults...)
+						}
+
+						if callback != nil {
+							callback(&global.Chunk{
+								NodeId:    nodeId,
+								NodeType:  "llm",
+								NodeLabel: node.Data.Label,
+								ShowMsg:   fmt.Sprintf("[%s] 继续思考... (第%d轮)", node.Data.Label, round+1),
+							})
+						}
+
+						// 再次调用 LLM
+						execErr = executeWithRetry(llmRetryCfg, func() error {
+							var genErr error
+							response, genErr = nodeChatModel.Generate(ctx, messages)
+							return genErr
+						})
+						if execErr != nil {
+							log.Error("LLM 多轮调用 generate error", zap.Error(execErr), zap.Int("round", round+1))
+							break
+						}
+					}
+				}
+
+				// 回调最终结果
+				if callback != nil && response.Content != "" {
+					callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
+				}
+
+				execLog.Status = "completed"
+				execLog.Output = response.Content
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbLLM("completed")
+				return response, nil
+			}))
 
 		case "tool":
-			// 工具节点：使用 LLM 调用工具
-			var nodeTools []tool.BaseTool
+			// 工具节点：直接执行工具（不经过 LLM，不消耗 Token）
+			var toolName string
+			var toolParams map[string]interface{}
 			var toolRetryConfig *RetryConfig
 			if node.Data.ToolConfig != nil {
-				nodeTools = a.getToolsByNames(node.Data.ToolConfig.Tools)
-				toolRetryConfig = node.Data.ToolConfig.Retry
-			} else {
-				nodeTools = a.tools
-			}
-
-			// 解析工具节点的模型信息（支持节点级别覆盖）
-			toolModelName := ""
-			if node.Data.ModelConfig != nil && node.Data.ModelConfig.Model != "" {
-				toolModelName = node.Data.ModelConfig.Model
-			}
-			toolEndpoint, toolAPIKey, toolModel := a.resolveModelInfo(toolModelName, endpoint, apiKey, model)
-
-			// 为工具创建一个带工具绑定的模型
-			toolChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-				BaseURL:     toolEndpoint,
-				Model:       toolModel,
-				APIKey:      toolAPIKey,
-				MaxTokens:   &defaultMaxTokens,
-				Temperature: &defaultTemperature,
-			})
-			if err != nil {
-				log.Error("创建工具模型失败", zap.String("nodeId", nodeId), zap.Error(err))
-				continue
-			}
-
-			// 绑定工具
-			nodeToolInfos := make([]*schema.ToolInfo, 0, len(nodeTools))
-			for _, t := range nodeTools {
-				info, err := t.Info(ctx)
-				if err != nil {
-					continue
+				tc := node.Data.ToolConfig
+				// 优先使用 ToolName（新配置），兼容 Tools[0]（旧配置）
+				if tc.ToolName != "" {
+					toolName = tc.ToolName
+				} else if len(tc.Tools) > 0 {
+					toolName = tc.Tools[0]
 				}
-				nodeToolInfos = append(nodeToolInfos, info)
-			}
-			if err := toolChatModel.BindTools(nodeToolInfos); err != nil {
-				log.Warn("绑定工具失败", zap.String("nodeId", nodeId), zap.Error(err))
+				toolParams = tc.Params
+				toolRetryConfig = tc.Retry
 			}
 
-			// 创建工具节点执行器
-			toolNode, err := compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
-				Tools:               nodeTools,
-				ExecuteSequentially: true,
-			})
-			if err != nil {
-				log.Error("创建工具节点失败", zap.String("nodeId", nodeId), zap.Error(err))
+			if toolName == "" {
+				log.Warn("工具节点未配置工具名称，跳过", zap.String("nodeId", nodeId))
 				continue
 			}
 
-			// 使用 Lambda 包装工具调用
+			// 查找指定工具
+			toolTools := a.getToolsByNames([]string{toolName})
+			if len(toolTools) == 0 {
+				log.Warn("工具节点找不到指定工具", zap.String("nodeId", nodeId), zap.String("toolName", toolName))
+				continue
+			}
+			targetTool := toolTools[0]
+
+			// 断言为 InvokableTool（直接执行）
+			invokableTool, ok := targetTool.(tool.InvokableTool)
+			if !ok {
+				log.Warn("工具不支持直接执行（未实现 InvokableTool 接口）", zap.String("nodeId", nodeId), zap.String("toolName", toolName))
+				continue
+			}
+
+			// 序列化工具参数
+			paramsJSON := "{}"
+			if len(toolParams) > 0 {
+				if pBytes, err := json.Marshal(toolParams); err == nil {
+					paramsJSON = string(pBytes)
+				}
+			}
+
+			// 捕获变量供闭包使用
+			boundParamsJSON := paramsJSON
+			boundToolName := toolName
+
 			statusCbTool := nodeStatusCallback(callback, nodeId, "tool", node.Data.Label)
-			nodeToolRetryConfig := toolRetryConfig
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
 				execLog := &NodeExecutionLog{
 					NodeID:    nodeId,
@@ -667,31 +745,47 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					StartTime: time.Now().UnixMilli(),
 				}
 				statusCbTool("running")
-				log.Info("Executing Tool node", zap.String("nodeId", nodeId), zap.Strings("tools", func() []string {
-					names := make([]string, len(nodeTools))
-					for i, t := range nodeTools {
-						info, _ := t.Info(ctx)
-						if info != nil {
-							names[i] = info.Name
+				log.Info("Executing Tool node (direct)", zap.String("nodeId", nodeId), zap.String("toolName", boundToolName))
+
+				// 构建工具参数：如果有输入，将输入内容合并到参数中
+				actualParamsJSON := boundParamsJSON
+				if input != nil && input.Content != "" {
+					execLog.Input = input.Content
+					// 尝试将输入内容作为 toolInput 参数传入
+					var paramsMap map[string]interface{}
+					if err := json.Unmarshal([]byte(boundParamsJSON), &paramsMap); err == nil {
+						// 如果 params 中没有 toolInput，自动添加输入内容
+						if _, exists := paramsMap["toolInput"]; !exists {
+							paramsMap["toolInput"] = input.Content
+						}
+						if pBytes, err := json.Marshal(paramsMap); err == nil {
+							actualParamsJSON = string(pBytes)
 						}
 					}
-					return names
-				}()))
-
-				if input != nil {
-					execLog.Input = input.Content
 				}
 
-				var response *schema.Message
-				// 带重试的执行
-				execErr := executeWithRetry(nodeToolRetryConfig, func() error {
-					var genErr error
-					response, genErr = toolChatModel.Generate(ctx, []*schema.Message{input})
-					return genErr
+				// 发送工具调用详情
+				if callback != nil {
+					callback(&global.Chunk{
+						NodeId:     nodeId,
+						NodeType:   "tool",
+						NodeLabel:  node.Data.Label,
+						ToolName:   boundToolName,
+						ToolParams: actualParamsJSON,
+						ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, boundToolName),
+					})
+				}
+
+				// 直接执行工具（不经过 LLM）
+				var result string
+				execErr := executeWithRetry(toolRetryConfig, func() error {
+					var invokeErr error
+					result, invokeErr = invokableTool.InvokableRun(ctx, actualParamsJSON)
+					return invokeErr
 				})
 
 				if execErr != nil {
-					log.Error("工具模型调用失败", zap.Error(execErr))
+					log.Error("工具直接执行失败", zap.String("nodeId", nodeId), zap.String("toolName", boundToolName), zap.Error(execErr))
 					execLog.Status = "failed"
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
@@ -701,53 +795,25 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					return nil, execErr
 				}
 
-				// 检查是否有工具调用
-				if len(response.ToolCalls) > 0 {
-					if callback != nil {
-						callback(&global.Chunk{ShowMsg: fmt.Sprintf("[%s] 正在调用工具...", node.Data.Label)})
-					}
-
-					// 执行工具调用
-					results, err := toolNode.Invoke(ctx, response)
-					if err != nil {
-						log.Error("工具执行失败", zap.Error(err))
-						execLog.Status = "failed"
-						execLog.Error = err.Error()
-						execLog.EndTime = time.Now().UnixMilli()
-						execLog.Duration = execLog.EndTime - execLog.StartTime
-						sendExecutionLog(callback, execLog)
-						statusCbTool("failed")
-						return response, nil
-					}
-
-					if callback != nil {
-						callback(&global.Chunk{ShowMsg: fmt.Sprintf("[%s] 工具执行完成", node.Data.Label)})
-					}
-
-					// 返回最后一个结果
-					execLog.Status = "completed"
-					if len(results) > 0 {
-						execLog.Output = results[len(results)-1].Content
-					} else {
-						execLog.Output = response.Content
-					}
-					execLog.EndTime = time.Now().UnixMilli()
-					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
-					statusCbTool("completed")
-					if len(results) > 0 {
-						return results[len(results)-1], nil
-					}
-					return response, nil
+				// 发送工具执行结果
+				if callback != nil {
+					callback(&global.Chunk{
+						NodeId:     nodeId,
+						NodeType:   "tool",
+						NodeLabel:  node.Data.Label,
+						ToolName:   boundToolName,
+						ToolResult: result,
+						ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, boundToolName),
+					})
 				}
 
 				execLog.Status = "completed"
-				execLog.Output = response.Content
+				execLog.Output = result
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
 				sendExecutionLog(callback, execLog)
 				statusCbTool("completed")
-				return response, nil
+				return schema.AssistantMessage(result, nil), nil
 			}))
 
 		case "condition":
@@ -915,6 +981,84 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				sendExecutionLog(callback, execLog)
 				statusCbSub("completed")
 				return input, nil
+			}))
+
+		case "agent":
+			// Agent 节点：支持多轮工具调用循环（参照阿里百炼 Agent 节点设计）
+			agentConfig := node.Data.AgentConfig
+			if agentConfig == nil {
+				log.Warn("Agent 节点配置为空，跳过", zap.String("nodeId", nodeId))
+				continue
+			}
+
+			// 解析节点模型信息
+			agentModelName := ""
+			if node.Data.ModelConfig != nil && node.Data.ModelConfig.Model != "" {
+				agentModelName = node.Data.ModelConfig.Model
+			}
+			agentEndpoint, agentAPIKey, agentModel := a.resolveModelInfo(agentModelName, endpoint, apiKey, model)
+
+			// 最大执行步数
+			agentMaxRunSteps := 30
+			if agentConfig.MaxRunSteps > 0 {
+				agentMaxRunSteps = agentConfig.MaxRunSteps
+			}
+
+			// 创建 ToolCallAgent 实例
+			toolCallAgent := NewToolCallAgent(a.resProvider)
+			toolCallAgent.SetSystemPrompt(agentConfig.SystemPrompt)
+			toolCallAgent.SetMaxRunSteps(agentMaxRunSteps)
+
+			// 如果指定了工具列表，按名称过滤
+			if len(agentConfig.Tools) > 0 {
+				toolCallAgent.tools = a.getToolsByNames(agentConfig.Tools)
+			}
+
+			statusCbAgent := nodeStatusCallback(callback, nodeId, "agent", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "agent",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbAgent("running")
+				log.Info("Executing Agent node", zap.String("nodeId", nodeId))
+
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
+				}
+
+				// 包装 callback，为 ToolCallAgent 发送的所有 Chunk 注入 NodeId
+				agentNodeCallback := func(chunk *global.Chunk) error {
+					chunk.NodeId = nodeId
+					chunk.NodeType = "agent"
+					chunk.NodeLabel = node.Data.Label
+					return callback(chunk)
+				}
+
+				// 使用 ToolCallAgent 执行多轮工具调用循环
+				response, err := toolCallAgent.ExecuteStream(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback)
+				if err != nil {
+					log.Error("Agent node execution failed", zap.Error(err))
+					execLog.Status = "failed"
+					execLog.Error = err.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbAgent("failed")
+					return nil, err
+				}
+
+				execLog.Status = "completed"
+				execLog.Output = response
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbAgent("completed")
+				return schema.AssistantMessage(response, nil), nil
 			}))
 
 		}

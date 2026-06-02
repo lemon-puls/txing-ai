@@ -90,6 +90,16 @@
             </div>
             <span>工具节点</span>
           </div>
+          <div
+            class="node-item agent"
+            draggable="true"
+            @dragstart="onDragStart($event, 'agent')"
+          >
+            <div class="item-icon">
+              <el-icon><Avatar /></el-icon>
+            </div>
+            <span>Agent 节点</span>
+          </div>
         </div>
       </div>
 
@@ -149,7 +159,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link } from '@element-plus/icons-vue'
+import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link, Avatar } from '@element-plus/icons-vue'
 
 const props = defineProps({
   saving: Boolean,
@@ -346,6 +356,10 @@ const onDragStart = (event, nodeType) => {
         &.http {
           border-left: 3px solid #00bcd4;
           .item-icon { background: #e0f7fa; color: #00bcd4; }
+        }
+        &.agent {
+          border-left: 3px solid #e91e63;
+          .item-icon { background: #fce4ec; color: #e91e63; }
         }
       }
     }
