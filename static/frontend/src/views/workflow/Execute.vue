@@ -165,6 +165,40 @@
                       <div class="markdown-body" v-html="renderedContent"></div>
                     </div>
 
+                    <!-- 文件产物下载 -->
+                    <div v-if="artifacts.length > 0" class="artifacts-section">
+                      <h3 class="output-title">
+                        <el-icon><Files /></el-icon>
+                        生成文件
+                      </h3>
+                      <div class="artifacts-list">
+                        <div
+                          v-for="(file, idx) in artifacts"
+                          :key="idx"
+                          class="artifact-item"
+                        >
+                          <div class="artifact-info">
+                            <el-icon class="artifact-icon" :class="file.category">
+                              <component :is="getFileIcon(file.category)" />
+                            </el-icon>
+                            <div class="artifact-detail">
+                              <span class="artifact-name">{{ file.name }}</span>
+                              <span class="artifact-type">{{ getFileTypeLabel(file.category) }}</span>
+                            </div>
+                          </div>
+                          <el-button
+                            type="primary"
+                            size="small"
+                            class="download-btn"
+                            @click="downloadFile(file.url, file.name)"
+                          >
+                            <el-icon><Download /></el-icon>
+                            下载
+                          </el-button>
+                        </div>
+                      </div>
+                    </div>
+
                     <!-- 执行中加载动画 -->
                     <div v-if="isExecuting && nodeLogs.length === 0" class="center-loading">
                       <el-icon class="loading-icon"><Loading /></el-icon>
@@ -199,11 +233,16 @@ import {
   Tools,
   Edit,
   Switch,
-  ChatDotRound
+  ChatDotRound,
+  Download,
+  Document,
+  Picture,
+  Files
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import fetchSSEWithAuth from '@/api/sseRequest.js'
 import { defaultApi } from '@/api'
+import { getAuthHeaders } from '@/api/auth'
 
 defineOptions({
   name: 'WorkflowExecute'
@@ -232,6 +271,9 @@ const expandedNodeIds = ref(new Set())
 // 流式输出
 const streamContent = ref('')
 const processDetailsContainer = ref(null)
+
+// 文件产物
+const artifacts = ref([])
 
 let abortController = null
 
@@ -283,6 +325,26 @@ const truncateText = (text, maxLen = 500) => {
   return text.substring(0, maxLen) + '...'
 }
 
+// 获取文件类型图标
+const getFileIcon = (category) => {
+  const iconMap = {
+    pdf: Document,
+    markdown: Document,
+    image: Picture
+  }
+  return iconMap[category] || Files
+}
+
+// 获取文件类型标签
+const getFileTypeLabel = (category) => {
+  const labelMap = {
+    pdf: 'PDF 文档',
+    markdown: 'Markdown 文件',
+    image: '图片文件'
+  }
+  return labelMap[category] || '文件'
+}
+
 // 展开/折叠节点
 const toggleNodeExpand = (nodeId) => {
   if (expandedNodeIds.value.has(nodeId)) {
@@ -327,6 +389,7 @@ const startExecute = async () => {
   nodeLogs.value = []
   expandedNodeIds.value.clear()
   streamContent.value = ''
+  artifacts.value = []
 
   try {
     const url = `/api/workflow/public/${workflowId.value}/run`
@@ -359,6 +422,10 @@ const startExecute = async () => {
             ElMessage.error('执行失败：' + data.error)
           } else {
             isCompleted.value = true
+          }
+          // 收集文件产物
+          if (data.artifacts && Array.isArray(data.artifacts)) {
+            artifacts.value = data.artifacts
           }
           try { abortController?.abort() } catch (e) {}
           abortController = null
@@ -476,6 +543,7 @@ const resetForm = () => {
   nodeLogs.value = []
   expandedNodeIds.value.clear()
   streamContent.value = ''
+  artifacts.value = []
   try { abortController?.abort() } catch (e) {}
   abortController = null
 }
@@ -483,6 +551,30 @@ const resetForm = () => {
 // 返回市场
 const goBack = () => {
   router.push('/workflow')
+}
+
+// 下载文件（带认证）
+const downloadFile = async (url, name) => {
+  try {
+    const headers = getAuthHeaders()
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      ElMessage.error('下载失败：' + response.statusText)
+      return
+    }
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    console.error('下载文件失败:', e)
+    ElMessage.error('下载文件失败')
+  }
 }
 
 onMounted(() => {
@@ -861,6 +953,84 @@ onBeforeUnmount(() => {
   .markdown-body {
     font-size: 15px;
     line-height: 1.7;
+  }
+}
+
+.artifacts-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid var(--el-border-color-light);
+
+  .output-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .artifacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .artifact-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--el-fill-color-lighter);
+    border-radius: 10px;
+    border: 1px solid var(--el-border-color-lighter);
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: var(--el-color-primary-light-5);
+      background: var(--el-color-primary-light-9);
+    }
+  }
+
+  .artifact-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .artifact-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+
+    &.pdf { color: var(--el-color-danger); }
+    &.markdown { color: var(--el-color-primary); }
+    &.image { color: var(--el-color-success); }
+  }
+
+  .artifact-detail {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .artifact-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .artifact-type {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .download-btn {
+    flex-shrink: 0;
+    border-radius: 8px;
   }
 }
 

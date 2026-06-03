@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -295,6 +297,20 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// 文件产物收集（工具节点生成的文件）
+	var artifacts []map[string]string
+	// 文件生成工具及其结果前缀
+	fileGenToolPrefixes := map[string]string{
+		"markdown_save_tool":        "Markdown文件已成功保存到: ./",
+		"markdown_to_pdf_file_tool": "PDF已成功保存: ./",
+		"image_download_tool":       "下载完成: ./",
+	}
+	fileGenToolCategories := map[string]string{
+		"markdown_save_tool":        "markdown",
+		"markdown_to_pdf_file_tool": "pdf",
+		"image_download_tool":       "image",
+	}
+
 	callback := func(chunk *global.Chunk) error {
 		data := map[string]interface{}{
 			"content":          chunk.Content,
@@ -314,6 +330,20 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		// 添加执行日志信息
 		if chunk.ExecutionLog != nil {
 			data["execution_log"] = chunk.ExecutionLog
+		}
+
+		// 检测文件生成工具的结果，收集产物信息
+		if chunk.ToolResult != "" && chunk.ToolName != "" {
+			if prefix, ok := fileGenToolPrefixes[chunk.ToolName]; ok {
+				if fileName := extractArtifactFileName(chunk.ToolResult, prefix); fileName != "" {
+					downloadURL := fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileName))
+					artifacts = append(artifacts, map[string]string{
+						"name":     fileName,
+						"url":      downloadURL,
+						"category": fileGenToolCategories[chunk.ToolName],
+					})
+				}
+			}
 		}
 
 		jsonData, err := json.Marshal(data)
@@ -344,9 +374,12 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		return
 	}
 
-	// 发送结束标志
+	// 发送结束标志（附带文件产物信息）
 	endData := map[string]interface{}{
 		"end": true,
+	}
+	if len(artifacts) > 0 {
+		endData["artifacts"] = artifacts
 	}
 	endJsonData, _ := json.Marshal(endData)
 	_, _ = fmt.Fprintf(ctx.Writer, "data: %s\n\n", endJsonData)
@@ -497,6 +530,25 @@ func mergeValidationResults(a, b *agent.ValidationResult) *agent.ValidationResul
 	merged.Errors = append(a.Errors, b.Errors...)
 	merged.Warnings = append(a.Warnings, b.Warnings...)
 	return merged
+}
+
+// extractArtifactFileName 从工具执行结果中提取文件名
+// 工具结果格式示例: "Markdown文件已成功保存到: ./filename.md"
+func extractArtifactFileName(toolResult string, prefix string) string {
+	idx := strings.Index(toolResult, prefix)
+	if idx < 0 {
+		return ""
+	}
+	start := idx + len(prefix)
+	if start >= len(toolResult) {
+		return ""
+	}
+	// 截取到行尾或字符串末尾
+	end := strings.IndexAny(toolResult[start:], "\n\r ")
+	if end < 0 {
+		return strings.TrimSpace(toolResult[start:])
+	}
+	return strings.TrimSpace(toolResult[start : start+end])
 }
 
 // ==================== 版本管理 ====================

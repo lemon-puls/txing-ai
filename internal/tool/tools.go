@@ -172,6 +172,9 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		if len(mcpTools) > 0 {
 			tools = append(tools, mcpTools...)
 		}
+
+		// 包装所有工具为容错版本，工具报错时返回错误信息给 LLM 而非中断流程
+		tools = WrapSafeTools(tools)
 	})
 	return tools
 }
