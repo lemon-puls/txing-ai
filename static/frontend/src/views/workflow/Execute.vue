@@ -127,24 +127,55 @@
                       v-for="(detail, idx) in log.details"
                       :key="idx"
                       class="detail-item"
-                      :class="detail.type"
+                      :class="[detail.type, detail.status]"
                     >
-                      <div v-if="detail.type === 'tool_call'" class="detail-tool-call">
-                        <div class="detail-header">
-                          <div class="detail-dot tool-call-dot"></div>
-                          <span class="detail-title">调用工具</span>
-                          <el-tag size="small" type="warning" effect="plain" round>{{ detail.toolName }}</el-tag>
+                      <!-- 工具调用组（合并显示调用 + 结果） -->
+                      <div v-if="detail.type === 'tool_call_group'" class="detail-tool-group">
+                        <div
+                          class="tool-group-header"
+                          @click="detail.status === 'completed' && toggleToolGroup(`${log.nodeId}_${idx}`)"
+                          :class="{ clickable: detail.status === 'completed' }"
+                        >
+                          <div class="tool-group-left">
+                            <!-- 进行中：转圈动画 -->
+                            <el-icon v-if="detail.status === 'running'" class="tool-spinner">
+                              <Loading />
+                            </el-icon>
+                            <!-- 已完成：绿色勾 -->
+                            <el-icon v-else class="tool-done"><CircleCheck /></el-icon>
+                            <el-tag size="small" :type="detail.status === 'running' ? 'warning' : 'success'" effect="plain" round>
+                              {{ detail.toolName }}
+                            </el-tag>
+                            <span class="tool-group-summary" v-if="detail.status === 'completed' && !isToolGroupExpanded(`${log.nodeId}_${idx}`)">
+                              {{ getToolResultSummary(detail) }}
+                            </span>
+                          </div>
+                          <el-icon
+                            v-if="detail.status === 'completed'"
+                            class="tool-expand-arrow"
+                            :class="{ 'is-expanded': isToolGroupExpanded(`${log.nodeId}_${idx}`) }"
+                          >
+                            <ArrowDown />
+                          </el-icon>
                         </div>
-                        <pre class="detail-code">{{ formatJson(detail.toolParams) }}</pre>
-                      </div>
-
-                      <div v-else-if="detail.type === 'tool_result'" class="detail-tool-result">
-                        <div class="detail-header">
-                          <div class="detail-dot tool-result-dot"></div>
-                          <span class="detail-title">工具结果</span>
-                          <el-tag size="small" type="success" effect="plain" round>{{ detail.toolName }}</el-tag>
+                        <!-- 展开详情 -->
+                        <div
+                          class="tool-group-body"
+                          v-show="detail.status === 'running' || isToolGroupExpanded(`${log.nodeId}_${idx}`)"
+                        >
+                          <div v-if="detail.toolParams" class="tool-section">
+                            <span class="tool-section-label">参数</span>
+                            <pre class="detail-code">{{ formatJson(detail.toolParams) }}</pre>
+                          </div>
+                          <div v-if="detail.toolResult" class="tool-section">
+                            <span class="tool-section-label">结果</span>
+                            <pre class="detail-code result-code" :class="{ 'json-code': detail.toolResultIsJson }">{{ truncateText(detail.toolResultFormatted || detail.toolResult, 800) }}</pre>
+                          </div>
+                          <div v-if="detail.status === 'running' && !detail.toolResult" class="tool-running-hint">
+                            <span class="tool-running-dot"></span>
+                            <span>等待返回结果...</span>
+                          </div>
                         </div>
-                        <pre class="detail-code result-code">{{ truncateText(detail.toolResult, 500) }}</pre>
                       </div>
 
                       <div v-else-if="detail.type === 'progress'" class="detail-progress">
@@ -293,6 +324,16 @@ const truncateText = (text, maxLen = 500) => {
   return text.length <= maxLen ? text : text.substring(0, maxLen) + '...'
 }
 
+// 获取工具调用结果的简短摘要（折叠状态下显示）
+const getToolResultSummary = (detail) => {
+  if (!detail.toolResult) return ''
+  const text = detail.toolResultFormatted || detail.toolResult
+  // 取第一行有意义的内容，截断到 60 字符
+  const firstLine = text.split('\n').find(l => l.trim()) || ''
+  const clean = firstLine.replace(/^["'{\s]+|["'}\s]+$/g, '').trim()
+  return clean.length > 60 ? clean.substring(0, 60) + '...' : clean
+}
+
 const getFileIcon = (category) => {
   const map = { pdf: Document, markdown: Document, image: Picture }
   return map[category] || Files
@@ -307,6 +348,16 @@ const toggleNodeExpand = (nodeId) => {
   if (expandedNodeIds.value.has(nodeId)) expandedNodeIds.value.delete(nodeId)
   else expandedNodeIds.value.add(nodeId)
 }
+
+// 工具调用组的展开/折叠状态（key = nodeId_toolCallIndex）
+const expandedToolGroups = ref(new Set())
+
+const toggleToolGroup = (key) => {
+  if (expandedToolGroups.value.has(key)) expandedToolGroups.value.delete(key)
+  else expandedToolGroups.value.add(key)
+}
+
+const isToolGroupExpanded = (key) => expandedToolGroups.value.has(key)
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -358,15 +409,78 @@ const startExecute = async () => {
   } catch { isExecuting.value = false; hasError.value = true; ElMessage.error('执行失败，请稍后重试') }
 }
 
+// 格式化工具调用结果：智能解析 JSON、截断长文本
+const formatToolResult = (text) => {
+  if (!text) return { formatted: '', isJson: false }
+  // 尝试 JSON 格式化
+  try {
+    const parsed = typeof text === 'string' ? JSON.parse(text) : text
+    const jsonStr = JSON.stringify(parsed, null, 2)
+    return { formatted: jsonStr, isJson: true }
+  } catch {
+    // 非 JSON，检查是否是 URL 或普通文本
+    const trimmed = text.trim()
+    if (trimmed.startsWith('http')) {
+      return { formatted: trimmed, isJson: false }
+    }
+    return { formatted: text, isJson: false }
+  }
+}
+
 const updateNodeLog = (data) => {
   const existingIndex = nodeLogs.value.findIndex(log => log.nodeId === data.nodeId)
   if (existingIndex >= 0) {
     const existing = nodeLogs.value[existingIndex]
     const details = [...(existing.details || [])]
+
     if (data.toolName && data.toolParams && !data.toolResult) {
-      details.push({ type: 'tool_call', toolName: data.toolName, toolParams: data.toolParams, showMsg: data.showMsg || '', timestamp: Date.now() })
+      // 新的工具调用开始 —— 添加一个进行中的工具调用组
+      details.push({
+        type: 'tool_call_group',
+        toolName: data.toolName,
+        toolParams: data.toolParams,
+        toolResult: null,
+        status: 'running', // running | completed
+        showMsg: data.showMsg || '',
+        timestamp: Date.now()
+      })
     } else if (data.toolName && data.toolResult) {
-      details.push({ type: 'tool_result', toolName: data.toolName, toolResult: data.toolResult, showMsg: data.showMsg || '', timestamp: Date.now() })
+      // 工具调用结果返回 —— 找到对应的进行中组并更新
+      let groupIdx = -1
+      for (let i = details.length - 1; i >= 0; i--) {
+        if (details[i].type === 'tool_call_group' && details[i].toolName === data.toolName && details[i].status === 'running') {
+          groupIdx = i
+          break
+        }
+      }
+      if (groupIdx >= 0) {
+        const result = formatToolResult(data.toolResult)
+        details[groupIdx] = {
+          ...details[groupIdx],
+          toolResult: data.toolResult,
+          toolResultFormatted: result.formatted,
+          toolResultIsJson: result.isJson,
+          status: 'completed',
+          showMsg: data.showMsg || details[groupIdx].showMsg
+        }
+        // 完成后自动折叠（不展开）
+        const groupKey = `${data.nodeId}_${groupIdx}`
+        expandedToolGroups.value.delete(groupKey)
+      } else {
+        // 没找到匹配的调用，降级为独立结果
+        const result = formatToolResult(data.toolResult)
+        details.push({
+          type: 'tool_call_group',
+          toolName: data.toolName,
+          toolParams: null,
+          toolResult: data.toolResult,
+          toolResultFormatted: result.formatted,
+          toolResultIsJson: result.isJson,
+          status: 'completed',
+          showMsg: data.showMsg || '',
+          timestamp: Date.now()
+        })
+      }
     } else if (data.showMsg && !data.nodeStatus) {
       details.push({ type: 'progress', showMsg: data.showMsg, timestamp: Date.now() })
     } else if (data.content && data.nodeId) {
@@ -375,8 +489,19 @@ const updateNodeLog = (data) => {
     nodeLogs.value[existingIndex] = { ...existing, nodeStatus: data.nodeStatus || existing.nodeStatus, executionLog: data.execution_log || existing.executionLog, details }
   } else {
     const details = []
-    if (data.toolName && data.toolParams) details.push({ type: 'tool_call', toolName: data.toolName, toolParams: data.toolParams, showMsg: data.showMsg || '', timestamp: Date.now() })
-    else if (data.showMsg && !data.nodeStatus) details.push({ type: 'progress', showMsg: data.showMsg, timestamp: Date.now() })
+    if (data.toolName && data.toolParams) {
+      details.push({
+        type: 'tool_call_group',
+        toolName: data.toolName,
+        toolParams: data.toolParams,
+        toolResult: null,
+        status: 'running',
+        showMsg: data.showMsg || '',
+        timestamp: Date.now()
+      })
+    } else if (data.showMsg && !data.nodeStatus) {
+      details.push({ type: 'progress', showMsg: data.showMsg, timestamp: Date.now() })
+    }
     nodeLogs.value.push({ nodeId: data.nodeId, nodeType: data.nodeType || 'unknown', nodeLabel: data.nodeLabel || '', nodeStatus: data.nodeStatus || 'running', executionLog: data.execution_log || null, details })
     expandedNodeIds.value.add(data.nodeId)
   }
@@ -641,6 +766,16 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba($blue-500, 0.15); box-shadow: 0 0 0 1px rgba($blue-500, 0.05); }
+  50% { border-color: rgba($blue-500, 0.35); box-shadow: 0 0 0 3px rgba($blue-500, 0.08); }
+}
+
+@keyframes running-dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
 // ========== 节点日志 ==========
 .node-logs { margin-bottom: 20px; }
 
@@ -655,8 +790,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
   &:hover { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04); }
 
   &.is-running {
-    border-color: rgba($blue-500, 0.2);
-    box-shadow: 0 0 0 1px rgba($blue-500, 0.05);
+    animation: pulse-border 2s ease-in-out infinite;
   }
 
   &.expanded {
@@ -771,8 +905,8 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
       background: var(--el-border-color-light, #e4e7ed);
     }
 
-    &.tool_call::before { background: #e6a23c; }
-    &.tool_result::before { background: var(--el-color-success); }
+    &.tool_call_group.running::before { background: #e6a23c; animation: running-dot-pulse 1.2s ease-in-out infinite; }
+    &.tool_call_group.completed::before { background: var(--el-color-success); }
     &.progress::before { background: $blue-500; }
     &.content::before { background: $blue-400; }
   }
@@ -808,12 +942,108 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     margin: 0;
     white-space: pre-wrap;
     word-break: break-all;
-    max-height: 180px;
+    max-height: 240px;
     overflow-y: auto;
     color: var(--el-text-color-regular);
 
     &.result-code { border-left: 3px solid var(--el-color-success); }
+    &.json-code { font-family: 'SF Mono', 'Menlo', 'Monaco', monospace; }
     &.content-code { border-left: 3px solid $blue-400; }
+  }
+}
+
+// ========== 工具调用组 ==========
+.detail-tool-group {
+  .tool-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+
+    &.clickable {
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 6px 8px;
+      margin: -6px -8px;
+      transition: background 0.2s ease;
+      &:hover { background: rgba($blue-500, 0.04); }
+    }
+  }
+
+  .tool-group-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .tool-group-summary {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+  }
+
+  .tool-spinner {
+    color: #e6a23c;
+    font-size: 16px;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .tool-done {
+    color: var(--el-color-success);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .tool-expand-arrow {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+    &.is-expanded { transform: rotate(180deg); }
+  }
+
+  .tool-group-body {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--el-border-color-lighter, #ebeef5);
+  }
+
+  .tool-section {
+    margin-bottom: 8px;
+    &:last-child { margin-bottom: 0; }
+  }
+
+  .tool-section-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--el-text-color-placeholder);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .tool-running-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    padding: 4px 0;
+  }
+
+  .tool-running-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e6a23c;
+    animation: running-dot-pulse 1.2s ease-in-out infinite;
   }
 }
 
