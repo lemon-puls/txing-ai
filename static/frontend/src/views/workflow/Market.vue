@@ -1,79 +1,92 @@
 <template>
   <div class="workflow-market-container">
     <!-- 顶部搜索区域 -->
-    <div class="search-section" :style="{ backgroundImage: `url(${bgImage})` }">
+    <div class="search-section">
+      <div class="search-bg-overlay"></div>
+      <div class="search-particles">
+        <span v-for="i in 6" :key="i" class="particle" :class="`particle-${i}`"></span>
+      </div>
       <div class="search-content">
         <h1 class="title">AI 工作流市场</h1>
         <p class="subtitle">发现并使用强大的 AI 工作流，自动化您的任务</p>
         <div class="search-box">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索工作流"
+            placeholder="搜索工作流..."
             :prefix-icon="Search"
             clearable
             @keyup.enter="handleSearch"
             :loading="loading"
+            size="large"
           />
         </div>
       </div>
     </div>
 
     <!-- 分类导航 -->
-    <div class="tag-nav">
-      <div
-        v-for="tag in categories"
-        :key="tag.id"
-        class="tag-item"
-        :class="{ active: currentCategory === tag.id }"
-        @click="selectCategory(tag.id)"
-      >
-        <el-icon><component :is="tag.icon" /></el-icon>
-        <span>{{ tag.name }}</span>
+    <div class="tag-nav-wrapper">
+      <div class="tag-nav">
+        <div
+          v-for="tag in categories"
+          :key="tag.id"
+          class="tag-item"
+          :class="{ active: currentCategory === tag.id }"
+          @click="selectCategory(tag.id)"
+        >
+          <el-icon><component :is="tag.icon" /></el-icon>
+          <span>{{ tag.name }}</span>
+        </div>
       </div>
     </div>
 
     <!-- 工作流列表 -->
-    <div class="workflows-grid">
+    <div class="workflows-section">
       <el-empty
         v-if="!loading && workflows.length === 0"
         description="暂无可用工作流"
       />
-      <div
-        v-else
-        v-for="workflow in workflows"
-        :key="workflow.id"
-        class="workflow-card"
-      >
-        <div class="workflow-content">
-          <div class="workflow-icon">
-            <el-icon :size="28"><Connection /></el-icon>
-          </div>
-          <div class="workflow-info">
-            <div class="workflow-header">
-              <h3 class="workflow-name">{{ workflow.name }}</h3>
-              <el-tag
-                v-if="workflow.category"
-                class="workflow-category"
-                effect="plain"
-                size="small"
-              >
-                {{ workflow.category }}
-              </el-tag>
+      <div v-else class="workflows-grid">
+        <div
+          v-for="workflow in workflows"
+          :key="workflow.id"
+          class="workflow-card"
+          @click="useWorkflow(workflow)"
+        >
+          <div class="card-accent"></div>
+          <div class="card-body">
+            <div class="card-header">
+              <div class="workflow-icon" :class="getCategoryClass(workflow.category)">
+                <el-icon :size="24"><Connection /></el-icon>
+              </div>
+              <div class="workflow-meta">
+                <h3 class="workflow-name">{{ workflow.name }}</h3>
+                <el-tag
+                  v-if="workflow.category"
+                  class="workflow-category"
+                  :type="getCategoryTagType(workflow.category)"
+                  effect="light"
+                  size="small"
+                  round
+                >
+                  {{ getCategoryLabel(workflow.category) }}
+                </el-tag>
+              </div>
             </div>
             <p class="workflow-description">{{ workflow.description || '暂无描述' }}</p>
           </div>
-        </div>
-        <div class="workflow-actions">
-          <el-button
-            type="primary"
-            class="use-button"
-            @click="useWorkflow(workflow)"
-          >
-            <span class="button-content">
+          <div class="card-footer">
+            <div class="footer-left">
+              <span class="run-hint">点击运行</span>
+            </div>
+            <el-button
+              type="primary"
+              class="use-button"
+              circle
+              @click.stop="useWorkflow(workflow)"
+            >
               <el-icon><ArrowRight /></el-icon>
-              使用
-            </span>
-          </el-button>
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -86,7 +99,6 @@ import { useRouter } from 'vue-router'
 import { Search, ArrowRight, Connection, Grid, Star, Tools, Edit, Monitor, Reading, House, More } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { defaultApi } from '@/api'
-import bgImage from '@/assets/images/header-bg.jpg'
 
 defineOptions({
   name: 'WorkflowMarket'
@@ -109,6 +121,41 @@ const categories = [
   { id: 'life', name: '生活指南', icon: 'House' },
   { id: 'other', name: '其他', icon: 'More' }
 ]
+
+const getCategoryClass = (category) => {
+  const map = {
+    life: 'cat-life',
+    tools: 'cat-tools',
+    writing: 'cat-writing',
+    coding: 'cat-coding',
+    learning: 'cat-learning'
+  }
+  return map[category] || 'cat-default'
+}
+
+const getCategoryTagType = (category) => {
+  const map = {
+    life: 'success',
+    tools: 'warning',
+    writing: 'primary',
+    coding: '',
+    learning: 'danger'
+  }
+  return map[category] || 'info'
+}
+
+const getCategoryLabel = (category) => {
+  const map = {
+    life: '生活',
+    tools: '工具',
+    writing: '创作',
+    coding: '编码',
+    learning: '学习',
+    popular: '热门',
+    other: '其他'
+  }
+  return map[category] || category
+}
 
 const loadWorkflows = async () => {
   try {
@@ -163,284 +210,304 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// 蓝色主题变量
+$blue-500: #2B5EFF;
+$blue-400: #4facfe;
+$blue-600: #1E88E5;
+$blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
+
 .workflow-market-container {
   min-height: 100vh;
-  background-color: var(--bg-primary);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background:
-      radial-gradient(circle at 0% 0%, rgba(43, 94, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 100% 0%, rgba(30, 136, 229, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(43, 94, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(3, 169, 244, 0.1) 0%, transparent 50%);
-    filter: blur(60px);
-    opacity: 0.5;
-    z-index: 0;
-  }
+  background: var(--el-bg-color-page, #f5f7fa);
 }
 
 .search-section {
-  padding: 0 0 60px;
   position: relative;
-  color: white;
+  padding: 60px 20px 70px;
+  background: $blue-gradient;
   overflow: hidden;
 
-  &::before {
-    content: '';
+  .search-bg-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, #2B5EFF, #1E88E5);
-    opacity: 0.95;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
     z-index: 1;
+  }
+
+  .search-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      animation: float 20s infinite ease-in-out;
+
+      &.particle-1 { width: 200px; height: 200px; top: -50px; left: 10%; animation-delay: 0s; }
+      &.particle-2 { width: 120px; height: 120px; top: 30%; right: 15%; animation-delay: -5s; }
+      &.particle-3 { width: 80px; height: 80px; bottom: 10%; left: 30%; animation-delay: -10s; }
+      &.particle-4 { width: 150px; height: 150px; top: 10%; right: 30%; animation-delay: -3s; }
+      &.particle-5 { width: 60px; height: 60px; bottom: 20%; right: 10%; animation-delay: -8s; }
+      &.particle-6 { width: 100px; height: 100px; top: 50%; left: 5%; animation-delay: -12s; }
+    }
   }
 
   .search-content {
     position: relative;
-    z-index: 3;
-    padding: 40px 20px;
+    z-index: 2;
     text-align: center;
+    max-width: 700px;
+    margin: 0 auto;
 
     .title {
-      font-size: 3.5em;
-      margin-bottom: 16px;
+      font-size: 2.8em;
+      margin: 0 0 12px;
       font-weight: 800;
-      background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.8) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #fff;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }
 
     .subtitle {
-      font-size: 1.2em;
+      font-size: 1.1em;
       color: rgba(255, 255, 255, 0.85);
-      margin-bottom: 30px;
+      margin: 0 0 32px;
     }
 
     .search-box {
-      position: relative;
-      max-width: 600px;
+      max-width: 520px;
       margin: 0 auto;
-      z-index: 3;
 
       :deep(.el-input__wrapper) {
-        padding: 12px 24px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        border-radius: 30px;
+        padding: 6px 8px 6px 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        border-radius: 14px;
+        transition: all 0.3s ease;
 
         &:hover, &:focus-within {
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.22);
+          border-color: rgba(255, 255, 255, 0.4);
         }
       }
 
       :deep(.el-input__inner) {
-        font-size: 16px;
-        color: white;
-
-        &::placeholder {
-          color: rgba(255, 255, 255, 0.8);
-        }
+        font-size: 15px;
+        color: #fff;
+        &::placeholder { color: rgba(255, 255, 255, 0.7); }
       }
 
-      :deep(.el-input__prefix) {
-        color: rgba(255, 255, 255, 0.8);
-      }
+      :deep(.el-input__prefix) { color: rgba(255, 255, 255, 0.7); }
+      :deep(.el-input__clear) { color: rgba(255, 255, 255, 0.7); }
     }
   }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  33% { transform: translateY(-20px) scale(1.05); }
+  66% { transform: translateY(10px) scale(0.95); }
+}
+
+.tag-nav-wrapper {
+  position: relative;
+  z-index: 10;
+  margin-top: -28px;
+  padding: 0 20px;
 }
 
 .tag-nav {
   display: flex;
   justify-content: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1;
+  gap: 6px;
+  padding: 10px 16px;
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--el-bg-color, #fff);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
+
+  &::-webkit-scrollbar { display: none; }
 
   .tag-item {
     display: flex;
     align-items: center;
-    padding: 10px 20px;
-    margin: 0 8px;
+    gap: 6px;
+    padding: 8px 16px;
     cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: transparent;
-    border: 1px solid transparent;
+    border-radius: 10px;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    font-size: 14px;
+    color: var(--el-text-color-regular);
+    flex-shrink: 0;
 
     &:hover {
-      background: rgba(43, 94, 255, 0.1);
-      border-color: rgba(43, 94, 255, 0.2);
+      background: rgba($blue-500, 0.08);
+      color: $blue-500;
     }
 
     &.active {
-      background: linear-gradient(135deg, #2B5EFF, #1E88E5);
-      color: white;
-      border: none;
-      box-shadow: 0 4px 15px rgba(43, 94, 255, 0.35);
-    }
-
-    .el-icon {
-      margin-right: 8px;
+      background: $blue-gradient;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba($blue-500, 0.35);
     }
   }
 }
 
-.workflows-grid {
-  padding: 40px 20px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+.workflows-section {
+  padding: 32px 24px 60px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.workflows-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.workflow-card {
   position: relative;
-  z-index: 1;
+  background: var(--el-bg-color, #fff);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
 
-  .workflow-card {
-    background: var(--el-bg-color);
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid var(--el-border-color-lighter);
-    position: relative;
-    overflow: hidden;
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    border-color: transparent;
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-primary-light-3));
-      transform: translateY(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      border-color: var(--el-color-primary-light-5);
-
-      &::before {
-        transform: translateY(0);
-      }
-    }
-
-    .workflow-content {
-      display: flex;
-      gap: 16px;
-    }
-
-    .workflow-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      flex-shrink: 0;
-    }
-
-    .workflow-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .workflow-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .workflow-name {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .workflow-category {
-      flex-shrink: 0;
-    }
-
-    .workflow-description {
-      margin: 0;
-      font-size: 13px;
-      color: var(--el-text-color-secondary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      line-height: 1.5;
-    }
+    .card-accent { height: 4px; }
+    .use-button { transform: scale(1.1); }
+    .run-hint { opacity: 1; transform: translateX(0); }
   }
 
-  .workflow-actions {
-    .use-button {
-      width: 100%;
-      border: none;
-      background: linear-gradient(90deg, var(--el-color-primary), var(--el-color-primary-light-3));
-      transition: all 0.3s ease;
+  .card-accent {
+    height: 3px;
+    background: $blue-gradient;
+    transition: height 0.3s ease;
+  }
 
-      .button-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-      }
+  .card-body { padding: 20px 20px 14px; }
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
-      }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .workflow-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+    background: $blue-gradient;
+
+    &.cat-life { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    &.cat-tools { background: linear-gradient(135deg, #f6d365, #fda085); }
+    &.cat-writing { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+    &.cat-coding { background: $blue-gradient; }
+    &.cat-learning { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
+    &.cat-default { background: linear-gradient(135deg, #89f7fe, #66a6ff); }
+  }
+
+  .workflow-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .workflow-name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .workflow-description {
+    margin: 0;
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+  }
+
+  .run-hint {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: all 0.3s ease;
+  }
+
+  .use-button {
+    width: 36px;
+    height: 36px;
+    background: $blue-gradient;
+    border: none;
+    box-shadow: 0 2px 8px rgba($blue-500, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba($blue-500, 0.4);
     }
   }
 }
 
 @media (max-width: 768px) {
-  .search-section .search-content .title {
-    font-size: 2.5em;
+  .search-section {
+    padding: 40px 16px 50px;
+    .search-content .title { font-size: 2em; }
   }
+
+  .tag-nav-wrapper { padding: 0 12px; }
 
   .tag-nav {
-    padding: 15px 10px;
-
-    .tag-item {
-      padding: 8px 16px;
-      font-size: 14px;
-    }
+    justify-content: flex-start;
+    padding: 8px 12px;
+    .tag-item { padding: 6px 12px; font-size: 13px; }
   }
 
+  .workflows-section { padding: 20px 12px 40px; }
+
   .workflows-grid {
-    padding: 20px 10px;
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 }
 </style>
