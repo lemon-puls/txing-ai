@@ -378,7 +378,8 @@ const toolList = ref([])
 // 工作流配置
 const workflowConfig = ref({
   defaultModel: '',
-  maxRunSteps: 30
+  maxRunSteps: 30,
+  inputSchema: []
 })
 
 // 工作流运行状态跟踪
@@ -477,7 +478,8 @@ const loadWorkflow = async () => {
           if (flowData.config) {
             workflowConfig.value = {
               defaultModel: flowData.config.defaultModel || '',
-              maxRunSteps: flowData.config.maxRunSteps || 30
+              maxRunSteps: flowData.config.maxRunSteps || 30,
+              inputSchema: flowData.config.inputSchema || []
             }
           }
         } catch (e) {

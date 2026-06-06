@@ -36,7 +36,73 @@
           @change="onMaxRunStepsChange"
         />
       </div>
+      <div class="config-item">
+        <label>输入字段配置</label>
+        <el-button size="small" @click="inputSchemaDialogVisible = true" style="width: 100%;">
+          <el-icon><Setting /></el-icon>
+          配置输入字段 ({{ inputSchema.length }})
+        </el-button>
+      </div>
     </div>
+
+    <!-- 输入字段配置弹窗 -->
+    <el-dialog
+      v-model="inputSchemaDialogVisible"
+      title="配置输入字段"
+      width="600px"
+      :close-on-click-modal="false"
+      append-to-body
+    >
+      <div class="input-schema-editor">
+        <div v-if="inputSchema.length === 0" class="empty-schema">
+          <p>暂未配置输入字段</p>
+          <p class="hint">配置后，执行页面将显示对应的输入表单</p>
+        </div>
+        <div v-for="(field, index) in inputSchema" :key="index" class="schema-field-item">
+          <div class="field-header">
+            <span class="field-index">#{{ index + 1 }}</span>
+            <el-button text type="danger" size="small" @click="removeSchemaField(index)">
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+          <el-form label-position="top" size="small">
+            <el-form-item label="字段标识">
+              <el-input v-model="field.name" placeholder="英文标识，如：resume、destination" />
+            </el-form-item>
+            <el-form-item label="显示标签">
+              <el-input v-model="field.label" placeholder="如：上传简历、目的地" />
+            </el-form-item>
+            <el-form-item label="字段类型">
+              <el-select v-model="field.type" style="width: 100%;">
+                <el-option label="文件上传" value="file" />
+                <el-option label="多行文本" value="textarea" />
+                <el-option label="单行文本" value="text" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="占位提示">
+              <el-input v-model="field.placeholder" placeholder="输入框中的提示文字" />
+            </el-form-item>
+            <el-form-item v-if="field.type === 'file'" label="文件类型">
+              <el-input v-model="field.accept" placeholder="如：.pdf,.txt,.md" />
+            </el-form-item>
+            <el-form-item label="字段描述">
+              <el-input v-model="field.description" placeholder="字段下方的说明文字" />
+            </el-form-item>
+            <el-form-item label="是否必填">
+              <el-switch v-model="field.required" />
+            </el-form-item>
+          </el-form>
+          <el-divider v-if="index < inputSchema.length - 1" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="addSchemaField">
+          <el-icon><Plus /></el-icon>
+          添加字段
+        </el-button>
+        <el-button type="primary" @click="saveInputSchema">确定</el-button>
+      </template>
+    </el-dialog>
 
     <div class="node-categories">
       <!-- 基础节点 -->
@@ -159,7 +225,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link, Avatar } from '@element-plus/icons-vue'
+import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link, Avatar, Setting, Delete, Plus } from '@element-plus/icons-vue'
 
 const props = defineProps({
   saving: Boolean,
@@ -177,11 +243,14 @@ const emit = defineEmits(['save', 'config-change'])
 
 const defaultModel = ref(props.workflowConfig?.defaultModel || '')
 const maxRunSteps = ref(props.workflowConfig?.maxRunSteps || null)
+const inputSchema = ref(props.workflowConfig?.inputSchema ? JSON.parse(JSON.stringify(props.workflowConfig.inputSchema)) : [])
+const inputSchemaDialogVisible = ref(false)
 
 watch(() => props.workflowConfig, (newConfig) => {
   if (newConfig) {
     defaultModel.value = newConfig.defaultModel || ''
     maxRunSteps.value = newConfig.maxRunSteps || null
+    inputSchema.value = newConfig.inputSchema ? JSON.parse(JSON.stringify(newConfig.inputSchema)) : []
   }
 }, { deep: true })
 
@@ -197,6 +266,32 @@ const onMaxRunStepsChange = (value) => {
     ...props.workflowConfig,
     maxRunSteps: value || null
   })
+}
+
+const addSchemaField = () => {
+  inputSchema.value.push({
+    name: '',
+    type: 'text',
+    label: '',
+    placeholder: '',
+    required: false,
+    accept: '',
+    description: ''
+  })
+}
+
+const removeSchemaField = (index) => {
+  inputSchema.value.splice(index, 1)
+}
+
+const saveInputSchema = () => {
+  // 过滤掉空字段
+  const validFields = inputSchema.value.filter(f => f.name && f.label)
+  emit('config-change', {
+    ...props.workflowConfig,
+    inputSchema: validFields
+  })
+  inputSchemaDialogVisible.value = false
 }
 
 const onDragStart = (event, nodeType) => {
@@ -374,6 +469,35 @@ const onDragStart = (event, nodeType) => {
     .el-button {
       width: 100%;
       border-radius: 10px;
+    }
+  }
+}
+
+.input-schema-editor {
+  max-height: 500px;
+  overflow-y: auto;
+
+  .empty-schema {
+    text-align: center;
+    padding: 24px;
+    color: #909399;
+
+    p { margin: 0 0 8px; }
+    .hint { font-size: 12px; color: #c0c4cc; }
+  }
+
+  .schema-field-item {
+    .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+
+      .field-index {
+        font-size: 14px;
+        font-weight: 600;
+        color: #409eff;
+      }
     }
   }
 }
