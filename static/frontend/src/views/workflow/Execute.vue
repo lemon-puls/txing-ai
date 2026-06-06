@@ -144,7 +144,7 @@
             style="display: none"
             @change="handleFileSelect"
           />
-        </div>
+        </template>
 
         <div class="action-buttons">
           <el-button @click="resetForm" class="reset-button" :icon="RefreshRight" :disabled="isExecuting">
