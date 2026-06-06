@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # Go 依赖
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "deps"
+    labels:
+      - dependencies
+    open-pull-requests-limit: 10
+
+  # 前端 npm 依赖
+  - package-ecosystem: npm
+    directory: /static/frontend
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: "deps-frontend"
+    labels:
+      - dependencies
+      - frontend
+    open-pull-requests-limit: 10
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
+      - ci
