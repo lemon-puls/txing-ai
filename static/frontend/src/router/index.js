@@ -115,7 +115,7 @@ const router = createRouter({
               path: '',
               component: () => import('@/views/workflow/Market.vue'),
               meta: {
-                title: '工作流市场',
+                title: 'AI 应用市场',
                 icon: 'Share'
               }
             }
@@ -126,7 +126,7 @@ const router = createRouter({
           name: 'workflowExecute',
           component: () => import('@/views/workflow/Execute.vue'),
           meta: {
-            title: '执行工作流',
+            title: 'AI 应用',
             icon: 'Share'
           }
         }

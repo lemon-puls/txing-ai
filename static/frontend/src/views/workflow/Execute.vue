@@ -4,7 +4,7 @@
     <div class="exec-topbar">
       <el-button text class="back-button" @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
-        返回市场
+        返回应用市场
       </el-button>
       <div class="topbar-center">
         <span class="topbar-title">{{ workflowInfo.name || '加载中...' }}</span>
@@ -17,7 +17,7 @@
       <div class="left-panel">
         <div class="panel-section intro-section">
           <h2 class="intro-title">{{ workflowInfo.name || '加载中...' }}</h2>
-          <p class="intro-subtitle">{{ workflowInfo.description || '请输入内容开始执行工作流' }}</p>
+          <p class="intro-subtitle">{{ workflowInfo.description || '请输入内容开始执行' }}</p>
         </div>
 
         <!-- 动态输入表单（根据 inputSchema 渲染） -->
@@ -182,7 +182,7 @@
                 <el-icon class="status-icon" v-if="isExecuting"><Loading /></el-icon>
                 <el-icon class="status-icon" v-else-if="isCompleted"><CircleCheck /></el-icon>
                 <el-icon class="status-icon" v-else-if="hasError"><CircleClose /></el-icon>
-                <span class="status-text" v-if="isExecuting">工作流正在执行...</span>
+                <span class="status-text" v-if="isExecuting">正在执行...</span>
                 <span class="status-text" v-else-if="isCompleted">执行完成</span>
                 <span class="status-text" v-else-if="hasError">执行失败</span>
               </div>
@@ -623,8 +623,8 @@ const loadWorkflowInfo = async () => {
         parseInputSchema(res.data.topology)
       }
     }
-    else ElMessage.error(res.msg || '获取工作流信息失败')
-  } catch { ElMessage.error('获取工作流信息失败') }
+    else ElMessage.error(res.msg || '获取应用信息失败')
+  } catch { ElMessage.error('获取应用信息失败') }
 }
 
 const startExecute = async () => {

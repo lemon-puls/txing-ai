@@ -140,7 +140,7 @@
           <div class="card-overlay"></div>
         </div>
 
-        <!-- 工作流市场入口 -->
+        <!-- AI 应用市场入口 -->
         <div
           class="entrance-card workflow-card"
           :class="{ 'card-hover': hoveredCard === 'workflow' }"
@@ -150,8 +150,8 @@
         >
           <div class="card-content">
             <el-icon class="card-icon"><Share /></el-icon>
-            <h2>工作流市场</h2>
-            <p>发现并使用 AI 工作流，自动化任务</p>
+            <h2>AI 应用市场</h2>
+            <p>发现并使用 AI 应用，自动化任务</p>
             <div class="card-action">
               <el-icon><ArrowRight /></el-icon>
             </div>

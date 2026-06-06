@@ -7,12 +7,12 @@
         <span v-for="i in 6" :key="i" class="particle" :class="`particle-${i}`"></span>
       </div>
       <div class="search-content">
-        <h1 class="title">AI 工作流市场</h1>
-        <p class="subtitle">发现并使用强大的 AI 工作流，自动化您的任务</p>
+        <h1 class="title">AI 应用市场</h1>
+        <p class="subtitle">发现并使用强大的 AI 应用，自动化您的任务</p>
         <div class="search-box">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索工作流..."
+            placeholder="搜索应用..."
             :prefix-icon="Search"
             clearable
             @keyup.enter="handleSearch"
@@ -43,7 +43,7 @@
     <div class="workflows-section">
       <el-empty
         v-if="!loading && workflows.length === 0"
-        description="暂无可用工作流"
+        description="暂无可用应用"
       />
       <div v-else class="workflows-grid">
         <div
@@ -179,11 +179,11 @@ const loadWorkflows = async () => {
     if (res.code === 0 && res.data) {
       workflows.value = res.data.records || []
     } else {
-      ElMessage.error(res.msg || '获取工作流列表失败')
+      ElMessage.error(res.msg || '获取应用列表失败')
     }
   } catch (error) {
     console.error('Load workflows error:', error)
-    ElMessage.error('获取工作流列表失败')
+    ElMessage.error('获取应用列表失败')
   } finally {
     loading.value = false
   }
