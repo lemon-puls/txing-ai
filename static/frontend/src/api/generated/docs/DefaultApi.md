@@ -2098,7 +2098,7 @@ No authorization required
 
 执行工作流
 
-动态执行工作流，支持流式输出
+动态执行工作流，支持流式输出和文件上传
 
 ### Example
 
@@ -2108,7 +2108,8 @@ import TxingAiApi from 'txing_ai_api';
 let apiInstance = new TxingAiApi.DefaultApi();
 let id = 56; // Number | 工作流ID
 let opts = {
-  'apiWorkflowIdRunPostRequest': new TxingAiApi.ApiWorkflowIdRunPostRequest() // ApiWorkflowIdRunPostRequest | 
+  'content': "content_example", // String | 请求内容
+  'file': "/path/to/file" // File | 上传文件（支持 PDF、TXT、MD）
 };
 apiInstance.apiWorkflowIdRunPost(id, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -2124,7 +2125,8 @@ apiInstance.apiWorkflowIdRunPost(id, opts).then((data) => {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **id** | **Number**| 工作流ID | 
- **apiWorkflowIdRunPostRequest** | [**ApiWorkflowIdRunPostRequest**](ApiWorkflowIdRunPostRequest.md)|  | [optional] 
+ **content** | **String**| 请求内容 | [optional] 
+ **file** | **File**| 上传文件（支持 PDF、TXT、MD） | [optional] 
 
 ### Return type
 
@@ -2136,7 +2138,7 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
+- **Content-Type**: multipart/form-data
 - **Accept**: text/event-stream
 
 
@@ -2606,7 +2608,7 @@ No authorization required
 
 获取已发布工作流详情
 
-获取已发布工作流详情，不含内部拓扑数据
+获取已发布工作流详情，包含拓扑数据用于解析 inputSchema
 
 ### Example
 

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
     "format": "prettier --write src/",
-    "generate-api": "openapi-generator-cli generate -i http://localhost:8080/swagger/doc.json -g javascript -o src/api/generated --additional-properties=usePromises=true,modelPropertyNaming=camelCase"
+    "generate-api": "openapi-generator-cli generate -i ../../docs/swagger.json -g javascript -o src/api/generated --additional-properties=usePromises=true,modelPropertyNaming=camelCase"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",

@@ -25,7 +25,6 @@ import ApiUserInfoGet200Response from '../model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from '../model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from '../model/ApiUserRefreshPost200Response';
 import ApiWorkflowIdGet200Response from '../model/ApiWorkflowIdGet200Response';
-import ApiWorkflowIdRunPostRequest from '../model/ApiWorkflowIdRunPostRequest';
 import ApiWorkflowIdVersionsPost200Response from '../model/ApiWorkflowIdVersionsPost200Response';
 import ApiWorkflowPublicIdGet200Response from '../model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from '../model/ApiWorkflowTemplatesPost200Response';
@@ -2346,15 +2345,16 @@ export default class DefaultApi {
 
     /**
      * 执行工作流
-     * 动态执行工作流，支持流式输出
+     * 动态执行工作流，支持流式输出和文件上传
      * @param {Number} id 工作流ID
      * @param {Object} opts Optional parameters
-     * @param {module:model/ApiWorkflowIdRunPostRequest} [apiWorkflowIdRunPostRequest] 
+     * @param {String} [content] 请求内容
+     * @param {File} [file] 上传文件（支持 PDF、TXT、MD）
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
      */
     apiWorkflowIdRunPostWithHttpInfo(id, opts) {
       opts = opts || {};
-      let postBody = opts['apiWorkflowIdRunPostRequest'];
+      let postBody = null;
       // verify the required parameter 'id' is set
       if (id === undefined || id === null) {
         throw new Error("Missing the required parameter 'id' when calling apiWorkflowIdRunPost");
@@ -2368,10 +2368,12 @@ export default class DefaultApi {
       let headerParams = {
       };
       let formParams = {
+        'content': opts['content'],
+        'file': opts['file']
       };
 
       let authNames = [];
-      let contentTypes = ['application/json'];
+      let contentTypes = ['multipart/form-data'];
       let accepts = ['text/event-stream'];
       let returnType = 'String';
       return this.apiClient.callApi(
@@ -2383,10 +2385,11 @@ export default class DefaultApi {
 
     /**
      * 执行工作流
-     * 动态执行工作流，支持流式输出
+     * 动态执行工作流，支持流式输出和文件上传
      * @param {Number} id 工作流ID
      * @param {Object} opts Optional parameters
-     * @param {module:model/ApiWorkflowIdRunPostRequest} opts.apiWorkflowIdRunPostRequest 
+     * @param {String} opts.content 请求内容
+     * @param {File} opts.file 上传文件（支持 PDF、TXT、MD）
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
      */
     apiWorkflowIdRunPost(id, opts) {
@@ -2939,7 +2942,7 @@ export default class DefaultApi {
 
     /**
      * 获取已发布工作流详情
-     * 获取已发布工作流详情，不含内部拓扑数据
+     * 获取已发布工作流详情，包含拓扑数据用于解析 inputSchema
      * @param {Number} id 工作流ID
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiWorkflowPublicIdGet200Response} and HTTP response
      */
@@ -2973,7 +2976,7 @@ export default class DefaultApi {
 
     /**
      * 获取已发布工作流详情
-     * 获取已发布工作流详情，不含内部拓扑数据
+     * 获取已发布工作流详情，包含拓扑数据用于解析 inputSchema
      * @param {Number} id 工作流ID
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiWorkflowPublicIdGet200Response}
      */

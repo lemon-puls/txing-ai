@@ -62,6 +62,9 @@ class VoPublishedWorkflowVO {
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
             }
+            if (data.hasOwnProperty('topology')) {
+                obj['topology'] = ApiClient.convertToType(data['topology'], 'String');
+            }
         }
         return obj;
     }
@@ -87,6 +90,10 @@ class VoPublishedWorkflowVO {
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
+        }
+        // ensure the json data is a string
+        if (data['topology'] && !(typeof data['topology'] === 'string' || data['topology'] instanceof String)) {
+            throw new Error("Expected the field `topology` to be a primitive type in the JSON string but got " + data['topology']);
         }
 
         return true;
@@ -121,6 +128,11 @@ VoPublishedWorkflowVO.prototype['id'] = undefined;
  * @member {String} name
  */
 VoPublishedWorkflowVO.prototype['name'] = undefined;
+
+/**
+ * @member {String} topology
+ */
+VoPublishedWorkflowVO.prototype['topology'] = undefined;
 
 
 

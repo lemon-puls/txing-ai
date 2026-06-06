@@ -33,11 +33,12 @@ func ToAgentFlowVO(flow domain.AgentFlow) AgentFlowVO {
 	}
 }
 
-// PublishedWorkflowVO 已发布工作流 VO（客户端用，不含拓扑数据）
+// PublishedWorkflowVO 已发布工作流 VO（客户端用，包含拓扑数据用于解析 inputSchema）
 type PublishedWorkflowVO struct {
 	Id          int64     `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+	Topology    string    `json:"topology"`
 	Category    string    `json:"category"`
 	CreateTime  time.Time `json:"createTime"`
 }
@@ -47,6 +48,7 @@ func ToPublishedWorkflowVO(flow domain.AgentFlow) PublishedWorkflowVO {
 		Id:          flow.Id,
 		Name:        flow.Name,
 		Description: flow.Description,
+		Topology:    flow.Topology,
 		Category:    flow.TemplateCategory,
 		CreateTime:  flow.CreateTime,
 	}

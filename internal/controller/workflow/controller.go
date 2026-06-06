@@ -936,7 +936,7 @@ func ListPublished(ctx *gin.Context) {
 
 // GetPublishedDetail 获取已发布工作流详情（客户端用）
 // @Summary 获取已发布工作流详情
-// @Description 获取已发布工作流详情，不含内部拓扑数据
+// @Description 获取已发布工作流详情，包含拓扑数据用于解析 inputSchema
 // @Tags 工作流公开接口
 // @Accept json
 // @Produce json
