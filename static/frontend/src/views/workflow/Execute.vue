@@ -668,7 +668,28 @@ const startExecute = async () => {
       try {
         const data = JSON.parse(payload)
         if (data.nodeId) updateNodeLog(data)
-        if (data.content) { streamContent.value += data.content; scrollToBottom() }
+        if (data.content) {
+          // 防止内容重复：如果新内容与已累积内容的尾部大量重复，跳过
+          const existing = streamContent.value
+          const incoming = data.content
+          if (existing && incoming.length > 50) {
+            // 检查新内容是否是已有内容尾部的重复（取最长匹配）
+            const checkLen = Math.min(incoming.length, existing.length, 2000)
+            const existingTail = existing.slice(-checkLen)
+            // 在 existingTail 中查找 incoming 的前缀
+            const overlapIdx = existingTail.indexOf(incoming.slice(0, 100))
+            if (overlapIdx >= 0) {
+              // 找到重叠，检查重叠长度是否足够大（超过 100 字符视为重复）
+              const overlapLen = checkLen - overlapIdx
+              if (overlapLen >= 100 && incoming.length <= overlapLen + 50) {
+                // 新内容基本全是重复，跳过
+                return
+              }
+            }
+          }
+          streamContent.value += incoming
+          scrollToBottom()
+        }
         if (data.end) {
           isExecuting.value = false
           if (data.error) { hasError.value = true; ElMessage.error('执行失败：' + data.error) }
@@ -928,7 +949,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 .title-hint {
   font-size: 12px;
   font-weight: 400;
-  color: var(--el-text-color-placeholder);
+  color: var(--el-text-color-secondary);
 }
 
 .title-required {
@@ -939,7 +960,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
 .field-description {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--el-text-color-secondary);
   margin: 6px 0 0;
   line-height: 1.4;
 }
@@ -972,7 +993,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .upload-icon {
     font-size: 32px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     margin-bottom: 8px;
   }
 
@@ -991,7 +1012,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .upload-hint {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     margin: 0;
   }
 }
@@ -1033,11 +1054,11 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .file-size {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
   }
 
   .remove-file {
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     flex-shrink: 0;
 
     &:hover { color: var(--el-color-danger); }
@@ -1185,7 +1206,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
 .node-log-item {
   background: var(--el-bg-color, #fff);
-  border: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+  border: 1px solid var(--el-border-color-light, #dcdfe6);
   border-radius: 12px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -1252,7 +1273,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
 .node-duration {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
+  color: var(--el-text-color-secondary);
 }
 
 .node-right {
@@ -1274,13 +1295,13 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
 .expand-arrow {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--el-text-color-secondary);
   transition: transform 0.25s ease;
   &.is-expanded { transform: rotate(180deg); }
 }
 
 .node-detail {
-  border-top: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+  border-top: 1px solid var(--el-border-color-light, #dcdfe6);
   padding: 16px;
   background: var(--el-fill-color-lighter, #fafafa);
 }
@@ -1289,7 +1310,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 .node-details-timeline {
   margin-bottom: 16px;
   padding-left: 16px;
-  border-left: 2px solid var(--el-border-color-light, #e4e7ed);
+  border-left: 2px solid var(--el-border-color, #dcdfe6);
 
   .detail-item {
     position: relative;
@@ -1303,10 +1324,10 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
       position: absolute;
       left: -21px;
       top: 8px;
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: var(--el-border-color-light, #e4e7ed);
+      background: var(--el-border-color, #dcdfe6);
     }
 
     &.tool_call_group.running::before { background: #e6a23c; animation: running-dot-pulse 1.2s ease-in-out infinite; }
@@ -1332,7 +1353,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .detail-msg {
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: var(--el-text-color-primary);
     line-height: 1.5;
   }
 
@@ -1340,7 +1361,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     font-size: 12px;
     line-height: 1.5;
     background: var(--el-bg-color, #fff);
-    border: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+    border: 1px solid var(--el-border-color-light, #dcdfe6);
     padding: 8px 12px;
     border-radius: 8px;
     margin: 0;
@@ -1348,7 +1369,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     word-break: break-all;
     max-height: 240px;
     overflow-y: auto;
-    color: var(--el-text-color-regular);
+    color: var(--el-text-color-primary);
 
     &.result-code { border-left: 3px solid var(--el-color-success); }
     &.json-code { font-family: 'SF Mono', 'Menlo', 'Monaco', monospace; }
@@ -1384,7 +1405,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .tool-group-summary {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1406,7 +1427,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 
   .tool-expand-arrow {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     transition: transform 0.25s ease;
     flex-shrink: 0;
     &.is-expanded { transform: rotate(180deg); }
@@ -1415,7 +1436,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
   .tool-group-body {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px dashed var(--el-border-color-lighter, #ebeef5);
+    border-top: 1px dashed var(--el-border-color-light, #dcdfe6);
   }
 
   .tool-section {
@@ -1438,7 +1459,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: var(--el-text-color-secondary);
     padding: 4px 0;
   }
 
@@ -1461,7 +1482,7 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
   .log-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--el-text-color-secondary);
+    color: var(--el-text-color-primary);
     display: block;
     margin-bottom: 6px;
     text-transform: uppercase;
@@ -1472,13 +1493,14 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     font-size: 13px;
     line-height: 1.5;
     background: var(--el-bg-color, #fff);
-    border: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+    border: 1px solid var(--el-border-color-light, #dcdfe6);
     padding: 10px 14px;
     border-radius: 8px;
     white-space: pre-wrap;
     word-break: break-all;
     max-height: 200px;
     overflow-y: auto;
+    color: var(--el-text-color-primary);
   }
 }
 
