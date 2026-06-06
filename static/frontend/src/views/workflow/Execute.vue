@@ -28,10 +28,56 @@
           <el-input
             v-model="formData.content"
             type="textarea"
-            :rows="10"
+            :rows="8"
             placeholder="请输入您想要处理的内容..."
             :disabled="isExecuting"
             class="input-textarea"
+          />
+        </div>
+
+        <!-- 文件上传区域 -->
+        <div class="panel-section">
+          <h3 class="section-title">
+            <el-icon><Upload /></el-icon>
+            上传文件
+            <span class="title-hint">（可选）</span>
+          </h3>
+          <div
+            class="upload-area"
+            :class="{ 'has-file': uploadedFile, 'is-dragover': isDragover }"
+            @dragover.prevent="isDragover = true"
+            @dragleave.prevent="isDragover = false"
+            @drop.prevent="handleDrop"
+          >
+            <div v-if="!uploadedFile" class="upload-placeholder" @click="triggerFileInput">
+              <el-icon class="upload-icon"><Upload /></el-icon>
+              <p class="upload-text">拖拽文件到此处，或 <span class="upload-link">点击选择</span></p>
+              <p class="upload-hint">支持 PDF、TXT、MD 格式，最大 10MB</p>
+            </div>
+            <div v-else class="uploaded-file">
+              <div class="file-info">
+                <el-icon class="file-icon"><Document /></el-icon>
+                <div class="file-detail">
+                  <span class="file-name">{{ uploadedFile.name }}</span>
+                  <span class="file-size">{{ formatFileSize(uploadedFile.size) }}</span>
+                </div>
+              </div>
+              <el-button
+                text
+                class="remove-file"
+                @click="removeFile"
+                :disabled="isExecuting"
+              >
+                <el-icon><Close /></el-icon>
+              </el-button>
+            </div>
+          </div>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept=".pdf,.txt,.md"
+            style="display: none"
+            @change="handleFileSelect"
           />
         </div>
 
@@ -41,7 +87,7 @@
           </el-button>
           <el-button
             type="primary"
-            :disabled="isExecuting || !formData.content.trim()"
+            :disabled="isExecuting || (!formData.content.trim() && !uploadedFile)"
             @click="startExecute"
             class="execute-button"
             :icon="Promotion"
@@ -274,7 +320,7 @@ import { ElMessage } from 'element-plus'
 import {
   ArrowLeft, ArrowDown, CircleCheck, CircleClose, Connection, Loading,
   Promotion, RefreshRight, VideoPlay, VideoPause, Setting, Tools,
-  Edit, Switch, ChatDotRound, Download, Document, Picture, Files
+  Edit, Switch, ChatDotRound, Download, Document, Picture, Files, Upload, Close
 } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import fetchSSEWithAuth from '@/api/sseRequest.js'
@@ -290,6 +336,9 @@ const workflowId = computed(() => route.params.id)
 const workflowInfo = ref({ name: '', description: '' })
 const formData = ref({ content: '' })
 const isExecuting = ref(false)
+const uploadedFile = ref(null)
+const isDragover = ref(false)
+const fileInputRef = ref(null)
 const isCompleted = ref(false)
 const hasError = ref(false)
 const nodeLogs = ref([])
@@ -344,6 +393,49 @@ const getFileTypeLabel = (category) => {
   return map[category] || '文件'
 }
 
+// 文件上传相关
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileSelect = (e) => {
+  const file = e.target.files[0]
+  if (file) setUploadedFile(file)
+}
+
+const handleDrop = (e) => {
+  isDragover.value = false
+  const file = e.dataTransfer.files[0]
+  if (file) setUploadedFile(file)
+}
+
+const setUploadedFile = (file) => {
+  // 校验文件类型
+  const allowedTypes = ['.pdf', '.txt', '.md']
+  const ext = '.' + file.name.split('.').pop().toLowerCase()
+  if (!allowedTypes.includes(ext)) {
+    ElMessage.warning('仅支持 PDF、TXT、MD 格式')
+    return
+  }
+  // 校验文件大小 (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('文件大小不能超过 10MB')
+    return
+  }
+  uploadedFile.value = file
+}
+
+const removeFile = () => {
+  uploadedFile.value = null
+  if (fileInputRef.value) fileInputRef.value.value = ''
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
 const toggleNodeExpand = (nodeId) => {
   if (expandedNodeIds.value.has(nodeId)) expandedNodeIds.value.delete(nodeId)
   else expandedNodeIds.value.add(nodeId)
@@ -374,7 +466,9 @@ const loadWorkflowInfo = async () => {
 }
 
 const startExecute = async () => {
-  if (!formData.value.content.trim()) return
+  // 至少需要有内容或文件
+  if (!formData.value.content.trim() && !uploadedFile.value) return
+
   isExecuting.value = true
   isCompleted.value = false
   hasError.value = false
@@ -383,8 +477,22 @@ const startExecute = async () => {
   streamContent.value = ''
   artifacts.value = []
 
+  // 构建请求数据
+  let requestData
+  if (uploadedFile.value) {
+    // 有文件时使用 FormData
+    const fd = new FormData()
+    fd.append('file', uploadedFile.value)
+    if (formData.value.content.trim()) {
+      fd.append('content', formData.value.content)
+    }
+    requestData = fd
+  } else {
+    requestData = { content: formData.value.content }
+  }
+
   try {
-    abortController = await fetchSSEWithAuth(`/api/workflow/public/${workflowId.value}/run`, { content: formData.value.content }, function (msg) {
+    abortController = await fetchSSEWithAuth(`/api/workflow/public/${workflowId.value}/run`, requestData, function (msg) {
       if (!msg.startsWith('data:')) return
       const payload = msg.slice(5).trim()
       if (!payload) return
@@ -510,6 +618,8 @@ const updateNodeLog = (data) => {
 
 const resetForm = () => {
   formData.value.content = ''
+  uploadedFile.value = null
+  if (fileInputRef.value) fileInputRef.value.value = ''
   isExecuting.value = false; isCompleted.value = false; hasError.value = false
   nodeLogs.value = []; expandedNodeIds.value.clear(); streamContent.value = ''; artifacts.value = []
   try { abortController?.abort() } catch (e) {}
@@ -637,6 +747,112 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     line-height: 1.6;
     padding: 12px 16px;
     &:focus { box-shadow: 0 0 0 2px rgba($blue-500, 0.15); }
+  }
+}
+
+.title-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-placeholder);
+}
+
+// ========== 文件上传 ==========
+.upload-area {
+  border: 2px dashed var(--el-border-color-light, #dcdfe6);
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  overflow: hidden;
+
+  &:hover, &.is-dragover {
+    border-color: $blue-500;
+    background: rgba($blue-500, 0.02);
+  }
+
+  &.has-file {
+    border-style: solid;
+    border-color: var(--el-color-success-light-5, #e1f3d8);
+  }
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  cursor: pointer;
+
+  .upload-icon {
+    font-size: 32px;
+    color: var(--el-text-color-placeholder);
+    margin-bottom: 8px;
+  }
+
+  .upload-text {
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
+    margin: 0 0 4px;
+  }
+
+  .upload-link {
+    color: $blue-500;
+    cursor: pointer;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  .upload-hint {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+    margin: 0;
+  }
+}
+
+.uploaded-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--el-fill-color-lighter, #fafafa);
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .file-icon {
+    font-size: 24px;
+    color: $blue-500;
+    flex-shrink: 0;
+  }
+
+  .file-detail {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--el-text-color-placeholder);
+  }
+
+  .remove-file {
+    color: var(--el-text-color-placeholder);
+    flex-shrink: 0;
+
+    &:hover { color: var(--el-color-danger); }
   }
 }
 

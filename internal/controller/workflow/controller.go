@@ -5,20 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 	channelservice "txing-ai/internal/service/channel"
 	workflowservice "txing-ai/internal/service/workflow"
+	"txing-ai/internal/tool"
 	"txing-ai/internal/utils"
 	"txing-ai/internal/utils/page"
 	"txing-ai/internal/vo"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -231,12 +235,13 @@ func GetTools(ctx *gin.Context) {
 
 // Run 执行工作流
 // @Summary 执行工作流
-// @Description 动态执行工作流，支持流式输出
+// @Description 动态执行工作流，支持流式输出和文件上传
 // @Tags 工作流管理
-// @Accept json
+// @Accept multipart/form-data
 // @Produce text/event-stream
 // @Param id path int true "工作流ID"
 // @Param content formData string false "请求内容"
+// @Param file formData file false "上传文件（支持 PDF、TXT、MD）"
 // @Success 200 {string} string "SSE stream"
 // @Router /api/workflow/{id}/run [post]
 func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
@@ -255,6 +260,54 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		}
 		if ctx.ShouldBindJSON(&req) == nil {
 			content = req.Content
+		}
+	}
+
+	// 处理文件上传
+	file, header, fileErr := ctx.Request.FormFile("file")
+	if fileErr == nil && file != nil {
+		defer file.Close()
+
+		// 保存文件
+		savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
+		if saveErr != nil {
+			log.Error("工作流上传文件保存失败", zap.Error(saveErr))
+		} else {
+			log.Info("工作流上传文件已保存", zap.String("path", savePath), zap.Int64("size", header.Size))
+
+			// 根据文件类型提取内容
+			ext := strings.ToLower(filepath.Ext(header.Filename))
+			var fileContent string
+
+			switch ext {
+			case ".pdf":
+				// PDF 文件提取文本
+				text, pdfErr := tool.ReadPdfText(ctx, &tool.PdfReadParams{FilePath: savePath})
+				if pdfErr != nil {
+					log.Error("PDF 文本提取失败", zap.Error(pdfErr))
+				} else {
+					fileContent = text
+				}
+			case ".txt", ".md":
+				// 文本文件直接读取
+				data, readErr := utils.ReadFileContent(savePath)
+				if readErr != nil {
+					log.Error("文本文件读取失败", zap.Error(readErr))
+				} else {
+					fileContent = data
+				}
+			default:
+				log.Warn("不支持的文件类型", zap.String("ext", ext))
+			}
+
+			// 将文件内容合并到输入
+			if fileContent != "" {
+				if content != "" {
+					content = content + "\n\n文件内容：\n\n" + fileContent
+				} else {
+					content = "文件内容：\n\n" + fileContent
+				}
+			}
 		}
 	}
 
