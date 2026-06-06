@@ -163,11 +163,14 @@ type TopoEdge struct {
 
 // SchemaField Schema 字段定义
 type SchemaField struct {
-	Name        string `json:"name"`                  // 字段名称
-	Type        string `json:"type"`                  // 字段类型: string, number, boolean, object, array
-	Required    bool   `json:"required,omitempty"`    // 是否必填
-	Default     string `json:"default,omitempty"`     // 默认值
-	Description string `json:"description,omitempty"` // 字段描述
+	Name        string `json:"name"`                    // 字段名称（英文标识，用作表单字段名）
+	Type        string `json:"type"`                    // 字段类型: file, text, textarea
+	Label       string `json:"label,omitempty"`         // 显示标签（如"上传简历"）
+	Placeholder string `json:"placeholder,omitempty"`   // 占位提示文字
+	Required    bool   `json:"required,omitempty"`      // 是否必填
+	Accept      string `json:"accept,omitempty"`        // 文件类型限制（type=file 时），如 ".pdf,.doc,.docx"
+	Default     string `json:"default,omitempty"`       // 默认值
+	Description string `json:"description,omitempty"`   // 字段描述说明
 }
 
 // WorkflowConfig 工作流级别配置

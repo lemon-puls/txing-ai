@@ -252,69 +252,84 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		return
 	}
 
-	content := ctx.PostForm("content")
-	if content == "" {
-		// 也可以从 JSON 中取，这里兼容 form
-		var req struct {
-			Content string `json:"content"`
-		}
-		if ctx.ShouldBindJSON(&req) == nil {
-			content = req.Content
-		}
-	}
-
-	// 处理文件上传
-	file, header, fileErr := ctx.Request.FormFile("file")
-	if fileErr == nil && file != nil {
-		defer file.Close()
-
-		// 保存文件
-		savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
-		if saveErr != nil {
-			log.Error("工作流上传文件保存失败", zap.Error(saveErr))
-		} else {
-			log.Info("工作流上传文件已保存", zap.String("path", savePath), zap.Int64("size", header.Size))
-
-			// 根据文件类型提取内容
-			ext := strings.ToLower(filepath.Ext(header.Filename))
-			var fileContent string
-
-			switch ext {
-			case ".pdf":
-				// PDF 文件提取文本
-				text, pdfErr := tool.ReadPdfText(ctx, &tool.PdfReadParams{FilePath: savePath})
-				if pdfErr != nil {
-					log.Error("PDF 文本提取失败", zap.Error(pdfErr))
-				} else {
-					fileContent = text
-				}
-			case ".txt", ".md":
-				// 文本文件直接读取
-				data, readErr := utils.ReadFileContent(savePath)
-				if readErr != nil {
-					log.Error("文本文件读取失败", zap.Error(readErr))
-				} else {
-					fileContent = data
-				}
-			default:
-				log.Warn("不支持的文件类型", zap.String("ext", ext))
-			}
-
-			// 将文件内容合并到输入
-			if fileContent != "" {
-				if content != "" {
-					content = content + "\n\n文件内容：\n\n" + fileContent
-				} else {
-					content = "文件内容：\n\n" + fileContent
-				}
-			}
-		}
-	}
-
 	db := utils.GetDBFromContext[*gorm.DB](ctx)
 	flow, err := workflowservice.Get(id, db)
 	if err != nil {
 		utils.ErrorWithMsg(ctx, "获取工作流失败", err)
+		return
+	}
+
+	// 解析拓扑获取 inputSchema
+	var topo agent.Topology
+	json.Unmarshal([]byte(flow.Topology), &topo)
+
+	content := ""
+
+	// 根据 inputSchema 构建结构化输入
+	if topo.Config != nil && len(topo.Config.InputSchema) > 0 {
+		var parts []string
+		for _, field := range topo.Config.InputSchema {
+			if field.Type == "file" {
+				// 文件字段：处理上传的文件
+				file, header, fileErr := ctx.Request.FormFile(field.Name)
+				if fileErr == nil && file != nil {
+					defer file.Close()
+					savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
+					if saveErr != nil {
+						log.Error("工作流上传文件保存失败", zap.String("field", field.Name), zap.Error(saveErr))
+						continue
+					}
+					fileContent := extractFileContent(ctx, savePath, header.Filename)
+					if fileContent != "" {
+						parts = append(parts, field.Label+"：\n"+fileContent)
+					}
+				}
+			} else {
+				// 文本字段：从表单获取值
+				value := ctx.PostForm(field.Name)
+				if value == "" {
+					value = field.Default
+				}
+				if value != "" {
+					parts = append(parts, field.Label+"："+value)
+				}
+			}
+		}
+		content = strings.Join(parts, "\n\n")
+	} else {
+		// 无 inputSchema 时，使用默认的 content 字段（兼容旧逻辑）
+		content = ctx.PostForm("content")
+		if content == "" {
+			var req struct {
+				Content string `json:"content"`
+			}
+			if ctx.ShouldBindJSON(&req) == nil {
+				content = req.Content
+			}
+		}
+
+		// 处理默认文件上传
+		file, header, fileErr := ctx.Request.FormFile("file")
+		if fileErr == nil && file != nil {
+			defer file.Close()
+			savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
+			if saveErr != nil {
+				log.Error("工作流上传文件保存失败", zap.Error(saveErr))
+			} else {
+				fileContent := extractFileContent(ctx, savePath, header.Filename)
+				if fileContent != "" {
+					if content != "" {
+						content = content + "\n\n文件内容：\n\n" + fileContent
+					} else {
+						content = "文件内容：\n\n" + fileContent
+					}
+				}
+			}
+		}
+	}
+
+	if content == "" {
+		utils.ErrorWithMsg(ctx, "请输入内容", nil)
 		return
 	}
 
@@ -326,8 +341,7 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 
 	// 获取默认模型（优先使用拓扑配置中的模型，否则使用系统默认）
 	defaultModel := "deepseek-v3"
-	var topo agent.Topology
-	if err := json.Unmarshal([]byte(flow.Topology), &topo); err == nil && topo.Config != nil && topo.Config.DefaultModel != "" {
+	if topo.Config != nil && topo.Config.DefaultModel != "" {
 		defaultModel = topo.Config.DefaultModel
 	}
 
@@ -437,6 +451,30 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	endJsonData, _ := json.Marshal(endData)
 	_, _ = fmt.Fprintf(ctx.Writer, "data: %s\n\n", endJsonData)
 	ctx.Writer.Flush()
+}
+
+// extractFileContent 根据文件类型提取文本内容
+func extractFileContent(ctx *gin.Context, filePath, fileName string) string {
+	ext := strings.ToLower(filepath.Ext(fileName))
+	switch ext {
+	case ".pdf":
+		text, err := tool.ReadPdfText(ctx, &tool.PdfReadParams{FilePath: filePath})
+		if err != nil {
+			log.Error("PDF 文本提取失败", zap.Error(err))
+			return ""
+		}
+		return text
+	case ".txt", ".md":
+		data, err := utils.ReadFileContent(filePath)
+		if err != nil {
+			log.Error("文本文件读取失败", zap.Error(err))
+			return ""
+		}
+		return data
+	default:
+		log.Warn("不支持的文件类型", zap.String("ext", ext))
+		return ""
+	}
 }
 
 // ValidateTopology 校验工作流拓扑（结构校验，无需保存）

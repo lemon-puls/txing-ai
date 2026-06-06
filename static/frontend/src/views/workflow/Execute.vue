@@ -20,56 +20,121 @@
           <p class="intro-subtitle">{{ workflowInfo.description || '请输入内容开始执行工作流' }}</p>
         </div>
 
-        <div class="panel-section">
-          <h3 class="section-title">
-            <el-icon><Edit /></el-icon>
-            输入内容
-          </h3>
-          <el-input
-            v-model="formData.content"
-            type="textarea"
-            :rows="8"
-            placeholder="请输入您想要处理的内容..."
-            :disabled="isExecuting"
-            class="input-textarea"
-          />
-        </div>
+        <!-- 动态输入表单（根据 inputSchema 渲染） -->
+        <template v-if="inputSchema.length > 0">
+          <div class="panel-section" v-for="field in inputSchema" :key="field.name">
+            <h3 class="section-title">
+              <el-icon><component :is="getFieldIcon(field.type)" /></el-icon>
+              {{ field.label || field.name }}
+              <span class="title-hint" v-if="!field.required">（可选）</span>
+              <span class="title-required" v-else>（必填）</span>
+            </h3>
 
-        <!-- 文件上传区域 -->
-        <div class="panel-section">
-          <h3 class="section-title">
-            <el-icon><Upload /></el-icon>
-            上传文件
-            <span class="title-hint">（可选）</span>
-          </h3>
-          <div
-            class="upload-area"
-            :class="{ 'has-file': uploadedFile, 'is-dragover': isDragover }"
-            @dragover.prevent="isDragover = true"
-            @dragleave.prevent="isDragover = false"
-            @drop.prevent="handleDrop"
-          >
-            <div v-if="!uploadedFile" class="upload-placeholder" @click="triggerFileInput">
-              <el-icon class="upload-icon"><Upload /></el-icon>
-              <p class="upload-text">拖拽文件到此处，或 <span class="upload-link">点击选择</span></p>
-              <p class="upload-hint">支持 PDF、TXT、MD 格式，最大 10MB</p>
-            </div>
-            <div v-else class="uploaded-file">
-              <div class="file-info">
-                <el-icon class="file-icon"><Document /></el-icon>
-                <div class="file-detail">
-                  <span class="file-name">{{ uploadedFile.name }}</span>
-                  <span class="file-size">{{ formatFileSize(uploadedFile.size) }}</span>
+            <!-- 文件上传字段 -->
+            <template v-if="field.type === 'file'">
+              <div
+                class="upload-area"
+                :class="{ 'has-file': uploadedFiles[field.name], 'is-dragover': dragoverField === field.name }"
+                @dragover.prevent="dragoverField = field.name"
+                @dragleave.prevent="dragoverField = null"
+                @drop.prevent="handleFieldDrop($event, field.name)"
+              >
+                <div v-if="!uploadedFiles[field.name]" class="upload-placeholder" @click="triggerFieldFileInput(field.name)">
+                  <el-icon class="upload-icon"><Upload /></el-icon>
+                  <p class="upload-text">{{ field.placeholder || '拖拽文件到此处，或点击选择' }}</p>
+                  <p class="upload-hint" v-if="field.accept">支持格式：{{ field.accept }}</p>
+                  <p class="upload-hint">最大 10MB</p>
+                </div>
+                <div v-else class="uploaded-file">
+                  <div class="file-info">
+                    <el-icon class="file-icon"><Document /></el-icon>
+                    <div class="file-detail">
+                      <span class="file-name">{{ uploadedFiles[field.name].name }}</span>
+                      <span class="file-size">{{ formatFileSize(uploadedFiles[field.name].size) }}</span>
+                    </div>
+                  </div>
+                  <el-button text class="remove-file" @click="removeFieldFile(field.name)" :disabled="isExecuting">
+                    <el-icon><Close /></el-icon>
+                  </el-button>
                 </div>
               </div>
-              <el-button
-                text
-                class="remove-file"
-                @click="removeFile"
+              <input :ref="el => setFileInputRef(field.name, el)" type="file" :accept="field.accept || '.pdf,.txt,.md'" style="display:none" @change="handleFieldFileSelect($event, field.name)" />
+              <p class="field-description" v-if="field.description">{{ field.description }}</p>
+            </template>
+
+            <!-- 文本域字段 -->
+            <template v-else-if="field.type === 'textarea'">
+              <el-input
+                v-model="formFields[field.name]"
+                type="textarea"
+                :rows="4"
+                :placeholder="field.placeholder || '请输入...'"
                 :disabled="isExecuting"
-              >
-                <el-icon><Close /></el-icon>
-              </el-button>
+                class="input-textarea"
+              />
+              <p class="field-description" v-if="field.description">{{ field.description }}</p>
+            </template>
+
+            <!-- 单行文本字段 -->
+            <template v-else>
+              <el-input
+                v-model="formFields[field.name]"
+                :placeholder="field.placeholder || '请输入...'"
+                :disabled="isExecuting"
+              />
+              <p class="field-description" v-if="field.description">{{ field.description }}</p>
+            </template>
+          </div>
+        </template>
+
+        <!-- 无 inputSchema 时显示默认输入框 -->
+        <template v-else>
+          <div class="panel-section">
+            <h3 class="section-title">
+              <el-icon><Edit /></el-icon>
+              输入内容
+            </h3>
+            <el-input
+              v-model="formData.content"
+              type="textarea"
+              :rows="8"
+              placeholder="请输入您想要处理的内容..."
+              :disabled="isExecuting"
+              class="input-textarea"
+            />
+          </div>
+
+          <!-- 默认文件上传区域 -->
+          <div class="panel-section">
+            <h3 class="section-title">
+              <el-icon><Upload /></el-icon>
+              上传文件
+              <span class="title-hint">（可选）</span>
+            </h3>
+            <div
+              class="upload-area"
+              :class="{ 'has-file': uploadedFile, 'is-dragover': isDragover }"
+              @dragover.prevent="isDragover = true"
+              @dragleave.prevent="isDragover = false"
+              @drop.prevent="handleDrop"
+            >
+              <div v-if="!uploadedFile" class="upload-placeholder" @click="triggerFileInput">
+                <el-icon class="upload-icon"><Upload /></el-icon>
+                <p class="upload-text">拖拽文件到此处，或 <span class="upload-link">点击选择</span></p>
+                <p class="upload-hint">支持 PDF、TXT、MD 格式，最大 10MB</p>
+              </div>
+              <div v-else class="uploaded-file">
+                <div class="file-info">
+                  <el-icon class="file-icon"><Document /></el-icon>
+                  <div class="file-detail">
+                    <span class="file-name">{{ uploadedFile.name }}</span>
+                    <span class="file-size">{{ formatFileSize(uploadedFile.size) }}</span>
+                  </div>
+                </div>
+                <el-button text class="remove-file" @click="removeFile" :disabled="isExecuting">
+                  <el-icon><Close /></el-icon>
+                </el-button>
+              </div>
             </div>
           </div>
           <input
@@ -87,7 +152,7 @@
           </el-button>
           <el-button
             type="primary"
-            :disabled="isExecuting || (!formData.content.trim() && !uploadedFile)"
+            :disabled="isExecuting || (!canExecute)"
             @click="startExecute"
             class="execute-button"
             :icon="Promotion"
@@ -347,10 +412,39 @@ const streamContent = ref('')
 const processDetailsContainer = ref(null)
 const artifacts = ref([])
 
+// 动态表单相关
+const inputSchema = ref([])
+const formFields = ref({})
+const uploadedFiles = ref({})
+const dragoverField = ref(null)
+const fileInputRefs = {}
+
 let abortController = null
 
 const renderedContent = computed(() => {
   try { return marked(streamContent.value || '') } catch { return streamContent.value }
+})
+
+// 是否可以执行
+const canExecute = computed(() => {
+  if (inputSchema.value.length > 0) {
+    // 有 inputSchema 时：检查必填字段
+    for (const field of inputSchema.value) {
+      if (field.required) {
+        if (field.type === 'file') {
+          if (!uploadedFiles.value[field.name]) return false
+        } else {
+          if (!formFields.value[field.name]?.trim()) return false
+        }
+      }
+    }
+    // 至少有一个字段有值
+    const hasTextField = Object.values(formFields.value).some(v => v?.trim())
+    const hasFile = Object.keys(uploadedFiles.value).length > 0
+    return hasTextField || hasFile
+  }
+  // 无 inputSchema 时：需要内容或文件
+  return formData.value.content.trim() || uploadedFile.value
 })
 
 const getNodeIcon = (nodeType) => {
@@ -381,6 +475,68 @@ const getToolResultSummary = (detail) => {
   const firstLine = text.split('\n').find(l => l.trim()) || ''
   const clean = firstLine.replace(/^["'{\s]+|["'}\s]+$/g, '').trim()
   return clean.length > 60 ? clean.substring(0, 60) + '...' : clean
+}
+
+// 动态表单相关
+const getFieldIcon = (type) => {
+  const map = { file: Upload, textarea: Edit, text: Edit }
+  return map[type] || Edit
+}
+
+const setFileInputRef = (name, el) => {
+  if (el) fileInputRefs[name] = el
+}
+
+const triggerFieldFileInput = (name) => {
+  fileInputRefs[name]?.click()
+}
+
+const handleFieldFileSelect = (e, name) => {
+  const file = e.target.files[0]
+  if (file) setFieldUploadedFile(name, file)
+}
+
+const handleFieldDrop = (e, name) => {
+  dragoverField.value = null
+  const file = e.dataTransfer.files[0]
+  if (file) setFieldUploadedFile(name, file)
+}
+
+const setFieldUploadedFile = (name, file) => {
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.warning('文件大小不能超过 10MB')
+    return
+  }
+  uploadedFiles.value[name] = file
+}
+
+const removeFieldFile = (name) => {
+  delete uploadedFiles.value[name]
+  if (fileInputRefs[name]) fileInputRefs[name].value = ''
+}
+
+// 解析 inputSchema
+const parseInputSchema = (topology) => {
+  try {
+    const topo = typeof topology === 'string' ? JSON.parse(topology) : topology
+    if (topo.config && Array.isArray(topo.config.inputSchema) && topo.config.inputSchema.length > 0) {
+      inputSchema.value = topo.config.inputSchema
+      // 初始化 formFields
+      const fields = {}
+      topo.config.inputSchema.forEach(f => {
+        if (f.type !== 'file') {
+          fields[f.name] = f.default || ''
+        }
+      })
+      formFields.value = fields
+    } else {
+      inputSchema.value = []
+      formFields.value = {}
+    }
+  } catch {
+    inputSchema.value = []
+    formFields.value = {}
+  }
 }
 
 const getFileIcon = (category) => {
@@ -460,15 +616,18 @@ const scrollToBottom = () => {
 const loadWorkflowInfo = async () => {
   try {
     const res = await defaultApi.apiWorkflowPublicIdGet(workflowId.value)
-    if (res.code === 0 && res.data) workflowInfo.value = res.data
+    if (res.code === 0 && res.data) {
+      workflowInfo.value = res.data
+      // 解析 inputSchema
+      if (res.data.topology) {
+        parseInputSchema(res.data.topology)
+      }
+    }
     else ElMessage.error(res.msg || '获取工作流信息失败')
   } catch { ElMessage.error('获取工作流信息失败') }
 }
 
 const startExecute = async () => {
-  // 至少需要有内容或文件
-  if (!formData.value.content.trim() && !uploadedFile.value) return
-
   isExecuting.value = true
   isCompleted.value = false
   hasError.value = false
@@ -479,13 +638,23 @@ const startExecute = async () => {
 
   // 构建请求数据
   let requestData
-  if (uploadedFile.value) {
-    // 有文件时使用 FormData
+  if (inputSchema.value.length > 0) {
+    // 有 inputSchema 时使用 FormData
+    const fd = new FormData()
+    // 添加文本字段
+    Object.entries(formFields.value).forEach(([key, value]) => {
+      if (value) fd.append(key, value)
+    })
+    // 添加文件字段
+    Object.entries(uploadedFiles.value).forEach(([key, file]) => {
+      fd.append(key, file)
+    })
+    requestData = fd
+  } else if (uploadedFile.value) {
+    // 无 inputSchema 但有文件
     const fd = new FormData()
     fd.append('file', uploadedFile.value)
-    if (formData.value.content.trim()) {
-      fd.append('content', formData.value.content)
-    }
+    if (formData.value.content.trim()) fd.append('content', formData.value.content)
     requestData = fd
   } else {
     requestData = { content: formData.value.content }
@@ -620,6 +789,12 @@ const resetForm = () => {
   formData.value.content = ''
   uploadedFile.value = null
   if (fileInputRef.value) fileInputRef.value.value = ''
+  // 清除动态表单
+  Object.keys(formFields.value).forEach(k => { formFields.value[k] = '' })
+  Object.keys(uploadedFiles.value).forEach(k => {
+    if (fileInputRefs[k]) fileInputRefs[k].value = ''
+  })
+  uploadedFiles.value = {}
   isExecuting.value = false; isCompleted.value = false; hasError.value = false
   nodeLogs.value = []; expandedNodeIds.value.clear(); streamContent.value = ''; artifacts.value = []
   try { abortController?.abort() } catch (e) {}
@@ -754,6 +929,19 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
   font-size: 12px;
   font-weight: 400;
   color: var(--el-text-color-placeholder);
+}
+
+.title-required {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-color-danger);
+}
+
+.field-description {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  margin: 6px 0 0;
+  line-height: 1.4;
 }
 
 // ========== 文件上传 ==========
