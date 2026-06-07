@@ -149,6 +149,11 @@ func LoadConfig() *AppConfig {
 			panic(err)
 		}
 
+		// 设置默认值
+		if appConfig.LocalUploadConfig.MaxSize == 0 {
+			appConfig.LocalUploadConfig.MaxSize = 10 * 1024 * 1024 // 默认 10MB
+		}
+
 		// 监听配置文件变化
 		viper.WatchConfig()
 		// 注册回调函数 当配置文件变化时 更新配置

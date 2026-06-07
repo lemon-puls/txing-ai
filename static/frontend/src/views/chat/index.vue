@@ -801,15 +801,16 @@ const sendMessage = async () => {
           headers: { 'Authorization': authHeaders.Authorization || '' },
           body: formData
         })
-        if (response.ok) {
-          const result = await response.json()
-          if (result.code === 0 && result.data) {
-            uploadedFileRefs.push({
-              fieldName,
-              fileUrl: result.data.fileUrl,
-              fileName: result.data.fileName || file.name
-            })
-          }
+        const result = await response.json()
+        if (result.code === 0 && result.data) {
+          uploadedFileRefs.push({
+            fieldName,
+            fileUrl: result.data.fileUrl,
+            fileName: result.data.fileName || file.name
+          })
+        } else {
+          ElMessage.error(result.msg || '文件上传失败')
+          return
         }
       }
     } catch (e) {
