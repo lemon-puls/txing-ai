@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/domain"
@@ -271,7 +273,7 @@ func buildWorkflowInput(msg *dto.WsMessageRequest, lastExecution *domain.Workflo
 }
 
 // readWorkflowFileContent 从文件 URL 读取文件内容
-// URL 格式: /api/file/download?filePath=xxx 或 /api/file/xxx
+// URL 格式: /api/file/download?filePath=xxx 或直接是相对路径如 2/2026-06-07/xxx.pdf
 func readWorkflowFileContent(fileURL string) string {
 	// 提取文件路径
 	filePath := ""
@@ -282,19 +284,34 @@ func readWorkflowFileContent(fileURL string) string {
 		filePath = strings.ReplaceAll(filePath, "%2F", "/")
 		filePath = strings.ReplaceAll(filePath, "%5C", "\\")
 		filePath = strings.ReplaceAll(filePath, "+", " ")
-	} else {
-		// 尝试直接使用 URL 作为路径
+	} else if strings.HasPrefix(fileURL, "/api/file/") {
 		filePath = strings.TrimPrefix(fileURL, "/api/file/")
+	} else {
+		// 直接是相对路径，如 2/2026-06-07/xxx.pdf
+		filePath = fileURL
 	}
 
 	if filePath == "" {
 		return ""
 	}
 
+	// 构建完整的文件路径（加上 uploads 目录前缀）
+	config := global.LoadConfig().LocalUploadConfig
+	fullPath := filePath
+	if config.Dir != "" {
+		// 获取当前工作目录
+		currentDir, err := os.Getwd()
+		if err != nil {
+			log.Error("获取工作目录失败", zap.Error(err))
+			return ""
+		}
+		fullPath = filepath.Join(currentDir, config.Dir, filePath)
+	}
+
 	// 读取文件内容
-	data, err := utils.ReadFileContent(filePath)
+	data, err := utils.ReadFileContent(fullPath)
 	if err != nil {
-		log.Error("读取工作流文件失败", zap.String("path", filePath), zap.Error(err))
+		log.Error("读取工作流文件失败", zap.String("path", fullPath), zap.Error(err))
 		return ""
 	}
 	return data
