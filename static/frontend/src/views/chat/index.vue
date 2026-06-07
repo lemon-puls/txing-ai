@@ -163,6 +163,11 @@
                 </el-avatar>
               </div>
               <div class="message-content">
+                <!-- 应用标签 -->
+                <div v-if="message.appName" class="message-app-tag">
+                  <el-icon><Share /></el-icon>
+                  <span>{{ message.appName }}</span>
+                </div>
                 <!-- 添加思考过程组件 -->
                 <div v-if="message.reasoningContent" class="thought-process">
                   <div class="thought-header" @click="toggleThought(message)">
@@ -181,6 +186,12 @@
                     {{ message.reasoningContent }}
                   </div>
                 </div>
+                <WorkflowMessage
+                  v-if="message.workflow"
+                  :app-name="message.appName || ''"
+                  :workflow="message.workflow"
+                  :artifacts="message.artifacts || []"
+                />
                 <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
                   <el-button-group>
@@ -291,14 +302,29 @@
               </div>
             </div>
           </div>
-          <div class="input-wrapper">
+          <div class="input-wrapper" style="position: relative;">
+            <!-- @ 应用选择浮层 -->
+            <AppMentionPopup
+              ref="appMentionPopup"
+              :visible="showAppMention"
+              @select="handleAppSelect"
+              @close="showAppMention = false"
+            />
+            <!-- 已选应用标签 -->
+            <div v-if="selectedApp" class="selected-app-tag">
+              <el-icon><Share /></el-icon>
+              <span>{{ selectedApp.name }}</span>
+              <el-icon class="remove-tag" @click="selectedApp = null"><Close /></el-icon>
+            </div>
             <el-input
               v-model="messageInput"
               type="textarea"
               :rows="textareaRows"
-              placeholder="输入消息，Enter 发送，Shift + Enter 换行"
+              :placeholder="selectedApp ? `向 ${selectedApp.name} 提问...` : '输入消息，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'"
               resize="none"
               @keydown.enter.exact.prevent="sendMessage"
+              @input="handleInput"
+              @keydown="handleInputKeydown"
               class="custom-input"
             />
             <div class="input-actions">
@@ -445,6 +471,8 @@
       @select="handlePresetSelect"
     />
 
+    <!-- @ 应用提及（已通过 input-wrapper 内联渲染） -->
+
     <!-- Theme Drawer -->
     <ThemeDrawer
       v-model="showThemeDrawer"
@@ -474,6 +502,7 @@ import {
   More,
   Delete,
   Close,
+  Share,
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -497,6 +526,8 @@ import bash from 'highlight.js/lib/languages/bash'
 import shell from 'highlight.js/lib/languages/shell'
 import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import PresetMarket from '@/components/chat/PresetMarket.vue'
+import AppMentionPopup from '@/components/chat/AppMentionPopup.vue'
+import WorkflowMessage from '@/components/chat/WorkflowMessage.vue'
 import 'github-markdown-css/github-markdown-light.css'
 import 'github-markdown-css/github-markdown-dark.css'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -689,6 +720,11 @@ const showBgPatternDialog = ref(false)
 // AI 助手市场
 const showPresetMarket = ref(false)
 
+// @ 应用提及
+const showAppMention = ref(false)
+const selectedApp = ref(null)
+const appMentionPopup = ref(null)
+
 // 移除未使用的变量
 // const streamingMessage = ref(null)
 const messageThoughtTimes = ref(new Map())
@@ -723,14 +759,21 @@ const sendMessage = async () => {
   // 如果是会话的第一条消息，就把该消息设置为会话的名称
   conversationStore.updateCurrentChatName(messageInput.value)
   // 添加用户消息
-  currentChat.value.messages.push({
+  const userMsg = {
     id: Date.now(),
     role: 'user',
     content: messageInput.value
-  })
+  }
+  // 如果 @ 了应用，在消息中记录
+  if (selectedApp.value) {
+    userMsg.appName = selectedApp.value.name
+    userMsg.workflowId = selectedApp.value.id
+  }
+  currentChat.value.messages.push(userMsg)
 
   const message = messageInput.value
   messageInput.value = ''
+  showAppMention.value = false
   await scrollToBottom()
 
   // 设置正在输入状态
@@ -753,6 +796,11 @@ const sendMessage = async () => {
       repetitionPenalty: currentChat.value.repetitionPenalty
     }
 
+    // 如果 @ 了应用，添加 workflowId
+    if (selectedApp.value) {
+      options.workflowId = selectedApp.value.id
+    }
+
     // 确定使用哪个连接ID发送消息
     // 如果是新会话(没有真实ID)，则使用"-1"
     const connectionId = currentChat.value.id.toString()
@@ -762,6 +810,9 @@ const sendMessage = async () => {
       connectionId,
       createChatMessage(message, options)
     )
+
+    // 发送后清除选中的应用
+    selectedApp.value = null
 
     // 第一次发送后标记已经不是新会话
     // if (!currentChat.value.realId) {
@@ -826,7 +877,9 @@ const handleWebSocketMessage = (chatId, data) => {
         role: 'assistant',
         content: '',
         reasoningContent: '',
-        showThought: true
+        showThought: true,
+        workflow: null,
+        artifacts: null
       }
       // 记录思考开始时间
       if (!messageThoughtTimes.value.has(currentStreamingMessage.id)) {
@@ -862,6 +915,14 @@ const handleWebSocketMessage = (chatId, data) => {
     currentStreamingMessage.content = data.data.partialContent
     currentStreamingMessage.reasoningContent = data.data.partialReasoning
 
+    // 更新工作流状态
+    if (data.data.workflow) {
+      currentStreamingMessage.workflow = data.data.workflow
+    }
+    if (data.data.artifacts) {
+      currentStreamingMessage.artifacts = data.data.artifacts
+    }
+
     // 同步更新 lastMessageMap 中的消息（仅限登录用户）
     const userStore = useUserStore()
     if (userStore.isLoggedIn) {
@@ -869,6 +930,8 @@ const handleWebSocketMessage = (chatId, data) => {
       if (lastMessage) {
         lastMessage.content = data.data.partialContent
         lastMessage.reasoningContent = data.data.partialReasoning
+        if (data.data.workflow) lastMessage.workflow = data.data.workflow
+        if (data.data.artifacts) lastMessage.artifacts = data.data.artifacts
       }
     }
 
@@ -1272,6 +1335,29 @@ const selectBgPattern = (pattern) => {
 
 const handlePresetSelect = (preset) => {
   createNewChat(preset.id)
+}
+
+// @ 应用相关
+const handleInput = (value) => {
+  // 检测是否输入了 @
+  if (value.endsWith('@')) {
+    showAppMention.value = true
+  }
+}
+
+const handleInputKeydown = (e) => {
+  if (showAppMention.value) {
+    appMentionPopup.value?.handleKeydown(e)
+  }
+}
+
+const handleAppSelect = (app) => {
+  selectedApp.value = app
+  showAppMention.value = false
+  // 移除输入的 @ 符号
+  if (messageInput.value.endsWith('@')) {
+    messageInput.value = messageInput.value.slice(0, -1)
+  }
 }
 
 // 在组件销毁时关闭所有连接
@@ -1796,6 +1882,22 @@ const batchDelete = async () => {
     max-width: 1000px;
   }
 
+  .message-app-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+    background: rgba(25, 118, 210, 0.06);
+    border-radius: 12px;
+    font-size: 11px;
+    color: #1976d2;
+
+    .el-icon {
+      font-size: 12px;
+    }
+  }
+
   .thought-process {
     margin-bottom: 16px;
     border-radius: 6px;
@@ -2249,6 +2351,34 @@ const batchDelete = async () => {
 
 .input-wrapper {
   position: relative;
+
+  .selected-app-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    margin-bottom: 8px;
+    background: rgba(25, 118, 210, 0.08);
+    border: 1px solid rgba(25, 118, 210, 0.2);
+    border-radius: 16px;
+    font-size: 12px;
+    color: #1976d2;
+
+    .el-icon {
+      font-size: 14px;
+    }
+
+    .remove-tag {
+      cursor: pointer;
+      margin-left: 2px;
+      border-radius: 50%;
+      transition: all 0.15s;
+
+      &:hover {
+        background: rgba(25, 118, 210, 0.15);
+      }
+    }
+  }
 
   .custom-input {
     transition: all 0.3s ease;
