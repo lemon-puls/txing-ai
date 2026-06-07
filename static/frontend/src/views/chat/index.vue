@@ -907,6 +907,13 @@ const handleWebSocketMessage = (chatId, data) => {
     if (currentStreamingMessage) {
       currentStreamingMessage.content = data.data.partialContent
       currentStreamingMessage.reasoningContent = data.data.partialReasoning
+      // 更新工作流最终状态和产物
+      if (data.data.workflow) {
+        currentStreamingMessage.workflow = data.data.workflow
+      }
+      if (data.data.artifacts) {
+        currentStreamingMessage.artifacts = data.data.artifacts
+      }
       // 记录最终的思考时间
       if (data.data.reasoningContent) {
         const endTime = Date.now()
@@ -927,7 +934,9 @@ const handleWebSocketMessage = (chatId, data) => {
         role: 'assistant',
         content: data.data.content,
         reasoningContent: data.data.reasoningContent,
-        showThought: true
+        showThought: true,
+        workflow: data.data.workflow || null,
+        artifacts: data.data.artifacts || null
       }
       conversationStore.addMessage(message)
     }

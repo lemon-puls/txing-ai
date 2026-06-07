@@ -50,6 +50,7 @@ type WorkflowProgress struct {
 	NodeStatus string `json:"nodeStatus,omitempty"` // 节点状态
 	ShowMsg    string `json:"showMsg,omitempty"`    // 显示消息
 	ToolName   string `json:"toolName,omitempty"`   // 工具名称
+	ToolStatus string `json:"toolStatus,omitempty"` // 工具调用状态 running/completed/failed
 	ToolResult string `json:"toolResult,omitempty"` // 工具结果
 }
 

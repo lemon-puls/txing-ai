@@ -27,8 +27,10 @@
             <div class="node-dot" :class="log.status"></div>
             <div class="node-info">
               <span class="node-label">{{ log.label || log.type }}</span>
-              <span v-if="log.toolName" class="node-tool">
-                <el-tag size="small" type="warning" effect="plain" round>{{ log.toolName }}</el-tag>
+              <span v-for="(tc, tcIdx) in (log.toolCalls || [])" :key="tcIdx" class="node-tool">
+                <el-tag size="small" type="warning" effect="plain" round>{{ tc.name }}</el-tag>
+                <el-icon v-if="tc.status === 'completed'" style="color: var(--el-color-success); font-size: 12px;"><CircleCheck /></el-icon>
+                <el-icon v-else-if="tc.status === 'running'" class="spin" style="font-size: 12px;"><Loading /></el-icon>
               </span>
             </div>
             <span class="node-status">
@@ -92,21 +94,39 @@ const statusLabel = computed(() => {
   return '等待中'
 })
 
-// 监听 workflow 变化，更新节点日志
+// 监听 workflow 变化，更新节点日志和工具调用
 watch(() => props.workflow, (w) => {
   if (!w || !w.nodeId) return
 
   const existing = nodeMap.value.get(w.nodeId)
   if (existing) {
     existing.status = w.nodeStatus || existing.status
-    if (w.toolName) existing.toolName = w.toolName
+    // 追加工具调用记录
+    if (w.toolName) {
+      const lastTc = existing.toolCalls[existing.toolCalls.length - 1]
+      if (lastTc && lastTc.name === w.toolName) {
+        // 同名工具：更新状态（running→completed 是同一调用的状态变更）
+        lastTc.status = w.toolStatus || lastTc.status
+      } else {
+        // 不同工具或首个工具：新增记录
+        existing.toolCalls.push({ name: w.toolName, status: w.toolStatus || 'running' })
+      }
+    }
+    // 节点完成时，将所有未完成的工具调用标记为完成
+    if (w.nodeStatus === 'completed' || w.nodeStatus === 'failed') {
+      existing.toolCalls.forEach(tc => {
+        if (tc.status === 'running') {
+          tc.status = w.nodeStatus
+        }
+      })
+    }
   } else {
     const log = {
       nodeId: w.nodeId,
       type: w.nodeType,
       label: w.nodeLabel,
       status: w.nodeStatus || 'running',
-      toolName: w.toolName || ''
+      toolCalls: w.toolName ? [{ name: w.toolName, status: w.toolStatus || 'running' }] : []
     }
     nodeMap.value.set(w.nodeId, log)
     nodeLogs.value.push(log)
@@ -143,6 +163,7 @@ const downloadFile = async (url, name) => {
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 8px;
+  min-width: 320px;
 
   &.completed { border-left: 3px solid var(--el-color-success); }
   &.failed { border-left: 3px solid var(--el-color-danger); }

@@ -24,6 +24,8 @@ type Chunk struct {
 	ToolParams string `json:"tool_params"`
 	// 工具返回结果
 	ToolResult string `json:"tool_result"`
+	// 工具调用状态 running/completed/failed
+	ToolStatus string `json:"tool_status,omitempty"`
 	// 显示信息（用于前端显示）
 	ShowMsg string `json:"show_msg"`
 	// 工作流节点状态信息

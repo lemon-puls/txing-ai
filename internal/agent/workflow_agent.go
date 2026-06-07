@@ -615,6 +615,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 									ToolCallId: tc.ID,
 									ToolName:   tc.Function.Name,
 									ToolParams: tc.Function.Arguments,
+									ToolStatus: "running",
 									ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
 								})
 							}
@@ -629,10 +630,11 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 							log.Error("LLM 节点工具执行失败", zap.String("nodeId", nodeId), zap.Error(toolErr))
 							if callback != nil {
 								callback(&global.Chunk{
-									NodeId:    nodeId,
-									NodeType:  "llm",
-									NodeLabel: node.Data.Label,
-									ShowMsg:   fmt.Sprintf("[%s] 工具执行失败: %s", node.Data.Label, toolErr.Error()),
+									NodeId:     nodeId,
+									NodeType:   "llm",
+									NodeLabel:  node.Data.Label,
+									ToolStatus: "failed",
+									ShowMsg:    fmt.Sprintf("[%s] 工具执行失败: %s", node.Data.Label, toolErr.Error()),
 								})
 							}
 							messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
@@ -647,6 +649,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 										ToolCallId: tr.ToolCallID,
 										ToolName:   tr.ToolName,
 										ToolResult: tr.Content,
+										ToolStatus: "completed",
 										ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
 									})
 								}
@@ -775,6 +778,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 						NodeLabel:  node.Data.Label,
 						ToolName:   boundToolName,
 						ToolParams: actualParamsJSON,
+						ToolStatus: "running",
 						ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, boundToolName),
 					})
 				}
@@ -806,6 +810,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 						NodeLabel:  node.Data.Label,
 						ToolName:   boundToolName,
 						ToolResult: result,
+						ToolStatus: "completed",
 						ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, boundToolName),
 					})
 				}
@@ -1193,14 +1198,35 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
 
-	graph, err := a.BuildGraph(ctx, endpoint, apiKey, model, callback)
+	// 包装 callback，追踪图执行过程中是否已发送过 Content
+	// 避免 BaseAgent.ExecuteStream 在图执行完毕后重复发送
+	contentSentDuringGraph := false
+	wrappedCallback := func(chunk *global.Chunk) error {
+		if chunk.Content != "" {
+			contentSentDuringGraph = true
+		}
+		return callback(chunk)
+	}
+
+	graph, err := a.BuildGraph(ctx, endpoint, apiKey, model, wrappedCallback)
 	if err != nil {
 		log.Error("构建执行图失败", zap.Error(err))
 		return "", err
 	}
 	a.SetGraph(graph)
 
-	return a.BaseAgent.ExecuteStream(ctx, endpoint, apiKey, model, input, filePath, callback)
+	// 执行图
+	response, err := a.Execute(ctx, endpoint, apiKey, model, input)
+	if err != nil {
+		return "", err
+	}
+
+	// 仅当图执行过程中未发送过 Content 时，才通过 callback 发送最终结果
+	if !contentSentDuringGraph && response != "" {
+		return response, callback(&global.Chunk{Content: response})
+	}
+
+	return response, nil
 }
 
 // executeLLMCondition 使用 LLM 执行条件判断

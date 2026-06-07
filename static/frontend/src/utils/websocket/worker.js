@@ -141,7 +141,10 @@ async function createConnection(chatId, userId, token, presetId, wsUrl) {
                   reasoningContent: data.reasoningContent,
                   partialContent: conn.partialMessage.content,
                   partialReasoning: conn.partialMessage.reasoningContent,
-                  conversationId: data.conversationId
+                  conversationId: data.conversationId,
+                  // 透传工作流和产物数据
+                  ...(data.workflow && { workflow: data.workflow }),
+                  ...(data.artifacts && { artifacts: data.artifacts })
                 }
               };
               self.postMessage({
@@ -164,7 +167,10 @@ async function createConnection(chatId, userId, token, presetId, wsUrl) {
                   reasoningContent: data.reasoning_content,
                   partialContent: conn.partialMessage.content,
                   partialReasoning: conn.partialMessage.reasoningContent,
-                  conversationId: data.conversationId
+                  conversationId: data.conversationId,
+                  // 透传工作流和产物数据
+                  ...(data.workflow && { workflow: data.workflow }),
+                  ...(data.artifacts && { artifacts: data.artifacts })
                 }
               };
               self.postMessage({

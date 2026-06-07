@@ -125,6 +125,7 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 			NodeStatus: chunk.NodeStatus,
 			ShowMsg:    chunk.ShowMsg,
 			ToolName:   chunk.ToolName,
+			ToolStatus: chunk.ToolStatus,
 			ToolResult: chunk.ToolResult,
 		}
 
@@ -140,9 +141,8 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 			}
 		}
 
-		// 发送进度到客户端
+		// 发送进度到客户端（进度信息放在 Workflow 字段，不发送 Content 避免前端显示为纯文本）
 		resp := dto.WsMessageResponse{
-			Content:        chunk.Content,
 			End:            false,
 			ConversationId: conversation.Id,
 			Workflow:       progress,
@@ -168,9 +168,9 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		})
 		output = fmt.Sprintf("执行失败：%s", execErr.Error())
 	} else {
-		// 发送完成状态
+		// 发送完成状态（包含格式化的结果文本和产物信息）
 		conn.Send(dto.WsMessageResponse{
-			Content:        "",
+			Content:        output,
 			End:            true,
 			ConversationId: conversation.Id,
 			Workflow: &dto.WorkflowProgress{
