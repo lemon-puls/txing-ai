@@ -10,6 +10,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/iface"
 	channelservice "txing-ai/internal/service/channel"
 	workflowservice "txing-ai/internal/service/workflow"
 	"txing-ai/internal/utils"
@@ -19,7 +20,7 @@ import (
 )
 
 // HandleWorkflowChat 处理 AI 对话中的工作流执行
-func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB, msg *dto.WsMessageRequest) {
+func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB, msg *dto.WsMessageRequest, resProvider iface.ResourceProvider) {
 	workflowID := *msg.WorkflowID
 
 	// 1. 保存用户消息到会话
@@ -71,7 +72,7 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	modelResolver := agent.NewChannelModelResolver(db)
 
 	// 8. 初始化 WorkflowAgent
-	workflowAgent := agent.NewWorkflowAgent(nil, flow.Topology, modelResolver)
+	workflowAgent := agent.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
 
 	// 9. 获取默认模型
 	defaultModel := "deepseek-v3"

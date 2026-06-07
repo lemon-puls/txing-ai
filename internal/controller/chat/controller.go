@@ -6,6 +6,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/iface"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	presetservice "txing-ai/internal/service/preset"
@@ -38,7 +39,7 @@ import (
 // @x-message-stop {"type":"stop"}
 // @x-message-response {"conversationId":123,"content":"AI回复内容","reasoning_content":"思考过程","end":false}
 // @x-message-error {"type":"error","message":"错误信息"}
-func Chat(c *gin.Context) {
+func Chat(c *gin.Context, resProvider iface.ResourceProvider) {
 	var webSocket *utils.WebSocket
 	if webSocket = utils.NewWebSocket(c); webSocket == nil {
 		log.Error("NewWebSocket failed")
@@ -87,7 +88,7 @@ func Chat(c *gin.Context) {
 							log.Error("workflow chat panic", zap.Any("err", err))
 						}
 					}()
-					chat.HandleWorkflowChat(c, buf, conversation, db, msg)
+					chat.HandleWorkflowChat(c, buf, conversation, db, msg, resProvider)
 				}()
 			} else {
 				// 普通聊天模式

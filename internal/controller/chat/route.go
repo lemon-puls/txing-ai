@@ -1,14 +1,17 @@
 package chat
 
 import (
+	"txing-ai/internal/iface"
 	"txing-ai/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Register(router gin.IRouter) {
+func Register(router gin.IRouter, resProvider iface.ResourceProvider) {
 	// WebSocket 连接
-	router.GET("/ws", middleware.AuthMiddleware(), Chat)
+	router.GET("/ws", middleware.AuthMiddleware(), func(ctx *gin.Context) {
+		Chat(ctx, resProvider)
+	})
 	// 获取会话列表
 	router.POST("/conversation/list", middleware.AuthMiddleware(), GetConversationList)
 

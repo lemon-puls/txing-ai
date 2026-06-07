@@ -33,7 +33,7 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	// 用户相关路由
 	user.Register(group)
 
-	chat.Register(group.Group("/chat"))
+	chat.Register(group.Group("/chat"), res)
 
 	channel.Register(group)
 
