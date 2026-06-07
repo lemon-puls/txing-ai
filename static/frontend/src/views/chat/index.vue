@@ -168,6 +168,13 @@
                   <el-icon><Share /></el-icon>
                   <span>{{ message.appName }}</span>
                 </div>
+                <!-- 文件附件 -->
+                <div v-if="message.files && message.files.length > 0" class="message-files">
+                  <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
+                    <el-icon><Document /></el-icon>
+                    <span>{{ fileName }}</span>
+                  </div>
+                </div>
                 <!-- 添加思考过程组件 -->
                 <div v-if="message.reasoningContent" class="thought-process">
                   <div class="thought-header" @click="toggleThought(message)">
@@ -314,7 +321,23 @@
             <div v-if="selectedApp" class="selected-app-tag">
               <el-icon><Share /></el-icon>
               <span>{{ selectedApp.name }}</span>
-              <el-icon class="remove-tag" @click="selectedApp = null"><Close /></el-icon>
+              <el-icon class="remove-tag" @click="removeSelectedApp"><Close /></el-icon>
+            </div>
+            <!-- 应用文件上传区域 -->
+            <div v-if="selectedApp && hasFileField" class="app-file-upload">
+              <div v-for="field in fileFields" :key="field.name" class="file-field">
+                <div v-if="appUploadedFiles[field.name]" class="uploaded-file">
+                  <el-icon class="file-icon"><Document /></el-icon>
+                  <span class="file-name">{{ appUploadedFiles[field.name].name }}</span>
+                  <span class="file-size">{{ formatFileSize(appUploadedFiles[field.name].size) }}</span>
+                  <el-icon class="remove-file" @click="removeAppFile(field.name)"><Close /></el-icon>
+                </div>
+                <div v-else class="upload-trigger" @click="triggerAppFileInput(field.name)">
+                  <el-icon><Upload /></el-icon>
+                  <span>{{ field.label || '上传文件' }}</span>
+                  <span class="upload-hint" v-if="field.accept">{{ field.accept }}</span>
+                </div>
+              </div>
             </div>
             <el-input
               v-model="messageInput"
@@ -493,6 +516,7 @@ import {
   Check,
   CircleClose,
   CopyDocument,
+  Document,
   HomeFilled,
   Picture,
   Plus,
@@ -503,6 +527,7 @@ import {
   Delete,
   Close,
   Share,
+  Upload,
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -536,6 +561,7 @@ import SvgIcon from "@/components/common/SvgIcon.vue";
 import wsManager from '@/utils/websocket/manager'
 import {createChatMessage, createStopMessage} from '@/utils/websocket/types'
 import {defaultApi} from '@/api'
+import {getAuthHeaders} from '@/api/auth'
 import aiAvatar from '@/assets/images/ai_avatar.png'
 
 // 注册语言
@@ -724,6 +750,9 @@ const showPresetMarket = ref(false)
 const showAppMention = ref(false)
 const selectedApp = ref(null)
 const appMentionPopup = ref(null)
+const appInputSchema = ref([]) // 选中应用的 inputSchema
+const appUploadedFiles = ref({}) // 选中应用上传的文件 { fieldName: File }
+const appFileInputRef = ref(null)
 
 // 移除未使用的变量
 // const streamingMessage = ref(null)
@@ -758,6 +787,38 @@ const sendMessage = async () => {
 
   // 如果是会话的第一条消息，就把该消息设置为会话的名称
   conversationStore.updateCurrentChatName(messageInput.value)
+
+  // 上传应用文件（如果有）
+  let uploadedFileRefs = []
+  if (selectedApp.value && Object.keys(appUploadedFiles.value).length > 0) {
+    try {
+      const authHeaders = getAuthHeaders()
+      for (const [fieldName, file] of Object.entries(appUploadedFiles.value)) {
+        const formData = new FormData()
+        formData.append('file', file)
+        const response = await fetch('/api/file/upload', {
+          method: 'POST',
+          headers: { 'Authorization': authHeaders.Authorization || '' },
+          body: formData
+        })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.code === 0 && result.data) {
+            uploadedFileRefs.push({
+              fieldName,
+              fileUrl: result.data.fileUrl,
+              fileName: result.data.fileName || file.name
+            })
+          }
+        }
+      }
+    } catch (e) {
+      console.error('文件上传失败:', e)
+      ElMessage.warning('文件上传失败，请重试')
+      return
+    }
+  }
+
   // 添加用户消息
   const userMsg = {
     id: Date.now(),
@@ -768,6 +829,9 @@ const sendMessage = async () => {
   if (selectedApp.value) {
     userMsg.appName = selectedApp.value.name
     userMsg.workflowId = selectedApp.value.id
+    if (uploadedFileRefs.length > 0) {
+      userMsg.files = uploadedFileRefs.map(f => f.fileName)
+    }
   }
   currentChat.value.messages.push(userMsg)
 
@@ -796,9 +860,12 @@ const sendMessage = async () => {
       repetitionPenalty: currentChat.value.repetitionPenalty
     }
 
-    // 如果 @ 了应用，添加 workflowId
+    // 如果 @ 了应用，添加 workflowId 和 files
     if (selectedApp.value) {
       options.workflowId = selectedApp.value.id
+      if (uploadedFileRefs.length > 0) {
+        options.files = uploadedFileRefs
+      }
     }
 
     // 确定使用哪个连接ID发送消息
@@ -811,8 +878,8 @@ const sendMessage = async () => {
       createChatMessage(message, options)
     )
 
-    // 发送后清除选中的应用
-    selectedApp.value = null
+    // 发送后清除应用状态
+    removeSelectedApp()
 
     // 第一次发送后标记已经不是新会话
     // if (!currentChat.value.realId) {
@@ -1339,9 +1406,12 @@ const handlePresetSelect = (preset) => {
 
 // @ 应用相关
 const handleInput = (value) => {
-  // 检测是否输入了 @
-  if (value.endsWith('@')) {
+  // 检测输入中是否有 @ 触发符
+  const atIndex = value.lastIndexOf('@')
+  if (atIndex >= 0 && !selectedApp.value) {
     showAppMention.value = true
+  } else if (selectedApp.value) {
+    // 已选中应用时，如果用户清空了输入，保持应用选中状态
   }
 }
 
@@ -1351,13 +1421,81 @@ const handleInputKeydown = (e) => {
   }
 }
 
-const handleAppSelect = (app) => {
+const handleAppSelect = async (app) => {
   selectedApp.value = app
   showAppMention.value = false
-  // 移除输入的 @ 符号
-  if (messageInput.value.endsWith('@')) {
-    messageInput.value = messageInput.value.slice(0, -1)
+  // 移除输入的 @ 符号及之后的内容
+  const atIndex = messageInput.value.lastIndexOf('@')
+  if (atIndex >= 0) {
+    messageInput.value = messageInput.value.slice(0, atIndex)
   }
+  // 加载应用的 inputSchema
+  await loadAppInputSchema(app.id)
+}
+
+// 加载应用的 inputSchema
+const loadAppInputSchema = async (appId) => {
+  try {
+    const res = await defaultApi.apiWorkflowPublicIdGet(appId)
+    if (res.code === 0 && res.data && res.data.topology) {
+      const topo = JSON.parse(res.data.topology)
+      if (topo.config && Array.isArray(topo.config.inputSchema)) {
+        appInputSchema.value = topo.config.inputSchema
+      } else {
+        appInputSchema.value = []
+      }
+    }
+  } catch (e) {
+    console.error('加载应用配置失败:', e)
+    appInputSchema.value = []
+  }
+}
+
+// 移除选中的应用
+const removeSelectedApp = () => {
+  selectedApp.value = null
+  appInputSchema.value = []
+  appUploadedFiles.value = {}
+}
+
+// 应用文件上传
+const hasFileField = computed(() => {
+  return appInputSchema.value.some(f => f.type === 'file')
+})
+
+const fileFields = computed(() => {
+  return appInputSchema.value.filter(f => f.type === 'file')
+})
+
+const triggerAppFileInput = (fieldName) => {
+  // 动态创建 input 元素
+  const input = document.createElement('input')
+  input.type = 'file'
+  const field = appInputSchema.value.find(f => f.name === fieldName)
+  if (field && field.accept) {
+    input.accept = field.accept
+  }
+  input.onchange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        ElMessage.warning('文件大小不能超过 10MB')
+        return
+      }
+      appUploadedFiles.value[fieldName] = file
+    }
+  }
+  input.click()
+}
+
+const removeAppFile = (fieldName) => {
+  delete appUploadedFiles.value[fieldName]
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
 // 在组件销毁时关闭所有连接
@@ -1898,6 +2036,27 @@ const batchDelete = async () => {
     }
   }
 
+  .message-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+
+    .file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: rgba(103, 194, 58, 0.06);
+      border: 1px solid rgba(103, 194, 58, 0.15);
+      border-radius: 12px;
+      font-size: 11px;
+      color: #67c23a;
+
+      .el-icon { font-size: 12px; }
+    }
+  }
+
   .thought-process {
     margin-bottom: 16px;
     border-radius: 6px;
@@ -2376,6 +2535,58 @@ const batchDelete = async () => {
 
       &:hover {
         background: rgba(25, 118, 210, 0.15);
+      }
+    }
+  }
+
+  .app-file-upload {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    .file-field {
+      .uploaded-file {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(103, 194, 58, 0.06);
+        border: 1px solid rgba(103, 194, 58, 0.2);
+        border-radius: 8px;
+        font-size: 12px;
+        color: #67c23a;
+
+        .file-icon { font-size: 14px; }
+        .file-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-size { color: var(--el-text-color-secondary); }
+        .remove-file {
+          cursor: pointer;
+          border-radius: 50%;
+          transition: all 0.15s;
+          &:hover { background: rgba(103, 194, 58, 0.15); }
+        }
+      }
+
+      .upload-trigger {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(25, 118, 210, 0.04);
+        border: 1px dashed rgba(25, 118, 210, 0.3);
+        border-radius: 8px;
+        font-size: 12px;
+        color: #1976d2;
+        cursor: pointer;
+        transition: all 0.15s;
+
+        &:hover {
+          background: rgba(25, 118, 210, 0.08);
+          border-color: #1976d2;
+        }
+
+        .upload-hint { color: var(--el-text-color-secondary); }
       }
     }
   }

@@ -1,7 +1,7 @@
 <template>
   <transition name="popup-fade">
-    <div v-if="visible" class="app-mention-popup" @mousedown.prevent>
-      <div class="popup-header">
+    <div v-if="visible" class="app-mention-popup">
+      <div class="popup-header" @mousedown.prevent>
         <el-input
           v-model="searchQuery"
           placeholder="搜索应用..."
@@ -14,7 +14,7 @@
           </template>
         </el-input>
       </div>
-      <div class="popup-list" ref="listRef">
+      <div class="popup-list" ref="listRef" @mousedown.prevent>
         <div v-if="loading" class="popup-loading">
           <el-skeleton :rows="3" animated />
         </div>
@@ -24,7 +24,7 @@
             :key="app.id"
             class="app-item"
             :class="{ active: selectedIndex === filteredApps.indexOf(app) }"
-            @click="selectApp(app)"
+            @click.stop="selectApp(app)"
             @mouseenter="selectedIndex = filteredApps.indexOf(app)"
           >
             <div class="app-icon">
@@ -99,7 +99,7 @@ const loadApps = async () => {
 }
 
 const selectApp = (app) => {
-  emit('select', app)
+  emit('select', { ...app })
   searchQuery.value = ''
   selectedIndex.value = 0
 }
