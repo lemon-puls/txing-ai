@@ -15,6 +15,7 @@ import (
 	"txing-ai/internal/iface"
 	channelservice "txing-ai/internal/service/channel"
 	workflowservice "txing-ai/internal/service/workflow"
+	"txing-ai/internal/tool"
 	"txing-ai/internal/utils"
 
 	"go.uber.org/zap"
@@ -308,13 +309,29 @@ func readWorkflowFileContent(fileURL string) string {
 		fullPath = filepath.Join(currentDir, config.Dir, filePath)
 	}
 
-	// 读取文件内容
-	data, err := utils.ReadFileContent(fullPath)
-	if err != nil {
-		log.Error("读取工作流文件失败", zap.String("path", fullPath), zap.Error(err))
+	// 根据文件类型提取内容
+	ext := strings.ToLower(filepath.Ext(fullPath))
+	switch ext {
+	case ".pdf":
+		// PDF 文件使用专门的提取工具
+		text, err := tool.ReadPdfText(nil, &tool.PdfReadParams{FilePath: fullPath})
+		if err != nil {
+			log.Error("PDF 文本提取失败", zap.String("path", fullPath), zap.Error(err))
+			return ""
+		}
+		return text
+	case ".txt", ".md":
+		// 文本文件直接读取
+		data, err := utils.ReadFileContent(fullPath)
+		if err != nil {
+			log.Error("读取工作流文件失败", zap.String("path", fullPath), zap.Error(err))
+			return ""
+		}
+		return data
+	default:
+		log.Warn("不支持的文件类型", zap.String("ext", ext))
 		return ""
 	}
-	return data
 }
 
 // buildFileRefs 构建文件引用
