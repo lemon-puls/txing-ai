@@ -215,12 +215,32 @@ func buildWorkflowInput(msg *dto.WsMessageRequest, lastExecution *domain.Workflo
 		json.Unmarshal([]byte(lastExecution.Inputs), &inputs)
 	}
 
+	// 构建文件引用映射
+	fileRefMap := make(map[string]string)
+	for _, f := range msg.Files {
+		fileRefMap[f.FieldName] = f.FileURL
+	}
+
 	isFirstText := true
 	parts := make([]string, 0)
 
 	for _, field := range config.InputSchema {
 		if field.Type == "file" {
-			continue // 文件字段单独处理
+			// 文件字段：读取文件内容并添加
+			fileURL := fileRefMap[field.Name]
+			if fileURL == "" && lastExecution != nil {
+				// 迭代时复用上次的文件
+				var refs map[string]string
+				json.Unmarshal([]byte(lastExecution.FileRefs), &refs)
+				fileURL = refs[field.Name]
+			}
+			if fileURL != "" {
+				fileContent := readWorkflowFileContent(fileURL)
+				if fileContent != "" {
+					parts = append(parts, field.Label+"：\n"+fileContent)
+				}
+			}
+			continue
 		}
 
 		var value string
@@ -247,6 +267,36 @@ func buildWorkflowInput(msg *dto.WsMessageRequest, lastExecution *domain.Workflo
 	}
 
 	return strings.Join(parts, "\n\n")
+}
+
+// readWorkflowFileContent 从文件 URL 读取文件内容
+// URL 格式: /api/file/download?filePath=xxx 或 /api/file/xxx
+func readWorkflowFileContent(fileURL string) string {
+	// 提取文件路径
+	filePath := ""
+	if strings.Contains(fileURL, "filePath=") {
+		idx := strings.Index(fileURL, "filePath=")
+		filePath = fileURL[idx+9:]
+		// URL 解码
+		filePath = strings.ReplaceAll(filePath, "%2F", "/")
+		filePath = strings.ReplaceAll(filePath, "%5C", "\\")
+		filePath = strings.ReplaceAll(filePath, "+", " ")
+	} else {
+		// 尝试直接使用 URL 作为路径
+		filePath = strings.TrimPrefix(fileURL, "/api/file/")
+	}
+
+	if filePath == "" {
+		return ""
+	}
+
+	// 读取文件内容
+	data, err := utils.ReadFileContent(filePath)
+	if err != nil {
+		log.Error("读取工作流文件失败", zap.String("path", filePath), zap.Error(err))
+		return ""
+	}
+	return data
 }
 
 // buildFileRefs 构建文件引用
