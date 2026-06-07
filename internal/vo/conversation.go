@@ -39,8 +39,14 @@ type ConversationDetailVO struct {
 
 // 聊天消息
 type MessageVO struct {
-	Role             string  `json:"role"`
-	Content          string  `json:"content"`
-	ReasoningContent string  `json:"reasoningContent"`
-	Name             *string `json:"name,omitempty"`
+	Role             string  `json:"role" example:"assistant"`               // 消息角色
+	Content          string  `json:"content" example:"消息内容"`                // 消息内容
+	ReasoningContent string  `json:"reasoningContent,omitempty" example:""`   // 思考过程内容
+	Name             *string `json:"name,omitempty"`                          // 消息名称
+	// 工作流相关字段
+	WorkflowStatus string   `json:"workflowStatus,omitempty" example:"completed"` // 工作流状态 completed/failed
+	Artifacts      string   `json:"artifacts,omitempty"`                           // 产物 JSON
+	AppName        string   `json:"appName,omitempty" example:"AI 应用名称"`         // 应用名称
+	Files          []string `json:"files,omitempty"`                               // 用户上传的文件名列表
+	ExecutionLogs  string   `json:"executionLogs,omitempty"`                       // 节点执行日志 JSON
 }

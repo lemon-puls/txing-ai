@@ -194,10 +194,11 @@
                   </div>
                 </div>
                 <WorkflowMessage
-                  v-if="message.workflow"
+                  v-if="getMessageWorkflow(message)"
                   :app-name="message.appName || ''"
-                  :workflow="message.workflow"
-                  :artifacts="message.artifacts || []"
+                  :workflow="getMessageWorkflow(message)"
+                  :artifacts="parseJsonField(message.artifacts)"
+                  :node-logs="parseJsonField(message.executionLogs)"
                 />
                 <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
@@ -1186,6 +1187,20 @@ const createNewChat = async (assistantId) => {
     console.error('Failed to create chat:', error)
     ElMessage.error('创建会话失败')
   }
+}
+
+// 通用 JSON 字段解析（兼容字符串和已解析的数组格式）
+const parseJsonField = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) return value
+  try { return JSON.parse(value) } catch { return [] }
+}
+
+// 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
+const getMessageWorkflow = (message) => {
+  if (message.workflow) return message.workflow
+  if (message.workflowStatus) return { status: message.workflowStatus }
+  return null
 }
 
 const switchChat = async (chat) => {

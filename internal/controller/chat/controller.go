@@ -274,7 +274,13 @@ func GetConversationDetail(c *gin.Context) {
 			Role:             item.Role,
 			Content:          item.Content,
 			ReasoningContent: item.ReasoningContent,
-			Name:             item.Name}
+			Name:             item.Name,
+			WorkflowStatus:   item.WorkflowStatus,
+			Artifacts:        item.Artifacts,
+			AppName:          item.AppName,
+			Files:            item.Files,
+			ExecutionLogs:    item.ExecutionLogs,
+		}
 	})
 
 	// 如果有 presetId，则获取预设信息

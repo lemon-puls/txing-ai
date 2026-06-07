@@ -22,22 +22,26 @@ import (
 	"gorm.io/gorm"
 )
 
+// NodeLog 节点执行日志（用于持久化，结构与前端 WorkflowMessage 的 nodeLogs 一致）
+type NodeLog struct {
+	NodeId    string     `json:"nodeId"`
+	Type      string     `json:"type"`
+	Label     string     `json:"label"`
+	Status    string     `json:"status"`
+	ToolCalls []ToolCall `json:"toolCalls"`
+}
+
+// ToolCall 工具调用记录
+type ToolCall struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 // HandleWorkflowChat 处理 AI 对话中的工作流执行
 func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversation *domain.Conversation, db *gorm.DB, msg *dto.WsMessageRequest, resProvider iface.ResourceProvider) {
 	workflowID := *msg.WorkflowID
 
-	// 1. 保存用户消息到会话
-	if err := conversation.HandleMessage(msg, db); err != nil {
-		log.Error("保存用户消息失败", zap.Error(err))
-		conn.Send(dto.WsMessageResponse{
-			Content:        "消息保存失败",
-			End:            true,
-			ConversationId: conversation.Id,
-		})
-		return
-	}
-
-	// 2. 查询工作流
+	// 1. 查询工作流（先查询以获取应用名称）
 	flow, err := workflowservice.Get(workflowID, db)
 	if err != nil {
 		log.Error("获取工作流失败", zap.Int64("workflowId", workflowID), zap.Error(err))
@@ -52,6 +56,17 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	if flow.Status != "published" {
 		conn.Send(dto.WsMessageResponse{
 			Content:        "应用未发布，暂时无法使用",
+			End:            true,
+			ConversationId: conversation.Id,
+		})
+		return
+	}
+
+	// 2. 保存用户消息到会话（包含应用名称和文件信息）
+	if err := conversation.HandleWorkflowMessage(msg, flow.Name, db); err != nil {
+		log.Error("保存用户消息失败", zap.Error(err))
+		conn.Send(dto.WsMessageResponse{
+			Content:        "消息保存失败",
 			End:            true,
 			ConversationId: conversation.Id,
 		})
@@ -107,9 +122,11 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		},
 	})
 
-	// 11. 收集输出和产物
+	// 11. 收集输出、产物和节点日志
 	var outputBuilder strings.Builder
 	var artifacts []dto.ArtifactInfo
+	var nodeLogs []NodeLog
+	nodeLogMap := make(map[string]int) // nodeId -> index in nodeLogs
 
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -138,6 +155,57 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		if chunk.ToolResult != "" && chunk.ToolName != "" {
 			if artifact := extractArtifactFromChunk(chunk); artifact != nil {
 				artifacts = append(artifacts, *artifact)
+			}
+		}
+
+		// 收集节点日志（与前端 WorkflowMessage watcher 逻辑一致）
+		if chunk.NodeId != "" {
+			if idx, exists := nodeLogMap[chunk.NodeId]; exists {
+				// 更新已有节点
+				existing := &nodeLogs[idx]
+				if chunk.NodeStatus != "" {
+					existing.Status = chunk.NodeStatus
+				}
+				if chunk.ToolName != "" {
+					lastIdx := len(existing.ToolCalls) - 1
+					if lastIdx >= 0 && existing.ToolCalls[lastIdx].Name == chunk.ToolName {
+						// 同名工具：更新状态
+						if chunk.ToolStatus != "" {
+							existing.ToolCalls[lastIdx].Status = chunk.ToolStatus
+						}
+					} else {
+						// 不同工具：追加
+						existing.ToolCalls = append(existing.ToolCalls, ToolCall{
+							Name:   chunk.ToolName,
+							Status: chunk.ToolStatus,
+						})
+					}
+				}
+				// 节点完成时，将所有未完成的工具调用标记为完成
+				if chunk.NodeStatus == "completed" || chunk.NodeStatus == "failed" {
+					for i := range existing.ToolCalls {
+						if existing.ToolCalls[i].Status == "running" {
+							existing.ToolCalls[i].Status = chunk.NodeStatus
+						}
+					}
+				}
+			} else {
+				// 新增节点
+				var toolCalls []ToolCall
+				if chunk.ToolName != "" {
+					toolCalls = append(toolCalls, ToolCall{
+						Name:   chunk.ToolName,
+						Status: chunk.ToolStatus,
+					})
+				}
+				nodeLogMap[chunk.NodeId] = len(nodeLogs)
+				nodeLogs = append(nodeLogs, NodeLog{
+					NodeId:    chunk.NodeId,
+					Type:      chunk.NodeType,
+					Label:     chunk.NodeLabel,
+					Status:    chunk.NodeStatus,
+					ToolCalls: toolCalls,
+				})
 			}
 		}
 
@@ -183,9 +251,13 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	// 14. 保存执行记录
 	saveExecution(db, conversation.Id, workflowID, msg, fileRefs, output, artifacts, execErr == nil)
 
-	// 15. 保存 AI 响应到会话
+	// 15. 保存 AI 响应到会话（包含工作流状态、产物信息和节点日志）
 	if output != "" {
-		saveWorkflowResponse(db, conversation, output)
+		workflowStatus := "completed"
+		if execErr != nil {
+			workflowStatus = "failed"
+		}
+		saveWorkflowResponse(db, conversation, output, workflowStatus, artifacts, flow.Name, nodeLogs)
 	}
 }
 
@@ -423,11 +495,17 @@ func saveExecution(db *gorm.DB, conversationID, workflowID int64, msg *dto.WsMes
 	}
 }
 
-// saveWorkflowResponse 保存工作流响应到会话消息
-func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string) {
+// saveWorkflowResponse 保存工作流响应到会话消息（包含工作流状态、产物信息和节点日志）
+func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string, workflowStatus string, artifacts []dto.ArtifactInfo, appName string, nodeLogs []NodeLog) {
+	artifactsJSON, _ := json.Marshal(artifacts)
+	executionLogsJSON, _ := json.Marshal(nodeLogs)
 	assistantMsg := global.Message{
-		Role:    global.Assistant,
-		Content: content,
+		Role:            global.Assistant,
+		Content:         content,
+		WorkflowStatus:  workflowStatus,
+		Artifacts:       string(artifactsJSON),
+		AppName:         appName,
+		ExecutionLogs:   string(executionLogsJSON),
 	}
 	conversation.FormattedMessage = append(conversation.FormattedMessage, assistantMsg)
 

@@ -10,16 +10,16 @@
             {{ statusLabel }}
           </el-tag>
         </div>
-        <el-icon class="expand-arrow" :class="{ expanded }">
+        <el-icon v-if="nodeLogsData.length > 0" class="expand-arrow" :class="{ expanded }">
           <ArrowDown />
         </el-icon>
       </div>
 
       <!-- 节点进度 -->
       <transition name="slide">
-        <div v-show="expanded && nodeLogs.length > 0" class="workflow-nodes">
+        <div v-show="expanded && nodeLogsData.length > 0" class="workflow-nodes">
           <div
-            v-for="log in nodeLogs"
+            v-for="log in nodeLogsData"
             :key="log.nodeId"
             class="node-item"
             :class="log.status"
@@ -64,19 +64,37 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Share, ArrowDown, CircleCheck, CircleClose, Loading, Document } from '@element-plus/icons-vue'
 import { getAuthHeaders } from '@/api/auth'
 
 const props = defineProps({
   appName: { type: String, default: '' },
   workflow: { type: Object, default: null },
-  artifacts: { type: Array, default: () => [] }
+  artifacts: { type: Array, default: () => [] },
+  nodeLogs: { type: Array, default: () => [] }
 })
 
 const expanded = ref(true)
-const nodeLogs = ref([])
+const nodeLogsData = ref([])
 const nodeMap = ref(new Map())
+
+// 初始化时从 prop 构建节点日志（历史数据）
+onMounted(() => {
+  if (props.nodeLogs && props.nodeLogs.length > 0) {
+    props.nodeLogs.forEach(log => {
+      const entry = {
+        nodeId: log.nodeId,
+        type: log.type,
+        label: log.label,
+        status: log.status,
+        toolCalls: log.toolCalls || []
+      }
+      nodeMap.value.set(log.nodeId, entry)
+      nodeLogsData.value.push(entry)
+    })
+  }
+})
 
 const statusType = computed(() => {
   const s = props.workflow?.status
@@ -129,7 +147,7 @@ watch(() => props.workflow, (w) => {
       toolCalls: w.toolName ? [{ name: w.toolName, status: w.toolStatus || 'running' }] : []
     }
     nodeMap.value.set(w.nodeId, log)
-    nodeLogs.value.push(log)
+    nodeLogsData.value.push(log)
   }
 }, { deep: true })
 

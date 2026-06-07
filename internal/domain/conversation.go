@@ -94,6 +94,33 @@ func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest)
 	return nil
 }
 
+// HandleWorkflowMessage 处理工作流用户消息（包含应用名称和文件信息）
+func (c *Conversation) HandleWorkflowMessage(msg *dto.WsMessageRequest, appName string, db *gorm.DB) error {
+	if len(msg.Content) == 0 {
+		return errors.New("message content is empty")
+	}
+
+	// 提取文件名列表
+	var fileNames []string
+	for _, f := range msg.Files {
+		if f.FileName != "" {
+			fileNames = append(fileNames, f.FileName)
+		}
+	}
+
+	// 将消息添加到会话消息记录中（包含应用名称和文件信息）
+	c.addMessage(global.Message{
+		Role:    global.User,
+		Content: msg.Content,
+		AppName: appName,
+		Files:   fileNames,
+	})
+	c.applyCallParams(msg)
+
+	// 更新会话信息到数据库
+	return c.updateOrCreate(db)
+}
+
 func (c *Conversation) SaveResponse(db *gorm.DB, content string, reasoningContent string) {
 	// 添加消息到会话消息记录中
 	c.AddMessageFromAssistant(content, reasoningContent)

@@ -9,6 +9,12 @@ type Message struct {
 	Content          string  `json:"content"`
 	ReasoningContent string  `json:"reasoning_content"`
 	Name             *string `json:"name,omitempty"`
+	// 工作流相关字段（用于持久化工作流执行结果）
+	WorkflowStatus string   `json:"workflow_status,omitempty"` // completed/failed
+	Artifacts      string   `json:"artifacts,omitempty"`       // 产物 JSON
+	AppName        string   `json:"app_name,omitempty"`        // 应用名称
+	Files          []string `json:"files,omitempty"`           // 用户上传的文件名列表
+	ExecutionLogs  string   `json:"execution_logs,omitempty"`  // 节点执行日志 JSON
 }
 
 // 流式聊天响应消息块
