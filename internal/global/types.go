@@ -15,6 +15,17 @@ type Message struct {
 	AppName        string   `json:"app_name,omitempty"`        // 应用名称
 	Files          []string `json:"files,omitempty"`           // 用户上传的文件名列表
 	ExecutionLogs  string   `json:"execution_logs,omitempty"`  // 节点执行日志 JSON
+	// 多模态相关字段
+	Images      []string     `json:"images,omitempty"`      // 图片 URL 列表
+	Attachments []Attachment `json:"attachments,omitempty"` // 文件附件列表
+}
+
+// Attachment 文件附件信息
+type Attachment struct {
+	FileName string `json:"fileName"` // 文件名
+	FileURL  string `json:"fileUrl"`  // 文件 URL
+	FileType string `json:"fileType"` // 文件类型 (image/pdf/doc/etc)
+	FileSize int64  `json:"fileSize"` // 文件大小
 }
 
 // 流式聊天响应消息块

@@ -49,4 +49,15 @@ type MessageVO struct {
 	AppName        string   `json:"appName,omitempty" example:"AI 应用名称"`         // 应用名称
 	Files          []string `json:"files,omitempty"`                               // 用户上传的文件名列表
 	ExecutionLogs  string   `json:"executionLogs,omitempty"`                       // 节点执行日志 JSON
+	// 多模态相关字段
+	Images      []string        `json:"images,omitempty"`      // 图片 URL 列表
+	Attachments []AttachmentVO  `json:"attachments,omitempty"` // 文件附件列表
+}
+
+// AttachmentVO 文件附件信息
+type AttachmentVO struct {
+	FileName string `json:"fileName"` // 文件名
+	FileURL  string `json:"fileUrl"`  // 文件 URL
+	FileType string `json:"fileType"` // 文件类型
+	FileSize int64  `json:"fileSize"` // 文件大小
 }

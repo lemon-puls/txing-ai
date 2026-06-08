@@ -1,28 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["-c", "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"]
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash",
-            "args": ["-c", "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"]
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(find static/frontend/src/views/admin/workflow -type f -name *.vue)",
@@ -92,7 +68,41 @@
       "WebFetch(domain:docs.dify.ai)",
       "WebFetch(domain:help.aliyun.com)",
       "Bash(pnpm rebuild *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(pnpm generate-api *)",
+      "Bash(make build *)",
+      "Bash(go get *)",
+      "Bash(go doc *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "-c",
+              "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "-c",
+              "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"
+            ]
+          }
+        ]
+      }
     ]
   }
 }

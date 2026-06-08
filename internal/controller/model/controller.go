@@ -37,6 +37,7 @@ func Create(ctx *gin.Context) {
 		Description: req.Description,
 		Default:     req.Default,
 		HighContext: req.HighContext,
+		Multimodal:  req.Multimodal,
 		Avatar:      cosClient.ConvertObjectPath(req.Avatar),
 		Tag:         req.Tag,
 	}
@@ -86,6 +87,9 @@ func Update(ctx *gin.Context) {
 	}
 	if req.HighContext != nil {
 		model.HighContext = *req.HighContext
+	}
+	if req.Multimodal != nil {
+		model.Multimodal = *req.Multimodal
 	}
 	if req.Avatar != "" {
 		model.Avatar = cosClient.ConvertObjectPath(req.Avatar)

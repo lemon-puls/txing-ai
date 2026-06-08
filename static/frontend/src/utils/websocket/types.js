@@ -26,7 +26,9 @@ export function createChatMessage(content, options = {}) {
     frequencyPenalty,
     repetitionPenalty,
     workflowId,
-    files
+    files,
+    images,
+    attachments
   } = options;
 
   const message = {
@@ -40,6 +42,10 @@ export function createChatMessage(content, options = {}) {
   // 工作流集成
   if (workflowId) message.workflowId = workflowId;
   if (files && files.length > 0) message.files = files;
+
+  // 多模态支持
+  if (images && images.length > 0) message.images = images;
+  if (attachments && attachments.length > 0) message.attachments = attachments;
 
   // 添加可选参数
   if (maxTokens !== undefined) message.max_tokens = maxTokens;

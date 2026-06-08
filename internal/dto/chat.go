@@ -12,6 +12,10 @@ type WsMessageRequest struct {
 	WorkflowID *int64         `json:"workflowId,omitempty"` // 指定应用 ID
 	Files      []WorkflowFile `json:"files,omitempty"`      // 附件列表
 
+	// 多模态相关字段（可选）
+	Images      []string     `json:"images,omitempty"`      // 图片 URL 列表
+	Attachments []Attachment `json:"attachments,omitempty"` // 文件附件列表
+
 	// optional fields
 	MaxTokens         *int     `json:"max_tokens,omitempty"`
 	Temperature       *float32 `json:"temperature,omitempty"`
@@ -27,6 +31,14 @@ type WorkflowFile struct {
 	FieldName string `json:"fieldName"` // inputSchema 中的字段名
 	FileURL   string `json:"fileUrl"`   // 文件 URL
 	FileName  string `json:"fileName"`  // 原始文件名
+}
+
+// Attachment 文件附件
+type Attachment struct {
+	FileName string `json:"fileName"` // 文件名
+	FileURL  string `json:"fileUrl"`  // 文件 URL
+	FileType string `json:"fileType"` // 文件类型
+	FileSize int64  `json:"fileSize"` // 文件大小
 }
 
 type WsMessageResponse struct {

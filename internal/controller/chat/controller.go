@@ -270,6 +270,17 @@ func GetConversationDetail(c *gin.Context) {
 
 	// 使用 lo 将  entity.FormattedMessage 转换为 vo.MessageVO 列表
 	result.Messages = lo.Map(entity.FormattedMessage, func(item global.Message, _ int) vo.MessageVO {
+		// 转换附件列表
+		var attachments []vo.AttachmentVO
+		for _, a := range item.Attachments {
+			attachments = append(attachments, vo.AttachmentVO{
+				FileName: a.FileName,
+				FileURL:  a.FileURL,
+				FileType: a.FileType,
+				FileSize: a.FileSize,
+			})
+		}
+
 		return vo.MessageVO{
 			Role:             item.Role,
 			Content:          item.Content,
@@ -280,6 +291,8 @@ func GetConversationDetail(c *gin.Context) {
 			AppName:          item.AppName,
 			Files:            item.Files,
 			ExecutionLogs:    item.ExecutionLogs,
+			Images:           item.Images,
+			Attachments:      attachments,
 		}
 	})
 

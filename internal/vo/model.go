@@ -12,6 +12,7 @@ type ModelVO struct {
 	Description string    `json:"description" example:"GPT-3.5 Turbo模型"`           // 模型描述
 	Default     bool      `json:"default" example:"false"`                         // 是否为默认模型
 	HighContext bool      `json:"high_context" example:"false"`                    // 是否支持高上下文
+	Multimodal  bool      `json:"multimodal" example:"false"`                      // 是否支持多模态
 	Avatar      string    `json:"avatar" example:"https://example.com/avatar.png"` // 模型头像
 	Tag         string    `json:"tag" example:"GPT,对话"`                            // 模型标签
 	CreatedAt   time.Time `json:"created_at"`                                      // 创建时间
@@ -26,6 +27,7 @@ func ToModelVO(model domain.Model) ModelVO {
 		Description: model.Description,
 		Default:     model.Default,
 		HighContext: model.HighContext,
+		Multimodal:  model.Multimodal,
 		Avatar:      model.Avatar,
 		Tag:         model.Tag,
 		CreatedAt:   model.CreateTime,

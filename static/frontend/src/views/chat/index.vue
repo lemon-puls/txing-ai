@@ -168,6 +168,28 @@
                   <el-icon><Share /></el-icon>
                   <span>{{ message.appName }}</span>
                 </div>
+                <!-- 多模态图片显示 -->
+                <div v-if="message.images && message.images.length > 0" class="message-images">
+                  <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(imgUrl)">
+                    <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
+                    <div class="image-overlay">
+                      <el-icon><ZoomIn /></el-icon>
+                    </div>
+                  </div>
+                </div>
+                <!-- 多模态附件显示 -->
+                <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
+                  <div v-for="(att, idx) in message.attachments" :key="idx" class="attachment-item" @click="downloadAttachment(att)">
+                    <div class="attachment-icon" :class="getAttachmentClass(att.fileType)">
+                      <el-icon><Document /></el-icon>
+                    </div>
+                    <div class="attachment-info">
+                      <div class="attachment-name">{{ att.fileName }}</div>
+                      <div class="attachment-size">{{ formatFileSize(att.fileSize) }}</div>
+                    </div>
+                    <el-icon class="download-icon"><Download /></el-icon>
+                  </div>
+                </div>
                 <!-- 文件附件 -->
                 <div v-if="message.files && message.files.length > 0" class="message-files">
                   <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
@@ -340,17 +362,51 @@
                 </div>
               </div>
             </div>
-            <el-input
-              v-model="messageInput"
-              type="textarea"
-              :rows="textareaRows"
-              :placeholder="selectedApp ? `向 ${selectedApp.name} 提问...` : '输入消息，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'"
-              resize="none"
-              @keydown.enter.exact.prevent="sendMessage"
-              @input="handleInput"
-              @keydown="handleInputKeydown"
-              class="custom-input"
+            <!-- 多模态文件预览 -->
+            <ChatFileUpload
+              :files="chatFiles"
+              @remove="removeChatFile"
             />
+            <!-- 拖拽上传区域 -->
+            <div
+              class="textarea-wrapper"
+              :class="{ 'is-dragging': isDragging }"
+              @drop="handleDrop"
+              @dragover.prevent
+              @dragenter="handleDragEnter"
+              @dragleave="handleDragLeave"
+            >
+              <!-- 多模态上传按钮 -->
+              <div v-if="isMultimodalModel" class="multimodal-actions">
+                <el-tooltip content="上传图片" placement="top">
+                  <div class="upload-btn" @click="triggerFileInput('image')">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </el-tooltip>
+                <el-tooltip content="上传文件" placement="top">
+                  <div class="upload-btn" @click="triggerFileInput('file')">
+                    <el-icon><Paperclip /></el-icon>
+                  </div>
+                </el-tooltip>
+              </div>
+              <el-input
+                v-model="messageInput"
+                type="textarea"
+                :rows="textareaRows"
+                :placeholder="getInputPlaceholder()"
+                resize="none"
+                @keydown.enter.exact.prevent="sendMessage"
+                @input="handleInput"
+                @keydown="handleInputKeydown"
+                @paste="handlePaste"
+                class="custom-input"
+              />
+              <!-- 拖拽提示 -->
+              <div v-if="isDragging" class="drag-overlay">
+                <el-icon class="drag-icon"><Upload /></el-icon>
+                <span>拖拽文件到此处上传</span>
+              </div>
+            </div>
             <div class="input-actions">
               <el-button-group>
                 <el-tooltip content="停止生成" placement="top" v-if="isTyping">
@@ -517,18 +573,21 @@ import {
   Check,
   CircleClose,
   CopyDocument,
+  Delete,
   Document,
+  Download,
   HomeFilled,
+  Paperclip,
   Picture,
   Plus,
   Position,
   RefreshRight,
   Setting,
   More,
-  Delete,
   Close,
   Share,
   Upload,
+  ZoomIn,
 } from '@element-plus/icons-vue'
 import {marked} from 'marked';
 import hljs from 'highlight.js';
@@ -554,6 +613,7 @@ import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import PresetMarket from '@/components/chat/PresetMarket.vue'
 import AppMentionPopup from '@/components/chat/AppMentionPopup.vue'
 import WorkflowMessage from '@/components/chat/WorkflowMessage.vue'
+import ChatFileUpload from '@/components/chat/ChatFileUpload.vue'
 import 'github-markdown-css/github-markdown-light.css'
 import 'github-markdown-css/github-markdown-dark.css'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -755,6 +815,11 @@ const appInputSchema = ref([]) // 选中应用的 inputSchema
 const appUploadedFiles = ref({}) // 选中应用上传的文件 { fieldName: File }
 const appFileInputRef = ref(null)
 
+// 多模态文件上传相关
+const chatFiles = ref([]) // 当前待上传的文件列表
+const isDragging = ref(false) // 拖拽状态
+const chatFileInputRef = ref(null) // 文件输入引用
+
 // 移除未使用的变量
 // const streamingMessage = ref(null)
 const messageThoughtTimes = ref(new Map())
@@ -778,16 +843,302 @@ const isTyping = computed(() => {
   return conversationStore.getTypingStatus(currentChat.value.id)
 })
 
+// 当前模型是否支持多模态
+const isMultimodalModel = computed(() => {
+  return currentModel.value?.multimodal === true
+})
+
+// 支持的文件类型
+const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const supportedFileTypes = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/markdown',
+  'text/html',
+  'text/csv'
+]
+const maxImageSize = 10 * 1024 * 1024 // 10MB
+const maxFileSize = 20 * 1024 * 1024 // 20MB
+const maxFiles = 10
+
+// 检查文件类型是否支持
+const isSupportedFileType = (file) => {
+  return supportedImageTypes.includes(file.type) || supportedFileTypes.includes(file.type)
+}
+
+// 检查文件大小是否符合限制
+const isValidFileSize = (file) => {
+  if (supportedImageTypes.includes(file.type)) {
+    return file.size <= maxImageSize
+  }
+  return file.size <= maxFileSize
+}
+
+// 获取文件类型分类
+const getFileCategory = (type) => {
+  if (supportedImageTypes.includes(type)) return 'image'
+  return 'file'
+}
+
+// 处理文件选择
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files)
+  processFiles(files)
+  // 清空 input 以允许重复选择同一文件
+  event.target.value = ''
+}
+
+// 处理拖拽文件
+const handleDrop = (event) => {
+  event.preventDefault()
+  isDragging.value = false
+  const files = Array.from(event.dataTransfer.files)
+  processFiles(files)
+}
+
+// 处理拖拽进入
+const handleDragEnter = (event) => {
+  event.preventDefault()
+  isDragging.value = true
+}
+
+// 处理拖拽离开
+const handleDragLeave = (event) => {
+  event.preventDefault()
+  isDragging.value = false
+}
+
+// 处理粘贴事件
+const handlePaste = (event) => {
+  const items = Array.from(event.clipboardData.items)
+  const files = items
+    .filter(item => item.kind === 'file')
+    .map(item => item.getAsFile())
+    .filter(Boolean)
+
+  if (files.length > 0) {
+    event.preventDefault()
+    processFiles(files)
+  }
+}
+
+// 处理文件列表
+const processFiles = (files) => {
+  if (!isMultimodalModel.value) {
+    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
+    return
+  }
+
+  if (chatFiles.value.length + files.length > maxFiles) {
+    ElMessage.warning(`最多只能上传 ${maxFiles} 个文件`)
+    return
+  }
+
+  for (const file of files) {
+    console.log('处理文件:', file.name, 'MIME type:', file.type, '扩展名:', file.name.split('.').pop())
+
+    if (!isSupportedFileType(file)) {
+      // 尝试通过扩展名判断
+      const ext = file.name.split('.').pop().toLowerCase()
+      const extToMime = {
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+        'gif': 'image/gif', 'webp': 'image/webp',
+        'pdf': 'application/pdf', 'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'txt': 'text/plain', 'md': 'text/markdown', 'html': 'text/html', 'csv': 'text/csv'
+      }
+      const inferredType = extToMime[ext]
+      if (inferredType) {
+        console.log('通过扩展名推断类型:', inferredType)
+        file = new File([file], file.name, { type: inferredType })
+      } else {
+        ElMessage.warning(`不支持的文件类型: ${file.name} (${file.type})`)
+        continue
+      }
+    }
+
+    if (!isValidFileSize(file)) {
+      const maxSize = supportedImageTypes.includes(file.type) ? '10MB' : '20MB'
+      ElMessage.warning(`文件 ${file.name} 大小超过限制 (${maxSize})`)
+      continue
+    }
+
+    const category = getFileCategory(file.type)
+    console.log('文件分类:', file.name, '->', category)
+
+    const fileObj = {
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      category: category,
+      preview: null,
+      uploading: false,
+      progress: 0,
+      uploaded: false,
+      url: null
+    }
+
+    // 为图片生成预览
+    if (fileObj.category === 'image') {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        fileObj.preview = e.target.result
+      }
+      reader.readAsDataURL(file)
+    }
+
+    chatFiles.value.push(fileObj)
+  }
+}
+
+// 移除文件
+const removeChatFile = (index) => {
+  chatFiles.value.splice(index, 1)
+}
+
+// 触发文件选择
+const triggerFileInput = (type) => {
+  if (!isMultimodalModel.value) {
+    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
+    return
+  }
+
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.multiple = true
+
+  if (type === 'image') {
+    input.accept = supportedImageTypes.join(',')
+  } else {
+    input.accept = [...supportedImageTypes, ...supportedFileTypes].join(',')
+  }
+
+  input.onchange = handleFileSelect
+  input.click()
+}
+
+// 上传文件到 COS
+const uploadFilesToCOS = async () => {
+  const uploadedImages = []
+  const uploadedAttachments = []
+
+  for (const fileObj of chatFiles.value) {
+    if (fileObj.uploaded && fileObj.url) {
+      // 已上传的文件直接使用
+      if (fileObj.category === 'image') {
+        uploadedImages.push(fileObj.url)
+      } else {
+        uploadedAttachments.push({
+          fileName: fileObj.name,
+          fileUrl: fileObj.url,
+          fileType: fileObj.type,
+          fileSize: fileObj.size
+        })
+      }
+      continue
+    }
+
+    try {
+      fileObj.uploading = true
+      fileObj.progress = 0
+
+      // 生成随机文件名
+      const ext = fileObj.name.split('.').pop() || 'bin'
+      const fileName = `chat/${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`
+
+      // 获取预签名 URL
+      const res = await defaultApi.apiCosPresignedUrlPost({
+        type: 'upload',
+        key: fileName
+      })
+
+      if (res.code !== 0) {
+        throw new Error(res.msg || '获取上传地址失败')
+      }
+
+      // 上传文件
+      const response = await fetch(res.data.url, {
+        method: 'PUT',
+        body: fileObj.file,
+        headers: {
+          'Content-Type': fileObj.type
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('上传失败')
+      }
+
+      // 获取下载 URL
+      const downloadRes = await defaultApi.apiCosPresignedUrlPost({
+        key: fileName,
+        type: 'download'
+      })
+
+      if (downloadRes.code !== 0) {
+        throw new Error(downloadRes.msg || '获取访问地址失败')
+      }
+
+      fileObj.uploaded = true
+      fileObj.url = downloadRes.data.url
+      fileObj.progress = 100
+
+      if (fileObj.category === 'image') {
+        uploadedImages.push(downloadRes.data.url)
+      } else {
+        uploadedAttachments.push({
+          fileName: fileObj.name,
+          fileUrl: downloadRes.data.url,
+          fileType: fileObj.type,
+          fileSize: fileObj.size
+        })
+      }
+    } catch (error) {
+      console.error('文件上传失败:', error)
+      ElMessage.error(`文件 ${fileObj.name} 上传失败`)
+      throw error
+    } finally {
+      fileObj.uploading = false
+    }
+  }
+
+  return { images: uploadedImages, attachments: uploadedAttachments }
+}
+
 // 发送消息
 const sendMessage = async () => {
-  if (!messageInput.value.trim() || !currentChat.value) return
+  if ((!messageInput.value.trim() && chatFiles.value.length === 0) || !currentChat.value) return
 
   // 获取用户ID (如果登录的话)
   const userId = userStore.userId || '0'
   await NewChatConnectionIfNeed(currentChat.value, userId, currentChat.value.presetId);
 
   // 如果是会话的第一条消息，就把该消息设置为会话的名称
-  conversationStore.updateCurrentChatName(messageInput.value)
+  if (messageInput.value.trim()) {
+    conversationStore.updateCurrentChatName(messageInput.value)
+  }
+
+  // 上传多模态文件（如果有）
+  let uploadedImages = []
+  let uploadedAttachments = []
+  if (chatFiles.value.length > 0) {
+    try {
+      const result = await uploadFilesToCOS()
+      uploadedImages = result.images
+      uploadedAttachments = result.attachments
+    } catch (e) {
+      console.error('多模态文件上传失败:', e)
+      ElMessage.warning('文件上传失败，请重试')
+      return
+    }
+  }
 
   // 上传应用文件（如果有）
   let uploadedFileRefs = []
@@ -827,6 +1178,13 @@ const sendMessage = async () => {
     role: 'user',
     content: messageInput.value
   }
+  // 如果有上传的多模态文件，在消息中记录
+  if (uploadedImages.length > 0) {
+    userMsg.images = uploadedImages
+  }
+  if (uploadedAttachments.length > 0) {
+    userMsg.attachments = uploadedAttachments
+  }
   // 如果 @ 了应用，在消息中记录
   if (selectedApp.value) {
     userMsg.appName = selectedApp.value.name
@@ -839,6 +1197,7 @@ const sendMessage = async () => {
 
   const message = messageInput.value
   messageInput.value = ''
+  chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
   await scrollToBottom()
 
@@ -860,6 +1219,14 @@ const sendMessage = async () => {
       presencePenalty: currentChat.value.presencePenalty,
       frequencyPenalty: currentChat.value.frequencyPenalty,
       repetitionPenalty: currentChat.value.repetitionPenalty
+    }
+
+    // 如果有上传的多模态文件，添加到选项中
+    if (uploadedImages.length > 0) {
+      options.images = uploadedImages
+    }
+    if (uploadedAttachments.length > 0) {
+      options.attachments = uploadedAttachments
     }
 
     // 如果 @ 了应用，添加 workflowId 和 files
@@ -1196,11 +1563,43 @@ const parseJsonField = (value) => {
   try { return JSON.parse(value) } catch { return [] }
 }
 
+// 获取输入框占位文本
+const getInputPlaceholder = () => {
+  if (selectedApp.value) {
+    return `向 ${selectedApp.name} 提问...`
+  }
+  if (isMultimodalModel.value) {
+    return '输入消息，支持拖拽/粘贴文件，Enter 发送'
+  }
+  return '输入消息，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
+}
+
 // 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
 const getMessageWorkflow = (message) => {
   if (message.workflow) return message.workflow
   if (message.workflowStatus) return { status: message.workflowStatus }
   return null
+}
+
+// 预览消息中的图片
+const previewMessageImage = (url) => {
+  window.open(url, '_blank')
+}
+
+// 下载附件
+const downloadAttachment = (attachment) => {
+  window.open(attachment.fileUrl, '_blank')
+}
+
+// 获取附件类型样式类
+const getAttachmentClass = (fileType) => {
+  if (!fileType) return 'file-default'
+  if (fileType.includes('pdf')) return 'file-pdf'
+  if (fileType.includes('word') || fileType.includes('document')) return 'file-word'
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'file-excel'
+  if (fileType.includes('text') || fileType.includes('markdown')) return 'file-text'
+  if (fileType.includes('html')) return 'file-html'
+  return 'file-default'
 }
 
 const switchChat = async (chat) => {
@@ -2061,6 +2460,155 @@ const batchDelete = async () => {
     }
   }
 
+  .message-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .image-item {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--el-border-color-lighter);
+      transition: all 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        .image-overlay {
+          opacity: 1;
+        }
+      }
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+
+        .el-icon {
+          color: #fff;
+          font-size: 24px;
+        }
+      }
+    }
+  }
+
+  .message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .attachment-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--el-fill-color-light);
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 180px;
+      max-width: 260px;
+
+      &:hover {
+        background: var(--el-fill-color);
+        border-color: var(--el-color-primary-light-7);
+        transform: translateY(-1px);
+      }
+
+      .attachment-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .el-icon {
+          font-size: 18px;
+          color: #fff;
+        }
+
+        &.file-pdf {
+          background: linear-gradient(135deg, #ff4757, #ff6b81);
+        }
+
+        &.file-word {
+          background: linear-gradient(135deg, #2b7de9, #5f9ee9);
+        }
+
+        &.file-excel {
+          background: linear-gradient(135deg, #2ed573, #7bed9f);
+        }
+
+        &.file-text {
+          background: linear-gradient(135deg, #a4b0be, #ced6e0);
+        }
+
+        &.file-html {
+          background: linear-gradient(135deg, #ff6348, #ff7979);
+        }
+
+        &.file-default {
+          background: linear-gradient(135deg, #747d8c, #a4b0be);
+        }
+      }
+
+      .attachment-info {
+        flex: 1;
+        min-width: 0;
+
+        .attachment-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .attachment-size {
+          font-size: 11px;
+          color: var(--el-text-color-secondary);
+          margin-top: 2px;
+        }
+      }
+
+      .download-icon {
+        flex-shrink: 0;
+        font-size: 16px;
+        color: var(--el-text-color-secondary);
+        transition: color 0.2s;
+      }
+
+      &:hover .download-icon {
+        color: var(--el-color-primary);
+      }
+    }
+  }
+
   .message-files {
     display: flex;
     flex-wrap: wrap;
@@ -2612,6 +3160,79 @@ const batchDelete = async () => {
         }
 
         .upload-hint { color: var(--el-text-color-secondary); }
+      }
+    }
+  }
+
+  .textarea-wrapper {
+    position: relative;
+
+    &.is-dragging {
+      .custom-input {
+        :deep(.el-textarea__inner) {
+          border-color: var(--el-color-primary);
+          background: var(--el-color-primary-light-9);
+        }
+      }
+    }
+
+    .multimodal-actions {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+
+      .upload-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        background: var(--bg-primary);
+
+        &:hover {
+          color: var(--el-color-primary);
+          border-color: var(--el-color-primary);
+          background: var(--el-color-primary-light-9);
+          transform: translateY(-1px);
+        }
+
+        .el-icon {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .drag-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(var(--el-color-primary-rgb), 0.1);
+      border: 2px dashed var(--el-color-primary);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      z-index: 10;
+      pointer-events: none;
+
+      .drag-icon {
+        font-size: 32px;
+        color: var(--el-color-primary);
+      }
+
+      span {
+        font-size: 14px;
+        color: var(--el-color-primary);
+        font-weight: 500;
       }
     }
   }
