@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **code** | **Number** |  | [optional] 
-**data** | [**ControllerFileUploadResponse**](ControllerFileUploadResponse.md) |  | [optional] 
+**data** | [**FileUploadResponse**](FileUploadResponse.md) |  | [optional] 
 **msg** | **String** |  | [optional] 
 
 

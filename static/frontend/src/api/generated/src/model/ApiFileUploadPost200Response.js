@@ -12,7 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
-import ControllerFileUploadResponse from './ControllerFileUploadResponse';
+import FileUploadResponse from './FileUploadResponse';
 import UtilsResponse from './UtilsResponse';
 
 /**
@@ -55,7 +55,7 @@ class ApiFileUploadPost200Response {
                 obj['code'] = ApiClient.convertToType(data['code'], 'Number');
             }
             if (data.hasOwnProperty('data')) {
-                obj['data'] = ControllerFileUploadResponse.constructFromObject(data['data']);
+                obj['data'] = FileUploadResponse.constructFromObject(data['data']);
             }
             if (data.hasOwnProperty('msg')) {
                 obj['msg'] = ApiClient.convertToType(data['msg'], 'String');
@@ -72,7 +72,7 @@ class ApiFileUploadPost200Response {
     static validateJSON(data) {
         // validate the optional field `data`
         if (data['data']) { // data not null
-          ControllerFileUploadResponse.validateJSON(data['data']);
+          FileUploadResponse.validateJSON(data['data']);
         }
         // ensure the json data is a string
         if (data['msg'] && !(typeof data['msg'] === 'string' || data['msg'] instanceof String)) {
@@ -93,7 +93,7 @@ class ApiFileUploadPost200Response {
 ApiFileUploadPost200Response.prototype['code'] = undefined;
 
 /**
- * @member {module:model/ControllerFileUploadResponse} data
+ * @member {module:model/FileUploadResponse} data
  */
 ApiFileUploadPost200Response.prototype['data'] = undefined;
 

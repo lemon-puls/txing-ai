@@ -12,6 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
+import VoAttachmentVO from './VoAttachmentVO';
 
 /**
  * The VoMessageVO model module.
@@ -53,6 +54,9 @@ class VoMessageVO {
             if (data.hasOwnProperty('artifacts')) {
                 obj['artifacts'] = ApiClient.convertToType(data['artifacts'], 'String');
             }
+            if (data.hasOwnProperty('attachments')) {
+                obj['attachments'] = ApiClient.convertToType(data['attachments'], [VoAttachmentVO]);
+            }
             if (data.hasOwnProperty('content')) {
                 obj['content'] = ApiClient.convertToType(data['content'], 'String');
             }
@@ -61,6 +65,9 @@ class VoMessageVO {
             }
             if (data.hasOwnProperty('files')) {
                 obj['files'] = ApiClient.convertToType(data['files'], ['String']);
+            }
+            if (data.hasOwnProperty('images')) {
+                obj['images'] = ApiClient.convertToType(data['images'], ['String']);
             }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
@@ -92,6 +99,16 @@ class VoMessageVO {
         if (data['artifacts'] && !(typeof data['artifacts'] === 'string' || data['artifacts'] instanceof String)) {
             throw new Error("Expected the field `artifacts` to be a primitive type in the JSON string but got " + data['artifacts']);
         }
+        if (data['attachments']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['attachments'])) {
+                throw new Error("Expected the field `attachments` to be an array in the JSON data but got " + data['attachments']);
+            }
+            // validate the optional field `attachments` (array)
+            for (const item of data['attachments']) {
+                VoAttachmentVO.validateJSON(item);
+            };
+        }
         // ensure the json data is a string
         if (data['content'] && !(typeof data['content'] === 'string' || data['content'] instanceof String)) {
             throw new Error("Expected the field `content` to be a primitive type in the JSON string but got " + data['content']);
@@ -103,6 +120,10 @@ class VoMessageVO {
         // ensure the json data is an array
         if (!Array.isArray(data['files'])) {
             throw new Error("Expected the field `files` to be an array in the JSON data but got " + data['files']);
+        }
+        // ensure the json data is an array
+        if (!Array.isArray(data['images'])) {
+            throw new Error("Expected the field `images` to be an array in the JSON data but got " + data['images']);
         }
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
@@ -142,6 +163,12 @@ VoMessageVO.prototype['appName'] = undefined;
 VoMessageVO.prototype['artifacts'] = undefined;
 
 /**
+ * 文件附件列表
+ * @member {Array.<module:model/VoAttachmentVO>} attachments
+ */
+VoMessageVO.prototype['attachments'] = undefined;
+
+/**
  * 消息内容
  * @member {String} content
  */
@@ -158,6 +185,12 @@ VoMessageVO.prototype['executionLogs'] = undefined;
  * @member {Array.<String>} files
  */
 VoMessageVO.prototype['files'] = undefined;
+
+/**
+ * 多模态相关字段
+ * @member {Array.<String>} images
+ */
+VoMessageVO.prototype['images'] = undefined;
 
 /**
  * 消息名称
