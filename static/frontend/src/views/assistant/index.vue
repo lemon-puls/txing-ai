@@ -428,15 +428,12 @@ $gray-900: #111827;
   display: flex;
   justify-content: center;
   gap: 4px;
-  padding: 6px 6px;
+  padding: 6px;
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  overflow-x: auto;
-
-  &::-webkit-scrollbar { display: none; }
 
   .tag-item {
     display: flex;
