@@ -428,7 +428,7 @@ $gray-900: #111827;
   display: flex;
   justify-content: center;
   gap: 4px;
-  padding: 8px 16px;
+  padding: 6px 0;
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
@@ -447,6 +447,14 @@ $gray-900: #111827;
     font-size: 14px;
     color: $gray-500;
     flex-shrink: 0;
+
+    &:first-child {
+      margin-left: 10px;
+    }
+
+    &:last-child {
+      margin-right: 10px;
+    }
 
     &:hover {
       color: $gray-700;
