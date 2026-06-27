@@ -12,6 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
+import VoAttachmentVO from './VoAttachmentVO';
 
 /**
  * The VoMessageVO model module.
@@ -47,8 +48,26 @@ class VoMessageVO {
         if (data) {
             obj = obj || new VoMessageVO();
 
+            if (data.hasOwnProperty('appName')) {
+                obj['appName'] = ApiClient.convertToType(data['appName'], 'String');
+            }
+            if (data.hasOwnProperty('artifacts')) {
+                obj['artifacts'] = ApiClient.convertToType(data['artifacts'], 'String');
+            }
+            if (data.hasOwnProperty('attachments')) {
+                obj['attachments'] = ApiClient.convertToType(data['attachments'], [VoAttachmentVO]);
+            }
             if (data.hasOwnProperty('content')) {
                 obj['content'] = ApiClient.convertToType(data['content'], 'String');
+            }
+            if (data.hasOwnProperty('executionLogs')) {
+                obj['executionLogs'] = ApiClient.convertToType(data['executionLogs'], 'String');
+            }
+            if (data.hasOwnProperty('files')) {
+                obj['files'] = ApiClient.convertToType(data['files'], ['String']);
+            }
+            if (data.hasOwnProperty('images')) {
+                obj['images'] = ApiClient.convertToType(data['images'], ['String']);
             }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
@@ -58,6 +77,9 @@ class VoMessageVO {
             }
             if (data.hasOwnProperty('role')) {
                 obj['role'] = ApiClient.convertToType(data['role'], 'String');
+            }
+            if (data.hasOwnProperty('workflowStatus')) {
+                obj['workflowStatus'] = ApiClient.convertToType(data['workflowStatus'], 'String');
             }
         }
         return obj;
@@ -70,8 +92,38 @@ class VoMessageVO {
      */
     static validateJSON(data) {
         // ensure the json data is a string
+        if (data['appName'] && !(typeof data['appName'] === 'string' || data['appName'] instanceof String)) {
+            throw new Error("Expected the field `appName` to be a primitive type in the JSON string but got " + data['appName']);
+        }
+        // ensure the json data is a string
+        if (data['artifacts'] && !(typeof data['artifacts'] === 'string' || data['artifacts'] instanceof String)) {
+            throw new Error("Expected the field `artifacts` to be a primitive type in the JSON string but got " + data['artifacts']);
+        }
+        if (data['attachments']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['attachments'])) {
+                throw new Error("Expected the field `attachments` to be an array in the JSON data but got " + data['attachments']);
+            }
+            // validate the optional field `attachments` (array)
+            for (const item of data['attachments']) {
+                VoAttachmentVO.validateJSON(item);
+            };
+        }
+        // ensure the json data is a string
         if (data['content'] && !(typeof data['content'] === 'string' || data['content'] instanceof String)) {
             throw new Error("Expected the field `content` to be a primitive type in the JSON string but got " + data['content']);
+        }
+        // ensure the json data is a string
+        if (data['executionLogs'] && !(typeof data['executionLogs'] === 'string' || data['executionLogs'] instanceof String)) {
+            throw new Error("Expected the field `executionLogs` to be a primitive type in the JSON string but got " + data['executionLogs']);
+        }
+        // ensure the json data is an array
+        if (!Array.isArray(data['files'])) {
+            throw new Error("Expected the field `files` to be an array in the JSON data but got " + data['files']);
+        }
+        // ensure the json data is an array
+        if (!Array.isArray(data['images'])) {
+            throw new Error("Expected the field `images` to be an array in the JSON data but got " + data['images']);
         }
         // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
@@ -85,6 +137,10 @@ class VoMessageVO {
         if (data['role'] && !(typeof data['role'] === 'string' || data['role'] instanceof String)) {
             throw new Error("Expected the field `role` to be a primitive type in the JSON string but got " + data['role']);
         }
+        // ensure the json data is a string
+        if (data['workflowStatus'] && !(typeof data['workflowStatus'] === 'string' || data['workflowStatus'] instanceof String)) {
+            throw new Error("Expected the field `workflowStatus` to be a primitive type in the JSON string but got " + data['workflowStatus']);
+        }
 
         return true;
     }
@@ -95,24 +151,70 @@ class VoMessageVO {
 
 
 /**
+ * 应用名称
+ * @member {String} appName
+ */
+VoMessageVO.prototype['appName'] = undefined;
+
+/**
+ * 产物 JSON
+ * @member {String} artifacts
+ */
+VoMessageVO.prototype['artifacts'] = undefined;
+
+/**
+ * 文件附件列表
+ * @member {Array.<module:model/VoAttachmentVO>} attachments
+ */
+VoMessageVO.prototype['attachments'] = undefined;
+
+/**
+ * 消息内容
  * @member {String} content
  */
 VoMessageVO.prototype['content'] = undefined;
 
 /**
+ * 节点执行日志 JSON
+ * @member {String} executionLogs
+ */
+VoMessageVO.prototype['executionLogs'] = undefined;
+
+/**
+ * 用户上传的文件名列表
+ * @member {Array.<String>} files
+ */
+VoMessageVO.prototype['files'] = undefined;
+
+/**
+ * 多模态相关字段
+ * @member {Array.<String>} images
+ */
+VoMessageVO.prototype['images'] = undefined;
+
+/**
+ * 消息名称
  * @member {String} name
  */
 VoMessageVO.prototype['name'] = undefined;
 
 /**
+ * 思考过程内容
  * @member {String} reasoningContent
  */
 VoMessageVO.prototype['reasoningContent'] = undefined;
 
 /**
+ * 消息角色
  * @member {String} role
  */
 VoMessageVO.prototype['role'] = undefined;
+
+/**
+ * 工作流相关字段
+ * @member {String} workflowStatus
+ */
+VoMessageVO.prototype['workflowStatus'] = undefined;
 
 
 

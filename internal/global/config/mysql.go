@@ -82,6 +82,9 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 	db.AutoMigrate(&model.Preset{})
 	db.AutoMigrate(&model.Conversation{})
 	db.AutoMigrate(&model.Website{})
+	db.AutoMigrate(&model.AgentFlow{})
+	db.AutoMigrate(&model.AgentFlowVersion{})
+	db.AutoMigrate(&model.WorkflowExecution{})
 
 	// 设置 GORM 的 JSON 序列化器
 	db.Config.PrepareStmt = true

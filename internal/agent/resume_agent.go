@@ -98,6 +98,8 @@ func (a *ResumeAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey
 	if err1 != nil {
 		return "", err1
 	}
+
+	// 先发送分析完成的提示（直接发送，不经过追踪包装）
 	callback(&global.Chunk{
 		Content: "分析简历完成",
 	})
@@ -105,5 +107,6 @@ func (a *ResumeAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey
 	// 构建最终 prompt
 	prompt := input + "\n\n简历原始内容：\n\n" + text
 
+	// 直接委托给 ToolCallAgent（它内部有自己的追踪逻辑）
 	return a.ToolCallAgent.ExecuteStream(ctx, endpoint, apiKey, model, prompt, "", callback)
 }

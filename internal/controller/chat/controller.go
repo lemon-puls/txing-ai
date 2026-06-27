@@ -6,6 +6,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	"txing-ai/internal/iface"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	presetservice "txing-ai/internal/service/preset"
@@ -38,7 +39,7 @@ import (
 // @x-message-stop {"type":"stop"}
 // @x-message-response {"conversationId":123,"content":"AI回复内容","reasoning_content":"思考过程","end":false}
 // @x-message-error {"type":"error","message":"错误信息"}
-func Chat(c *gin.Context) {
+func Chat(c *gin.Context, resProvider iface.ResourceProvider) {
 	var webSocket *utils.WebSocket
 	if webSocket = utils.NewWebSocket(c); webSocket == nil {
 		log.Error("NewWebSocket failed")
@@ -79,23 +80,29 @@ func Chat(c *gin.Context) {
 	buf.Handle(func(msg *dto.WsMessageRequest) error {
 		switch msg.Type {
 		case global.MessageTypeChat:
-			// 处理聊天消息
-			// 1. 保存消息
-			if err := conversation.HandleMessage(msg, db); err == nil {
-				// 开启协程处理聊天，为了不阻塞当前协程，确保能继续接收并处理其他消息，例如停止消息
-				// TODO 限制只能同时处理一个聊天请求
+			if msg.WorkflowID != nil {
+				// 工作流执行模式
 				go func() {
-					// 捕获 panic 并记录日志
 					defer func() {
 						if err := recover(); err != nil {
-							log.Error("chat panic", zap.Any("err", err))
+							log.Error("workflow chat panic", zap.Any("err", err))
 						}
 					}()
-					// 2. 调用模型，返回响应结果
-					content, reasoningContent := chat.HandleChat(c, buf, conversation, db)
-					// 3. 保存响应结果
-					conversation.SaveResponse(db, content, reasoningContent)
+					chat.HandleWorkflowChat(c, buf, conversation, db, msg, resProvider)
 				}()
+			} else {
+				// 普通聊天模式
+				if err := conversation.HandleMessage(msg, db); err == nil {
+					go func() {
+						defer func() {
+							if err := recover(); err != nil {
+								log.Error("chat panic", zap.Any("err", err))
+							}
+						}()
+						content, reasoningContent := chat.HandleChat(c, buf, conversation, db)
+						conversation.SaveResponse(db, content, reasoningContent)
+					}()
+				}
 			}
 
 		case global.MessageTypeStop:
@@ -263,11 +270,30 @@ func GetConversationDetail(c *gin.Context) {
 
 	// 使用 lo 将  entity.FormattedMessage 转换为 vo.MessageVO 列表
 	result.Messages = lo.Map(entity.FormattedMessage, func(item global.Message, _ int) vo.MessageVO {
+		// 转换附件列表
+		var attachments []vo.AttachmentVO
+		for _, a := range item.Attachments {
+			attachments = append(attachments, vo.AttachmentVO{
+				FileName: a.FileName,
+				FileURL:  a.FileURL,
+				FileType: a.FileType,
+				FileSize: a.FileSize,
+			})
+		}
+
 		return vo.MessageVO{
 			Role:             item.Role,
 			Content:          item.Content,
 			ReasoningContent: item.ReasoningContent,
-			Name:             item.Name}
+			Name:             item.Name,
+			WorkflowStatus:   item.WorkflowStatus,
+			Artifacts:        item.Artifacts,
+			AppName:          item.AppName,
+			Files:            item.Files,
+			ExecutionLogs:    item.ExecutionLogs,
+			Images:           item.Images,
+			Attachments:      attachments,
+		}
 	})
 
 	// 如果有 presetId，则获取预设信息

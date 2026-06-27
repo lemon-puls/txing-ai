@@ -34,6 +34,7 @@ type BaseAgent struct {
 	model        *openai.ChatModel
 	graph        *compose.Graph[[]*schema.Message, *schema.Message]
 	systemPrompt string
+	maxRunSteps  int // 最大执行步数，默认 30
 }
 
 // NewBaseAgent 创建一个新的基础智能体
@@ -41,6 +42,14 @@ func NewBaseAgent(name, description string) *BaseAgent {
 	return &BaseAgent{
 		name:        name,
 		description: description,
+		maxRunSteps: 30, // 默认值
+	}
+}
+
+// SetMaxRunSteps 设置最大执行步数
+func (a *BaseAgent) SetMaxRunSteps(steps int) {
+	if steps > 0 {
+		a.maxRunSteps = steps
 	}
 }
 
@@ -89,7 +98,7 @@ func (a *BaseAgent) Execute(ctx context.Context,
 	}
 
 	// 4. 编译Graph，并设置最大步数防止无限循环
-	agent, err := a.graph.Compile(ctx, compose.WithMaxRunSteps(30))
+	agent, err := a.graph.Compile(ctx, compose.WithMaxRunSteps(a.maxRunSteps))
 
 	if err != nil {
 		log.Error("agent graph compile failed", zap.Error(err))

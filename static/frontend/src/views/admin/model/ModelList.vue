@@ -31,6 +31,7 @@
                 <div class="model-tags">
                   <el-tag v-if="model.default" type="success" effect="dark" size="small">默认</el-tag>
                   <el-tag v-if="model.high_context" type="warning" effect="dark" size="small">高上下文</el-tag>
+                  <el-tag v-if="model.multimodal" type="primary" effect="dark" size="small">多模态</el-tag>
                   <el-tag
                     v-for="tag in model.tag?.split(',')"
                     :key="tag"
@@ -157,6 +158,10 @@
         <el-form-item label="高上下文" prop="high_context">
           <el-switch v-model="modelForm.high_context" />
         </el-form-item>
+        <el-form-item label="多模态" prop="multimodal">
+          <el-switch v-model="modelForm.multimodal" />
+          <div class="form-tip">开启后支持上传图片和文件进行对话</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -196,7 +201,8 @@ const modelForm = ref({
   description: '',
   avatar: '',
   tags: [],
-  high_context: false
+  high_context: false,
+  multimodal: false
 })
 const modelFormRef = ref(null)
 
@@ -270,7 +276,8 @@ const handleAdd = () => {
     description: '',
     avatar: '',
     tags: [],
-    high_context: false
+    high_context: false,
+    multimodal: false
   }
   dialogVisible.value = true
 }
@@ -350,7 +357,8 @@ const handleSubmit = async () => {
           description: modelForm.value.description,
           avatar: avatar,
           tag: modelForm.value.tags.join(','),
-          high_context: modelForm.value.high_context
+          high_context: modelForm.value.high_context,
+          multimodal: modelForm.value.multimodal
         }
 
         let response
@@ -564,5 +572,12 @@ onMounted(() => {
     width: 100%;
     text-align: center;
   }
+}
+
+.form-tip {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-top: 4px;
+  line-height: 1.4;
 }
 </style>

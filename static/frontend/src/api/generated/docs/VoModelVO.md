@@ -10,6 +10,7 @@ Name | Type | Description | Notes
 **description** | **String** | 模型描述 | [optional] 
 **highContext** | **Boolean** | 是否支持高上下文 | [optional] 
 **id** | **Number** | 主键ID | [optional] 
+**multimodal** | **Boolean** | 是否支持多模态 | [optional] 
 **name** | **String** | 模型名称 | [optional] 
 **tag** | **String** | 模型标签 | [optional] 
 **updatedAt** | **String** | 更新时间 | [optional] 

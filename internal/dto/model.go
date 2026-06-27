@@ -8,6 +8,7 @@ type CreateModelReq struct {
 	Description string `json:"description" example:"GPT-3.5 Turbo模型"`           // 模型描述
 	Default     bool   `json:"default" example:"false"`                         // 是否为默认模型
 	HighContext bool   `json:"high_context" example:"false"`                    // 是否支持高上下文
+	Multimodal  bool   `json:"multimodal" example:"false"`                      // 是否支持多模态
 	Avatar      string `json:"avatar" example:"https://example.com/avatar.png"` // 模型头像
 	Tag         string `json:"tag" example:"GPT,对话"`                            // 模型标签
 }
@@ -18,6 +19,7 @@ type UpdateModelReq struct {
 	Description string `json:"description" example:"GPT-3.5 Turbo模型"`           // 模型描述
 	Default     *bool  `json:"default" example:"false"`                         // 是否为默认模型
 	HighContext *bool  `json:"high_context" example:"false"`                    // 是否支持高上下文
+	Multimodal  *bool  `json:"multimodal" example:"false"`                      // 是否支持多模态
 	Avatar      string `json:"avatar" example:"https://example.com/avatar.png"` // 模型头像
 	Tag         string `json:"tag" example:"GPT,对话"`                            // 模型标签
 }

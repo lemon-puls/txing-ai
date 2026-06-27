@@ -44,6 +44,27 @@ Method | HTTP request | Description
 [**apiUserRegisterPost**](DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 [**apiUserResetPasswordPost**](DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 [**apiWebsitesListGet**](DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
+[**apiWorkflowGet**](DefaultApi.md#apiWorkflowGet) | **GET** /api/workflow | 获取工作流列表
+[**apiWorkflowIdDelete**](DefaultApi.md#apiWorkflowIdDelete) | **DELETE** /api/workflow/{id} | 删除工作流
+[**apiWorkflowIdGet**](DefaultApi.md#apiWorkflowIdGet) | **GET** /api/workflow/{id} | 获取单个工作流
+[**apiWorkflowIdPut**](DefaultApi.md#apiWorkflowIdPut) | **PUT** /api/workflow/{id} | 更新工作流
+[**apiWorkflowIdRunPost**](DefaultApi.md#apiWorkflowIdRunPost) | **POST** /api/workflow/{id}/run | 执行工作流
+[**apiWorkflowIdStatusPut**](DefaultApi.md#apiWorkflowIdStatusPut) | **PUT** /api/workflow/{id}/status | 更新工作流状态
+[**apiWorkflowIdValidatePost**](DefaultApi.md#apiWorkflowIdValidatePost) | **POST** /api/workflow/{id}/validate | 校验已保存的工作流
+[**apiWorkflowIdVersionsGet**](DefaultApi.md#apiWorkflowIdVersionsGet) | **GET** /api/workflow/{id}/versions | 获取版本列表
+[**apiWorkflowIdVersionsPost**](DefaultApi.md#apiWorkflowIdVersionsPost) | **POST** /api/workflow/{id}/versions | 创建工作流版本
+[**apiWorkflowIdVersionsPublishPost**](DefaultApi.md#apiWorkflowIdVersionsPublishPost) | **POST** /api/workflow/{id}/versions/publish | 发布版本
+[**apiWorkflowIdVersionsVersionGet**](DefaultApi.md#apiWorkflowIdVersionsVersionGet) | **GET** /api/workflow/{id}/versions/{version} | 获取指定版本
+[**apiWorkflowIdVersionsVersionRollbackPost**](DefaultApi.md#apiWorkflowIdVersionsVersionRollbackPost) | **POST** /api/workflow/{id}/versions/{version}/rollback | 回滚版本
+[**apiWorkflowModelsGet**](DefaultApi.md#apiWorkflowModelsGet) | **GET** /api/workflow/models | 获取可用模型列表
+[**apiWorkflowPost**](DefaultApi.md#apiWorkflowPost) | **POST** /api/workflow | 创建工作流
+[**apiWorkflowPublicGet**](DefaultApi.md#apiWorkflowPublicGet) | **GET** /api/workflow/public | 获取已发布工作流列表
+[**apiWorkflowPublicIdGet**](DefaultApi.md#apiWorkflowPublicIdGet) | **GET** /api/workflow/public/{id} | 获取已发布工作流详情
+[**apiWorkflowTemplatesClonePost**](DefaultApi.md#apiWorkflowTemplatesClonePost) | **POST** /api/workflow/templates/clone | 克隆模板
+[**apiWorkflowTemplatesGet**](DefaultApi.md#apiWorkflowTemplatesGet) | **GET** /api/workflow/templates | 获取模板列表
+[**apiWorkflowTemplatesPost**](DefaultApi.md#apiWorkflowTemplatesPost) | **POST** /api/workflow/templates | 创建模板
+[**apiWorkflowToolsGet**](DefaultApi.md#apiWorkflowToolsGet) | **GET** /api/workflow/tools | 获取可用工具列表
+[**apiWorkflowValidatePost**](DefaultApi.md#apiWorkflowValidatePost) | **POST** /api/workflow/validate | 校验工作流拓扑
 
 
 
@@ -1884,5 +1905,967 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowGet
+
+> UtilsResponse apiWorkflowGet(page, limit, opts)
+
+获取工作流列表
+
+获取工作流分页列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'name': "name_example" // String | 工作流名称
+};
+apiInstance.apiWorkflowGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **name** | **String**| 工作流名称 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowIdDelete
+
+> UtilsResponse apiWorkflowIdDelete(id)
+
+删除工作流
+
+删除现有的 AgentFlow 工作流
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+apiInstance.apiWorkflowIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowIdGet
+
+> ApiWorkflowIdGet200Response apiWorkflowIdGet(id)
+
+获取单个工作流
+
+获取工作流详情
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+apiInstance.apiWorkflowIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+
+### Return type
+
+[**ApiWorkflowIdGet200Response**](ApiWorkflowIdGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowIdPut
+
+> UtilsResponse apiWorkflowIdPut(id, data)
+
+更新工作流
+
+更新现有的 AgentFlow 工作流
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let data = new TxingAiApi.DtoUpdateAgentFlowReq(); // DtoUpdateAgentFlowReq | 更新信息
+apiInstance.apiWorkflowIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **data** | [**DtoUpdateAgentFlowReq**](DtoUpdateAgentFlowReq.md)| 更新信息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowIdRunPost
+
+> String apiWorkflowIdRunPost(id, opts)
+
+执行工作流
+
+动态执行工作流，支持流式输出和文件上传
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let opts = {
+  'content': "content_example", // String | 请求内容
+  'file': "/path/to/file" // File | 上传文件（支持 PDF、TXT、MD）
+};
+apiInstance.apiWorkflowIdRunPost(id, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **content** | **String**| 请求内容 | [optional] 
+ **file** | **File**| 上传文件（支持 PDF、TXT、MD） | [optional] 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: multipart/form-data
+- **Accept**: text/event-stream
+
+
+## apiWorkflowIdStatusPut
+
+> UtilsResponse apiWorkflowIdStatusPut(id, data)
+
+更新工作流状态
+
+更新工作流状态（draft/published）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let data = new TxingAiApi.DtoUpdateWorkflowStatusReq(); // DtoUpdateWorkflowStatusReq | 状态信息
+apiInstance.apiWorkflowIdStatusPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **data** | [**DtoUpdateWorkflowStatusReq**](DtoUpdateWorkflowStatusReq.md)| 状态信息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowIdValidatePost
+
+> ApiWorkflowValidatePost200Response apiWorkflowIdValidatePost(id, data)
+
+校验已保存的工作流
+
+校验指定 ID 的工作流，可选启用 LLM 语义校验
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let data = new TxingAiApi.DtoValidateWorkflowReq(); // DtoValidateWorkflowReq | 校验选项
+apiInstance.apiWorkflowIdValidatePost(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **data** | [**DtoValidateWorkflowReq**](DtoValidateWorkflowReq.md)| 校验选项 | 
+
+### Return type
+
+[**ApiWorkflowValidatePost200Response**](ApiWorkflowValidatePost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowIdVersionsGet
+
+> UtilsResponse apiWorkflowIdVersionsGet(id, page, limit)
+
+获取版本列表
+
+获取工作流的版本历史
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+apiInstance.apiWorkflowIdVersionsGet(id, page, limit).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowIdVersionsPost
+
+> ApiWorkflowIdVersionsPost200Response apiWorkflowIdVersionsPost(id, data)
+
+创建工作流版本
+
+为指定工作流创建新版本
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let data = new TxingAiApi.DtoCreateVersionReq(); // DtoCreateVersionReq | 版本信息
+apiInstance.apiWorkflowIdVersionsPost(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **data** | [**DtoCreateVersionReq**](DtoCreateVersionReq.md)| 版本信息 | 
+
+### Return type
+
+[**ApiWorkflowIdVersionsPost200Response**](ApiWorkflowIdVersionsPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowIdVersionsPublishPost
+
+> UtilsResponse apiWorkflowIdVersionsPublishPost(id, data)
+
+发布版本
+
+发布工作流的指定版本
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let data = new TxingAiApi.DtoPublishVersionReq(); // DtoPublishVersionReq | 发布信息
+apiInstance.apiWorkflowIdVersionsPublishPost(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **data** | [**DtoPublishVersionReq**](DtoPublishVersionReq.md)| 发布信息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowIdVersionsVersionGet
+
+> ApiWorkflowIdVersionsPost200Response apiWorkflowIdVersionsVersionGet(id, version)
+
+获取指定版本
+
+获取工作流的指定版本详情
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let version = 56; // Number | 版本号
+apiInstance.apiWorkflowIdVersionsVersionGet(id, version).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **version** | **Number**| 版本号 | 
+
+### Return type
+
+[**ApiWorkflowIdVersionsPost200Response**](ApiWorkflowIdVersionsPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowIdVersionsVersionRollbackPost
+
+> UtilsResponse apiWorkflowIdVersionsVersionRollbackPost(id, version)
+
+回滚版本
+
+回滚工作流到指定版本
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+let version = 56; // Number | 版本号
+apiInstance.apiWorkflowIdVersionsVersionRollbackPost(id, version).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+ **version** | **Number**| 版本号 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowModelsGet
+
+> UtilsResponse apiWorkflowModelsGet()
+
+获取可用模型列表
+
+获取工作流可用的模型列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiWorkflowModelsGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowPost
+
+> UtilsResponse apiWorkflowPost(data)
+
+创建工作流
+
+创建一个新的 AgentFlow 工作流
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAgentFlowReq(); // DtoCreateAgentFlowReq | 创建信息
+apiInstance.apiWorkflowPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAgentFlowReq**](DtoCreateAgentFlowReq.md)| 创建信息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowPublicGet
+
+> UtilsResponse apiWorkflowPublicGet(page, limit, opts)
+
+获取已发布工作流列表
+
+获取状态为 published 的工作流列表，供客户端浏览
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'name': "name_example", // String | 工作流名称
+  'category': "category_example" // String | 分类
+};
+apiInstance.apiWorkflowPublicGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **name** | **String**| 工作流名称 | [optional] 
+ **category** | **String**| 分类 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowPublicIdGet
+
+> ApiWorkflowPublicIdGet200Response apiWorkflowPublicIdGet(id)
+
+获取已发布工作流详情
+
+获取已发布工作流详情，包含拓扑数据用于解析 inputSchema
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 工作流ID
+apiInstance.apiWorkflowPublicIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 工作流ID | 
+
+### Return type
+
+[**ApiWorkflowPublicIdGet200Response**](ApiWorkflowPublicIdGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowTemplatesClonePost
+
+> UtilsResponse apiWorkflowTemplatesClonePost(data)
+
+克隆模板
+
+从模板创建工作流
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCloneTemplateReq(); // DtoCloneTemplateReq | 克隆信息
+apiInstance.apiWorkflowTemplatesClonePost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCloneTemplateReq**](DtoCloneTemplateReq.md)| 克隆信息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowTemplatesGet
+
+> UtilsResponse apiWorkflowTemplatesGet(page, limit, opts)
+
+获取模板列表
+
+获取工作流模板市场
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'category': "category_example", // String | 模板分类
+  'name': "name_example" // String | 模板名称
+};
+apiInstance.apiWorkflowTemplatesGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **category** | **String**| 模板分类 | [optional] 
+ **name** | **String**| 模板名称 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowTemplatesPost
+
+> ApiWorkflowTemplatesPost200Response apiWorkflowTemplatesPost(data)
+
+创建模板
+
+从工作流创建模板
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateTemplateReq(); // DtoCreateTemplateReq | 模板信息
+apiInstance.apiWorkflowTemplatesPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateTemplateReq**](DtoCreateTemplateReq.md)| 模板信息 | 
+
+### Return type
+
+[**ApiWorkflowTemplatesPost200Response**](ApiWorkflowTemplatesPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiWorkflowToolsGet
+
+> UtilsResponse apiWorkflowToolsGet()
+
+获取可用工具列表
+
+获取工作流可用的工具列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiWorkflowToolsGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiWorkflowValidatePost
+
+> ApiWorkflowValidatePost200Response apiWorkflowValidatePost(data)
+
+校验工作流拓扑
+
+对传入的工作流拓扑 JSON 进行结构合法性校验
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoValidateWorkflowReq(); // DtoValidateWorkflowReq | 拓扑数据
+apiInstance.apiWorkflowValidatePost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoValidateWorkflowReq**](DtoValidateWorkflowReq.md)| 拓扑数据 | 
+
+### Return type
+
+[**ApiWorkflowValidatePost200Response**](ApiWorkflowValidatePost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 

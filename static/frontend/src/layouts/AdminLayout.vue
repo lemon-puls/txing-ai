@@ -44,6 +44,11 @@
             <template #title>AI 助手管理</template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/workflow">
+            <el-icon><Share /></el-icon>
+            <template #title>工作流管理</template>
+          </el-menu-item>
+
           <el-menu-item index="/admin/websites">
             <el-icon><Cpu /></el-icon>
             <template #title>工具网站管理</template>
@@ -180,7 +185,8 @@ import {
   Search,
   FullScreen,
   SwitchButton,
-  HomeFilled
+  HomeFilled,
+  Share
 } from '@element-plus/icons-vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()

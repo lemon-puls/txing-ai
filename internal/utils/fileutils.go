@@ -122,3 +122,12 @@ func SaveUploadedFileFromRequest(c *gin.Context, formName string, userId int64, 
 
 	return SaveUploadedFile(file, header.Filename, userId, customDir, customFileName)
 }
+
+// ReadFileContent 读取文件内容为字符串
+func ReadFileContent(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("读取文件失败: %v", err)
+	}
+	return string(data), nil
+}

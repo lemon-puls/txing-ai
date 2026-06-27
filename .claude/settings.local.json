@@ -1,0 +1,108 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find static/frontend/src/views/admin/workflow -type f -name *.vue)",
+      "Bash(find internal/controller/workflow -type f -name *.go)",
+      "Bash(find internal/service/workflow -type f -name *.go)",
+      "Bash(find internal:*)",
+      "Bash(find static/frontend/src/components -type f -name *.vue)",
+      "Bash(go build:*)",
+      "Bash(grep -A 20 \"INSERT INTO \\\\`users\\\\`\")",
+      "Bash(npm run:*)",
+      "Bash(pnpm build:*)",
+      "Bash(go test *)",
+      "Bash(git clone *)",
+      "Bash(./setup)",
+      "Bash(curl -fsSL https://bun.sh/install)",
+      "Bash(bash)",
+      "Bash(export BUN_INSTALL=\"$HOME/.bun\")",
+      "Bash(export PATH=\"$BUN_INSTALL/bin:$PATH\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/user/login -H \"Content-Type: application/json\" -d '{\"username\":\"lemon\",\"password\":\"5832031ab\",\"captcha\":\"test\",\"captchaKey\":\"test\"}')",
+      "Bash(npx vue-tsc *)",
+      "Bash(curl -fsSL https://composio.dev/install)",
+      "Bash(npm install *)",
+      "Bash(npm search *)",
+      "Bash(pip install *)",
+      "Bash(pip3 install *)",
+      "Bash(composio *)",
+      "Bash(npm ls *)",
+      "Bash(npm root *)",
+      "Bash(npx vite *)",
+      "Bash(node -e ' *)",
+      "Bash(node gen_workflow_sql.js)",
+      "Bash(node check_topo.js)",
+      "Bash(node gen_workflow_sql2.js)",
+      "Bash(node verify_sql.js)",
+      "Bash(grep -o '\\\\\\\\\\\\\\\\')",
+      "Bash(node gen_workflow_sql3.js)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(go run *)",
+      "Bash(mysql -u root -p -e \"DESCRIBE models;\")",
+      "Bash(git stash *)",
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(git restore *)",
+      "Bash(git checkout *)",
+      "Bash(go install *)",
+      "Bash(swag init *)",
+      "Bash(npx openapi-generator-cli *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(pnpm install *)",
+      "Bash(go vet *)",
+      "Bash(make gen *)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://api.github.com/repos/affaan-m/ECC/readme)",
+      "Bash(ECC_GATEGUARD=off echo bypassed *)",
+      "Bash(ECC_GATEGUARD=off echo ok *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:bash:gateguard-fact-force,pre:edit-write:gateguard-fact-force echo GateGuard disabled *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:edit-write:gateguard-fact-force,pre:bash:gateguard-fact-force echo ok *)",
+      "WebSearch",
+      "Bash(ECC_DISABLED_HOOKS=pre:edit-write:gateguard-fact-force,pre:bash:gateguard-fact-force python3 *)",
+      "Bash(ECC_DISABLED_HOOKS=pre:bash:gateguard-fact-force grep -n \"export\\\\|AgentApi\" static/frontend/src/api/generated/src/index.js)",
+      "Bash(timeout 30 pnpm dev)",
+      "WebFetch(domain:docs.dify.ai)",
+      "WebFetch(domain:help.aliyun.com)",
+      "Bash(pnpm rebuild *)",
+      "Bash(node *)",
+      "Bash(pnpm generate-api *)",
+      "Bash(make build *)",
+      "Bash(go get *)",
+      "Bash(go doc *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "-c",
+              "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"
+            ]
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": [
+              "-c",
+              "FILE=$(node -e \"try{const d=JSON.parse(process.env.TOOL_INPUT||'{}');console.log(d.tool_input?.file_path||'')}catch(e){console.log('')}\" 2>/dev/null || echo ''); if [[ \"$FILE\" == *.go ]]; then cd /d/develop_project/txing-ai && go vet ./... 2>&1 | head -20 || true; elif [[ \"$FILE\" == *.vue || \"$FILE\" == *.js || \"$FILE\" == *.ts ]]; then cd /d/develop_project/txing-ai/static/frontend && npx eslint --fix --no-warn-ignored \"$FILE\" 2>&1 | head -20 || true; fi; if [[ \"$FILE\" == *internal/controller* || \"$FILE\" == *internal/domain* ]]; then echo '⚠️ Controller/Domain 文件已修改，请记得运行: make gen && cd static/frontend && pnpm generate-api'; fi"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

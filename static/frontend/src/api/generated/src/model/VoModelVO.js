@@ -65,6 +65,9 @@ class VoModelVO {
             if (data.hasOwnProperty('id')) {
                 obj['id'] = ApiClient.convertToType(data['id'], 'Number');
             }
+            if (data.hasOwnProperty('multimodal')) {
+                obj['multimodal'] = ApiClient.convertToType(data['multimodal'], 'Boolean');
+            }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
             }
@@ -152,6 +155,12 @@ VoModelVO.prototype['high_context'] = undefined;
  * @member {Number} id
  */
 VoModelVO.prototype['id'] = undefined;
+
+/**
+ * 是否支持多模态
+ * @member {Boolean} multimodal
+ */
+VoModelVO.prototype['multimodal'] = undefined;
 
 /**
  * 模型名称

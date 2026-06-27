@@ -105,6 +105,30 @@ const router = createRouter({
               }
             }
           ]
+        },
+        {
+          path: 'workflow',
+          name: 'workflowMarket',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              path: '',
+              component: () => import('@/views/workflow/Market.vue'),
+              meta: {
+                title: 'AI 应用市场',
+                icon: 'Share'
+              }
+            }
+          ]
+        },
+        {
+          path: 'workflow/:id/execute',
+          name: 'workflowExecute',
+          component: () => import('@/views/workflow/Execute.vue'),
+          meta: {
+            title: 'AI 应用',
+            icon: 'Share'
+          }
         }
       ]
     },
@@ -162,6 +186,34 @@ const router = createRouter({
           meta: {
             title: 'AI 助手管理',
             icon: 'Robot',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'workflow',
+          name: 'WorkflowList',
+          component: () => import('@/views/admin/workflow/WorkflowList.vue'),
+          meta: {
+            title: '工作流管理',
+            icon: 'Share',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'workflow/editor/:id?',
+          name: 'WorkflowEditor',
+          component: () => import('@/views/admin/workflow/WorkflowEditor.vue'),
+          meta: {
+            title: '工作流编辑',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'workflow/templates',
+          name: 'TemplateMarket',
+          component: () => import('@/views/admin/workflow/TemplateMarket.vue'),
+          meta: {
+            title: '模板市场',
             roles: ['admin']
           }
         },

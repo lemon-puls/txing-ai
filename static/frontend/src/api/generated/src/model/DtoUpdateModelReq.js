@@ -59,6 +59,9 @@ class DtoUpdateModelReq {
             if (data.hasOwnProperty('high_context')) {
                 obj['high_context'] = ApiClient.convertToType(data['high_context'], 'Boolean');
             }
+            if (data.hasOwnProperty('multimodal')) {
+                obj['multimodal'] = ApiClient.convertToType(data['multimodal'], 'Boolean');
+            }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
             }
@@ -123,6 +126,12 @@ DtoUpdateModelReq.prototype['description'] = undefined;
  * @member {Boolean} high_context
  */
 DtoUpdateModelReq.prototype['high_context'] = undefined;
+
+/**
+ * 是否支持多模态
+ * @member {Boolean} multimodal
+ */
+DtoUpdateModelReq.prototype['multimodal'] = undefined;
 
 /**
  * 模型名称

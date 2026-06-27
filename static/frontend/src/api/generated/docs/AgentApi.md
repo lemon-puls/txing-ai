@@ -55,7 +55,7 @@ No authorization required
 
 ## apiAgentExecStreamPost
 
-> UtilsResponse apiAgentExecStreamPost(data)
+> UtilsResponse apiAgentExecStreamPost(agentType, opts)
 
 基于 SSE 调用智能体
 
@@ -67,8 +67,12 @@ No authorization required
 import TxingAiApi from 'txing_ai_api';
 
 let apiInstance = new TxingAiApi.AgentApi();
-let data = new TxingAiApi.DtoAgentExecReq(); // DtoAgentExecReq | 请求信息
-apiInstance.apiAgentExecStreamPost(data).then((data) => {
+let agentType = "agentType_example"; // String | 智能体类型
+let opts = {
+  'content': "content_example", // String | 请求内容
+  'file': "/path/to/file" // File | 上传文件
+};
+apiInstance.apiAgentExecStreamPost(agentType, opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
 }, (error) => {
   console.error(error);
@@ -81,7 +85,9 @@ apiInstance.apiAgentExecStreamPost(data).then((data) => {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **data** | [**DtoAgentExecReq**](DtoAgentExecReq.md)| 请求信息 | 
+ **agentType** | **String**| 智能体类型 | 
+ **content** | **String**| 请求内容 | [optional] 
+ **file** | **File**| 上传文件 | [optional] 
 
 ### Return type
 
@@ -93,6 +99,6 @@ No authorization required
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
+- **Content-Type**: multipart/form-data
 - **Accept**: text/event-stream
 

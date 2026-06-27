@@ -1,0 +1,6 @@
+- [x] Vue Flow dependencies are successfully installed in the frontend `package.json`.
+- [x] `AgentFlow` database model is created and auto-migrated.
+- [x] Workflow CRUD APIs are functioning properly.
+- [x] Frontend Workflow Editor can visually drag, drop, connect nodes and save JSON.
+- [x] Backend can parse workflow JSON and dynamically build an Eino `compose.Graph`.
+- [x] Workflow can be executed end-to-end and return the expected response.

@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **_default** | **Boolean** | 是否为默认模型 | [optional] 
 **description** | **String** | 模型描述 | [optional] 
 **highContext** | **Boolean** | 是否支持高上下文 | [optional] 
+**multimodal** | **Boolean** | 是否支持多模态 | [optional] 
 **name** | **String** | 模型名称 | [optional] 
 **tag** | **String** | 模型标签 | [optional] 
 

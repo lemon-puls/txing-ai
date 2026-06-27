@@ -80,18 +80,66 @@ func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) err
 // 将 WsMessageRequest 消息添加到会话消息记录中
 func (c *Conversation) addMessageFromWsMessageRequest(msg *dto.WsMessageRequest) error {
 	// 如果消息内容为空，则不添加到消息记录中
-	if len(msg.Content) == 0 {
+	if len(msg.Content) == 0 && len(msg.Images) == 0 && len(msg.Attachments) == 0 {
 		return errors.New("message content is empty")
 	}
 
+	// 转换附件列表
+	var attachments []global.Attachment
+	for _, a := range msg.Attachments {
+		attachments = append(attachments, global.Attachment{
+			FileName: a.FileName,
+			FileURL:  a.FileURL,
+			FileType: a.FileType,
+			FileSize: a.FileSize,
+		})
+	}
+
+	// 调试日志：打印接收到的多模态信息
+	log.Info("收到消息",
+		zap.String("content", msg.Content),
+		zap.Int("images_count", len(msg.Images)),
+		zap.Int("attachments_count", len(msg.Attachments)),
+		zap.Any("images", msg.Images),
+	)
+
 	// 将消息添加到会话消息记录中
 	c.addMessage(global.Message{
-		Role:    global.User,
-		Content: msg.Content,
+		Role:        global.User,
+		Content:     msg.Content,
+		Images:      msg.Images,
+		Attachments: attachments,
 	})
 	// 应用调用参数
 	c.applyCallParams(msg)
 	return nil
+}
+
+// HandleWorkflowMessage 处理工作流用户消息（包含应用名称和文件信息）
+func (c *Conversation) HandleWorkflowMessage(msg *dto.WsMessageRequest, appName string, db *gorm.DB) error {
+	if len(msg.Content) == 0 {
+		return errors.New("message content is empty")
+	}
+
+	// 提取文件名列表
+	var fileNames []string
+	for _, f := range msg.Files {
+		if f.FileName != "" {
+			fileNames = append(fileNames, f.FileName)
+		}
+	}
+
+	// 将消息添加到会话消息记录中（包含应用名称和文件信息）
+	c.addMessage(global.Message{
+		Role:    global.User,
+		Content: msg.Content,
+		AppName: appName,
+		Files:   fileNames,
+	})
+	c.applyCallParams(msg)
+
+	// 更新会话信息到数据库
+	return c.updateOrCreate(db)
 }
 
 func (c *Conversation) SaveResponse(db *gorm.DB, content string, reasoningContent string) {

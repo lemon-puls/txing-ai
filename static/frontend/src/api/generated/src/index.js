@@ -24,28 +24,44 @@ import ApiPresetPost200Response from './model/ApiPresetPost200Response';
 import ApiUserInfoGet200Response from './model/ApiUserInfoGet200Response';
 import ApiUserLoginPost200Response from './model/ApiUserLoginPost200Response';
 import ApiUserRefreshPost200Response from './model/ApiUserRefreshPost200Response';
+import ApiWorkflowIdGet200Response from './model/ApiWorkflowIdGet200Response';
+import ApiWorkflowIdVersionsPost200Response from './model/ApiWorkflowIdVersionsPost200Response';
+import ApiWorkflowPublicIdGet200Response from './model/ApiWorkflowPublicIdGet200Response';
+import ApiWorkflowTemplatesPost200Response from './model/ApiWorkflowTemplatesPost200Response';
+import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost200Response';
 import DtoAgentExecReq from './model/DtoAgentExecReq';
 import DtoBatchDeleteRequest from './model/DtoBatchDeleteRequest';
+import DtoCloneTemplateReq from './model/DtoCloneTemplateReq';
 import DtoConversationListRequest from './model/DtoConversationListRequest';
+import DtoCreateAgentFlowReq from './model/DtoCreateAgentFlowReq';
 import DtoCreateChannelReq from './model/DtoCreateChannelReq';
 import DtoCreateModelReq from './model/DtoCreateModelReq';
 import DtoCreatePresetReq from './model/DtoCreatePresetReq';
+import DtoCreateTemplateReq from './model/DtoCreateTemplateReq';
+import DtoCreateVersionReq from './model/DtoCreateVersionReq';
 import DtoCreateWebsiteReq from './model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from './model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from './model/DtoGetPresignedURLReq';
 import DtoLoginReq from './model/DtoLoginReq';
+import DtoPublishVersionReq from './model/DtoPublishVersionReq';
 import DtoRegisterReq from './model/DtoRegisterReq';
 import DtoResetPasswordReq from './model/DtoResetPasswordReq';
+import DtoUpdateAgentFlowReq from './model/DtoUpdateAgentFlowReq';
 import DtoUpdateChannelReq from './model/DtoUpdateChannelReq';
 import DtoUpdateModelReq from './model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
 import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from './model/DtoUpdateWebsiteReq';
+import DtoUpdateWorkflowStatusReq from './model/DtoUpdateWorkflowStatusReq';
+import DtoValidateWorkflowReq from './model/DtoValidateWorkflowReq';
 import FileUploadResponse from './model/FileUploadResponse';
 import GlobalModelMapping from './model/GlobalModelMapping';
 import GlobalModelMappingCondition from './model/GlobalModelMappingCondition';
 import UtilsResponse from './model/UtilsResponse';
+import VoAgentFlowVO from './model/VoAgentFlowVO';
+import VoAgentFlowVersionVO from './model/VoAgentFlowVersionVO';
+import VoAttachmentVO from './model/VoAttachmentVO';
 import VoChannelVO from './model/VoChannelVO';
 import VoConversationDetailVO from './model/VoConversationDetailVO';
 import VoGetFaviconVO from './model/VoGetFaviconVO';
@@ -54,8 +70,12 @@ import VoLoginVO from './model/VoLoginVO';
 import VoMessageVO from './model/VoMessageVO';
 import VoModelVO from './model/VoModelVO';
 import VoPresetVO from './model/VoPresetVO';
+import VoPublishedWorkflowVO from './model/VoPublishedWorkflowVO';
+import VoTemplateVO from './model/VoTemplateVO';
 import VoTokenPair from './model/VoTokenPair';
 import VoUserVO from './model/VoUserVO';
+import VoValidationErrorVO from './model/VoValidationErrorVO';
+import VoValidationResultVO from './model/VoValidationResultVO';
 import VoWebsiteVO from './model/VoWebsiteVO';
 import DefaultApi from './api/DefaultApi';
 import AgentApi from './api/AgentApi';
@@ -166,6 +186,36 @@ export {
     ApiUserRefreshPost200Response,
 
     /**
+     * The ApiWorkflowIdGet200Response model constructor.
+     * @property {module:model/ApiWorkflowIdGet200Response}
+     */
+    ApiWorkflowIdGet200Response,
+
+    /**
+     * The ApiWorkflowIdVersionsPost200Response model constructor.
+     * @property {module:model/ApiWorkflowIdVersionsPost200Response}
+     */
+    ApiWorkflowIdVersionsPost200Response,
+
+    /**
+     * The ApiWorkflowPublicIdGet200Response model constructor.
+     * @property {module:model/ApiWorkflowPublicIdGet200Response}
+     */
+    ApiWorkflowPublicIdGet200Response,
+
+    /**
+     * The ApiWorkflowTemplatesPost200Response model constructor.
+     * @property {module:model/ApiWorkflowTemplatesPost200Response}
+     */
+    ApiWorkflowTemplatesPost200Response,
+
+    /**
+     * The ApiWorkflowValidatePost200Response model constructor.
+     * @property {module:model/ApiWorkflowValidatePost200Response}
+     */
+    ApiWorkflowValidatePost200Response,
+
+    /**
      * The DtoAgentExecReq model constructor.
      * @property {module:model/DtoAgentExecReq}
      */
@@ -178,10 +228,22 @@ export {
     DtoBatchDeleteRequest,
 
     /**
+     * The DtoCloneTemplateReq model constructor.
+     * @property {module:model/DtoCloneTemplateReq}
+     */
+    DtoCloneTemplateReq,
+
+    /**
      * The DtoConversationListRequest model constructor.
      * @property {module:model/DtoConversationListRequest}
      */
     DtoConversationListRequest,
+
+    /**
+     * The DtoCreateAgentFlowReq model constructor.
+     * @property {module:model/DtoCreateAgentFlowReq}
+     */
+    DtoCreateAgentFlowReq,
 
     /**
      * The DtoCreateChannelReq model constructor.
@@ -200,6 +262,18 @@ export {
      * @property {module:model/DtoCreatePresetReq}
      */
     DtoCreatePresetReq,
+
+    /**
+     * The DtoCreateTemplateReq model constructor.
+     * @property {module:model/DtoCreateTemplateReq}
+     */
+    DtoCreateTemplateReq,
+
+    /**
+     * The DtoCreateVersionReq model constructor.
+     * @property {module:model/DtoCreateVersionReq}
+     */
+    DtoCreateVersionReq,
 
     /**
      * The DtoCreateWebsiteReq model constructor.
@@ -226,6 +300,12 @@ export {
     DtoLoginReq,
 
     /**
+     * The DtoPublishVersionReq model constructor.
+     * @property {module:model/DtoPublishVersionReq}
+     */
+    DtoPublishVersionReq,
+
+    /**
      * The DtoRegisterReq model constructor.
      * @property {module:model/DtoRegisterReq}
      */
@@ -236,6 +316,12 @@ export {
      * @property {module:model/DtoResetPasswordReq}
      */
     DtoResetPasswordReq,
+
+    /**
+     * The DtoUpdateAgentFlowReq model constructor.
+     * @property {module:model/DtoUpdateAgentFlowReq}
+     */
+    DtoUpdateAgentFlowReq,
 
     /**
      * The DtoUpdateChannelReq model constructor.
@@ -274,6 +360,18 @@ export {
     DtoUpdateWebsiteReq,
 
     /**
+     * The DtoUpdateWorkflowStatusReq model constructor.
+     * @property {module:model/DtoUpdateWorkflowStatusReq}
+     */
+    DtoUpdateWorkflowStatusReq,
+
+    /**
+     * The DtoValidateWorkflowReq model constructor.
+     * @property {module:model/DtoValidateWorkflowReq}
+     */
+    DtoValidateWorkflowReq,
+
+    /**
      * The FileUploadResponse model constructor.
      * @property {module:model/FileUploadResponse}
      */
@@ -296,6 +394,24 @@ export {
      * @property {module:model/UtilsResponse}
      */
     UtilsResponse,
+
+    /**
+     * The VoAgentFlowVO model constructor.
+     * @property {module:model/VoAgentFlowVO}
+     */
+    VoAgentFlowVO,
+
+    /**
+     * The VoAgentFlowVersionVO model constructor.
+     * @property {module:model/VoAgentFlowVersionVO}
+     */
+    VoAgentFlowVersionVO,
+
+    /**
+     * The VoAttachmentVO model constructor.
+     * @property {module:model/VoAttachmentVO}
+     */
+    VoAttachmentVO,
 
     /**
      * The VoChannelVO model constructor.
@@ -346,6 +462,18 @@ export {
     VoPresetVO,
 
     /**
+     * The VoPublishedWorkflowVO model constructor.
+     * @property {module:model/VoPublishedWorkflowVO}
+     */
+    VoPublishedWorkflowVO,
+
+    /**
+     * The VoTemplateVO model constructor.
+     * @property {module:model/VoTemplateVO}
+     */
+    VoTemplateVO,
+
+    /**
      * The VoTokenPair model constructor.
      * @property {module:model/VoTokenPair}
      */
@@ -356,6 +484,18 @@ export {
      * @property {module:model/VoUserVO}
      */
     VoUserVO,
+
+    /**
+     * The VoValidationErrorVO model constructor.
+     * @property {module:model/VoValidationErrorVO}
+     */
+    VoValidationErrorVO,
+
+    /**
+     * The VoValidationResultVO model constructor.
+     * @property {module:model/VoValidationResultVO}
+     */
+    VoValidationResultVO,
 
     /**
      * The VoWebsiteVO model constructor.
