@@ -75,37 +75,38 @@ const router = createRouter({
             }
           ]
         },
-        {
-          path: 'resume',
-          name: 'resume',
-          component: () => import('@/layouts/HeaderLayout.vue'),
-          children: [
-            {
-              component: () => import('@/views/resume/index.vue'),
-              path: '',
-              meta: {
-                title: 'AI简历优化',
-                icon: 'document'
-              }
-            }
-          ]
-
-        },
-        {
-          path: 'travel',
-          name: 'travel',
-          component: () => import('@/layouts/HeaderLayout.vue'),
-          children: [
-            {
-              component: () => import('@/views/travel/index.vue'),
-              path: '',
-              meta: {
-                title: 'AI旅游攻略',
-                icon: 'document'
-              }
-            }
-          ]
-        },
+        // @deprecated 旧简历优化入口，功能已迁移至 AI 应用市场（workflow），保留路由以兼容书签/链接
+        // {
+        //   path: 'resume',
+        //   name: 'resume',
+        //   component: () => import('@/layouts/HeaderLayout.vue'),
+        //   children: [
+        //     {
+        //       component: () => import('@/views/resume/index.vue'),
+        //       path: '',
+        //       meta: {
+        //         title: 'AI简历优化',
+        //         icon: 'document'
+        //       }
+        //     }
+        //   ]
+        // },
+        // @deprecated 旧旅游攻略入口，功能已迁移至 AI 应用市场（workflow），保留路由以兼容书签/链接
+        // {
+        //   path: 'travel',
+        //   name: 'travel',
+        //   component: () => import('@/layouts/HeaderLayout.vue'),
+        //   children: [
+        //     {
+        //       component: () => import('@/views/travel/index.vue'),
+        //       path: '',
+        //       meta: {
+        //         title: 'AI旅游攻略',
+        //         icon: 'document'
+        //       }
+        //     }
+        //   ]
+        // },
         {
           path: 'workflow',
           name: 'workflowMarket',
