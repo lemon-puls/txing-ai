@@ -126,6 +126,7 @@
         <p class="section-subtitle">点击卡片展开查看详情</p>
       </div>
       <div class="projects-grid">
+
         <div v-for="(project, index) in projects" :key="project.name" 
              class="project-card"
              :class="{ 'expanded': expandedProject === index }">
@@ -1005,29 +1006,47 @@ const scrollToContact = () => {
 
 /* Why Choose Me Section */
 .why-me-section {
-  background: linear-gradient(180deg, var(--el-bg-color-page) 0%, var(--el-bg-color) 100%);
+  background: transparent;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
 }
 
 .why-me-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .why-me-card {
   position: relative;
-  background: var(--el-bg-color);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
   padding: 32px;
   border-radius: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--el-border-color-lighter);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   overflow: hidden;
 
   &:hover {
     transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.12);
-    border-color: var(--el-color-primary-light-5);
+    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(255, 255, 255, 0.8);
 
     .card-glow {
       opacity: 1;
@@ -1060,7 +1079,7 @@ const scrollToContact = () => {
       position: absolute;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-color-primary-light-7));
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.15));
       border-radius: 20px;
       transition: transform 0.4s;
     }
@@ -1096,7 +1115,7 @@ const scrollToContact = () => {
     gap: 24px;
     margin-bottom: 20px;
     padding: 16px;
-    background: var(--el-fill-color-light);
+    background: rgba(99, 102, 241, 0.06);
     border-radius: 16px;
 
     .stat-item {
@@ -1127,7 +1146,7 @@ const scrollToContact = () => {
     gap: 8px;
 
     .tag {
-      background: var(--el-color-primary-light-9);
+      background: rgba(99, 102, 241, 0.08);
       color: var(--el-color-primary);
       padding: 6px 14px;
       border-radius: 20px;
@@ -1136,7 +1155,7 @@ const scrollToContact = () => {
       transition: all 0.2s;
 
       &:hover {
-        background: var(--el-color-primary-light-7);
+        background: rgba(99, 102, 241, 0.15);
         transform: scale(1.05);
       }
     }
