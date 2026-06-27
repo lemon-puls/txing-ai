@@ -1108,6 +1108,8 @@ const uploadFilesToCOS = async () => {
 
 // 发送消息
 const sendMessage = async () => {
+  // 应用列表弹出中，Enter 用于选中应用而非发送
+  if (showAppMention.value) return
   if ((!messageInput.value.trim() && chatFiles.value.length === 0) || !currentChat.value) return
 
   // 获取用户ID (如果登录的话)
