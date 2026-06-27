@@ -127,9 +127,8 @@
       </div>
       <div class="projects-grid">
         <div v-for="(project, index) in projects" :key="project.name" 
-             class="project-card animate-on-scroll"
-             :class="{ 'expanded': expandedProject === index }"
-             :style="{ animationDelay: `${index * 0.15}s` }">
+             class="project-card"
+             :class="{ 'expanded': expandedProject === index }">
           <div class="project-image" :class="`project-gradient-${index + 1}`" @click="toggleProject(index)">
             <div class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
@@ -278,7 +277,9 @@ import {
   Monitor,
   Promotion,
   Platform,
-  Document
+  Document,
+  ChatDotRound,
+  DataLine
 } from '@element-plus/icons-vue'
 
 const Github = {
@@ -483,6 +484,64 @@ const projects = [
       { icon: '🎯', title: '岗位匹配', desc: '根据目标岗位要求，智能分析简历匹配度' },
       { icon: '✨', title: 'AI 优化', desc: '自动生成优化建议，一键应用改进方案' },
       { icon: '📊', title: '可视化报告', desc: '详细的分析报告，直观展示优化效果' }
+    ]
+  },
+  {
+    name: '智能客服助手',
+    desc: '基于 RAG 技术的智能客服系统，支持多轮对话、知识库检索和意图识别。',
+    icon: ChatDotRound,
+    tags: ['RAG', 'NLP', 'WebSocket'],
+    link: '#',
+    badge: '企业级',
+    highlights: [
+      '实现基于向量检索的知识库问答',
+      '支持多轮对话上下文理解',
+      '实时 WebSocket 消息推送'
+    ],
+    media: [
+      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=AI+customer+service+chat+interface+modern+dark+theme&image_size=landscape_16_9', caption: '客服对话界面' },
+      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=knowledge+base+management+dashboard+analytics&image_size=landscape_16_9', caption: '知识库管理' }
+    ],
+    techStack: [
+      { name: 'Go', icon: '🔧' },
+      { name: 'Vue 3', icon: '⚡' },
+      { name: 'WebSocket', icon: '🔌' },
+      { name: 'Milvus', icon: '🧠' }
+    ],
+    features: [
+      { icon: '💬', title: '多轮对话', desc: '支持上下文理解，连续对话不丢失语境' },
+      { icon: '🔍', title: '知识检索', desc: '基于向量相似度的精准知识库检索' },
+      { icon: '📊', title: '数据分析', desc: '对话数据统计分析，优化服务质量' },
+      { icon: '🔌', title: 'API 集成', desc: '提供标准 RESTful API，轻松接入现有系统' }
+    ]
+  },
+  {
+    name: '数据可视化平台',
+    desc: '企业级数据分析与可视化平台，支持多数据源接入和自定义仪表盘。',
+    icon: DataLine,
+    tags: ['ECharts', 'Data Analysis', 'Dashboard'],
+    link: '#',
+    badge: '数据驱动',
+    highlights: [
+      '支持 10+ 种图表类型',
+      '拖拽式仪表盘构建',
+      '实时数据流更新'
+    ],
+    media: [
+      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=data+visualization+dashboard+charts+graphs+modern+dark+theme&image_size=landscape_16_9', caption: '数据仪表盘' },
+      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=drag+drop+dashboard+builder+interface+modern+UI&image_size=landscape_16_9', caption: '仪表盘编辑器' }
+    ],
+    techStack: [
+      { name: 'Vue 3', icon: '⚡' },
+      { name: 'ECharts', icon: '📊' },
+      { name: 'Pinia', icon: '🍍' },
+      { name: 'Tailwind', icon: '🎨' }
+    ],
+    features: [
+      { icon: '📊', title: '丰富图表', desc: '支持折线图、柱状图、饼图等 10+ 种图表' },
+      { icon: '🎛️', title: '拖拽构建', desc: '可视化拖拽编辑器，零代码构建仪表盘' },
+      { icon: '⚡', title: '实时更新', desc: 'WebSocket 推送，数据变化即时呈现' },
+      { icon: '📱', title: '响应式', desc: '完美适配桌面端和移动端' }
     ]
   }
 ]
@@ -1244,6 +1303,14 @@ const scrollToContact = () => {
 
     &.project-gradient-2 {
       background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    &.project-gradient-3 {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    &.project-gradient-4 {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
     }
 
     .project-icon {
