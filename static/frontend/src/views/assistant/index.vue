@@ -7,27 +7,28 @@
         <span v-for="i in 6" :key="i" class="particle" :class="`particle-${i}`"></span>
       </div>
       <div class="search-content">
-        <h1 class="title">做您强大的 AI 助手</h1>
-        <div class="action-buttons">
-          <el-button type="primary" class="action-btn" @click="startChat">
-            <el-icon><Timer /></el-icon>
-            开始聊天
-          </el-button>
-          <el-button v-permission:login type="primary" class="action-btn outline" @click="createAssistant">
-            <el-icon><Plus /></el-icon>
-            创建助手
-          </el-button>
-        </div>
+        <h1 class="title">发现你的 AI 助手</h1>
+        <p class="subtitle">探索数百个专业 AI 助手，让智能为你的工作加速</p>
         <div class="search-box">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索您的 AI 助手..."
+            placeholder="搜索助手名称或描述..."
             :prefix-icon="Search"
             clearable
             @keyup.enter="handleSearch"
             :loading="loading"
             size="large"
           />
+        </div>
+        <div class="action-buttons">
+          <el-button type="primary" class="action-btn" @click="startChat">
+            <el-icon><Timer /></el-icon>
+            开始聊天
+          </el-button>
+          <el-button v-permission:login class="action-btn outline" @click="createAssistant">
+            <el-icon><Plus /></el-icon>
+            创建助手
+          </el-button>
         </div>
       </div>
     </div>
@@ -61,48 +62,31 @@
           class="preset-card"
           @click="useAssistant(preset)"
         >
-          <div class="card-accent"></div>
           <div class="card-body">
             <div class="card-header">
-              <el-avatar :size="44" :src="preset.avatar" class="preset-avatar">
+              <el-avatar :size="48" :src="preset.avatar" class="preset-avatar">
                 {{ preset.name.charAt(0) }}
               </el-avatar>
               <div class="preset-meta">
                 <div class="preset-name-row">
                   <h3 class="preset-name">{{ preset.name }}</h3>
-                  <el-tag
-                    v-if="preset.type === 'official'"
-                    class="preset-type official-tag"
-                    effect="dark"
-                    size="small"
-                    round
-                  >
-                    <el-icon class="tag-icon"><Star /></el-icon>
+                  <span v-if="preset.type === 'official'" class="official-badge">
+                    <el-icon><Star /></el-icon>
                     官方
-                  </el-tag>
-                  <el-tag
-                    v-else
-                    class="preset-type community-tag"
-                    type="primary"
-                    effect="light"
-                    size="small"
-                    round
-                  >
-                    <el-icon class="tag-icon"><User /></el-icon>
-                    社区
-                  </el-tag>
+                  </span>
                 </div>
                 <div class="preset-categories">
-                  <div
+                  <span
+                    v-if="preset.type === 'community'"
+                    class="community-text"
+                  >社区</span>
+                  <span
                     v-show="preset.tags"
                     v-for="tag in preset.tags?.split(',')"
                     :key="tag"
-                    class="category-dot"
+                    class="category-tag"
                     :class="getTagType(tag)"
-                    :title="getTagName(tag)"
-                  >
-                    <el-icon class="category-icon"><component :is="getTagIcon(tag)" /></el-icon>
-                  </div>
+                  >{{ getTagName(tag) }}</span>
                 </div>
               </div>
             </div>
@@ -126,12 +110,11 @@
             <el-button
               type="primary"
               class="use-button"
-              round
               @click.stop="useAssistant(preset)"
               v-permission:login
             >
-              <el-icon><ArrowRight /></el-icon>
               使用
+              <el-icon class="arrow-icon"><ArrowRight /></el-icon>
             </el-button>
           </div>
         </div>
@@ -269,28 +252,36 @@ const deleteAssistant = async (preset) => {
 </script>
 
 <style lang="scss" scoped>
-$blue-500: #2B5EFF;
-$blue-400: #4facfe;
-$blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
+$primary: #4f46e5;
+$primary-light: #818cf8;
+$primary-gradient: linear-gradient(135deg, $primary, $primary-light);
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-900: #111827;
 
 .assistant-container {
   min-height: 100vh;
-  background: var(--el-bg-color-page, #f5f7fa);
+  background: $gray-50;
 }
 
 // ========== 搜索区域 ==========
 .search-section {
   position: relative;
-  padding: 60px 20px 70px;
-  background: $blue-gradient;
+  padding: 80px 20px 100px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   overflow: hidden;
 
   .search-bg-overlay {
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(ellipse at 20% 50%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+      radial-gradient(ellipse at 30% 20%, rgba($primary, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba($primary-light, 0.1) 0%, transparent 50%);
     z-index: 1;
   }
 
@@ -303,8 +294,8 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     .particle {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
-      animation: float 20s infinite ease-in-out;
+      background: rgba($primary-light, 0.06);
+      animation: float 25s infinite ease-in-out;
 
       &.particle-1 { width: 200px; height: 200px; top: -50px; left: 10%; animation-delay: 0s; }
       &.particle-2 { width: 120px; height: 120px; top: 30%; right: 15%; animation-delay: -5s; }
@@ -319,79 +310,84 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     position: relative;
     z-index: 2;
     text-align: center;
-    max-width: 700px;
+    max-width: 640px;
     margin: 0 auto;
 
     .title {
-      font-size: 2.8em;
-      margin: 0 0 28px;
-      font-weight: 800;
+      font-size: 2.5em;
+      margin: 0 0 12px;
+      font-weight: 700;
       color: #fff;
-      letter-spacing: -0.5px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
-    .action-buttons {
-      margin-bottom: 28px;
-      display: flex;
-      justify-content: center;
-      gap: 14px;
-
-      .action-btn {
-        padding: 10px 28px;
-        font-size: 15px;
-        font-weight: 500;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        color: #fff;
-        transition: all 0.3s ease;
-
-        .el-icon { margin-right: 6px; }
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.25);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        &.outline {
-          background: transparent;
-          border-color: rgba(255, 255, 255, 0.5);
-
-          &:hover { background: rgba(255, 255, 255, 0.12); }
-        }
-      }
+    .subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 0 0 32px;
+      line-height: 1.5;
     }
 
     .search-box {
-      max-width: 520px;
-      margin: 0 auto;
+      max-width: 480px;
+      margin: 0 auto 24px;
 
       :deep(.el-input__wrapper) {
-        padding: 6px 8px 6px 20px;
-        background: rgba(255, 255, 255, 0.15);
+        padding: 4px 8px 4px 16px;
+        background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        border-radius: 14px;
-        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        height: 48px;
 
         &:hover, &:focus-within {
-          background: rgba(255, 255, 255, 0.22);
-          border-color: rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.25);
         }
       }
 
       :deep(.el-input__inner) {
         font-size: 15px;
         color: #fff;
-        &::placeholder { color: rgba(255, 255, 255, 0.7); }
+        &::placeholder { color: rgba(255, 255, 255, 0.5); }
       }
 
-      :deep(.el-input__prefix) { color: rgba(255, 255, 255, 0.7); }
-      :deep(.el-input__clear) { color: rgba(255, 255, 255, 0.7); }
+      :deep(.el-input__prefix) { color: rgba(255, 255, 255, 0.5); }
+      :deep(.el-input__clear) { color: rgba(255, 255, 255, 0.5); }
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+
+      .action-btn {
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+
+        .el-icon { margin-right: 6px; }
+
+        &:hover {
+          transform: translateY(-1px);
+        }
+
+        &.outline {
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: rgba(255, 255, 255, 0.8);
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+          }
+        }
+      }
     }
   }
 }
@@ -406,20 +402,20 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 .tag-nav-wrapper {
   position: relative;
   z-index: 10;
-  margin-top: -28px;
-  padding: 0 20px;
+  margin-top: -32px;
+  padding: 0 24px;
 }
 
 .tag-nav {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
+  gap: 4px;
+  padding: 8px 12px;
   max-width: 900px;
   margin: 0 auto;
-  background: var(--el-bg-color, #fff);
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   overflow-x: auto;
 
   &::-webkit-scrollbar { display: none; }
@@ -428,77 +424,72 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 16px;
+    padding: 8px 14px;
     cursor: pointer;
-    border-radius: 10px;
-    transition: all 0.25s ease;
+    border-radius: 8px;
+    transition: all 0.15s ease;
     white-space: nowrap;
     font-size: 14px;
-    color: var(--el-text-color-regular);
+    color: $gray-500;
     flex-shrink: 0;
 
     &:hover {
-      background: rgba($blue-500, 0.08);
-      color: $blue-500;
+      color: $gray-700;
+      background: $gray-100;
     }
 
     &.active {
-      background: $blue-gradient;
-      color: #fff;
-      box-shadow: 0 2px 12px rgba($blue-500, 0.35);
+      color: $primary;
+      background: rgba($primary, 0.08);
+      font-weight: 500;
     }
   }
 }
 
 // ========== 助手列表 ==========
 .assistants-section {
-  padding: 32px 24px 60px;
+  padding: 32px 24px 80px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .assistants-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .preset-card {
   position: relative;
-  background: var(--el-bg-color, #fff);
-  border-radius: 16px;
+  background: #fff;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+  transition: all 0.2s ease;
+  border: 1px solid $gray-200;
 
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-    border-color: transparent;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    border-color: $gray-200;
+    transform: translateY(-2px);
 
-    .card-accent { height: 4px; }
-    .use-button { box-shadow: 0 4px 16px rgba($blue-500, 0.3); }
+    .use-button {
+      background: $primary-gradient !important;
+    }
   }
 
-  .card-accent {
-    height: 3px;
-    background: $blue-gradient;
-    transition: height 0.3s ease;
-  }
-
-  .card-body { padding: 18px 18px 12px; }
+  .card-body { padding: 20px 20px 16px; }
 
   .card-header {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
-    margin-bottom: 10px;
+    gap: 12px;
+    margin-bottom: 12px;
   }
 
   .preset-avatar {
     flex-shrink: 0;
-    background: $blue-gradient;
+    background: $primary-gradient;
     color: #fff;
     font-weight: 600;
   }
@@ -523,110 +514,117 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
     margin: 0;
     font-size: 15px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: $gray-900;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .preset-type {
-    flex-shrink: 0;
+  .official-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     font-size: 11px;
+    font-weight: 500;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
 
-    .tag-icon { font-size: 11px; margin-right: 2px; }
-
-    &.official-tag {
-      background: linear-gradient(135deg, #ff9500, #ff3852) !important;
-      border: none !important;
-      color: #fff !important;
-    }
-
-    &.community-tag {
-      border-color: $blue-500 !important;
-      color: $blue-500 !important;
-    }
+    .el-icon { font-size: 11px; }
   }
 
   .preset-categories {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     align-items: center;
+    flex-wrap: wrap;
 
-    .category-dot {
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--el-color-primary);
-      color: #fff;
+    .community-text {
+      font-size: 12px;
+      color: $gray-400;
+    }
 
-      .category-icon { font-size: 12px; }
+    .category-tag {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: $gray-100;
+      color: $gray-600;
 
-      &.warning { background: var(--el-color-warning); }
-      &.success { background: var(--el-color-success); }
-      &.danger { background: var(--el-color-danger); }
-      &.info { background: var(--el-color-info); }
-      &.primary { background: $blue-500; }
+      &.warning { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+      &.success { background: rgba(16, 185, 129, 0.1); color: #059669; }
+      &.danger { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
+      &.info { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+      &.primary { background: rgba($primary, 0.1); color: $primary; }
     }
   }
 
   .preset-description {
     margin: 0;
     font-size: 13px;
-    color: var(--el-text-color-secondary);
+    color: $gray-500;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   .card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 18px;
-    border-top: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+    padding: 12px 20px;
+    border-top: 1px solid $gray-100;
   }
 
   .footer-left {
     display: flex;
-    gap: 6px;
+    gap: 4px;
   }
 
   .icon-btn {
-    border: 1px solid var(--el-border-color-lighter, #e4e7ed) !important;
-    background: var(--el-bg-color, #fff) !important;
-    color: var(--el-text-color-secondary);
-    transition: all 0.2s ease;
+    border: 1px solid $gray-200 !important;
+    background: #fff !important;
+    color: $gray-400;
+    transition: all 0.15s ease;
 
     &:hover {
-      color: $blue-500;
-      border-color: rgba($blue-500, 0.3) !important;
-      background: rgba($blue-500, 0.06) !important;
+      color: $primary;
+      border-color: rgba($primary, 0.3) !important;
+      background: rgba($primary, 0.05) !important;
     }
 
     &.danger:hover {
-      color: var(--el-color-danger);
-      border-color: rgba(var(--el-color-danger-rgb), 0.3) !important;
-      background: rgba(var(--el-color-danger-rgb), 0.06) !important;
+      color: #dc2626;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
     }
   }
 
   .use-button {
-    background: $blue-gradient !important;
+    background: $gray-100 !important;
     border: none !important;
+    color: $gray-700 !important;
     font-weight: 500;
-    transition: all 0.3s ease;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 
-    .el-icon { margin-right: 4px; }
+    .arrow-icon {
+      font-size: 14px;
+      transition: transform 0.2s ease;
+    }
 
     &:hover {
-      box-shadow: 0 4px 16px rgba($blue-500, 0.4);
-      transform: translateY(-1px);
+      color: #fff !important;
+
+      .arrow-icon { transform: translateX(2px); }
     }
   }
 }
@@ -634,29 +632,37 @@ $blue-gradient: linear-gradient(135deg, $blue-500, $blue-400);
 // ========== 响应式 ==========
 @media (max-width: 768px) {
   .search-section {
-    padding: 40px 16px 50px;
-    .search-content .title { font-size: 2em; }
-    .action-buttons .action-btn { padding: 8px 20px; font-size: 14px; }
+    padding: 60px 16px 80px;
+
+    .search-content {
+      .title { font-size: 1.8em; }
+      .subtitle { font-size: 14px; margin-bottom: 24px; }
+
+      .action-buttons .action-btn {
+        padding: 8px 18px;
+        font-size: 13px;
+      }
+    }
   }
 
   .tag-nav-wrapper { padding: 0 12px; }
 
   .tag-nav {
     justify-content: flex-start;
-    padding: 8px 12px;
-    .tag-item { padding: 6px 12px; font-size: 13px; }
+    padding: 6px 8px;
+    .tag-item { padding: 6px 10px; font-size: 13px; }
   }
 
-  .assistants-section { padding: 20px 12px 40px; }
+  .assistants-section { padding: 24px 12px 60px; }
 
   .assistants-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 }
 
 .el-empty {
   grid-column: 1 / -1;
-  margin: 40px 0;
+  margin: 60px 0;
 }
 </style>
