@@ -108,6 +108,21 @@ const router = createRouter({
         //   ]
         // },
         {
+          path: 'about',
+          name: 'about',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              component: () => import('@/views/about/index.vue'),
+              path: '',
+              meta: {
+                title: '关于作者',
+                icon: 'user'
+              }
+            }
+          ]
+        },
+        {
           path: 'workflow',
           name: 'workflowMarket',
           component: () => import('@/layouts/HeaderLayout.vue'),

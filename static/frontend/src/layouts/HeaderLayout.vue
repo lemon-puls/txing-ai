@@ -15,6 +15,7 @@
             <!-- deprecated: 简历优化和旅游攻略入口已迁移至 AI 应用市场，隐藏旧入口 -->
             <!-- <router-link to="/resume" class="menu-item" active-class="active">简历优化</router-link> -->
             <!-- <router-link to="/travel" class="menu-item" active-class="active">旅游攻略</router-link> -->
+            <router-link to="/about" class="menu-item" active-class="active">关于作者</router-link>
           </div>
         </div>
         <div class="nav-right">
