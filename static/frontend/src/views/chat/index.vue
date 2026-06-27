@@ -357,7 +357,7 @@
                 </div>
                 <div v-else class="upload-trigger" @click="triggerAppFileInput(field.name)">
                   <el-icon><Upload /></el-icon>
-                  <span>{{ field.label || '上传文件' }}</span>
+                  <span>{{ field.label || '上传文件' }}<span v-if="field.required" class="required-mark">*</span></span>
                   <span class="upload-hint" v-if="field.accept">{{ field.accept }}</span>
                 </div>
               </div>
@@ -376,8 +376,8 @@
               @dragenter="handleDragEnter"
               @dragleave="handleDragLeave"
             >
-              <!-- 多模态上传按钮 -->
-              <div v-if="isMultimodalModel" class="multimodal-actions">
+              <!-- 文件上传按钮（所有模型都支持，用于预提取文本信息） -->
+              <div class="multimodal-actions">
                 <el-tooltip content="上传图片" placement="top">
                   <div class="upload-btn" @click="triggerFileInput('image')">
                     <el-icon><Picture /></el-icon>
@@ -928,11 +928,6 @@ const handlePaste = (event) => {
 
 // 处理文件列表
 const processFiles = (files) => {
-  if (!isMultimodalModel.value) {
-    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
-    return
-  }
-
   if (chatFiles.value.length + files.length > maxFiles) {
     ElMessage.warning(`最多只能上传 ${maxFiles} 个文件`)
     return
@@ -1005,11 +1000,6 @@ const removeChatFile = (index) => {
 
 // 触发文件选择
 const triggerFileInput = (type) => {
-  if (!isMultimodalModel.value) {
-    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
-    return
-  }
-
   const input = document.createElement('input')
   input.type = 'file'
   input.multiple = true
@@ -1114,7 +1104,36 @@ const uploadFilesToCOS = async () => {
 
 // 发送消息
 const sendMessage = async () => {
+  // 应用列表弹出中，Enter 用于选中应用而非发送
+  if (showAppMention.value) return
   if ((!messageInput.value.trim() && chatFiles.value.length === 0) || !currentChat.value) return
+
+  // 校验 @ 应用的必填输入项
+  if (selectedApp.value && appInputSchema.value.length > 0) {
+    // 检查必填的文件字段
+    const requiredFileFields = appInputSchema.value.filter(f => f.type === 'file' && f.required)
+    for (const field of requiredFileFields) {
+      if (!appUploadedFiles.value[field.name]) {
+        ElMessage.warning(`请上传 ${field.label || field.name}`)
+        return
+      }
+    }
+
+    // 检查必填的文本字段（排除 @应用名 前缀后的内容）
+    const requiredTextFields = appInputSchema.value.filter(f => f.type === 'text' && f.required)
+    if (requiredTextFields.length > 0) {
+      // 获取实际输入内容（去掉 @应用名 前缀）
+      let actualContent = messageInput.value
+      if (selectedApp.value) {
+        const mentionPrefix = '@' + selectedApp.value.name + ' '
+        actualContent = actualContent.replace(mentionPrefix, '').trim()
+      }
+      if (!actualContent) {
+        ElMessage.warning('请输入内容')
+        return
+      }
+    }
+  }
 
   // 获取用户ID (如果登录的话)
   const userId = userStore.userId || '0'
@@ -1566,12 +1585,9 @@ const parseJsonField = (value) => {
 // 获取输入框占位文本
 const getInputPlaceholder = () => {
   if (selectedApp.value) {
-    return `向 ${selectedApp.name} 提问...`
+    return `向 ${selectedApp.value.name} 提问...`
   }
-  if (isMultimodalModel.value) {
-    return '输入消息，支持拖拽/粘贴文件，Enter 发送'
-  }
-  return '输入消息，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
+  return '输入消息，支持拖拽/粘贴文件，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
 }
 
 // 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
@@ -3160,6 +3176,7 @@ const batchDelete = async () => {
         }
 
         .upload-hint { color: var(--el-text-color-secondary); }
+        .required-mark { color: var(--el-color-danger); margin-left: 2px; }
       }
     }
   }
