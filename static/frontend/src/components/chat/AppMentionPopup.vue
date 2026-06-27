@@ -1,22 +1,9 @@
 <template>
   <transition name="popup-fade">
-    <div v-if="visible" class="app-mention-popup">
-      <div class="popup-header" @mousedown.prevent>
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索应用..."
-          size="small"
-          clearable
-          ref="searchInput"
-        >
-          <template #prefix>
-            <el-icon><Search /></el-icon>
-          </template>
-        </el-input>
-      </div>
-      <div class="popup-list" ref="listRef" @mousedown.prevent>
+    <div v-if="visible" class="app-mention-popup" @mousedown.prevent>
+      <div class="popup-list" ref="listRef">
         <div v-if="loading" class="popup-loading">
-          <el-skeleton :rows="3" animated />
+          <el-skeleton :rows="2" animated />
         </div>
         <template v-else>
           <div
@@ -28,7 +15,7 @@
             @mouseenter="selectedIndex = filteredApps.indexOf(app)"
           >
             <div class="app-icon">
-              <el-icon :size="18"><Share /></el-icon>
+              <el-icon :size="14"><Share /></el-icon>
             </div>
             <div class="app-info">
               <div class="app-name">{{ app.name }}</div>
@@ -38,7 +25,7 @@
               {{ getCategoryLabel(app.category) }}
             </el-tag>
           </div>
-          <el-empty v-if="filteredApps.length === 0" description="未找到应用" :image-size="60" />
+          <el-empty v-if="filteredApps.length === 0" description="未找到应用" :image-size="48" />
         </template>
       </div>
     </div>
@@ -47,7 +34,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { Search, Share } from '@element-plus/icons-vue'
+import { Share } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 
 const props = defineProps({
@@ -56,21 +43,12 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'close'])
 
-const searchQuery = ref('')
 const apps = ref([])
 const loading = ref(false)
 const selectedIndex = ref(0)
-const searchInput = ref(null)
 const listRef = ref(null)
 
-const filteredApps = computed(() => {
-  if (!searchQuery.value) return apps.value
-  const q = searchQuery.value.toLowerCase()
-  return apps.value.filter(app =>
-    app.name.toLowerCase().includes(q) ||
-    (app.description && app.description.toLowerCase().includes(q))
-  )
-})
+const filteredApps = computed(() => apps.value)
 
 const categoryLabels = {
   general: '通用',
@@ -100,7 +78,6 @@ const loadApps = async () => {
 
 const selectApp = (app) => {
   emit('select', { ...app })
-  searchQuery.value = ''
   selectedIndex.value = 0
 }
 
@@ -140,9 +117,6 @@ watch(() => props.visible, (val) => {
   if (val) {
     loadApps()
     selectedIndex.value = 0
-    nextTick(() => searchInput.value?.focus())
-  } else {
-    searchQuery.value = ''
   }
 })
 
@@ -152,42 +126,37 @@ defineExpose({ handleKeydown })
 <style lang="scss" scoped>
 .app-mention-popup {
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 0;
   right: 0;
-  max-height: 320px;
+  max-height: 220px;
   background: var(--el-bg-color, #fff);
   border: 1px solid var(--el-border-color-light, #dcdfe6);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 100;
-  margin-bottom: 8px;
-}
-
-.popup-header {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+  margin-top: 4px;
 }
 
 .popup-list {
   overflow-y: auto;
   flex: 1;
-  padding: 6px;
+  padding: 4px;
 }
 
 .popup-loading {
-  padding: 12px;
+  padding: 8px;
 }
 
 .app-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
 
@@ -196,9 +165,9 @@ defineExpose({ handleKeydown })
   }
 
   .app-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
     background: rgba(25, 118, 210, 0.08);
     color: #1976d2;
     display: flex;
@@ -212,7 +181,7 @@ defineExpose({ handleKeydown })
     min-width: 0;
 
     .app-name {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: var(--el-text-color-primary);
       white-space: nowrap;
@@ -221,24 +190,30 @@ defineExpose({ handleKeydown })
     }
 
     .app-desc {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--el-text-color-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-top: 2px;
+      margin-top: 1px;
     }
+  }
+
+  .el-tag {
+    font-size: 10px;
+    height: 18px;
+    padding: 0 5px;
   }
 }
 
 .popup-fade-enter-active,
 .popup-fade-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .popup-fade-enter-from,
 .popup-fade-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(-4px);
 }
 </style>

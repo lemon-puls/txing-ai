@@ -340,12 +340,6 @@
               @select="handleAppSelect"
               @close="showAppMention = false"
             />
-            <!-- 已选应用标签 -->
-            <div v-if="selectedApp" class="selected-app-tag">
-              <el-icon><Share /></el-icon>
-              <span>{{ selectedApp.name }}</span>
-              <el-icon class="remove-tag" @click="removeSelectedApp"><Close /></el-icon>
-            </div>
             <!-- 应用文件上传区域 -->
             <div v-if="selectedApp && hasFileField" class="app-file-upload">
               <div v-for="field in fileFields" :key="field.name" class="file-field">
@@ -1120,9 +1114,14 @@ const sendMessage = async () => {
   const userId = userStore.userId || '0'
   await NewChatConnectionIfNeed(currentChat.value, userId, currentChat.value.presetId);
 
-  // 如果是会话的第一条消息，就把该消息设置为会话的名称
-  if (messageInput.value.trim()) {
-    conversationStore.updateCurrentChatName(messageInput.value)
+  // 如果是会话的第一条消息，就把该消息设置为会话的名称（剥离 @应用名 前缀）
+  let displayMessage = messageInput.value
+  if (selectedApp.value) {
+    const mentionPrefix = '@' + selectedApp.value.name + ' '
+    displayMessage = displayMessage.replace(mentionPrefix, '')
+  }
+  if (displayMessage.trim()) {
+    conversationStore.updateCurrentChatName(displayMessage)
   }
 
   // 上传多模态文件（如果有）
@@ -1195,7 +1194,12 @@ const sendMessage = async () => {
   }
   currentChat.value.messages.push(userMsg)
 
-  const message = messageInput.value
+  // 发送到后端的消息剥离 @应用名 前缀（后端通过 workflowId 路由）
+  let message = messageInput.value
+  if (selectedApp.value) {
+    const mentionPrefix = '@' + selectedApp.value.name + ' '
+    message = message.replace(mentionPrefix, '')
+  }
   messageInput.value = ''
   chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
@@ -1830,12 +1834,22 @@ const handlePresetSelect = (preset) => {
 
 // @ 应用相关
 const handleInput = (value) => {
-  // 检测输入中是否有 @ 触发符
   const atIndex = value.lastIndexOf('@')
-  if (atIndex >= 0 && !selectedApp.value) {
+  if (selectedApp.value) {
+    // 已选中应用时，检查 @应用名 是否还在
+    const mentionText = '@' + selectedApp.value.name + ' '
+    if (!value.includes(mentionText)) {
+      // 用户删除了 @应用名，清除应用状态
+      selectedApp.value = null
+      appInputSchema.value = []
+      appUploadedFiles.value = {}
+    }
+  } else if (atIndex >= 0) {
+    // 未选中应用，检测到 @，弹出列表
     showAppMention.value = true
-  } else if (selectedApp.value) {
-    // 已选中应用时，如果用户清空了输入，保持应用选中状态
+  } else if (showAppMention.value) {
+    // @ 被删除，关闭弹出列表
+    showAppMention.value = false
   }
 }
 
@@ -1848,13 +1862,22 @@ const handleInputKeydown = (e) => {
 const handleAppSelect = async (app) => {
   selectedApp.value = app
   showAppMention.value = false
-  // 移除输入的 @ 符号及之后的内容
+  // 将 @ 替换为 @应用名
   const atIndex = messageInput.value.lastIndexOf('@')
   if (atIndex >= 0) {
-    messageInput.value = messageInput.value.slice(0, atIndex)
+    messageInput.value = messageInput.value.slice(0, atIndex) + '@' + app.name + ' '
   }
   // 加载应用的 inputSchema
   await loadAppInputSchema(app.id)
+  // 聚焦到输入框末尾
+  nextTick(() => {
+    const textarea = document.querySelector('.custom-input .el-textarea__inner')
+    if (textarea) {
+      textarea.focus()
+      const len = messageInput.value.length
+      textarea.setSelectionRange(len, len)
+    }
+  })
 }
 
 // 加载应用的 inputSchema
@@ -1877,6 +1900,10 @@ const loadAppInputSchema = async (appId) => {
 
 // 移除选中的应用
 const removeSelectedApp = () => {
+  if (selectedApp.value) {
+    const mentionText = '@' + selectedApp.value.name + ' '
+    messageInput.value = messageInput.value.replace(mentionText, '')
+  }
   selectedApp.value = null
   appInputSchema.value = []
   appUploadedFiles.value = {}
@@ -2309,17 +2336,20 @@ const batchDelete = async () => {
   &::after {
     content: '';
     position: absolute;
-    left: 10%;
-    right: 10%;
+    left: 0;
+    right: 0;
     bottom: 0;
     height: 1px;
     background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(var(--divider-rgb), 0.1) 20%,
-      rgba(var(--divider-rgb), 0.18) 50%,
-      rgba(var(--divider-rgb), 0.1) 80%,
-      transparent 100%
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.1) 15%,
+      rgba(var(--divider-rgb), 0.2) 30%,
+      rgba(var(--divider-rgb), 0.3) 50%,
+      rgba(var(--divider-rgb), 0.2) 70%,
+      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0) 100%
     );
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .chat-title {
@@ -2794,24 +2824,26 @@ const batchDelete = async () => {
 }
 
 .chat-input {
-  padding: 0 24px 16px;
-  background: var(--bg-primary);
+  padding: 0px 24px 16px;
+  background: var(--el-bg-color);
   position: relative;
+  border-top: 1px solid var(--el-border-color-light);
 
-  // 顶部柔和渐变过渡 — 替代生硬的 border-top
   &::before {
     content: '';
     position: absolute;
-    left: 10%;
-    right: 10%;
+    left: 0;
+    right: 0;
     top: 0;
     height: 1px;
     background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(var(--divider-rgb), 0.12) 20%,
-      rgba(var(--divider-rgb), 0.2) 50%,
-      rgba(var(--divider-rgb), 0.12) 80%,
-      transparent 100%
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.5) 15%,
+      rgba(var(--divider-rgb), 0.7) 30%,
+      rgba(var(--divider-rgb), 0.9) 50%,
+      rgba(var(--divider-rgb), 0.7) 70%,
+      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0) 100%
     );
     z-index: 1;
   }
@@ -2820,17 +2852,17 @@ const batchDelete = async () => {
     position: absolute;
     left: 0;
     right: 0;
-    top: -3px;
-    height: 6px;
+    top: 0;
+    //height: 1px;
     cursor: row-resize;
     z-index: 2;
-    background: transparent;
+    background: #f5f7fa;
     transition: background 0.2s ease;
 
     &:hover {
       background: linear-gradient(180deg,
-        rgba(var(--divider-rgb), 0.08) 0%,
-        transparent 100%
+        rgba(var(--divider-rgb), 0.3) 0%,
+        rgba(var(--divider-rgb), 0) 100%
       );
     }
 
@@ -2840,12 +2872,18 @@ const batchDelete = async () => {
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 40px;
-      height: 3px;
+      width: 48px;
+      height: 4px;
       border-radius: 2px;
-      background: rgba(var(--divider-rgb), 0.15);
+      background: linear-gradient(90deg,
+        rgba(var(--divider-rgb), 0) 0%,
+        rgba(var(--divider-rgb), 0.5) 20%,
+        rgba(var(--divider-rgb), 0.8) 50%,
+        rgba(var(--divider-rgb), 0.5) 80%,
+        rgba(var(--divider-rgb), 0) 100%
+      );
       opacity: 0;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.2s ease;
     }
 
     &:hover::before {
@@ -2860,8 +2898,27 @@ const batchDelete = async () => {
   align-items: center;
   padding: 8px 16px;
   margin: 0;
+  //background: var(--el-fill-color-light);
   border-radius: 6px;
   position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -8px;
+    height: 1px;
+    background: linear-gradient(90deg,
+      rgba(var(--divider-rgb), 0) 0%,
+      rgba(var(--divider-rgb), 0.5) 15%,
+      rgba(var(--divider-rgb), 0.7) 30%,
+      rgba(var(--divider-rgb), 0.9) 50%,
+      rgba(var(--divider-rgb), 0.7) 70%,
+      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0) 100%
+    );
+  }
 }
 
 .model-selector {
@@ -3054,34 +3111,6 @@ const batchDelete = async () => {
 .input-wrapper {
   position: relative;
 
-  .selected-app-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    margin-bottom: 8px;
-    background: rgba(25, 118, 210, 0.08);
-    border: 1px solid rgba(25, 118, 210, 0.2);
-    border-radius: 16px;
-    font-size: 12px;
-    color: #1976d2;
-
-    .el-icon {
-      font-size: 14px;
-    }
-
-    .remove-tag {
-      cursor: pointer;
-      margin-left: 2px;
-      border-radius: 50%;
-      transition: all 0.15s;
-
-      &:hover {
-        background: rgba(25, 118, 210, 0.15);
-      }
-    }
-  }
-
   .app-file-upload {
     display: flex;
     flex-wrap: wrap;
@@ -3148,28 +3177,27 @@ const batchDelete = async () => {
 
     .multimodal-actions {
       display: flex;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 4px;
+      margin-bottom: 8px;
 
       .upload-btn {
-        width: 34px;
-        height: 34px;
-        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
         border: 1px solid var(--border-color);
         color: var(--text-secondary);
         background: var(--bg-primary);
 
         &:hover {
           color: var(--el-color-primary);
-          border-color: var(--el-color-primary-light-5);
+          border-color: var(--el-color-primary);
           background: var(--el-color-primary-light-9);
-          transform: translateY(-2px);
-          box-shadow: 0 2px 8px var(--shadow-color);
+          transform: translateY(-1px);
         }
 
         .el-icon {
@@ -3209,52 +3237,40 @@ const batchDelete = async () => {
   }
 
   .custom-input {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
 
     :deep(.el-textarea__inner) {
       resize: none !important;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
       padding-right: 90px;
       line-height: 1.6;
       font-size: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      background: var(--bg-secondary);
 
       &:focus {
-        box-shadow: 0 0 0 3px rgba(var(--el-color-primary-rgb), 0.12), 0 2px 12px var(--shadow-color);
-        border-color: var(--el-color-primary-light-5);
-      }
-
-      &:hover:not(:focus) {
-        border-color: var(--el-color-primary-light-7);
+        box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
       }
     }
   }
 
   .input-actions {
     position: absolute;
-    right: 10px;
-    bottom: 10px;
+    right: 8px;
+    bottom: 8px;
 
     .el-button {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px var(--shadow-color);
       }
     }
 
     .send-button {
-      background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+      background: var(--el-color-primary);
       border: none;
-      position: relative;
-      overflow: hidden;
 
       &:hover {
-        background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
-        box-shadow: 0 4px 16px rgba(var(--el-color-primary-rgb), 0.35);
+        background: var(--el-color-primary-light-3);
       }
     }
   }
