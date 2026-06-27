@@ -2338,20 +2338,17 @@ const batchDelete = async () => {
   &::after {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     bottom: 0;
     height: 1px;
     background: linear-gradient(90deg,
       rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0.15) 20%,
+      rgba(var(--divider-rgb), 0.25) 50%,
+      rgba(var(--divider-rgb), 0.15) 80%,
       rgba(var(--divider-rgb), 0) 100%
     );
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .chat-title {
@@ -2826,25 +2823,22 @@ const batchDelete = async () => {
 }
 
 .chat-input {
-  padding: 0px 24px 16px;
+  padding: 12px 24px 16px;
   background: var(--el-bg-color);
   position: relative;
-  border-top: 1px solid var(--el-border-color-light);
 
   &::before {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     top: 0;
     height: 1px;
     background: linear-gradient(90deg,
       rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0.15) 20%,
+      rgba(var(--divider-rgb), 0.25) 50%,
+      rgba(var(--divider-rgb), 0.15) 80%,
       rgba(var(--divider-rgb), 0) 100%
     );
     z-index: 1;
@@ -2855,15 +2849,14 @@ const batchDelete = async () => {
     left: 0;
     right: 0;
     top: 0;
-    //height: 1px;
     cursor: row-resize;
     z-index: 2;
-    background: #f5f7fa;
+    background: transparent;
     transition: background 0.2s ease;
 
     &:hover {
       background: linear-gradient(180deg,
-        rgba(var(--divider-rgb), 0.3) 0%,
+        rgba(var(--divider-rgb), 0.2) 0%,
         rgba(var(--divider-rgb), 0) 100%
       );
     }
@@ -2879,9 +2872,9 @@ const batchDelete = async () => {
       border-radius: 2px;
       background: linear-gradient(90deg,
         rgba(var(--divider-rgb), 0) 0%,
-        rgba(var(--divider-rgb), 0.5) 20%,
-        rgba(var(--divider-rgb), 0.8) 50%,
-        rgba(var(--divider-rgb), 0.5) 80%,
+        rgba(var(--divider-rgb), 0.3) 20%,
+        rgba(var(--divider-rgb), 0.5) 50%,
+        rgba(var(--divider-rgb), 0.3) 80%,
         rgba(var(--divider-rgb), 0) 100%
       );
       opacity: 0;
@@ -2904,23 +2897,6 @@ const batchDelete = async () => {
   border-radius: 6px;
   position: relative;
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -8px;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-  }
 }
 
 .model-selector {
