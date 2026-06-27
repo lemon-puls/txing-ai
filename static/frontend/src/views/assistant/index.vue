@@ -428,7 +428,7 @@ $gray-900: #111827;
   display: flex;
   justify-content: center;
   gap: 4px;
-  padding: 6px;
+  padding: 8px 16px;
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
