@@ -2068,11 +2068,6 @@ const batchDelete = async () => {
   &::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
     border-radius: 3px;
-    transition: background 0.2s ease;
-
-    &:hover {
-      background: rgba(var(--el-color-primary-rgb), 0.3);
-    }
   }
 
   &::-webkit-scrollbar-track {
@@ -2126,7 +2121,7 @@ const batchDelete = async () => {
   align-items: center;
 
   .home-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     height: 40px;
@@ -2135,10 +2130,9 @@ const batchDelete = async () => {
 
     &:hover {
       color: var(--el-color-primary);
-      border-color: var(--el-color-primary-light-5);
+      border-color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
       transform: translateY(-2px);
-      box-shadow: 0 2px 8px var(--shadow-color);
     }
 
     .el-icon {
@@ -2147,21 +2141,20 @@ const batchDelete = async () => {
   }
 
   .new-chat-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
     border: none;
-    height: 32px;
-    width: 32px;
-    box-shadow: 0 2px 12px rgba(var(--el-color-primary-rgb), 0.25);
-    animation: pulse-glow 2s infinite;
+    height: 30px;
+    width: 30px;
+    box-shadow: 0 2px 12px rgba(var(--el-color-primary-rgb), 0.2);
 
     &:hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 4px 20px rgba(var(--el-color-primary-rgb), 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(var(--el-color-primary-rgb), 0.3);
     }
 
     .icon-bounce {
-      animation: iconBounce 1.5s ease-in-out infinite;
+      animation: iconBounce 1s infinite;
       font-size: 18px;
     }
   }
@@ -2178,34 +2171,21 @@ const batchDelete = async () => {
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   margin-bottom: 4px;
   border: 1px solid transparent;
-  position: relative;
 
   &:hover {
-    background: var(--hover-bg);
+    background: var(--el-fill-color-light);
     border-color: var(--border-color);
     transform: translateX(4px);
-    box-shadow: 0 2px 8px var(--shadow-color);
   }
 
   &.active {
-    background: var(--hover-bg);
-    border-color: var(--el-color-primary-light-7);
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 8px;
-      bottom: 8px;
-      width: 3px;
-      border-radius: 0 3px 3px 0;
-      background: linear-gradient(180deg, var(--el-color-primary), var(--el-color-primary-light-3));
-    }
+    //background: var(--el-color-primary-light-9);
+    border-color: var(--border-color);
   }
 
   .chat-icon-wrapper {
@@ -2264,54 +2244,15 @@ const batchDelete = async () => {
 }
 
 .sidebar-footer {
-  padding: 14px 16px;
+  padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
 
   .footer-actions {
     display: flex;
-    gap: 10px;
-
-    .action-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        background: var(--hover-bg);
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-    }
-  }
-
-  .sidebar-toggle {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--text-secondary);
-
-    &:hover {
-      background: var(--hover-bg);
-      color: var(--el-color-primary);
-      transform: translateY(-1px);
-    }
+    gap: 12px;
   }
 }
 
@@ -2332,10 +2273,10 @@ const batchDelete = async () => {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-left: none;
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 8px 8px 0;
     cursor: pointer;
     z-index: 10;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     opacity: 0;
     pointer-events: none;
 
@@ -2347,18 +2288,17 @@ const batchDelete = async () => {
     &:hover {
       background: var(--hover-bg);
       transform: translateY(-50%) translateX(2px);
-      box-shadow: 2px 0 8px var(--shadow-color);
     }
 
     .expand-icon {
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.3s ease;
       transform: rotate(180deg);
     }
   }
 }
 
 .chat-header {
-  padding: 14px 24px;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2369,28 +2309,24 @@ const batchDelete = async () => {
   &::after {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     bottom: 0;
     height: 1px;
     background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
-      rgba(var(--divider-rgb), 0) 100%
+      transparent 0%,
+      rgba(var(--divider-rgb), 0.1) 20%,
+      rgba(var(--divider-rgb), 0.18) 50%,
+      rgba(var(--divider-rgb), 0.1) 80%,
+      transparent 100%
     );
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .chat-title {
     display: flex;
     align-items: center;
     font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-weight: 500;
 
     .model-tag {
       background: linear-gradient(135deg, #4158D0, #C850C0);
@@ -2403,7 +2339,7 @@ const batchDelete = async () => {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 28px;
+  padding: 24px;
   scroll-behavior: smooth;
   position: relative;
   margin: 0 auto;
@@ -2439,19 +2375,16 @@ const batchDelete = async () => {
   gap: 16px;
   margin-bottom: 24px;
   opacity: 0;
-  transform: translateY(16px) scale(0.98);
-  animation: message-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform: translateY(20px);
+  animation: message-fade-in 0.3s ease forwards;
 
   &.user {
     flex-direction: row-reverse;
 
     .message-content {
       background: var(--message-bg-user);
-      border-radius: 16px 4px 16px 16px;
+      border-radius: 12px 2px 12px 12px;
       color: var(--text-primary);
-      border: 1px solid rgba(var(--el-color-primary-rgb), 0.1);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
 
     .message-actions {
@@ -2462,22 +2395,7 @@ const batchDelete = async () => {
   &.assistant {
     .message-content {
       background: var(--message-bg-assistant);
-      border-radius: 4px 16px 16px 16px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 2px 12px var(--shadow-color), 0 0 0 1px rgba(255, 255, 255, 0.02);
-      position: relative;
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 12px;
-        bottom: 12px;
-        width: 2px;
-        border-radius: 1px;
-        background: linear-gradient(180deg, var(--el-color-primary-light-3), var(--el-color-primary));
-        opacity: 0.6;
-      }
+      border-radius: 2px 12px 12px 12px;
     }
 
     .message-avatar {
@@ -2493,16 +2411,12 @@ const batchDelete = async () => {
   }
 
   .message-avatar {
-    flex-shrink: 0;
-
     .el-avatar {
-      box-shadow: 0 2px 8px var(--shadow-color);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 2px solid var(--border-color);
+      box-shadow: none;
+      transition: transform 0.3s ease;
 
       &:hover {
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 4px 12px var(--shadow-color);
+        transform: translateY(-2px);
       }
     }
   }
@@ -2510,19 +2424,14 @@ const batchDelete = async () => {
 
 .message-content {
   max-width: 85%;
-  padding: 16px 20px;
-  box-shadow: 0 2px 8px var(--shadow-color);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 15px;
-  line-height: 1.7;
+  padding: 16px;
+  box-shadow: 0 1px 2px var(--shadow-color);
+  transition: transform 0.3s ease;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: 0.01em;
-
-  &:hover {
-    box-shadow: 0 4px 16px var(--shadow-color);
-  }
 
   @media screen and (min-width: 1200px) {
     max-width: 900px;
@@ -2558,15 +2467,15 @@ const batchDelete = async () => {
       position: relative;
       width: 120px;
       height: 120px;
-      border-radius: 10px;
+      border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
-      border: 1px solid var(--border-color);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid var(--el-border-color-lighter);
+      transition: all 0.2s;
 
       &:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 6px 16px var(--shadow-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 
         .image-overlay {
           opacity: 1;
@@ -2612,18 +2521,17 @@ const batchDelete = async () => {
       gap: 10px;
       padding: 10px 14px;
       background: var(--el-fill-color-light);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s;
       min-width: 180px;
       max-width: 260px;
 
       &:hover {
-        background: var(--hover-bg);
+        background: var(--el-fill-color);
         border-color: var(--el-color-primary-light-7);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px var(--shadow-color);
+        transform: translateY(-1px);
       }
 
       .attachment-icon {
@@ -2721,30 +2629,28 @@ const batchDelete = async () => {
 
   .thought-process {
     margin-bottom: 16px;
-    border-radius: 10px;
+    border-radius: 6px;
     background: var(--el-bg-color);
     overflow: hidden;
-    border: 1px solid var(--border-color);
 
     .thought-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 14px;
+      padding: 8px 12px;
       font-size: 13px;
       color: var(--el-text-color-secondary);
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s ease;
       user-select: none;
 
       &:hover {
-        background: var(--hover-bg);
-        color: var(--el-color-primary);
+        background: var(--el-fill-color);
       }
 
       .el-icon {
         font-size: 16px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.3s ease;
 
         &.is-fold {
           transform: rotate(90deg);
@@ -2755,10 +2661,10 @@ const batchDelete = async () => {
     .thought-content {
       padding: 12px 16px;
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.6;
       color: var(--el-text-color-regular);
-      border-top: 1px solid var(--border-color);
-      background: var(--bg-secondary);
+      border-top: 1px solid var(--el-border-color-light);
+      background: var(--el-bg-color);
       white-space: pre-wrap;
     }
   }
@@ -2767,30 +2673,28 @@ const batchDelete = async () => {
     :deep(.markdown-body) {
       background: transparent !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 15px;
-      line-height: 1.7;
+      font-size: 16px;
+      line-height: 1.6;
       text-rendering: optimizeLegibility;
       color: var(--el-text-color-primary) !important;
-      letter-spacing: 0.01em;
 
       pre.code-block {
         background: #282c34;
         margin: 1em 0;
         padding: 0;
-        border-radius: 10px;
+        border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         display: flex;
         flex-direction: column;
-        border: 1px solid rgba(255, 255, 255, 0.06);
 
         .code-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 14px;
-          background: linear-gradient(90deg, #21252b, #282c34);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          padding: 8px 12px;
+          background: #21252b;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
           height: 40px;
 
           .lang-info {
@@ -2820,9 +2724,9 @@ const batchDelete = async () => {
             padding: 4px 12px;
             height: 28px;
             font-size: 12px;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
             .copy-icon {
@@ -2830,9 +2734,9 @@ const batchDelete = async () => {
             }
 
             &:hover {
-              background: rgba(255, 255, 255, 0.08);
-              border-color: rgba(255, 255, 255, 0.15);
-              color: #e5eaf3;
+              background: rgba(255, 255, 255, 0.05);
+              border-color: rgba(255, 255, 255, 0.2);
+              color: #fff;
             }
 
             &:active {
@@ -2843,14 +2747,13 @@ const batchDelete = async () => {
 
         code {
           font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
-          font-size: 13px;
+          font-size: 14px;
           background: transparent;
           text-shadow: 0 1px rgba(0, 0, 0, 0.3);
           padding: 16px;
           display: block;
           overflow-x: auto;
-          line-height: 1.7;
-          letter-spacing: 0.02em;
+          line-height: 1.6;
         }
       }
 
@@ -2864,19 +2767,17 @@ const batchDelete = async () => {
   }
 
   .message-actions {
-    margin-top: 8px;
+    margin-top: 4px;
     display: flex;
     justify-content: flex-end;
     gap: 4px;
     opacity: 0;
-    transform: translateY(4px);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.2s ease;
 
     .el-button {
-      padding: 4px 10px;
+      padding: 2px 6px;
       font-size: 12px;
-      height: 28px;
-      border-radius: 6px;
+      height: 24px;
       --el-button-hover-bg-color: var(--el-color-primary-light-8);
       --el-button-hover-text-color: var(--el-color-primary);
 
@@ -2889,33 +2790,28 @@ const batchDelete = async () => {
 
   &:hover .message-actions {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .chat-input {
-  padding: 0px 24px 16px;
-  background: var(--el-bg-color);
+  padding: 0 24px 16px;
+  background: var(--bg-primary);
   position: relative;
-  border-top: 1px solid var(--el-border-color-light);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 
+  // 顶部柔和渐变过渡 — 替代生硬的 border-top
   &::before {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     top: 0;
     height: 1px;
     background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
-      rgba(var(--divider-rgb), 0) 100%
+      transparent 0%,
+      rgba(var(--divider-rgb), 0.12) 20%,
+      rgba(var(--divider-rgb), 0.2) 50%,
+      rgba(var(--divider-rgb), 0.12) 80%,
+      transparent 100%
     );
     z-index: 1;
   }
@@ -2924,17 +2820,17 @@ const batchDelete = async () => {
     position: absolute;
     left: 0;
     right: 0;
-    top: 0;
-    //height: 1px;
+    top: -3px;
+    height: 6px;
     cursor: row-resize;
     z-index: 2;
-    background: var(--bg-secondary);
+    background: transparent;
     transition: background 0.2s ease;
 
     &:hover {
       background: linear-gradient(180deg,
-        rgba(var(--divider-rgb), 0.3) 0%,
-        rgba(var(--divider-rgb), 0) 100%
+        rgba(var(--divider-rgb), 0.08) 0%,
+        transparent 100%
       );
     }
 
@@ -2944,18 +2840,12 @@ const batchDelete = async () => {
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: 48px;
-      height: 4px;
+      width: 40px;
+      height: 3px;
       border-radius: 2px;
-      background: linear-gradient(90deg,
-        rgba(var(--divider-rgb), 0) 0%,
-        rgba(var(--divider-rgb), 0.5) 20%,
-        rgba(var(--divider-rgb), 0.8) 50%,
-        rgba(var(--divider-rgb), 0.5) 80%,
-        rgba(var(--divider-rgb), 0) 100%
-      );
+      background: rgba(var(--divider-rgb), 0.15);
       opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.25s ease;
     }
 
     &:hover::before {
@@ -2970,27 +2860,8 @@ const batchDelete = async () => {
   align-items: center;
   padding: 8px 16px;
   margin: 0;
-  //background: var(--el-fill-color-light);
   border-radius: 6px;
   position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -8px;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-  }
 }
 
 .model-selector {
@@ -2998,17 +2869,16 @@ const batchDelete = async () => {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     border: 1px solid var(--border-color);
     background: var(--bg-primary);
 
     &:hover {
-      border-color: var(--el-color-primary-light-5);
-      background: var(--hover-bg);
-      box-shadow: 0 2px 8px var(--shadow-color);
+      border-color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
     }
 
     .model-icon {
@@ -3063,17 +2933,15 @@ const batchDelete = async () => {
   gap: 12px;
   padding: 12px;
   cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  transition: all 0.3s ease;
 
   &:hover {
-    background: var(--hover-bg);
-    transform: translateX(2px);
+    background: var(--el-color-primary-light-9);
   }
 
   &.active {
-    background: var(--el-color-primary-light-9);
-    border-left: 2px solid var(--el-color-primary);
+    background: var(--el-color-primary-light-8);
   }
 
   .model-item-icon {
@@ -3150,12 +3018,12 @@ const batchDelete = async () => {
   .feature-toggle {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     background: var(--bg-primary);
@@ -3164,9 +3032,13 @@ const batchDelete = async () => {
       border-color: var(--el-color-primary);
       color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px var(--shadow-color);
     }
+
+    //&.active {
+    //  background: var(--el-color-primary);
+    //  border-color: var(--el-color-primary);
+    //  color: white;
+    //}
   }
 }
 
@@ -3350,7 +3222,7 @@ const batchDelete = async () => {
       background: var(--bg-secondary);
 
       &:focus {
-        box-shadow: 0 0 0 3px rgba(var(--el-color-primary-rgb), 0.15), 0 2px 12px var(--shadow-color);
+        box-shadow: 0 0 0 3px rgba(var(--el-color-primary-rgb), 0.12), 0 2px 12px var(--shadow-color);
         border-color: var(--el-color-primary-light-5);
       }
 
@@ -3380,24 +3252,9 @@ const batchDelete = async () => {
       position: relative;
       overflow: hidden;
 
-      &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s ease;
-      }
-
       &:hover {
         background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
         box-shadow: 0 4px 16px rgba(var(--el-color-primary-rgb), 0.35);
-
-        &::after {
-          left: 100%;
-        }
       }
     }
   }
@@ -3414,22 +3271,21 @@ const batchDelete = async () => {
   .action-btn {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     background: var(--bg-primary);
 
     &:hover {
       color: var(--el-color-primary);
-      border-color: var(--el-color-primary-light-5);
+      border-color: var(--el-color-primary);
       background: var(--el-color-primary-light-9);
       transform: translateY(-2px);
-      box-shadow: 0 2px 8px var(--shadow-color);
     }
 
     .el-icon {
@@ -3442,7 +3298,7 @@ const batchDelete = async () => {
 @keyframes message-fade-in {
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -3464,35 +3320,26 @@ const batchDelete = async () => {
   }
 }
 
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 2px 12px rgba(var(--el-color-primary-rgb), 0.25);
-  }
-  50% {
-    box-shadow: 0 2px 20px rgba(var(--el-color-primary-rgb), 0.4);
-  }
-}
-
 .chat-item-enter-active,
 .chat-item-leave-active {
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .chat-item-enter-from,
 .chat-item-leave-to {
   opacity: 0;
-  transform: translateX(-16px);
+  transform: translateX(-20px);
 }
 
 .message-enter-active,
 .message-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .message-enter-from,
 .message-leave-to {
   opacity: 0;
-  transform: translateY(16px) scale(0.98);
+  transform: translateY(20px);
 }
 
 // 响应式设计
@@ -3590,9 +3437,9 @@ const batchDelete = async () => {
     align-items: center;
     gap: 4px;
     cursor: pointer;
-    padding: 4px;
+    padding: 2px;
     border-radius: 50%;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
 
     &:hover {
       background: var(--hover-bg);
@@ -3602,7 +3449,7 @@ const batchDelete = async () => {
     .el-icon--right {
       font-size: 12px;
       color: var(--text-secondary);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.3s ease;
     }
 
     &:hover .el-icon--right {
@@ -3611,55 +3458,41 @@ const batchDelete = async () => {
   }
 }
 
-// 设置按钮样式
-.chat-settings .el-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px var(--shadow-color);
-  }
-}
-
 // 点点加载动画样式，仿微信气泡打字动画，左侧对齐
 .dot-loading-indicator {
   display: flex;
   align-items: flex-start;
-  margin: 0 0 16px 56px; // 与 assistant 头像左对齐
-  min-height: 28px;
+  margin: 0 0 12px 56px; // 与 assistant 头像左对齐
+  min-height: 24px;
 }
 
 .dot-typing {
   display: flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 4px 12px;
-  background: var(--message-bg-assistant);
-  border-radius: 4px 16px 16px 16px;
-  border: 1px solid var(--border-color);
+  height: 24px;
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
   border-radius: 50%;
   background: var(--el-color-primary);
-  opacity: 0.6;
-  animation: dot-bounce 1.4s ease-in-out infinite both;
+  opacity: 0.7;
+  animation: dot-bounce 1.2s infinite both;
 }
 
 .dot:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: 0.2s;
 }
 
 .dot:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: 0.4s;
 }
 
 @keyframes dot-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40% { transform: scale(1.2); opacity: 1; }
 }
 
 .batch-actions {
@@ -3683,12 +3516,12 @@ const batchDelete = async () => {
 .batch-toggle {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   background: var(--bg-primary);
@@ -3697,14 +3530,12 @@ const batchDelete = async () => {
     color: var(--el-color-primary);
     border-color: var(--el-color-primary);
     background: var(--el-color-primary-light-9);
-    transform: translateY(-1px);
   }
 
   &.active {
     background: var(--el-color-primary);
     border-color: var(--el-color-primary);
     color: white;
-    box-shadow: 0 2px 8px rgba(var(--el-color-primary-rgb), 0.3);
   }
 }
 
@@ -3715,48 +3546,46 @@ const batchDelete = async () => {
   bottom: 0;
   width: 100%;
   background: var(--el-bg-color);
-  box-shadow: 0 -4px 20px var(--shadow-color);
-  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+  border-top: 1.5px solid var(--el-border-color-light);
   border-radius: 16px 16px 0 0;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 8px 10px 8px;
   z-index: 10;
-  gap: 12px;
-  animation: batch-bar-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  gap: 10px;
+  animation: batch-bar-in 0.25s;
 }
 
 .batch-btn {
   font-size: 14px;
   min-width: 90px;
-  height: 34px;
-  box-shadow: 0 2px 8px var(--shadow-color);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 10px;
+  border-radius: 16px;
   &.el-button--danger {
-    background: linear-gradient(135deg, #f56c6c, #f78989);
+    background: linear-gradient(90deg, #f56c6c 60%, #f78989 100%);
     color: #fff;
     border: none;
     &:hover {
-      background: linear-gradient(135deg, #f56c6c, #ff7875);
-      box-shadow: 0 4px 16px rgba(245,108,108,0.25);
-      transform: translateY(-2px) scale(1.02);
+      background: linear-gradient(90deg, #f56c6c 80%, #f78989 100%);
+      box-shadow: 0 4px 16px rgba(245,108,108,0.15);
+      transform: translateY(-2px) scale(1.04);
     }
   }
   &.cancel-btn {
-    background: var(--el-fill-color-light);
-    color: var(--el-text-color-secondary);
+    background: #f4f4f5;
+    color: #909399;
     border: none;
     &:hover {
-      background: var(--el-fill-color);
-      color: var(--el-text-color-primary);
+      background: #e4e7ed;
+      color: #606266;
       transform: translateY(-2px) scale(1.04);
     }
   }
