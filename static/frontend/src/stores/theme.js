@@ -80,6 +80,20 @@ export const useThemeStore = defineStore('theme', {
         el.style.setProperty('--el-menu-bg-color', '#141414')
         // 黑暗主题下 hover 下背景色为透明
         el.style.setProperty('--el-hover-fill', 'rgba(255, 255, 255, 0.1)')
+
+        // 聊天页自定义变量 - 暗色模式
+        el.style.setProperty('--message-bg-user', 'linear-gradient(135deg, rgba(64, 158, 255, 0.18), rgba(96, 165, 250, 0.12))')
+        el.style.setProperty('--message-bg-assistant', 'rgba(255, 255, 255, 0.04)')
+        el.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.08)')
+        el.style.setProperty('--bg-primary', '#141414')
+        el.style.setProperty('--bg-secondary', '#1a1a1a')
+        el.style.setProperty('--text-primary', '#ffffff')
+        el.style.setProperty('--text-secondary', '#a3a6ad')
+        el.style.setProperty('--scrollbar-thumb', 'rgba(255, 255, 255, 0.18)')
+        el.style.setProperty('--scrollbar-track', 'transparent')
+        el.style.setProperty('--hover-bg', 'rgba(255, 255, 255, 0.06)')
+        el.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.3)')
+        el.style.setProperty('--divider-rgb', '255, 255, 255')
       } else {
         el.style.removeProperty('--el-bg-color')
         el.style.removeProperty('--el-bg-color-page')
@@ -91,6 +105,20 @@ export const useThemeStore = defineStore('theme', {
         el.style.removeProperty('--el-menu-bg-color')
         // hover 下背景色
         el.style.setProperty('--el-hover-fill', '#dcdbdb')
+
+        // 聊天页自定义变量 - 亮色模式
+        el.style.setProperty('--message-bg-user', 'linear-gradient(135deg, #e8f4fd, #dbeafe)')
+        el.style.setProperty('--message-bg-assistant', '#ffffff')
+        el.style.setProperty('--border-color', 'rgba(0, 0, 0, 0.06)')
+        el.style.setProperty('--bg-primary', '#ffffff')
+        el.style.setProperty('--bg-secondary', '#f7f8fa')
+        el.style.setProperty('--text-primary', '#1d2129')
+        el.style.setProperty('--text-secondary', '#86909c')
+        el.style.setProperty('--scrollbar-thumb', 'rgba(0, 0, 0, 0.12)')
+        el.style.setProperty('--scrollbar-track', 'transparent')
+        el.style.setProperty('--hover-bg', '#f2f3f5')
+        el.style.setProperty('--shadow-color', 'rgba(0, 0, 0, 0.06)')
+        el.style.setProperty('--divider-rgb', '0, 0, 0')
       }
     },
 
