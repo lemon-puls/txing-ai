@@ -421,14 +421,14 @@ $gray-900: #111827;
   position: relative;
   z-index: 10;
   margin-top: -32px;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .tag-nav {
   display: flex;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 0;
+  gap: 2px;
+  padding: 6px 6px;
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
@@ -447,14 +447,6 @@ $gray-900: #111827;
     font-size: 14px;
     color: $gray-500;
     flex-shrink: 0;
-
-    &:first-child {
-      margin-left: 10px;
-    }
-
-    &:last-child {
-      margin-right: 10px;
-    }
 
     &:hover {
       color: $gray-700;
