@@ -126,7 +126,7 @@ defineExpose({ handleKeydown })
 <style lang="scss" scoped>
 .app-mention-popup {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
   max-height: 220px;
@@ -138,7 +138,7 @@ defineExpose({ handleKeydown })
   flex-direction: column;
   overflow: hidden;
   z-index: 100;
-  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .popup-list {
@@ -214,6 +214,6 @@ defineExpose({ handleKeydown })
 .popup-fade-enter-from,
 .popup-fade-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(8px);
 }
 </style>
