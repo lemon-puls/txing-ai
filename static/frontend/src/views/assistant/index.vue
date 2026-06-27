@@ -21,11 +21,11 @@
           />
         </div>
         <div class="action-buttons">
-          <el-button type="primary" class="action-btn" @click="startChat">
+          <el-button class="action-btn primary-btn" @click="startChat">
             <el-icon><Timer /></el-icon>
             开始聊天
           </el-button>
-          <el-button v-permission:login class="action-btn outline" @click="createAssistant">
+          <el-button v-permission:login class="action-btn ghost-btn" @click="createAssistant">
             <el-icon><Plus /></el-icon>
             创建助手
           </el-button>
@@ -362,22 +362,39 @@ $gray-900: #111827;
     .action-buttons {
       display: flex;
       justify-content: center;
-      gap: 12px;
+      gap: 14px;
 
       .action-btn {
-        padding: 10px 24px;
-        font-size: 14px;
+        padding: 12px 28px;
+        font-size: 15px;
         font-weight: 500;
         border-radius: 10px;
         transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
 
-        .el-icon { margin-right: 6px; }
+        .el-icon {
+          font-size: 16px;
+        }
 
         &:hover {
           transform: translateY(-1px);
         }
 
-        &.outline {
+        &.primary-btn {
+          background: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: #fff;
+          backdrop-filter: blur(8px);
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+          }
+        }
+
+        &.ghost-btn {
           background: transparent;
           border: 1px solid rgba(255, 255, 255, 0.2);
           color: rgba(255, 255, 255, 0.8);
@@ -385,6 +402,7 @@ $gray-900: #111827;
           &:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
           }
         }
       }
@@ -410,7 +428,7 @@ $gray-900: #111827;
   display: flex;
   justify-content: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 6px 6px;
   max-width: 900px;
   margin: 0 auto;
   background: #fff;
