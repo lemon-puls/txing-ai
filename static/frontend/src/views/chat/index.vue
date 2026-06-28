@@ -402,7 +402,6 @@
                 @paste="handlePaste"
                 @scroll="syncHighlightScroll"
                 class="custom-input"
-                :class="{ 'has-mention': selectedApp }"
               />
               <!-- 拖拽提示 -->
               <div v-if="isDragging" class="drag-overlay">
@@ -564,7 +563,7 @@
 </template>
 
 <script setup name="ChatView">
-import {ref, computed, onMounted, nextTick, onUnmounted} from 'vue'
+import {ref, computed, onMounted, nextTick, onUnmounted, watch} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {ElMessage, ElMessageBox, ElCheckbox} from 'element-plus'
 import {useConversationStore} from '@/stores/conversation'
@@ -1939,7 +1938,7 @@ const highlightedHtml = computed(() => {
   return esc(before) + '<span class="mention-highlight">' + esc(mention) + '</span>' + esc(after).replace(/ /g, ' ').replace(/\n/g, '<br>')
 })
 
-// 同步高亮层滚动
+// 同步高亮层滚动 & 控制 textarea 透明度
 const syncHighlightScroll = () => {
   const textarea = document.querySelector('.custom-input .el-textarea__inner')
   const highlight = textareaWrapperRef.value?.querySelector('.input-highlight')
@@ -1948,6 +1947,22 @@ const syncHighlightScroll = () => {
     highlight.scrollLeft = textarea.scrollLeft
   }
 }
+
+// 监听 selectedApp 变化，切换 textarea 文字透明度
+watch(selectedApp, (val) => {
+  nextTick(() => {
+    const textarea = document.querySelector('.custom-input .el-textarea__inner')
+    if (textarea) {
+      if (val) {
+        textarea.style.color = 'transparent'
+        textarea.style.caretColor = 'var(--el-text-color-primary)'
+      } else {
+        textarea.style.color = ''
+        textarea.style.caretColor = ''
+      }
+    }
+  })
+})
 
 // 加载应用的 inputSchema
 const loadAppInputSchema = async (appId) => {
@@ -3288,7 +3303,7 @@ const batchDelete = async () => {
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 5px 95px 5px 11px;
+    padding: 5px 90px 5px 11px;
     line-height: 1.6;
     font-size: 14px;
     white-space: pre-wrap;
@@ -3300,6 +3315,8 @@ const batchDelete = async () => {
     box-sizing: border-box;
     border: 1px solid transparent;
     border-radius: inherit;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 
     :deep(.mention-highlight) {
       color: var(--el-color-primary);
@@ -3314,11 +3331,6 @@ const batchDelete = async () => {
     transition: all 0.3s ease;
     position: relative;
     z-index: 2;
-
-    &.has-mention :deep(.el-textarea__inner) {
-      color: transparent;
-      caret-color: var(--el-text-color-primary);
-    }
 
     :deep(.el-textarea__inner) {
       resize: none !important;
