@@ -592,6 +592,12 @@ func (e *ParallelExecutor) ExecuteParallelGroup(ctx context.Context, group *Para
 	return results, nil
 }
 
+// MergeResults 合并多个分支的结果（导出的方法供外部调用）
+// MergeResults merges results from multiple branches (exported for external use)
+func (e *ParallelExecutor) MergeResults(results map[string]*ParallelResult) string {
+	return e.mergeResults(results)
+}
+
 // mergeResults 合并多个分支的结果
 // mergeResults merges results from multiple branches
 func (e *ParallelExecutor) mergeResults(results map[string]*ParallelResult) string {
@@ -809,7 +815,7 @@ func (e *ParallelExecutor) ValidateParallelGroup(group *ParallelGroup) error {
 
 	for i, branch := range group.Branches {
 		if len(branch) == 0 {
-			return fmt.Errorf("分支 %d 为空 / Branch %d is empty", i)
+			return fmt.Errorf("分支 %d 为空 / Branch %d is empty", i, i)
 		}
 	}
 

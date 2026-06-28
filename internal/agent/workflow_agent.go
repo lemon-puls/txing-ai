@@ -121,6 +121,9 @@ type NodeData struct {
 	HTTPConfig        *HTTPConfig         `json:"httpConfig,omitempty"`
 	SubWorkflowConfig *SubWorkflowConfig  `json:"subWorkflowConfig,omitempty"`
 	AgentConfig       *AgentConfig        `json:"agentConfig,omitempty"`
+	ParallelConfig    *ParallelConfig     `json:"parallelConfig,omitempty"`  // 并行组配置 / Parallel group config
+	JoinConfig        *JoinConfig         `json:"joinConfig,omitempty"`      // 汇聚节点配置 / Join node config
+	Extra             map[string]interface{} `json:"extra,omitempty"`        // 扩展字段，用于存储 parallelId 等 / Extra fields for parallelId etc.
 }
 
 // NodeExecutionLog 节点执行日志
@@ -1067,6 +1070,125 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				sendExecutionLog(callback, execLog)
 				statusCbAgent("completed")
 				return schema.AssistantMessage(response, nil), nil
+			}))
+
+		case "parallel":
+			// 并行组入口节点：创建并行执行节点
+			parallelConfig := &ParallelConfig{
+				MaxConcurrency: 0,
+				WaitStrategy:   "all",
+				Timeout:        0,
+			}
+			// 从节点配置读取
+			if node.Data.ParallelConfig != nil {
+				parallelConfig = node.Data.ParallelConfig
+			}
+
+			// 创建并行执行器
+			parallelExecutor := NewParallelExecutor(a, parallelConfig.MaxConcurrency)
+
+			statusCbParallel := nodeStatusCallback(callback, nodeId, "parallel", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "parallel",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbParallel("running")
+
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
+				}
+
+				// 识别并行组
+				parallelGroups, err := parallelExecutor.IdentifyParallelGroups(&topo)
+				if err != nil {
+					log.Error("识别并行组失败", zap.String("nodeId", nodeId), zap.Error(err))
+					execLog.Status = "failed"
+					execLog.Error = err.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("failed")
+					return nil, err
+				}
+
+				// 找到当前 parallel 节点对应的并行组
+				var currentGroup *ParallelGroup
+				for _, group := range parallelGroups {
+					if group.ParallelID == nodeId {
+						currentGroup = group
+						break
+					}
+				}
+
+				if currentGroup == nil {
+					log.Warn("未找到对应的并行组", zap.String("nodeId", nodeId))
+					execLog.Status = "completed"
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("completed")
+					return input, nil
+				}
+
+				// 执行并行组
+				results, err := parallelExecutor.ExecuteParallelGroup(ctx, currentGroup, inputContent, callback)
+				if err != nil {
+					log.Error("并行组执行失败", zap.String("nodeId", nodeId), zap.Error(err))
+					execLog.Status = "failed"
+					execLog.Error = err.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("failed")
+					return nil, err
+				}
+
+				// 合并结果
+				mergedOutput := parallelExecutor.MergeResults(results)
+
+				execLog.Status = "completed"
+				execLog.Output = mergedOutput
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbParallel("completed")
+
+				return schema.AssistantMessage(mergedOutput, nil), nil
+			}))
+
+		case "join":
+			// 汇聚节点：创建汇聚等待节点（实际汇聚逻辑在 parallel 节点完成）
+			// Join node: the actual join logic is handled in the parallel node
+			statusCbJoin := nodeStatusCallback(callback, nodeId, "join", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "join",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbJoin("running")
+
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
+				}
+
+				// 汇聚节点直接返回输入（实际汇聚逻辑在 parallel 节点完成）
+				execLog.Status = "completed"
+				execLog.Output = inputContent
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbJoin("completed")
+
+				return input, nil
 			}))
 
 		}
