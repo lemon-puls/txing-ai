@@ -102,44 +102,6 @@
           <div class="card-overlay"></div>
         </div>
 
-        <!-- 简历优化入口 -->
-        <div
-          class="entrance-card resume-card"
-          :class="{ 'card-hover': hoveredCard === 'resume' }"
-          @click="navigateToResume"
-          @mouseenter="handleHover('resume')"
-          @mouseleave="handleHover(null)"
-        >
-          <div class="card-content">
-            <el-icon class="card-icon"><Document /></el-icon>
-            <h2>AI简历优化</h2>
-            <p>智能优化简历，提升求职竞争力</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
-
-        <!-- 旅游攻略入口 -->
-        <div
-          class="entrance-card travel-card"
-          :class="{ 'card-hover': hoveredCard === 'travel' }"
-          @click="navigateToTravel"
-          @mouseenter="handleHover('travel')"
-          @mouseleave="handleHover(null)"
-        >
-          <div class="card-content">
-            <el-icon class="card-icon"><Location /></el-icon>
-            <h2>AI旅游攻略</h2>
-            <p>输入目的地和偏好，生成专业旅游攻略</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
-
         <!-- AI 应用市场入口 -->
         <div
           class="entrance-card workflow-card"
@@ -171,8 +133,6 @@ import {
   Shop,
   ArrowRight,
   Link,
-  Document,
-  Location,
   Share
 } from '@element-plus/icons-vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -261,14 +221,6 @@ const navigateToMarket = () => {
 
 const navigateToWebsites = () => {
   router.push('/websites')
-}
-
-const navigateToResume = () => {
-  router.push('/resume')
-}
-
-const navigateToTravel = () => {
-  router.push('/travel')
 }
 
 const navigateToWorkflow = () => {
