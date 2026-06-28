@@ -47,8 +47,6 @@
         :class="{ published: wf.status === 'published' }"
         :style="{ '--delay': `${index * 0.06}s` }"
       >
-        <!-- 顶部状态色条 -->
-        <div class="card-accent" />
 
         <!-- 卡片内容 -->
         <div class="card-body">
@@ -385,17 +383,10 @@ $draft: #94a3b8;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     border-color: var(--el-border-color, #c0c4cc);
 
-    .card-accent { height: 6px; }
     .action-btn { opacity: 1; }
   }
 
   // 顶部状态色条
-  .card-accent {
-    height: 3px;
-    background: $draft;
-    transition: height 0.25s ease;
-
-    .published & { background: $published; }
   }
 
   // 卡片内容
