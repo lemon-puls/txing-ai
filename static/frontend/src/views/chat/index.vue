@@ -1995,45 +1995,6 @@ const removeSelectedApp = () => {
   appUploadedFiles.value = {}
 }
 
-// @ 高亮 HTML 生成
-const highlightedHtml = computed(() => {
-  if (!selectedApp.value || !messageInput.value) return ''
-  const mentionText = '@' + selectedApp.value.name
-  const idx = messageInput.value.indexOf(mentionText)
-  if (idx < 0) return ''
-  const before = messageInput.value.slice(0, idx)
-  const mention = messageInput.value.slice(idx, idx + mentionText.length)
-  const after = messageInput.value.slice(idx + mentionText.length)
-  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  return esc(before) + '<span class="mention-highlight">' + esc(mention) + '</span>' + esc(after).replace(/ /g, ' ').replace(/\n/g, '<br>')
-})
-
-// 同步高亮层滚动 & 控制 textarea 透明度
-const syncHighlightScroll = () => {
-  const textarea = document.querySelector('.custom-input .el-textarea__inner')
-  const highlight = textareaWrapperRef.value?.querySelector('.input-highlight')
-  if (textarea && highlight) {
-    highlight.scrollTop = textarea.scrollTop
-    highlight.scrollLeft = textarea.scrollLeft
-  }
-}
-
-// 监听 selectedApp 变化，切换 textarea 文字透明度
-watch(selectedApp, (val) => {
-  nextTick(() => {
-    const textarea = document.querySelector('.custom-input .el-textarea__inner')
-    if (textarea) {
-      if (val) {
-        textarea.style.color = 'transparent'
-        textarea.style.caretColor = 'var(--el-text-color-primary)'
-      } else {
-        textarea.style.color = ''
-        textarea.style.caretColor = ''
-      }
-    }
-  })
-})
-
 // 应用文件上传
 const hasFileField = computed(() => {
   return appInputSchema.value.some(f => f.type === 'file')
