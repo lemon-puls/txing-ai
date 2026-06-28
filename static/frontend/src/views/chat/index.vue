@@ -384,25 +384,27 @@
                   </div>
                 </el-tooltip>
               </div>
-              <!-- @ 高亮层 -->
-              <div
-                v-if="selectedApp"
-                class="input-highlight"
-                v-html="highlightedHtml"
-              ></div>
-              <el-input
-                v-model="messageInput"
-                type="textarea"
-                :rows="textareaRows"
-                :placeholder="getInputPlaceholder()"
-                resize="none"
-                @keydown.enter.exact.prevent="sendMessage"
-                @input="handleInput"
-                @keydown="handleInputKeydown"
-                @paste="handlePaste"
-                @scroll="syncHighlightScroll"
-                class="custom-input"
-              />
+              <div class="input-area">
+                <!-- @ 高亮层 -->
+                <div
+                  v-if="selectedApp"
+                  class="input-highlight"
+                  v-html="highlightedHtml"
+                ></div>
+                <el-input
+                  v-model="messageInput"
+                  type="textarea"
+                  :rows="textareaRows"
+                  :placeholder="getInputPlaceholder()"
+                  resize="none"
+                  @keydown.enter.exact.prevent="sendMessage"
+                  @input="handleInput"
+                  @keydown="handleInputKeydown"
+                  @paste="handlePaste"
+                  @scroll="syncHighlightScroll"
+                  class="custom-input"
+                />
+              </div>
               <!-- 拖拽提示 -->
               <div v-if="isDragging" class="drag-overlay">
                 <el-icon class="drag-icon"><Upload /></el-icon>
@@ -3297,6 +3299,10 @@ const batchDelete = async () => {
     }
   }
 
+  .input-area {
+    position: relative;
+  }
+
   .input-highlight {
     position: absolute;
     top: 0;
@@ -3308,13 +3314,11 @@ const batchDelete = async () => {
     font-size: 14px;
     white-space: pre-wrap;
     word-wrap: break-word;
-    overflow-y: auto;
+    overflow: hidden;
     pointer-events: none;
     z-index: 1;
     color: transparent;
     box-sizing: border-box;
-    border: 1px solid transparent;
-    border-radius: inherit;
     scrollbar-width: none;
     &::-webkit-scrollbar { display: none; }
 
@@ -3329,8 +3333,6 @@ const batchDelete = async () => {
 
   .custom-input {
     transition: all 0.3s ease;
-    position: relative;
-    z-index: 2;
 
     :deep(.el-textarea__inner) {
       resize: none !important;
