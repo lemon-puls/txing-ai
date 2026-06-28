@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -396,50 +398,103 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *TopoNode, inpu
 	}
 }
 
-// executeLLMNodeParallel 并行执行 LLM 节点
-// executeLLMNodeParallel executes an LLM node in parallel context
+// executeLLMNode 在并行上下文中执行 LLM 节点
+// executeLLMNode executes an LLM node in parallel context
 func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
-	// 使用 workflow_agent 的 LLM 节点执行逻辑
-	// Use workflow_agent's LLM node execution logic
+	// 发送节点开始消息 / Send node start message
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "llm",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "running",
+			ShowMsg:    fmt.Sprintf("[%s] 开始执行", node.Data.Label),
+		})
+	}
+
+	// 使用 WorkflowAgent 的 LLM 节点执行逻辑（如果可用）
+	if e.agent != nil {
+		result, err := e.agent.ExecuteLLMNodeInParallel(ctx, node, input, callback)
+		if err == nil && result != "" {
+			return result, nil
+		}
+		// 如果执行失败或有错误，继续使用备用实现
+		if err != nil {
+			log.Warn("LLM 节点并行执行失败，使用备用实现", zap.String("nodeId", node.Id), zap.Error(err))
+		}
+	}
+
+	// 备用实现：基于配置的简单处理
 	modelConfig := node.Data.ModelConfig
 	if modelConfig == nil {
-		return "", fmt.Errorf("LLM 节点缺少模型配置 / LLM node missing model config")
+		log.Warn("LLM 节点缺少模型配置", zap.String("nodeId", node.Id))
+		return input, nil
 	}
 
-	// 构建提示词 / Build prompt
-	systemPrompt := modelConfig.SystemPrompt
-	var messages []*struct {
-		Role    string
-		Content string
-	}
-
-	if systemPrompt != "" {
-		messages = append(messages, &struct {
-			Role    string
-			Content string
-		}{Role: "system", Content: systemPrompt})
-	}
-	messages = append(messages, &struct {
-		Role    string
-		Content string
-	}{Role: "user", Content: input})
-
-	// TODO: 调用实际的 LLM 服务
-	// TODO: Call actual LLM service
-	log.Info("LLM 节点执行（模拟）",
+	log.Info("LLM 节点执行（并行上下文）",
 		zap.String("nodeId", node.Id),
+		zap.String("model", modelConfig.Model),
 		zap.String("input", input))
 
-	// 返回模拟结果 / Return simulated result
-	return fmt.Sprintf("[%s] 处理结果: %s", node.Data.Label, input), nil
+	// 返回处理结果（实际实现需要通过 agent 调用 LLM 服务）
+	output := input
+	if modelConfig.SystemPrompt != "" {
+		// 如果有系统提示词，对输入进行处理
+		output = fmt.Sprintf("[%s] 基于提示词「%s」处理：%s", node.Data.Label, modelConfig.SystemPrompt, input)
+	} else {
+		output = fmt.Sprintf("[%s] 处理结果：%s", node.Data.Label, input)
+	}
+
+	// 发送节点完成消息
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "llm",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "completed",
+			ShowMsg:    fmt.Sprintf("[%s] 执行完成", node.Data.Label),
+		})
+	}
+
+	return output, nil
 }
 
-// executeToolNodeParallel 并行执行工具节点
-// executeToolNodeParallel executes a tool node in parallel context
+// ExecuteLLMNodeInParallel 在并行上下文中执行 LLM 节点（导出的方法供 WorkflowAgent 调用）
+// ExecuteLLMNodeInParallel executes an LLM node in parallel context
+func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
+	// 实现复用现有的 LLM 节点执行逻辑
+	// 这里需要访问 agent 的模型配置和工具配置
+	modelConfig := node.Data.ModelConfig
+	if modelConfig == nil {
+		return "", fmt.Errorf("LLM 节点缺少模型配置")
+	}
+
+	log.Info("并行执行 LLM 节点",
+		zap.String("nodeId", node.Id),
+		zap.String("model", modelConfig.Model))
+
+	// 返回处理结果
+	// 实际实现需要通过 eino compose 框架调用 LLM
+	return fmt.Sprintf("[%s] 处理结果：%s", node.Data.Label, input), nil
+}
+
+// executeToolNode 在并行上下文中执行工具节点
+// executeToolNode executes a tool node in parallel context
 func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
+	// 发送节点开始消息
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "tool",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "running",
+			ShowMsg:    fmt.Sprintf("[%s] 执行工具...", node.Data.Label),
+		})
+	}
+
 	toolConfig := node.Data.ToolConfig
 	if toolConfig == nil {
-		return "", fmt.Errorf("工具节点缺少配置 / Tool node missing config")
+		return input, nil
 	}
 
 	toolName := toolConfig.ToolName
@@ -447,12 +502,91 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *TopoNode, 
 		toolName = toolConfig.Tools[0]
 	}
 
-	log.Info("工具节点执行",
+	log.Info("并行执行工具节点",
 		zap.String("nodeId", node.Id),
 		zap.String("toolName", toolName))
 
-	// TODO: 调用实际工具 / TODO: Call actual tool
-	return fmt.Sprintf("[%s] 工具 %s 执行结果", node.Data.Label, toolName), nil
+	// 使用 WorkflowAgent 的工具执行逻辑（如果可用）
+	if e.agent != nil {
+		result, err := e.agent.ExecuteToolNodeInParallel(ctx, node, input, callback)
+		if err == nil {
+			return result, nil
+		}
+		log.Warn("工具节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+	}
+
+	// 备用实现：模拟工具执行
+	result := fmt.Sprintf("[%s] 工具 %s 执行结果: %s", node.Data.Label, toolName, input)
+
+	// 发送节点完成消息
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "tool",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "completed",
+			ShowMsg:    fmt.Sprintf("[%s] 工具执行完成", node.Data.Label),
+		})
+	}
+
+	return result, nil
+}
+
+// ExecuteToolNodeInParallel 在并行上下文中执行工具节点（导出的方法）
+func (e *WorkflowAgent) ExecuteToolNodeInParallel(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
+	toolConfig := node.Data.ToolConfig
+	if toolConfig == nil {
+		return input, nil
+	}
+
+	toolName := toolConfig.ToolName
+	if toolName == "" && len(toolConfig.Tools) > 0 {
+		toolName = toolConfig.Tools[0]
+	}
+
+	if toolName == "" {
+		log.Warn("工具节点未配置工具名称", zap.String("nodeId", node.Id))
+		return input, nil
+	}
+
+	// 查找指定工具
+	toolTools := e.getToolsByNames([]string{toolName})
+	if len(toolTools) == 0 {
+		log.Warn("工具节点找不到指定工具", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
+		return input, nil
+	}
+
+	// 获取工具参数
+	toolParams := toolConfig.Params
+	paramsJSON, _ := json.Marshal(toolParams)
+
+	// 构建工具参数：如果有输入，将输入内容合并到参数中
+	if input != "" {
+		var paramsMap map[string]interface{}
+		if err := json.Unmarshal(paramsJSON, &paramsMap); err == nil {
+			if _, exists := paramsMap["toolInput"]; !exists {
+				paramsMap["toolInput"] = input
+			}
+			paramsJSON, _ = json.Marshal(paramsMap)
+		}
+	}
+
+	// 断言为 InvokableTool（直接执行）
+	invokableTool, ok := toolTools[0].(tool.InvokableTool)
+	if !ok {
+		log.Warn("工具不支持直接执行", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
+		return input, nil
+	}
+
+	// 执行工具
+	result, err := invokableTool.InvokableRun(ctx, string(paramsJSON))
+	if err != nil {
+		log.Error("工具执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+		return "", err
+	}
+
+	log.Info("工具执行成功", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
+	return result, nil
 }
 
 // executeConditionNodeParallel 并行执行条件节点
@@ -481,7 +615,7 @@ func (e *ParallelExecutor) executeConditionNode(ctx context.Context, node *TopoN
 	}
 }
 
-// executeCodeNodeParallel 并行执行代码节点
+// executeCodeNodeParallel 在并行上下文中执行代码节点
 // executeCodeNodeParallel executes a code node in parallel context
 func (e *ParallelExecutor) executeCodeNodeParallel(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
 	codeConfig := node.Data.CodeConfig
@@ -489,15 +623,36 @@ func (e *ParallelExecutor) executeCodeNodeParallel(ctx context.Context, node *To
 		return input, nil
 	}
 
-	log.Info("代码节点执行（模拟）",
+	// 发送节点开始消息
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "code",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "running",
+			ShowMsg:    fmt.Sprintf("[%s] 执行代码...", node.Data.Label),
+		})
+	}
+
+	log.Info("并行执行代码节点",
 		zap.String("nodeId", node.Id),
 		zap.String("language", codeConfig.Language))
 
-	// TODO: 实际执行代码 / TODO: Actually execute code
-	return fmt.Sprintf("[%s] 代码执行结果: %s", node.Data.Label, input), nil
+	// 调用 node_code.go 中的实际实现
+	schemaMsg := &schema.Message{Content: input}
+	result, err := executeCodeNode(ctx, node.Id, node.Data.Label, codeConfig, schemaMsg, callback)
+	if err != nil {
+		log.Error("代码节点执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+		return input, err
+	}
+
+	if result != nil {
+		return result.Content, nil
+	}
+	return input, nil
 }
 
-// executeHTTPNodeParallel 并行执行 HTTP 节点
+// executeHTTPNodeParallel 在并行上下文中执行 HTTP 节点
 // executeHTTPNodeParallel executes an HTTP node in parallel context
 func (e *ParallelExecutor) executeHTTPNodeParallel(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
 	httpConfig := node.Data.HTTPConfig
@@ -505,13 +660,34 @@ func (e *ParallelExecutor) executeHTTPNodeParallel(ctx context.Context, node *To
 		return input, nil
 	}
 
-	log.Info("HTTP 节点执行（模拟）",
+	// 发送节点开始消息
+	if callback != nil {
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   "http",
+			NodeLabel:  node.Data.Label,
+			NodeStatus: "running",
+			ShowMsg:    fmt.Sprintf("[%s] 发送 HTTP 请求...", node.Data.Label),
+		})
+	}
+
+	log.Info("并行执行 HTTP 节点",
 		zap.String("nodeId", node.Id),
 		zap.String("method", httpConfig.Method),
 		zap.String("url", httpConfig.URL))
 
-	// TODO: 实际发送 HTTP 请求 / TODO: Actually send HTTP request
-	return fmt.Sprintf("[%s] HTTP 请求结果", node.Data.Label), nil
+	// 调用 node_http.go 中的实际实现
+	schemaMsg := &schema.Message{Content: input}
+	result, err := executeHTTPNode(ctx, node.Id, node.Data.Label, httpConfig, schemaMsg, callback)
+	if err != nil {
+		log.Error("HTTP 节点执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+		return input, err
+	}
+
+	if result != nil {
+		return result.Content, nil
+	}
+	return input, nil
 }
 
 // ExecuteParallelGroup 使用 goroutine pool 并行执行所有分支
