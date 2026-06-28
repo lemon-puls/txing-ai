@@ -13,6 +13,14 @@
     </div>
 
     <div class="node-content">
+      <div class="info-row" v-if="modelConfig?.model">
+        <span class="info-label">模型:</span>
+        <span class="info-value">{{ modelConfig.model }}</span>
+      </div>
+      <div class="info-row" v-else>
+        <span class="info-label">模型:</span>
+        <span class="info-value model-default">未指定</span>
+      </div>
       <div class="info-row" v-if="agentConfig?.tools?.length">
         <span class="info-label">工具:</span>
         <span class="info-value">{{ agentConfig.tools.length }} 个</span>
@@ -49,6 +57,7 @@ const props = defineProps({
 
 const label = computed(() => props.data?.label || 'Agent')
 const agentConfig = computed(() => props.data?.agentConfig || {})
+const modelConfig = computed(() => props.data?.modelConfig || {})
 const promptPreview = computed(() => {
   const prompt = agentConfig.value?.systemPrompt || ''
   return prompt.length > 30 ? prompt.substring(0, 30) + '...' : prompt
@@ -124,6 +133,11 @@ const promptPreview = computed(() => {
 
         &.prompt-preview {
           color: #78909c;
+          font-style: italic;
+        }
+
+        &.model-default {
+          color: #bdbdbd;
           font-style: italic;
         }
       }

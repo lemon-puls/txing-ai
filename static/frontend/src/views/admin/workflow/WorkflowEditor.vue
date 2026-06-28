@@ -588,6 +588,15 @@ const onDrop = (event) => {
           systemPrompt: '',
           tools: [],
           maxRunSteps: 30
+        },
+        modelConfig: {
+          model: '',
+          systemPrompt: '',
+          temperature: 0.7,
+          maxTokens: 4096,
+          contextEnabled: true,
+          tools: [],
+          maxToolRounds: 5
         }
       } : {}),
       ...(type === 'parallel' ? {

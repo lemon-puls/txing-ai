@@ -261,25 +261,67 @@
       <div class="config-section" v-if="nodeType === 'agent'">
         <div class="section-title">Agent 配置</div>
         <el-form label-position="top" size="small">
+          <!-- 模型配置 / Model config -->
+          <div class="sub-section-title">模型配置</div>
+          <el-form-item label="选择模型">
+            <el-select v-model="localData.modelConfig.model" placeholder="请选择模型（留空则使用工作流默认模型）" style="width: 100%" clearable>
+              <el-option v-for="model in modelList" :key="model.name" :label="model.name" :value="model.name" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="系统提示词">
+            <el-input
+              v-model="localData.modelConfig.systemPrompt"
+              type="textarea"
+              :rows="4"
+              placeholder="指导 Agent 的行为；为空时使用 Agent 配置中的系统提示词"
+            />
+            <div class="form-tip">模型配置中的系统提示词优先级高于 Agent 配置</div>
+          </el-form-item>
+          <el-form-item label="温度 (Temperature)">
+            <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
+          </el-form-item>
+          <el-form-item label="最大Token数">
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="启用上下文记忆">
+            <el-switch v-model="localData.modelConfig.contextEnabled" />
+          </el-form-item>
+          <el-form-item label="绑定工具">
+            <el-checkbox-group v-model="localData.modelConfig.tools">
+              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
+                {{ tool.displayName }}
+              </el-checkbox>
+            </el-checkbox-group>
+            <div class="form-tip">模型配置中的工具列表优先级高于 Agent 配置</div>
+          </el-form-item>
+          <el-form-item label="最大工具调用轮次" v-if="localData.modelConfig.tools && localData.modelConfig.tools.length > 0">
+            <el-input-number v-model="localData.modelConfig.maxToolRounds" :min="1" :max="20" :step="1" style="width: 100%" />
+            <div class="form-tip">控制 Agent 最多执行多少轮工具调用，防止无限循环</div>
+          </el-form-item>
+
+          <div class="divider"></div>
+
+          <!-- Agent 行为配置 / Agent behavior config -->
+          <div class="sub-section-title">Agent 行为</div>
+          <el-form-item label="系统提示词 (Agent 兜底)">
             <el-input
               v-model="localData.agentConfig.systemPrompt"
               type="textarea"
-              :rows="6"
-              placeholder="请输入系统提示词，指导 Agent 的行为"
+              :rows="4"
+              placeholder="当上方模型配置的系统提示词为空时使用"
             />
           </el-form-item>
-          <el-form-item label="选择工具">
+          <el-form-item label="选择工具 (Agent 兜底)">
             <el-checkbox-group v-model="localData.agentConfig.tools">
               <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
                 {{ tool.displayName }}
               </el-checkbox>
             </el-checkbox-group>
-            <div class="form-tip">Agent 将自动决定何时调用这些工具（支持多轮调用）</div>
+            <div class="form-tip">当上方模型配置的工具列表为空时使用</div>
           </el-form-item>
           <el-form-item label="最大执行步数">
             <el-input-number v-model="localData.agentConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
-            <div class="form-tip">控制 Agent 最多执行多少轮工具调用，防止无限循环</div>
+            <div class="form-tip">控制 Agent 整体最多执行多少步，防止整体无限循环</div>
           </el-form-item>
         </el-form>
       </div>
@@ -413,6 +455,15 @@ const localData = ref({
     systemPrompt: '',
     tools: [],
     maxRunSteps: 30
+  },
+  parallelConfig: {
+    maxConcurrency: 3,
+    waitStrategy: 'all',
+    timeout: 60
+  },
+  joinConfig: {
+    strategy: 'all',
+    timeout: 60
   }
 })
 
@@ -468,6 +519,15 @@ watch(() => props.selectedNode, (newNode) => {
         systemPrompt: '',
         tools: [],
         maxRunSteps: 30
+      },
+      parallelConfig: newNode.data?.parallelConfig || {
+        maxConcurrency: 3,
+        waitStrategy: 'all',
+        timeout: 60
+      },
+      joinConfig: newNode.data?.joinConfig || {
+        strategy: 'all',
+        timeout: 60
       }
     }
 
