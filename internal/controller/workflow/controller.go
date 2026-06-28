@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"txing-ai/internal/agent"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -296,8 +297,10 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 			}
 		}
 		content = strings.Join(parts, "\n\n")
-	} else {
-		// 无 inputSchema 时，使用默认的 content 字段（兼容旧逻辑）
+	}
+
+	// 如果 inputSchema 分支未收集到内容，fallback 到 content 字段（兼容旧接口）
+	if content == "" {
 		content = ctx.PostForm("content")
 		if content == "" {
 			var req struct {
@@ -308,19 +311,17 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 			}
 		}
 
-		// 处理默认文件上传
-		file, header, fileErr := ctx.Request.FormFile("file")
-		if fileErr == nil && file != nil {
-			defer file.Close()
-			savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
-			if saveErr != nil {
-				log.Error("工作流上传文件保存失败", zap.Error(saveErr))
-			} else {
-				fileContent := extractFileContent(ctx, savePath, header.Filename)
-				if fileContent != "" {
-					if content != "" {
-						content = content + "\n\n文件内容：\n\n" + fileContent
-					} else {
+		// 处理默认文件上传（无 inputSchema 时的兼容逻辑）
+		if content == "" {
+			file, header, fileErr := ctx.Request.FormFile("file")
+			if fileErr == nil && file != nil {
+				defer file.Close()
+				savePath, _, saveErr := utils.SaveUploadedFile(file, header.Filename, 0, "workflow_uploads", "")
+				if saveErr != nil {
+					log.Error("工作流上传文件保存失败", zap.Error(saveErr))
+				} else {
+					fileContent := extractFileContent(ctx, savePath, header.Filename)
+					if fileContent != "" {
 						content = "文件内容：\n\n" + fileContent
 					}
 				}
@@ -364,6 +365,10 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// 并行分支会并发调用 callback，需要加锁保护 SSE writer
+	// Parallel branches call callback concurrently; lock to protect SSE writer
+	var sseMu sync.Mutex
+
 	// 文件产物收集（工具节点生成的文件）
 	var artifacts []map[string]string
 	// 文件生成工具及其结果前缀
@@ -379,6 +384,9 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	}
 
 	callback := func(chunk *global.Chunk) error {
+		sseMu.Lock()
+		defer sseMu.Unlock()
+
 		data := map[string]interface{}{
 			"content":          chunk.Content,
 			"reasoningContent": chunk.ReasoningContent,

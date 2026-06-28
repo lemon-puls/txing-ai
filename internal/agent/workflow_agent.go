@@ -1242,15 +1242,15 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				sendExecutionLog(callback, execLog)
 				statusCbParallel("completed")
 
-				// 把并行汇总结果作为 content 推给前端，让前端能展示输出
-				// Send merged output as content to frontend via callback
-				log.Info("并行结果回调前端",
+				// 并行节点完成：结果已经写入 executionLog.output，
+				// 这里不再通过 callback 推送 Content（避免被前端当作最终输出渲染）
+				// Only emit a lightweight progress hint so the node panel updates.
+				log.Info("并行节点执行完成",
 					zap.String("nodeId", nodeId),
 					zap.Int("outputLen", len(mergedOutput)),
 					zap.Bool("hasCallback", callback != nil))
-				if callback != nil && mergedOutput != "" {
+				if callback != nil {
 					if err := callback(&global.Chunk{
-						Content:  mergedOutput,
 						NodeId:   nodeId,
 						NodeType: "parallel",
 						ShowMsg:  "并行执行完成",

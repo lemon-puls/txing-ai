@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 	"txing-ai/internal/global"
@@ -46,17 +50,23 @@ type ParallelGroup struct {
 type ParallelExecutor struct {
 	agent      *WorkflowAgent // 工作流智能体 / Workflow agent
 	maxWorkers int            // 最大工作线程数 / Maximum worker threads
+	endpoint   string         // LLM 调用端点 / LLM endpoint
+	apiKey     string         // LLM API 密钥 / LLM API key
+	model      string         // 默认模型名 / Default model name
 }
 
 // NewParallelExecutor 创建并行执行器
 // NewParallelExecutor creates a new parallel executor instance
-func NewParallelExecutor(agent *WorkflowAgent, maxWorkers int) *ParallelExecutor {
+func NewParallelExecutor(agent *WorkflowAgent, maxWorkers int, endpoint, apiKey, model string) *ParallelExecutor {
 	if maxWorkers <= 0 {
 		maxWorkers = 10 // 默认最大并发数 / Default max concurrency
 	}
 	return &ParallelExecutor{
 		agent:      agent,
 		maxWorkers: maxWorkers,
+		endpoint:   endpoint,
+		apiKey:     apiKey,
+		model:      model,
 	}
 }
 
@@ -106,9 +116,10 @@ func (e *ParallelExecutor) extractParallelGroup(parallelNode *TopoNode, edges []
 		WaitStrategy:   "all",
 		Timeout:        0,
 	}
-	if parallelNode.Data.ModelConfig != nil {
-		// 尝试从 ModelConfig 中获取配置 / Try to get config from ModelConfig
-		config.MaxConcurrency = parallelNode.Data.ModelConfig.MaxTokens // 复用 MaxTokens 字段存储最大并发数
+	if parallelNode.Data.ParallelConfig != nil {
+		config.MaxConcurrency = parallelNode.Data.ParallelConfig.MaxConcurrency
+		config.WaitStrategy = parallelNode.Data.ParallelConfig.WaitStrategy
+		config.Timeout = parallelNode.Data.ParallelConfig.Timeout
 	}
 
 	// 找出所有属于该并行组的节点（通过 parallelId 或边关系）
@@ -135,10 +146,15 @@ func (e *ParallelExecutor) extractParallelGroup(parallelNode *TopoNode, edges []
 		branchNodes = e.findBranchesByParallelId(parallelID, nodeMap, edges)
 	}
 
-	// 转换为分支列表 / Convert to branch list
+	// 转换为分支列表，按 branch_X 序号排序以保证确定性 / Convert to branch list, sorted by branch_X index for determinism
 	var branches [][]*TopoNode
-	for _, nodes := range branchNodes {
-		branches = append(branches, nodes)
+	branchIDs := make([]string, 0, len(branchNodes))
+	for branchID := range branchNodes {
+		branchIDs = append(branchIDs, branchID)
+	}
+	sort.Strings(branchIDs) // branch_1 < branch_2 < branch_3
+	for _, branchID := range branchIDs {
+		branches = append(branches, branchNodes[branchID])
 	}
 
 	group := &ParallelGroup{
@@ -277,6 +293,15 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 	branchCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// 包装 callback，为每个 chunk 注入 branchID 以区分并行分支
+	wrappedCallback := callback
+	if callback != nil {
+		wrappedCallback = func(chunk *global.Chunk) error {
+			chunk.BranchID = branchID
+			return callback(chunk)
+		}
+	}
+
 	var lastOutput string = initialInput
 	var branchErr error
 
@@ -289,7 +314,7 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 		default:
 		}
 
-		nodeOutput, execErr := e.executeNode(branchCtx, node, lastOutput, callback)
+		nodeOutput, execErr := e.executeNode(branchCtx, node, lastOutput, wrappedCallback)
 
 		if execErr != nil {
 			log.Error("分支节点执行失败",
@@ -305,8 +330,8 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 		}
 
 		// 发送节点完成消息 / Send node completion message
-		if callback != nil {
-			callback(&global.Chunk{
+		if wrappedCallback != nil {
+			wrappedCallback(&global.Chunk{
 				NodeId:     node.Id,
 				NodeType:   node.Data.NodeType,
 				NodeLabel:  node.Data.Label,
@@ -412,47 +437,46 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *TopoNode, i
 		})
 	}
 
-	// 使用 WorkflowAgent 的 LLM 节点执行逻辑（如果可用）
+	// 使用 WorkflowAgent 的真实 LLM 调用逻辑
 	if e.agent != nil {
 		result, err := e.agent.ExecuteLLMNodeInParallel(ctx, node, input, callback)
 		if err == nil && result != "" {
+			if callback != nil {
+				callback(&global.Chunk{
+					NodeId:     node.Id,
+					NodeType:   "llm",
+					NodeLabel:  node.Data.Label,
+					NodeStatus: "completed",
+					ShowMsg:    fmt.Sprintf("[%s] 执行完成", node.Data.Label),
+				})
+			}
 			return result, nil
 		}
-		// 如果执行失败或有错误，继续使用备用实现
 		if err != nil {
-			log.Warn("LLM 节点并行执行失败，使用备用实现", zap.String("nodeId", node.Id), zap.Error(err))
+			log.Error("LLM 节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
 		}
 	}
 
-	// 备用实现：基于配置的简单处理
+	// 最终降级：构造空消息体尝试调用默认模型
 	modelConfig := node.Data.ModelConfig
 	if modelConfig == nil {
-		log.Warn("LLM 节点缺少模型配置", zap.String("nodeId", node.Id))
 		return input, nil
 	}
 
-	log.Info("LLM 节点执行（并行上下文）",
-		zap.String("nodeId", node.Id),
-		zap.String("model", modelConfig.Model),
-		zap.String("input", input))
-
-	// 返回处理结果（实际实现需要通过 agent 调用 LLM 服务）
 	output := input
 	if modelConfig.SystemPrompt != "" {
-		// 如果有系统提示词，对输入进行处理
 		output = fmt.Sprintf("[%s] 基于提示词「%s」处理：%s", node.Data.Label, modelConfig.SystemPrompt, input)
 	} else {
 		output = fmt.Sprintf("[%s] 处理结果：%s", node.Data.Label, input)
 	}
 
-	// 发送节点完成消息
 	if callback != nil {
 		callback(&global.Chunk{
 			NodeId:     node.Id,
 			NodeType:   "llm",
 			NodeLabel:  node.Data.Label,
 			NodeStatus: "completed",
-			ShowMsg:    fmt.Sprintf("[%s] 执行完成", node.Data.Label),
+			ShowMsg:    fmt.Sprintf("[%s] 执行完成（降级）", node.Data.Label),
 		})
 	}
 
@@ -460,22 +484,162 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *TopoNode, i
 }
 
 // ExecuteLLMNodeInParallel 在并行上下文中执行 LLM 节点（导出的方法供 WorkflowAgent 调用）
-// ExecuteLLMNodeInParallel executes an LLM node in parallel context
+// ExecuteLLMNodeInParallel executes an LLM node in parallel context with real LLM calls
 func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
-	// 实现复用现有的 LLM 节点执行逻辑
-	// 这里需要访问 agent 的模型配置和工具配置
 	modelConfig := node.Data.ModelConfig
 	if modelConfig == nil {
 		return "", fmt.Errorf("LLM 节点缺少模型配置")
 	}
 
-	log.Info("并行执行 LLM 节点",
-		zap.String("nodeId", node.Id),
-		zap.String("model", modelConfig.Model))
+	nodeModelName := modelConfig.Model
+	nodeMaxTokens := 8192
+	if modelConfig.MaxTokens > 0 {
+		nodeMaxTokens = modelConfig.MaxTokens
+	}
+	nodeTemperature := float32(0.7)
+	if modelConfig.Temperature > 0 {
+		nodeTemperature = float32(modelConfig.Temperature)
+	}
+	systemPrompt := modelConfig.SystemPrompt
+	llmToolNames := modelConfig.Tools
+	llmMaxToolRounds := modelConfig.MaxToolRounds
+	if llmMaxToolRounds <= 0 {
+		llmMaxToolRounds = 5
+	}
 
-	// 返回处理结果
-	// 实际实现需要通过 eino compose 框架调用 LLM
-	return fmt.Sprintf("[%s] 处理结果：%s", node.Data.Label, input), nil
+	// 解析节点模型信息
+	var nodeEndpoint, nodeAPIKey, nodeModel string
+	if e.modelResolver != nil {
+		info, err := e.modelResolver.Resolve(nodeModelName)
+		if err == nil {
+			nodeEndpoint = info.Endpoint
+			nodeAPIKey = info.APIKey
+			nodeModel = info.Model
+		} else if nodeModelName != "" {
+			nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
+		}
+	} else if nodeModelName != "" {
+		nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
+	}
+	if nodeEndpoint == "" {
+		nodeEndpoint = e.endpoint
+	}
+	if nodeAPIKey == "" {
+		nodeAPIKey = e.apiKey
+	}
+	if nodeModel == "" {
+		nodeModel = e.model
+	}
+
+	// 创建节点专属模型
+	nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		BaseURL:     nodeEndpoint,
+		Model:       nodeModel,
+		APIKey:      nodeAPIKey,
+		MaxTokens:   &nodeMaxTokens,
+		Temperature: &nodeTemperature,
+	})
+	if err != nil {
+		return "", fmt.Errorf("创建节点模型失败: %w", err)
+	}
+
+	// 绑定工具（如果配置了）
+	var llmToolNode *compose.ToolsNode
+	if len(llmToolNames) > 0 {
+		llmNodeTools := e.getToolsByNames(llmToolNames)
+		if len(llmNodeTools) > 0 {
+			nodeToolInfos := make([]*schema.ToolInfo, 0, len(llmNodeTools))
+			for _, t := range llmNodeTools {
+				info, err := t.Info(ctx)
+				if err != nil {
+					continue
+				}
+				nodeToolInfos = append(nodeToolInfos, info)
+			}
+			if err := nodeChatModel.BindTools(nodeToolInfos); err != nil {
+				log.Warn("LLM 节点绑定工具失败", zap.String("nodeId", node.Id), zap.Error(err))
+			} else {
+				llmToolNode, _ = compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
+					Tools:               llmNodeTools,
+					ExecuteSequentially: true,
+				})
+			}
+		}
+	}
+
+	// 构建消息
+	var messages []*schema.Message
+	if systemPrompt != "" {
+		messages = append(messages, schema.SystemMessage(systemPrompt))
+	}
+	if input != "" {
+		messages = append(messages, schema.UserMessage(input))
+	}
+
+	// 首次 LLM 调用
+	response, genErr := nodeChatModel.Generate(ctx, messages)
+	if genErr != nil {
+		return "", fmt.Errorf("LLM 调用失败: %w", genErr)
+	}
+
+	// 工具调用循环
+	for round := 0; round < llmMaxToolRounds; round++ {
+		if len(response.ToolCalls) == 0 {
+			break
+		}
+
+		// 发送工具调用开始消息
+		if callback != nil {
+			for _, tc := range response.ToolCalls {
+				callback(&global.Chunk{
+					NodeId:     node.Id,
+					NodeType:   "llm",
+					NodeLabel:  node.Data.Label,
+					ToolCallId: tc.ID,
+					ToolName:   tc.Function.Name,
+					ToolParams: tc.Function.Arguments,
+					ToolStatus: "running",
+					ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
+				})
+			}
+		}
+
+		messages = append(messages, response)
+
+		if llmToolNode != nil {
+			toolResults, toolErr := llmToolNode.Invoke(ctx, response)
+			if toolErr != nil {
+				messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
+			} else {
+				if callback != nil {
+					for _, tr := range toolResults {
+						callback(&global.Chunk{
+							NodeId:     node.Id,
+							NodeType:   "llm",
+							NodeLabel:  node.Data.Label,
+							ToolCallId: tr.ToolCallID,
+							ToolName:   tr.ToolName,
+							ToolResult: tr.Content,
+							ToolStatus: "completed",
+							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
+						})
+					}
+				}
+				messages = append(messages, toolResults...)
+			}
+		}
+
+		response, genErr = nodeChatModel.Generate(ctx, messages)
+		if genErr != nil {
+			break
+		}
+	}
+
+	result := ""
+	if response != nil {
+		result = response.Content
+	}
+	return result, nil
 }
 
 // executeToolNode 在并行上下文中执行工具节点
@@ -509,10 +673,12 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *TopoNode, 
 	// 使用 WorkflowAgent 的工具执行逻辑（如果可用）
 	if e.agent != nil {
 		result, err := e.agent.ExecuteToolNodeInParallel(ctx, node, input, callback)
-		if err == nil {
-			return result, nil
+		if err != nil {
+			// 工具执行失败，记录错误但继续处理
+			log.Error("工具节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+			return "", err
 		}
-		log.Warn("工具节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+		return result, nil
 	}
 
 	// 备用实现：模拟工具执行
@@ -556,18 +722,18 @@ func (e *WorkflowAgent) ExecuteToolNodeInParallel(ctx context.Context, node *Top
 		return input, nil
 	}
 
-	// 获取工具参数
-	toolParams := toolConfig.Params
-	paramsJSON, _ := json.Marshal(toolParams)
+	// 获取工具参数，并替换变量占位符
+	toolParams := replaceVarsInParams(toolConfig.Params, input, input)
 
 	// 构建工具参数：如果有输入，将输入内容合并到参数中
+	paramsJSON, _ := json.Marshal(toolParams)
 	if input != "" {
 		var paramsMap map[string]interface{}
 		if err := json.Unmarshal(paramsJSON, &paramsMap); err == nil {
 			if _, exists := paramsMap["toolInput"]; !exists {
 				paramsMap["toolInput"] = input
+				paramsJSON, _ = json.Marshal(paramsMap)
 			}
-			paramsJSON, _ = json.Marshal(paramsMap)
 		}
 	}
 
@@ -736,23 +902,44 @@ func (e *ParallelExecutor) ExecuteParallelGroup(ctx context.Context, group *Para
 
 	// 并行启动所有分支 / Start all branches in parallel
 	for i, branch := range group.Branches {
-		go func(branchIndex int, branchNodes []*TopoNode) {
-			defer wg.Done()
-
-			// 获取信号量 / Acquire semaphore
-			if sem != nil {
-				sem <- struct{}{}
-				defer func() { <-sem }()
+			// 诊断日志 / Diagnostic logs
+			ctxErrStr := "nil"
+			if ctx.Err() != nil {
+				ctxErrStr = ctx.Err().Error()
 			}
+			log.Info("准备启动分支 goroutine",
+				zap.String("parallelId", group.ParallelID),
+				zap.Int("branchIndex", i),
+				zap.String("ctx.Err()", ctxErrStr),
+				zap.Int("branchCount", len(group.Branches)))
 
-			// 执行分支 / Execute branch
-			err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
-			if err != nil {
-				log.Warn("分支执行出错（不影响其他分支）",
+			go func(branchIndex int, branchNodes []*TopoNode) {
+				defer wg.Done()
+
+				// 诊断日志 / Diagnostic logs
+				ctxErrStr := "nil"
+				if ctx.Err() != nil {
+					ctxErrStr = ctx.Err().Error()
+				}
+				log.Info("分支 goroutine 启动",
+					zap.String("parallelId", group.ParallelID),
 					zap.Int("branchIndex", branchIndex),
-					zap.Error(err))
-			}
-		}(i, branch)
+					zap.String("ctx.Err()", ctxErrStr))
+
+				// 获取信号量 / Acquire semaphore
+				if sem != nil {
+					sem <- struct{}{}
+					defer func() { <-sem }()
+				}
+
+				// 执行分支 / Execute branch
+				err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
+				if err != nil {
+					log.Warn("分支执行出错（不影响其他分支）",
+						zap.Int("branchIndex", branchIndex),
+						zap.Error(err))
+				}
+			}(i, branch)
 	}
 
 	// 等待所有分支完成 / Wait for all branches to complete
@@ -997,3 +1184,107 @@ func (e *ParallelExecutor) ValidateParallelGroup(group *ParallelGroup) error {
 
 	return nil
 }
+
+// replaceVarsInParams 递归替换参数 map 中的变量占位符
+// 支持 {{input}}、{{output}}、{{input.field}} 等格式
+// 并将处理后的值统一转为 string 以便传递给 InvokableRun
+func replaceVarsInParams(params map[string]interface{}, input, output string) map[string]interface{} {
+	if params == nil {
+		return nil
+	}
+
+	result := make(map[string]interface{})
+	for k, v := range params {
+		result[k] = replaceVarValue(v, input, output)
+	}
+	return result
+}
+
+// replaceVarValue 替换单个值中的变量占位符，支持递归处理 map/slice
+func replaceVarValue(v interface{}, input, output string) interface{} {
+	switch val := v.(type) {
+	case string:
+		replaced := val
+		replaced = strings.ReplaceAll(replaced, "{{input}}", input)
+		replaced = strings.ReplaceAll(replaced, "{{output}}", output)
+		replaced = replaceNestedVars(replaced, input, output)
+		return replaced
+	case map[string]interface{}:
+		m := make(map[string]interface{})
+		for k2, v2 := range val {
+			m[k2] = replaceVarValue(v2, input, output)
+		}
+		return m
+	case []interface{}:
+		arr := make([]interface{}, len(val))
+		for i, elem := range val {
+			arr[i] = replaceVarValue(elem, input, output)
+		}
+		return arr
+	default:
+		return val
+	}
+}
+
+// replaceNestedVars 替换 {{input.xxx}} 和 {{output.xxx}} 格式的嵌套变量
+// replaceNestedVars replaces nested variables like {{input.xxx}} and {{output.xxx}}
+// 支持 JSON 字段访问：如果 input/output 是 JSON 字符串，会解析并提取对应字段
+// Supports JSON field access: parses input/output as JSON if it's a JSON string
+func replaceNestedVars(s, input, output string) string {
+	re := regexp.MustCompile(`\{\{(input|output)(?:\.(\w+))?\}\}`)
+	return re.ReplaceAllStringFunc(s, func(match string) string {
+		// 提取变量名和字段名 / Extract variable name and field name
+		sub := re.FindStringSubmatch(match)
+		if len(sub) < 2 {
+			return match
+		}
+		varName := sub[1]
+		fieldName := sub[2]
+
+		// 选择源字符串 / Select source string
+		var source string
+		if varName == "input" {
+			source = input
+		} else {
+			source = output
+		}
+
+		// 如果没有字段名，返回整个字符串 / If no field name, return whole string
+		if fieldName == "" {
+			return source
+		}
+
+		// 尝试解析为 JSON 并提取字段 / Try to parse as JSON and extract field
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(source), &data); err == nil {
+			if val, ok := data[fieldName]; ok {
+				return toString(val)
+			}
+		}
+
+		// 回退策略：当 source 不是 JSON 时（如纯文本输入），用整个 source 替换
+		// 这样 {{input.question}} 等同于 {{input}}
+		// Fallback: if source is not JSON (e.g. plain text user input),
+		// treat {{input.xxx}} as {{input}} to match user expectations
+		log.Debug("嵌套变量按整体输入回退 / Nested var falls back to whole input",
+			zap.String("variable", varName),
+			zap.String("field", fieldName),
+			zap.String("source", source))
+		return source
+	})
+}
+
+// toString 将任意类型转为字符串
+// toString converts any value to string
+func toString(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case nil:
+		return ""
+	default:
+		b, _ := json.Marshal(val)
+		return string(b)
+	}
+}
+
