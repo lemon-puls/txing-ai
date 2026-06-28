@@ -370,9 +370,9 @@
               @dragenter="handleDragEnter"
               @dragleave="handleDragLeave"
             >
-              <!-- 文件上传按钮（所有模型都支持，用于预提取文本信息） -->
+              <!-- 文件上传按钮 -->
               <div class="multimodal-actions">
-                <el-tooltip content="上传图片" placement="top">
+                <el-tooltip v-if="isMultimodalModel" content="上传图片" placement="top">
                   <div class="upload-btn" @click="triggerFileInput('image')">
                     <el-icon><Picture /></el-icon>
                   </div>
@@ -922,6 +922,26 @@ const handlePaste = (event) => {
 
 // 处理文件列表
 const processFiles = (files) => {
+  // 非多模态模型过滤掉图片文件，只保留文档
+  if (!isMultimodalModel.value) {
+    files = files.filter(file => {
+      if (supportedImageTypes.includes(file.type)) {
+        return false
+      }
+      // 通过扩展名判断是否为图片
+      const ext = file.name.split('.').pop().toLowerCase()
+      const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+      if (imageExts.includes(ext)) {
+        return false
+      }
+      return true
+    })
+    if (files.length === 0) {
+      ElMessage.warning('当前模型不支持上传图片，请切换到支持多模态的模型')
+      return
+    }
+  }
+
   if (chatFiles.value.length + files.length > maxFiles) {
     ElMessage.warning(`最多只能上传 ${maxFiles} 个文件`)
     return
