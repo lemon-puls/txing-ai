@@ -31,11 +31,12 @@
     <div class="workflow-grid" v-loading="loading">
       <!-- 空状态 -->
       <div v-if="workflows.length === 0 && !loading" class="empty-state">
-        <div class="empty-icon-wrapper">
-          <el-icon :size="64"><FolderOpened /></el-icon>
-        </div>
-        <p class="empty-title">暂无工作流</p>
-        <p class="empty-desc">点击「新增工作流」开始创建您的第一个工作流</p>
+        <el-empty description="暂无工作流">
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            新增工作流
+          </el-button>
+        </el-empty>
       </div>
 
       <!-- 工作流卡片 -->
@@ -43,73 +44,73 @@
         v-for="(wf, index) in workflows"
         :key="wf.id"
         class="workflow-card"
-        :style="{ animationDelay: `${index * 80}ms` }"
+        :class="{ published: wf.status === 'published' }"
+        :style="{ '--delay': `${index * 0.06}s` }"
       >
-        <!-- 顶部渐变色条 -->
-        <div
-          class="card-top-line"
-          :class="{ published: wf.status === 'published' }"
-        />
+        <!-- 顶部状态色条 -->
+        <div class="card-accent" />
 
-        <div class="card-main">
-          <!-- 图标 -->
-          <div class="card-icon-wrapper">
+        <!-- 卡片内容 -->
+        <div class="card-body">
+          <div class="card-header">
             <div class="card-icon" :class="{ published: wf.status === 'published' }">
-              <el-icon :size="24"><Connection /></el-icon>
+              <el-icon :size="18"><Connection /></el-icon>
             </div>
-          </div>
-
-          <!-- 信息区 -->
-          <div class="card-info">
-            <div class="card-title-row">
-              <span class="card-name">{{ wf.name }}</span>
+            <div class="card-title-area">
+              <h3 class="workflow-name">{{ wf.name }}</h3>
               <span
-                class="status-badge"
+                class="status-tag"
                 :class="{ published: wf.status === 'published' }"
               >
-                <span class="status-dot" />
                 {{ wf.status === 'published' ? '已发布' : '草稿' }}
               </span>
             </div>
-
-            <p class="card-desc">{{ wf.description || '暂无描述' }}</p>
-
-            <div class="card-meta">
-              <span class="meta-item">
-                <el-icon><Clock /></el-icon>
-                {{ formatTime(wf.created_at) }}
-              </span>
-              <span class="meta-item">
-                <el-icon><Share /></el-icon>
-                {{ getNodeCount(wf.topology) }} 个节点
-              </span>
-            </div>
           </div>
+          <p class="workflow-desc">{{ wf.description || '暂无描述' }}</p>
         </div>
 
-        <!-- 操作按钮 -->
-        <div class="card-actions">
-          <el-button type="primary" size="small" plain @click="handleEdit(wf)">
-            <el-icon><EditPen /></el-icon>
-            编辑信息
-          </el-button>
-          <el-button type="success" size="small" plain @click="handleDesign(wf)">
-            <el-icon><Setting /></el-icon>
-            设计流程
-          </el-button>
-          <el-button
-            :type="wf.status === 'published' ? 'warning' : 'success'"
-            size="small"
-            plain
-            @click="handleToggleStatus(wf)"
-          >
-            <el-icon><component :is="wf.status === 'published' ? 'Close' : 'Check'" /></el-icon>
-            {{ wf.status === 'published' ? '取消发布' : '发布' }}
-          </el-button>
-          <el-button type="danger" size="small" plain @click="handleDelete(wf)">
-            <el-icon><Delete /></el-icon>
-            删除
-          </el-button>
+        <!-- 卡片底部 -->
+        <div class="card-footer">
+          <div class="footer-meta">
+            <span class="meta-item">
+              <el-icon><Clock /></el-icon>
+              {{ formatTime(wf.created_at) }}
+            </span>
+            <span class="meta-sep">·</span>
+            <span class="meta-item">
+              {{ getNodeCount(wf.topology) }} 个节点
+            </span>
+          </div>
+          <div class="footer-actions">
+            <el-tooltip content="编辑信息" placement="top">
+              <el-button class="action-btn" circle size="small" @click.stop="handleEdit(wf)">
+                <el-icon :size="14"><EditPen /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="设计流程" placement="top">
+              <el-button class="action-btn primary" circle size="small" @click.stop="handleDesign(wf)">
+                <el-icon :size="14"><Setting /></el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip :content="wf.status === 'published' ? '取消发布' : '发布'" placement="top">
+              <el-button
+                class="action-btn"
+                :class="{ warning: wf.status === 'published', success: wf.status !== 'published' }"
+                circle
+                size="small"
+                @click.stop="handleToggleStatus(wf)"
+              >
+                <el-icon :size="14">
+                  <component :is="wf.status === 'published' ? 'Close' : 'Check'" />
+                </el-icon>
+              </el-button>
+            </el-tooltip>
+            <el-tooltip content="删除" placement="top">
+              <el-button class="action-btn danger" circle size="small" @click.stop="handleDelete(wf)">
+                <el-icon :size="14"><Delete /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
         </div>
       </div>
     </div>
@@ -164,8 +165,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Folder, FolderOpened, Search, RefreshRight, Plus,
-  Connection, Clock, Share, EditPen, Setting, Delete,
+  Folder, Search, RefreshRight, Plus,
+  Connection, Clock, EditPen, Setting, Delete,
   Close, Check
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
@@ -173,9 +174,7 @@ import { defaultApi } from '@/api'
 const router = useRouter()
 
 // 搜索表单
-const searchForm = ref({
-  name: ''
-})
+const searchForm = ref({ name: '' })
 
 // 列表数据
 const loading = ref(false)
@@ -189,10 +188,7 @@ const dialogVisible = ref(false)
 const dialogType = ref('add')
 const submitLoading = ref(false)
 const formRef = ref(null)
-const form = ref({
-  name: '',
-  description: ''
-})
+const form = ref({ name: '', description: '' })
 
 const rules = {
   name: [
@@ -240,58 +236,32 @@ const loadData = async () => {
   }
 }
 
-const handleSearch = () => {
-  currentPage.value = 1
-  loadData()
-}
-
-const handleReset = () => {
-  searchForm.value.name = ''
-  handleSearch()
-}
+const handleSearch = () => { currentPage.value = 1; loadData() }
+const handleReset = () => { searchForm.value.name = ''; handleSearch() }
 
 const handleAdd = () => {
   dialogType.value = 'add'
-  form.value = {
-    name: '',
-    description: ''
-  }
+  form.value = { name: '', description: '' }
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   dialogType.value = 'edit'
-  form.value = {
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    topology: row.topology
-  }
+  form.value = { id: row.id, name: row.name, description: row.description, topology: row.topology }
   dialogVisible.value = true
 }
 
-const handleDesign = (row) => {
-  router.push(`/admin/workflow/editor/${row.id}`)
-}
-
-const goToTemplateMarket = () => {
-  router.push('/admin/workflow/templates')
-}
+const handleDesign = (row) => { router.push(`/admin/workflow/editor/${row.id}`) }
+const goToTemplateMarket = () => { router.push('/admin/workflow/templates') }
 
 const handleDelete = (row) => {
   ElMessageBox.confirm('确认删除该工作流吗？删除后不可恢复！', '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
+    confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
   }).then(async () => {
     try {
       const res = await defaultApi.apiWorkflowIdDelete(row.id)
-      if (res.code === 0) {
-        ElMessage.success('删除成功')
-        loadData()
-      } else {
-        ElMessage.error(res.msg || '删除失败')
-      }
+      if (res.code === 0) { ElMessage.success('删除成功'); loadData() }
+      else ElMessage.error(res.msg || '删除失败')
     } catch (error) {
       console.error('Delete error:', error)
       ElMessage.error('删除失败')
@@ -304,17 +274,11 @@ const handleToggleStatus = async (row) => {
   const actionText = newStatus === 'published' ? '发布' : '取消发布'
   try {
     await ElMessageBox.confirm(`确认${actionText}该工作流吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'info'
+      confirmButtonText: '确定', cancelButtonText: '取消', type: 'info'
     })
     const res = await defaultApi.apiWorkflowIdStatusPut(row.id, { status: newStatus })
-    if (res.code === 0) {
-      ElMessage.success(`${actionText}成功`)
-      loadData()
-    } else {
-      ElMessage.error(res.msg || `${actionText}失败`)
-    }
+    if (res.code === 0) { ElMessage.success(`${actionText}成功`); loadData() }
+    else ElMessage.error(res.msg || `${actionText}失败`)
   } catch (error) {
     if (error !== 'cancel') {
       console.error('Toggle status error:', error)
@@ -329,11 +293,7 @@ const handleSubmit = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        const data = {
-          name: form.value.name,
-          description: form.value.description
-        }
-
+        const data = { name: form.value.name, description: form.value.description }
         let res
         if (dialogType.value === 'add') {
           data.topology = ''
@@ -342,7 +302,6 @@ const handleSubmit = async () => {
           data.topology = form.value.topology || ''
           res = await defaultApi.apiWorkflowIdPut(form.value.id, data)
         }
-
         if (res.code === 0) {
           ElMessage.success(dialogType.value === 'add' ? '创建成功' : '修改成功')
           dialogVisible.value = false
@@ -360,354 +319,267 @@ const handleSubmit = async () => {
   })
 }
 
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  loadData()
-}
+const handleSizeChange = (val) => { pageSize.value = val; loadData() }
+const handleCurrentChange = (val) => { currentPage.value = val; loadData() }
 
-const handleCurrentChange = (val) => {
-  currentPage.value = val
-  loadData()
-}
-
-onMounted(() => {
-  loadData()
-})
+onMounted(() => { loadData() })
 </script>
 
 <style lang="scss" scoped>
-// 动画关键帧
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+// 主题色
+$blue-500: #2B5EFF;
+$blue-400: #4facfe;
 
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.6); }
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.08); opacity: 1; }
-}
+// 状态色
+$published: #10b981;
+$draft: #94a3b8;
 
 .workflow-container {
   padding: 24px;
-  animation: fadeInUp 0.6s ease-out;
+}
 
-  // 搜索表单
-  .search-form {
-    margin-bottom: 24px;
-    border-radius: 16px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+// 搜索表单
+.search-form {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
-    :deep(.el-form-item) {
-      margin-bottom: 0;
-    }
-    :deep(.el-input__wrapper) {
-      border-radius: 12px;
-    }
-    :deep(.el-button) {
-      border-radius: 12px;
-      padding: 12px 24px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  :deep(.el-form-item) { margin-bottom: 0; }
+  :deep(.el-input__wrapper) { border-radius: 8px; }
+  :deep(.el-button) {
+    border-radius: 8px;
+    padding: 8px 20px;
+    transition: all 0.2s ease;
+    &:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+  }
+}
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      }
+// 卡片网格
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  min-height: 200px;
+}
 
-      &.el-button--primary:hover {
-        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.35);
-      }
-      &.el-button--success:hover {
-        box-shadow: 0 4px 12px rgba(var(--el-color-success-rgb), 0.35);
-      }
-      &.el-button--warning:hover {
-        box-shadow: 0 4px 12px rgba(var(--el-color-warning-rgb), 0.35);
-      }
-    }
+// 空状态
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 60px 0;
+}
+
+// 工作流卡片
+.workflow-card {
+  position: relative;
+  background: var(--el-bg-color, #fff);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--el-border-color-lighter, #e4e7ed);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  animation: cardFadeIn 0.4s ease-out var(--delay, 0s) both;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--el-border-color, #c0c4cc);
+
+    .card-accent { height: 6px; }
+    .action-btn { opacity: 1; }
   }
 
-  // 卡片网格
-  .workflow-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 20px;
-    min-height: 200px;
+  // 顶部状态色条
+  .card-accent {
+    height: 3px;
+    background: $draft;
+    transition: height 0.25s ease;
+
+    .published & { background: $published; }
   }
 
-  // 空状态
-  .empty-state {
-    grid-column: 1 / -1;
+  // 卡片内容
+  .card-body {
+    padding: 20px 20px 16px;
+  }
+
+  .card-header {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  // 图标
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: 80px 0;
-    color: var(--el-text-color-placeholder);
+    background: $draft;
+    color: #fff;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
 
-    .empty-icon-wrapper {
-      animation: breathe 3s ease-in-out infinite;
-      margin-bottom: 16px;
+    &.published {
+      background: $published;
     }
 
-    .empty-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--el-text-color-secondary);
-      margin: 0 0 8px;
-    }
-
-    .empty-desc {
-      font-size: 14px;
-      margin: 0;
+    .workflow-card:hover & {
+      transform: scale(1.05);
     }
   }
 
-  // 工作流卡片
-  .workflow-card {
-    background: var(--el-bg-color);
-    border-radius: 16px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+  .card-title-area {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: cardFadeIn 0.5s ease-out both;
-    position: relative;
+    gap: 6px;
+  }
 
-    &:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  .workflow-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-      .card-top-line {
-        transform: scaleX(1);
-      }
+  // 状态标签
+  .status-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    width: fit-content;
+    background: rgba($draft, 0.1);
+    color: $draft;
 
-      .card-icon {
-        transform: scale(1.15) rotate(5deg);
-      }
-
-      .card-actions {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    &.published {
+      background: rgba($published, 0.1);
+      color: $published;
     }
+  }
 
-    // 顶部渐变色条
-    .card-top-line {
-      height: 4px;
-      background: linear-gradient(90deg, #909399, #c0c4cc);
-      transform: scaleX(0.6);
-      transform-origin: left;
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  .workflow-desc {
+    margin: 0;
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-      &.published {
-        background: linear-gradient(90deg, #409eff, #67c23a, #e6a23c);
-        transform: scaleX(1);
-      }
-    }
+  // 卡片底部
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid var(--el-border-color-extra-light, #f0f0f0);
+  }
 
-    // 卡片主体
-    .card-main {
-      display: flex;
-      gap: 16px;
-      padding: 20px 20px 0;
-      flex: 1;
-    }
+  .footer-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
-    // 图标
-    .card-icon-wrapper {
-      flex-shrink: 0;
-    }
-
-    .card-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #e8eaed, #d0d3d8);
-      color: #606266;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &.published {
-        background: linear-gradient(135deg, #409eff, #7c4dff);
-        color: #fff;
-        box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
-      }
-    }
-
-    // 信息区
-    .card-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .card-title-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .card-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    // 状态徽章
-    .status-badge {
+    .meta-item {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       font-size: 12px;
-      padding: 2px 10px;
-      border-radius: 20px;
-      background: var(--el-fill-color-light);
-      color: var(--el-text-color-secondary);
-      flex-shrink: 0;
+      color: var(--el-text-color-placeholder);
 
-      &.published {
-        background: rgba(103, 194, 58, 0.1);
-        color: #67c23a;
-
-        .status-dot {
-          background: #67c23a;
-          box-shadow: 0 0 0 3px rgba(103, 194, 58, 0.2);
-          animation: pulse 2s ease-in-out infinite;
-        }
-      }
-
-      .status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #909399;
-        transition: all 0.3s;
-      }
+      .el-icon { font-size: 13px; }
     }
 
-    .card-desc {
-      font-size: 13px;
-      color: var(--el-text-color-secondary);
-      line-height: 1.6;
-      margin: 0 0 12px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .card-meta {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-
-      .meta-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 12px;
-        color: var(--el-text-color-placeholder);
-
-        .el-icon {
-          font-size: 14px;
-        }
-      }
-    }
-
-    // 操作按钮
-    .card-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 14px 20px;
-      margin-top: 12px;
-      border-top: 1px solid var(--el-border-color-lighter);
-      opacity: 0.7;
-      transform: translateY(4px);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      flex-wrap: wrap;
-
-      :deep(.el-button) {
-        border-radius: 8px;
-        transition: all 0.3s;
-
-        &:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-      }
+    .meta-sep {
+      color: var(--el-border-color);
+      font-size: 10px;
     }
   }
 
-  // 分页
-  .pagination-container {
+  .footer-actions {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 24px;
+    gap: 4px;
+  }
 
-    :deep(.el-pagination) {
-      padding: 12px 24px;
-      border-radius: 12px;
-      background: var(--el-bg-color);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  // 操作按钮（圆形图标按钮）
+  .action-btn {
+    border: 1px solid var(--el-border-color-lighter) !important;
+    background: #fff !important;
+    color: var(--el-text-color-placeholder) !important;
+    opacity: 0.5;
+    transition: all 0.2s ease;
 
-      .el-pagination__sizes {
-        .el-input__wrapper {
-          border-radius: 8px;
-        }
-      }
+    &:hover {
+      opacity: 1;
+    }
 
-      button {
-        border-radius: 8px;
-        transition: all 0.3s;
+    &.primary:hover {
+      color: $blue-500 !important;
+      border-color: rgba($blue-500, 0.3) !important;
+      background: rgba($blue-500, 0.05) !important;
+    }
 
-        &:hover {
-          transform: translateY(-1px);
-        }
-      }
+    &.success:hover {
+      color: $published !important;
+      border-color: rgba($published, 0.3) !important;
+      background: rgba($published, 0.05) !important;
+    }
 
-      .el-pager li {
-        border-radius: 8px;
-        transition: all 0.3s;
+    &.warning:hover {
+      color: #f59e0b !important;
+      border-color: rgba(245, 158, 11, 0.3) !important;
+      background: rgba(245, 158, 11, 0.05) !important;
+    }
 
-        &:hover {
-          transform: translateY(-1px);
-        }
-
-        &.is-active {
-          font-weight: 600;
-        }
-      }
+    &.danger:hover {
+      color: #ef4444 !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      background: rgba(239, 68, 68, 0.05) !important;
     }
   }
+}
+
+// 分页
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+
+  :deep(.el-pagination) {
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .el-pagination__sizes .el-input__wrapper { border-radius: 6px; }
+    button { border-radius: 6px; transition: all 0.2s; &:hover { transform: translateY(-1px); } }
+    .el-pager li {
+      border-radius: 6px;
+      transition: all 0.2s;
+      &:hover { transform: translateY(-1px); }
+      &.is-active { font-weight: 600; }
+    }
+  }
+}
+
+// 入场动画
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
