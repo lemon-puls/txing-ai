@@ -283,6 +283,49 @@
           </el-form-item>
         </el-form>
       </div>
+
+      <!-- 并行组节点配置 -->
+      <div class="config-section" v-if="nodeType === 'parallel'">
+        <div class="section-title">并行组配置</div>
+        <el-form label-position="top" size="small">
+          <el-form-item label="说明">
+            <div class="info-tip">
+              并行组用于定义并行执行区域。将需要并行执行的节点连接到并行组的输出端。
+            </div>
+          </el-form-item>
+          <el-form-item label="超时时间（秒）">
+            <el-input-number v-model="localData.parallelConfig.timeout" :min="0" :step="10" style="width: 100%" />
+            <div class="form-tip">0 表示无超时限制</div>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <!-- 汇聚节点配置 -->
+      <div class="config-section" v-if="nodeType === 'join'">
+        <div class="section-title">汇聚配置</div>
+        <el-form label-position="top" size="small">
+          <el-form-item label="汇聚策略">
+            <el-select v-model="localData.joinConfig.strategy" placeholder="请选择策略" style="width: 100%">
+              <el-option label="全部完成" value="all">
+                <div class="option-content">
+                  <span>全部完成</span>
+                  <span class="option-hint">等待所有并行分支完成</span>
+                </div>
+              </el-option>
+              <el-option label="任一完成" value="any">
+                <div class="option-content">
+                  <span>任一完成</span>
+                  <span class="option-hint">任一分支完成即继续</span>
+                </div>
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="超时时间（秒）">
+            <el-input-number v-model="localData.joinConfig.timeout" :min="0" :step="10" style="width: 100%" />
+            <div class="form-tip">0 表示无超时限制</div>
+          </el-form-item>
+        </el-form>
+      </div>
     </div>
 
     <div class="panel-footer">
@@ -305,7 +348,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { Setting, Close, Document, Check } from '@element-plus/icons-vue'
+import { Setting, Close, Document, Check, Grid, Connection } from '@element-plus/icons-vue'
 
 const props = defineProps({
   selectedNode: {
@@ -622,6 +665,26 @@ const handleApply = () => {
         color: #9e9e9e;
         margin-top: 6px;
         line-height: 1.4;
+      }
+
+      .info-tip {
+        font-size: 12px;
+        color: #7c4dff;
+        background: rgba(124, 77, 255, 0.08);
+        padding: 10px 12px;
+        border-radius: 8px;
+        line-height: 1.5;
+      }
+
+      .option-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .option-hint {
+          font-size: 11px;
+          color: #9e9e9e;
+        }
       }
 
       .divider {

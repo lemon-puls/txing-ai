@@ -183,6 +183,26 @@
             </div>
             <span>条件分支</span>
           </div>
+          <div
+            class="node-item parallel"
+            draggable="true"
+            @dragstart="onDragStart($event, 'parallel')"
+          >
+            <div class="item-icon">
+              <el-icon><Grid /></el-icon>
+            </div>
+            <span>并行组</span>
+          </div>
+          <div
+            class="node-item join"
+            draggable="true"
+            @dragstart="onDragStart($event, 'join')"
+          >
+            <div class="item-icon">
+              <el-icon><Connection /></el-icon>
+            </div>
+            <span>汇聚</span>
+          </div>
         </div>
       </div>
 
@@ -225,7 +245,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link, Avatar, Setting, Delete, Plus } from '@element-plus/icons-vue'
+import { VideoPlay, CircleClose, ChatDotRound, Tools, Share, Check, Monitor, Link, Avatar, Setting, Delete, Plus, Grid, Connection } from '@element-plus/icons-vue'
 
 const props = defineProps({
   saving: Boolean,
@@ -455,6 +475,14 @@ const onDragStart = (event, nodeType) => {
         &.agent {
           border-left: 3px solid #e91e63;
           .item-icon { background: #fce4ec; color: #e91e63; }
+        }
+        &.parallel {
+          border-left: 3px solid #7c4dff;
+          .item-icon { background: #ede7f6; color: #7c4dff; }
+        }
+        &.join {
+          border-left: 3px solid #00bfa5;
+          .item-icon { background: #e0f2f1; color: #00bfa5; }
         }
       }
     }

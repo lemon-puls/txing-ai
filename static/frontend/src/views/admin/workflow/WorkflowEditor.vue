@@ -342,6 +342,8 @@ import ConditionNode from '@/components/workflow/ConditionNode.vue'
 import CodeNode from '@/components/workflow/CodeNode.vue'
 import HTTPNode from '@/components/workflow/HTTPNode.vue'
 import AgentNode from '@/components/workflow/AgentNode.vue'
+import ParallelNode from '@/components/workflow/ParallelNode.vue'
+import JoinNode from '@/components/workflow/JoinNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
@@ -431,7 +433,9 @@ const nodeTypes = {
   agent: markRaw(AgentNode),
   condition: markRaw(ConditionNode),
   code: markRaw(CodeNode),
-  http: markRaw(HTTPNode)
+  http: markRaw(HTTPNode),
+  parallel: markRaw(ParallelNode),
+  join: markRaw(JoinNode)
 }
 
 // 连接线样式
@@ -585,6 +589,19 @@ const onDrop = (event) => {
           tools: [],
           maxRunSteps: 30
         }
+      } : {}),
+      ...(type === 'parallel' ? {
+        parallelConfig: {
+          maxConcurrency: 0,
+          waitStrategy: 'all',
+          timeout: 0
+        }
+      } : {}),
+      ...(type === 'join' ? {
+        joinConfig: {
+          strategy: 'all',
+          timeout: 0
+        }
       } : {})
     }
   }
@@ -601,7 +618,9 @@ const getDefaultLabel = (type) => {
     agent: 'Agent',
     condition: '条件分支',
     code: '代码',
-    http: 'HTTP'
+    http: 'HTTP',
+    parallel: '并行组',
+    join: '汇聚'
   }
   return map[type] || '未知节点'
 }
