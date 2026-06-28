@@ -202,4 +202,36 @@
       color: var(--el-color-primary);
     }
   }
+
+  // 工作流卡片暗色适配
+  .workflow-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-icon {
+      background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+      color: #b0b0b0;
+
+      &.published {
+        background: linear-gradient(135deg, #409eff, #7c4dff);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
+      }
+    }
+
+    .status-badge {
+      background: var(--el-fill-color);
+
+      &.published {
+        background: rgba(103, 194, 58, 0.15);
+      }
+    }
+
+    .card-actions {
+      border-top-color: var(--el-border-color);
+    }
+  }
 } 
