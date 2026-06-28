@@ -363,6 +363,7 @@
             />
             <!-- 拖拽上传区域 -->
             <div
+              ref="textareaWrapperRef"
               class="textarea-wrapper"
               :class="{ 'is-dragging': isDragging }"
               @drop="handleDrop"
@@ -383,6 +384,12 @@
                   </div>
                 </el-tooltip>
               </div>
+              <!-- @ 高亮层 -->
+              <div
+                v-if="selectedApp"
+                class="input-highlight"
+                v-html="highlightedHtml"
+              ></div>
               <el-input
                 v-model="messageInput"
                 type="textarea"
@@ -393,7 +400,9 @@
                 @input="handleInput"
                 @keydown="handleInputKeydown"
                 @paste="handlePaste"
+                @scroll="syncHighlightScroll"
                 class="custom-input"
+                :class="{ 'has-mention': selectedApp }"
               />
               <!-- 拖拽提示 -->
               <div v-if="isDragging" class="drag-overlay">
@@ -807,6 +816,7 @@ const selectedApp = ref(null)
 const appMentionPopup = ref(null)
 const appInputSchema = ref([]) // 选中应用的 inputSchema
 const appUploadedFiles = ref({}) // 选中应用上传的文件 { fieldName: File }
+const textareaWrapperRef = ref(null)
 const appFileInputRef = ref(null)
 
 // 多模态文件上传相关
@@ -1914,6 +1924,29 @@ const handleAppSelect = async (app) => {
       textarea.setSelectionRange(len, len)
     }
   })
+}
+
+// @ 高亮 HTML 生成
+const highlightedHtml = computed(() => {
+  if (!selectedApp.value || !messageInput.value) return ''
+  const mentionText = '@' + selectedApp.value.name
+  const idx = messageInput.value.indexOf(mentionText)
+  if (idx < 0) return ''
+  const before = messageInput.value.slice(0, idx)
+  const mention = messageInput.value.slice(idx, idx + mentionText.length)
+  const after = messageInput.value.slice(idx + mentionText.length)
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return esc(before) + '<span class="mention-highlight">' + esc(mention) + '</span>' + esc(after).replace(/ /g, ' ').replace(/\n/g, '<br>')
+})
+
+// 同步高亮层滚动
+const syncHighlightScroll = () => {
+  const textarea = document.querySelector('.custom-input .el-textarea__inner')
+  const highlight = textareaWrapperRef.value?.querySelector('.input-highlight')
+  if (textarea && highlight) {
+    highlight.scrollTop = textarea.scrollTop
+    highlight.scrollLeft = textarea.scrollLeft
+  }
 }
 
 // 加载应用的 inputSchema
@@ -3249,8 +3282,43 @@ const batchDelete = async () => {
     }
   }
 
+  .input-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 5px 95px 5px 11px;
+    line-height: 1.6;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-y: auto;
+    pointer-events: none;
+    z-index: 1;
+    color: transparent;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: inherit;
+
+    :deep(.mention-highlight) {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+      border-radius: 3px;
+      padding: 0 2px;
+      font-weight: 500;
+    }
+  }
+
   .custom-input {
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+
+    &.has-mention :deep(.el-textarea__inner) {
+      color: transparent;
+      caret-color: var(--el-text-color-primary);
+    }
 
     :deep(.el-textarea__inner) {
       resize: none !important;
