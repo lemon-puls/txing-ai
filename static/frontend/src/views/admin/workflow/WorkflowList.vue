@@ -386,8 +386,6 @@ $draft: #94a3b8;
     .action-btn { opacity: 1; }
   }
 
-  // 顶部状态色条
-  }
 
   // 卡片内容
   .card-body {
