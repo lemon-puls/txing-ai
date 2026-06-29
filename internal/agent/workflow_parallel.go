@@ -386,6 +386,7 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *TopoNode, inpu
 	}
 
 	nodeType := node.Data.NodeType
+	startTime := time.Now().UnixMilli()
 
 	// 发送节点开始消息 / Send node start message
 	if callback != nil {
@@ -395,6 +396,10 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *TopoNode, inpu
 			NodeLabel:  node.Data.Label,
 			NodeStatus: "running",
 			ShowMsg:    fmt.Sprintf("[%s] 开始执行", node.Data.Label),
+			ExecutionLog: &global.ExecutionLogInfo{
+				StartTime: startTime,
+				Input:     input,
+			},
 		})
 	}
 
@@ -403,24 +408,65 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *TopoNode, inpu
 		zap.String("nodeType", nodeType),
 		zap.String("label", node.Data.Label))
 
+	// 统一收尾：所有路径都发完成/失败状态，避免前端节点面板一直转圈
+	// Unified completion: send completed/failed status on every exit path so the
+	// frontend node panel does not stay in "running" forever
+	var (
+		output string
+		err    error
+	)
+
 	// 根据节点类型执行 / Execute based on node type
 	switch nodeType {
 	case "llm":
-		return e.executeLLMNode(ctx, node, input, callback)
+		output, err = e.executeLLMNode(ctx, node, input, callback)
 	case "tool":
-		return e.executeToolNode(ctx, node, input, callback)
+		output, err = e.executeToolNode(ctx, node, input, callback)
 	case "condition":
-		return e.executeConditionNode(ctx, node, input, callback)
+		output, err = e.executeConditionNode(ctx, node, input, callback)
 	case "code":
-		return e.executeCodeNodeParallel(ctx, node, input, callback)
+		output, err = e.executeCodeNodeParallel(ctx, node, input, callback)
 	case "http":
-		return e.executeHTTPNodeParallel(ctx, node, input, callback)
+		output, err = e.executeHTTPNodeParallel(ctx, node, input, callback)
 	case "start", "end":
-		return input, nil
+		output, err = input, nil
 	default:
 		log.Warn("未知节点类型，回退为输入", zap.String("nodeType", nodeType))
-		return input, nil
+		output, err = input, nil
 	}
+
+	// 发送完成/失败状态（含 execution_log，让前端日志面板能正确显示节点条目）
+	// Send final status with execution_log so the frontend execution-log panel
+	// can insert/update the node entry properly.
+	endTime := time.Now().UnixMilli()
+	if callback != nil {
+		finalStatus := "completed"
+		finalShowMsg := fmt.Sprintf("[%s] 执行完成", node.Data.Label)
+		var errMsg string
+		if err != nil {
+			finalStatus = "failed"
+			finalShowMsg = fmt.Sprintf("[%s] 执行失败: %v", node.Data.Label, err)
+			errMsg = err.Error()
+		}
+		callback(&global.Chunk{
+			NodeId:     node.Id,
+			NodeType:   nodeType,
+			NodeLabel:  node.Data.Label,
+			NodeStatus: finalStatus,
+			ShowMsg:    finalShowMsg,
+			ExecutionLog: &global.ExecutionLogInfo{
+				StartTime: startTime,
+				EndTime:   endTime,
+				Duration:  endTime - startTime,
+				Input:     input,
+				Output:    output,
+				Error:     errMsg,
+				Retry:     0,
+			},
+		})
+	}
+
+	return output, err
 }
 
 // executeLLMNode 在并行上下文中执行 LLM 节点
@@ -440,20 +486,12 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *TopoNode, i
 	// 使用 WorkflowAgent 的真实 LLM 调用逻辑
 	if e.agent != nil {
 		result, err := e.agent.ExecuteLLMNodeInParallel(ctx, node, input, callback)
-		if err == nil && result != "" {
-			if callback != nil {
-				callback(&global.Chunk{
-					NodeId:     node.Id,
-					NodeType:   "llm",
-					NodeLabel:  node.Data.Label,
-					NodeStatus: "completed",
-					ShowMsg:    fmt.Sprintf("[%s] 执行完成", node.Data.Label),
-				})
-			}
-			return result, nil
-		}
 		if err != nil {
 			log.Error("LLM 节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
+			return "", err
+		}
+		if result != "" {
+			return result, nil
 		}
 	}
 
@@ -468,16 +506,6 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *TopoNode, i
 		output = fmt.Sprintf("[%s] 基于提示词「%s」处理：%s", node.Data.Label, modelConfig.SystemPrompt, input)
 	} else {
 		output = fmt.Sprintf("[%s] 处理结果：%s", node.Data.Label, input)
-	}
-
-	if callback != nil {
-		callback(&global.Chunk{
-			NodeId:     node.Id,
-			NodeType:   "llm",
-			NodeLabel:  node.Data.Label,
-			NodeStatus: "completed",
-			ShowMsg:    fmt.Sprintf("[%s] 执行完成（降级）", node.Data.Label),
-		})
 	}
 
 	return output, nil
@@ -674,7 +702,7 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *TopoNode, 
 	if e.agent != nil {
 		result, err := e.agent.ExecuteToolNodeInParallel(ctx, node, input, callback)
 		if err != nil {
-			// 工具执行失败，记录错误但继续处理
+			// 工具执行失败，记录错误并向上抛
 			log.Error("工具节点并行执行失败", zap.String("nodeId", node.Id), zap.Error(err))
 			return "", err
 		}
@@ -683,18 +711,6 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *TopoNode, 
 
 	// 备用实现：模拟工具执行
 	result := fmt.Sprintf("[%s] 工具 %s 执行结果: %s", node.Data.Label, toolName, input)
-
-	// 发送节点完成消息
-	if callback != nil {
-		callback(&global.Chunk{
-			NodeId:     node.Id,
-			NodeType:   "tool",
-			NodeLabel:  node.Data.Label,
-			NodeStatus: "completed",
-			ShowMsg:    fmt.Sprintf("[%s] 工具执行完成", node.Data.Label),
-		})
-	}
-
 	return result, nil
 }
 

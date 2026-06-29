@@ -1251,9 +1251,10 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					zap.Bool("hasCallback", callback != nil))
 				if callback != nil {
 					if err := callback(&global.Chunk{
-						NodeId:   nodeId,
-						NodeType: "parallel",
-						ShowMsg:  "并行执行完成",
+						NodeId:     nodeId,
+						NodeType:   "parallel",
+						NodeStatus: "completed",
+						ShowMsg:    "并行执行完成",
 					}); err != nil {
 						log.Error("并行结果 callback 失败", zap.Error(err))
 					}
