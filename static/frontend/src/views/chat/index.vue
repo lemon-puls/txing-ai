@@ -384,26 +384,17 @@
                   </div>
                 </el-tooltip>
               </div>
-              <div class="input-area">
-                <!-- @ 高亮层 -->
+              <div class="input-area" ref="inputAreaRef">
                 <div
-                  v-if="selectedApp"
-                  class="input-highlight"
-                  v-html="highlightedHtml"
-                ></div>
-                <el-input
-                  v-model="messageInput"
-                  type="textarea"
-                  :rows="textareaRows"
-                  :placeholder="getInputPlaceholder()"
-                  resize="none"
-                  @keydown.enter.exact.prevent="sendMessage"
-                  @input="handleInput"
+                  ref="editorRef"
+                  class="editor-div"
+                  contenteditable="true"
+                  :data-placeholder="getInputPlaceholder()"
+                  @input="handleEditorInput"
                   @keydown="handleInputKeydown"
                   @paste="handlePaste"
-                  @scroll="syncHighlightScroll"
-                  class="custom-input"
-                />
+                  spellcheck="false"
+                ></div>
               </div>
               <!-- 拖拽提示 -->
               <div v-if="isDragging" class="drag-overlay">
@@ -818,6 +809,8 @@ const appMentionPopup = ref(null)
 const appInputSchema = ref([]) // 选中应用的 inputSchema
 const appUploadedFiles = ref({}) // 选中应用上传的文件 { fieldName: File }
 const textareaWrapperRef = ref(null)
+const editorRef = ref(null)
+const inputAreaRef = ref(null)
 const appFileInputRef = ref(null)
 
 // 多模态文件上传相关
@@ -1131,6 +1124,11 @@ const uploadFilesToCOS = async () => {
 const sendMessage = async () => {
   // 应用列表弹出中，Enter 用于选中应用而非发送
   if (showAppMention.value) return
+  // 同步编辑器内容（processInput 用了 rAF 节流，快速输入时可能还没同步）
+  const el = editorRef.value
+  if (el) {
+    messageInput.value = el.innerText || ''
+  }
   if ((!messageInput.value.trim() && chatFiles.value.length === 0) || !currentChat.value) return
 
   // 校验 @ 应用的必填输入项
@@ -1251,6 +1249,12 @@ const sendMessage = async () => {
     message = message.replace(mentionPrefix, '')
   }
   messageInput.value = ''
+  // 同步清空 contenteditable DOM
+  const editorEl = editorRef.value
+  if (editorEl) {
+    editorEl.innerText = ''
+    editorEl.style.height = 'auto'
+  }
   chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
   await scrollToBottom()
@@ -1828,6 +1832,11 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to initialize chat:', error)
     ElMessage.error('初始化聊天失败')
+  } finally {
+    // 最后初始化编辑器内容
+    nextTick(() => {
+      initEditor()
+    })
   }
 })
 
@@ -1837,6 +1846,7 @@ let startY = 0
 let startHeight = 0
 const minRows = 3
 const maxRows = 15
+const lineHeight = 22.4 // 14px * 1.6
 
 // 新增：每个会话的"AI 正在思考中"动画状态 Map
 // Map<chatId, boolean>
@@ -1880,29 +1890,15 @@ const handlePresetSelect = (preset) => {
 }
 
 // @ 应用相关
-const handleInput = (value) => {
-  const atIndex = value.lastIndexOf('@')
-  if (selectedApp.value) {
-    // 已选中应用时，检查 @应用名 是否还在
-    const mentionText = '@' + selectedApp.value.name + ' '
-    if (!value.includes(mentionText)) {
-      // 用户删除了 @应用名，清除应用状态
-      selectedApp.value = null
-      appInputSchema.value = []
-      appUploadedFiles.value = {}
-    }
-  } else if (atIndex >= 0) {
-    // 未选中应用，检测到 @，弹出列表
-    showAppMention.value = true
-  } else if (showAppMention.value) {
-    // @ 被删除，关闭弹出列表
-    showAppMention.value = false
-  }
-}
-
 const handleInputKeydown = (e) => {
   if (showAppMention.value) {
     appMentionPopup.value?.handleKeydown(e)
+    return
+  }
+  // Enter 发送，Shift+Enter 换行
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendMessage()
   }
 }
 
@@ -1914,57 +1910,87 @@ const handleAppSelect = async (app) => {
   if (atIndex >= 0) {
     messageInput.value = messageInput.value.slice(0, atIndex) + '@' + app.name + ' '
   }
+  // 同步更新 contenteditable DOM，避免 processInput 从 innerText 读到旧内容
+  const el = editorRef.value
+  if (el) {
+    el.innerText = messageInput.value
+  }
   // 加载应用的 inputSchema
   await loadAppInputSchema(app.id)
-  // 聚焦到输入框末尾
+  // 聚焦到编辑器末尾
   nextTick(() => {
-    const textarea = document.querySelector('.custom-input .el-textarea__inner')
-    if (textarea) {
-      textarea.focus()
-      const len = messageInput.value.length
-      textarea.setSelectionRange(len, len)
+    if (el) {
+      el.focus()
+      // 将光标移到末尾
+      const range = document.createRange()
+      const sel = window.getSelection()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(range)
     }
   })
 }
 
-// @ 高亮 HTML 生成
-const highlightedHtml = computed(() => {
-  if (!selectedApp.value || !messageInput.value) return ''
-  const mentionText = '@' + selectedApp.value.name
-  const idx = messageInput.value.indexOf(mentionText)
-  if (idx < 0) return ''
-  const before = messageInput.value.slice(0, idx)
-  const mention = messageInput.value.slice(idx, idx + mentionText.length)
-  const after = messageInput.value.slice(idx + mentionText.length)
-  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  return esc(before) + '<span class="mention-highlight">' + esc(mention) + '</span>' + esc(after).replace(/ /g, ' ').replace(/\n/g, '<br>')
-})
-
-// 同步高亮层滚动 & 控制 textarea 透明度
-const syncHighlightScroll = () => {
-  const textarea = document.querySelector('.custom-input .el-textarea__inner')
-  const highlight = textareaWrapperRef.value?.querySelector('.input-highlight')
-  if (textarea && highlight) {
-    highlight.scrollTop = textarea.scrollTop
-    highlight.scrollLeft = textarea.scrollLeft
+// 处理编辑器输入
+let inputRafId = 0
+const processInput = () => {
+  inputRafId = 0
+  const el = editorRef.value
+  if (!el) return
+  // 去掉 HTML 标签，只保留纯文本（浏览器原生渲染，不做任何 DOM 替换）
+  const text = el.innerText || ''
+  messageInput.value = text
+  autoResizeEditor()
+  // @ 检测逻辑
+  const atIndex = text.lastIndexOf('@')
+  // 防止 autoResizeEditor 等副作用触发的递归 input 事件在显示弹窗时错误关闭它
+  const typingMention = atIndex >= 0 && !selectedApp.value
+  if (selectedApp.value) {
+    const mentionText = '@' + selectedApp.value.name + ' '
+    if (!text.includes(mentionText)) {
+      selectedApp.value = null
+      appInputSchema.value = []
+      appUploadedFiles.value = []
+      appUploadedFiles.value = {}
+    }
+  } else if (atIndex >= 0) {
+    showAppMention.value = true
+  } else if (showAppMention.value && !typingMention) {
+    // 延迟关闭：autoResizeEditor 等副作用可能在下一次 input 之前临时让 innerText 变空，
+    // 推迟到下一个 microtask 看是否真要把弹窗关掉。
+    Promise.resolve().then(() => {
+      const cur = (editorRef.value && editorRef.value.innerText) || ''
+      if (cur.lastIndexOf('@') < 0 && !selectedApp.value) {
+        showAppMention.value = false
+      }
+    })
   }
 }
 
-// 监听 selectedApp 变化，切换 textarea 文字透明度
-watch(selectedApp, (val) => {
-  nextTick(() => {
-    const textarea = document.querySelector('.custom-input .el-textarea__inner')
-    if (textarea) {
-      if (val) {
-        textarea.style.color = 'transparent'
-        textarea.style.caretColor = 'var(--el-text-color-primary)'
-      } else {
-        textarea.style.color = ''
-        textarea.style.caretColor = ''
-      }
-    }
-  })
-})
+const handleEditorInput = () => {
+  if (inputRafId) return
+  inputRafId = requestAnimationFrame(processInput)
+}
+
+// 初始化编辑器内容（仅在挂载/切换会话时调用一次）
+let editorInitialized = false
+const initEditor = () => {
+  const el = editorRef.value
+  if (!el) return
+  if (messageInput.value) {
+    el.innerText = messageInput.value
+  }
+  editorInitialized = true
+}
+
+// 自动调整编辑器高度
+const autoResizeEditor = () => {
+  const el = editorRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, maxRows * lineHeight) + 'px'
+}
 
 // 加载应用的 inputSchema
 const loadAppInputSchema = async (appId) => {
@@ -3230,11 +3256,9 @@ const batchDelete = async () => {
     position: relative;
 
     &.is-dragging {
-      .custom-input {
-        :deep(.el-textarea__inner) {
-          border-color: var(--el-color-primary);
-          background: var(--el-color-primary-light-9);
-        }
+      .editor-div {
+        border-color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
       }
     }
 
@@ -3303,24 +3327,37 @@ const batchDelete = async () => {
     position: relative;
   }
 
-  .input-highlight {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  .editor-div {
+    width: 100%;
+    min-height: 60px;
+    max-height: 360px;
+    overflow-y: auto;
     padding: 5px 90px 5px 11px;
     line-height: 1.6;
     font-size: 14px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-y: auto;
-    pointer-events: none;
-    z-index: 1;
-    color: transparent;
+    font-family: inherit;
+    color: var(--el-text-color-primary);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    outline: none;
     box-sizing: border-box;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    scrollbar-width: thin;
+    scrollbar-color: var(--el-scrollbar-bar-color) transparent;
+
+    &:focus {
+      border-color: var(--el-color-primary);
+      box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
+    }
+
+    &:empty::before {
+      content: attr(data-placeholder);
+      color: var(--el-text-color-placeholder);
+      pointer-events: none;
+    }
 
     :deep(.mention-highlight) {
       color: var(--el-color-primary);
@@ -3328,22 +3365,6 @@ const batchDelete = async () => {
       border-radius: 3px;
       padding: 0 2px;
       font-weight: 500;
-    }
-  }
-
-  .custom-input {
-    transition: all 0.3s ease;
-
-    :deep(.el-textarea__inner) {
-      resize: none !important;
-      transition: all 0.3s ease;
-      padding-right: 90px;
-      line-height: 1.6;
-      font-size: 14px;
-
-      &:focus {
-        box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
-      }
     }
   }
 
