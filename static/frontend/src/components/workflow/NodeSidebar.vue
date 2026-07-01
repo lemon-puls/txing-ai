@@ -82,12 +82,6 @@
             <el-form-item label="占位提示">
               <el-input v-model="field.placeholder" placeholder="输入框中的提示文字" />
             </el-form-item>
-            <el-form-item v-if="field.type === 'file'" label="文件类型">
-              <el-input v-model="field.accept" placeholder="如：.pdf,.txt,.md" />
-            </el-form-item>
-            <el-form-item label="字段描述">
-              <el-input v-model="field.description" placeholder="字段下方的说明文字" />
-            </el-form-item>
             <el-form-item label="是否必填">
               <el-switch v-model="field.required" />
             </el-form-item>
@@ -305,7 +299,6 @@ const removeSchemaField = (index) => {
 }
 
 const saveInputSchema = () => {
-  // 过滤掉空字段
   const validFields = inputSchema.value.filter(f => f.name && f.label)
   emit('config-change', {
     ...props.workflowConfig,
@@ -323,40 +316,67 @@ const onDragStart = (event, nodeType) => {
 </script>
 
 <style lang="scss" scoped>
+// 设计变量 / Design Variables (浅色主题)
+$primary-color: #3b82f6;
+$primary-light: #60a5fa;
+$primary-dark: #2563eb;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$bg-white: #ffffff;
+$bg-light: #f8fafc;
+$bg-card: #f1f5f9;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .node-sidebar {
-  width: 220px;
+  width: 260px;
   height: 100%;
-  background: #fafafa;
-  border-right: 1px solid #e0e0e0;
+  background: $bg-white;
+  border-right: 1px solid $border-color;
   display: flex;
   flex-direction: column;
 
   .sidebar-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 20px 20px;
+    border-bottom: 1px solid $border-color;
 
     h3 {
       margin: 0;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      color: #424242;
+      color: $text-primary;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      
+      &::before {
+        content: '';
+        width: 4px;
+        height: 16px;
+        background: linear-gradient(180deg, $primary-color, $primary-light);
+        border-radius: 2px;
+      }
     }
   }
 
   .workflow-config {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f0f7ff;
+    padding: 16px;
+    border-bottom: 1px solid $border-color;
+    background: rgba($primary-color, 0.03);
 
     .config-title {
-      font-size: 12px;
-      font-weight: 500;
-      color: #1976d2;
-      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: $primary-color;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .config-item {
-      margin-bottom: 8px;
+      margin-bottom: 12px;
 
       &:last-child {
         margin-bottom: 0;
@@ -364,22 +384,56 @@ const onDragStart = (event, nodeType) => {
 
       label {
         display: block;
-        font-size: 11px;
-        color: #666;
-        margin-bottom: 4px;
+        font-size: 12px;
+        color: $text-secondary;
+        margin-bottom: 6px;
+        font-weight: 500;
 
         .hint {
-          color: #999;
-          font-size: 10px;
+          color: $text-muted;
+          font-size: 11px;
+          font-weight: 400;
         }
       }
 
       .el-select {
         width: 100%;
+        
+        :deep(.el-input__wrapper) {
+          background: $bg-white;
+          border: 1px solid $border-color;
+          border-radius: 8px;
+          box-shadow: none;
+          
+          &:hover, &.is-focus {
+            border-color: $primary-color;
+          }
+        }
       }
 
       .el-input-number {
         width: 100%;
+        
+        :deep(.el-input__wrapper) {
+          background: $bg-white;
+          border: 1px solid $border-color;
+          border-radius: 8px;
+        }
+      }
+      
+      .el-button {
+        width: 100%;
+        justify-content: flex-start;
+        background: $bg-white;
+        border: 1px solid $border-color;
+        color: $text-secondary;
+        border-radius: 8px;
+        
+        &:hover {
+          background: rgba($primary-color, 0.05);
+          border-color: rgba($primary-color, 0.3);
+          color: $primary-color;
+        }
       }
     }
   }
@@ -387,17 +441,36 @@ const onDragStart = (event, nodeType) => {
   .node-categories {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 16px;
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: $border-color;
+      border-radius: 3px;
+      
+      &:hover {
+        background: darken($border-color, 10%);
+      }
+    }
 
     .category {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
 
       .category-title {
-        font-size: 12px;
-        font-weight: 500;
-        color: #757575;
-        margin-bottom: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: $text-muted;
+        margin-bottom: 10px;
         padding-left: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
 
       .category-items {
@@ -409,94 +482,113 @@ const onDragStart = (event, nodeType) => {
       .node-item {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         padding: 12px 14px;
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
+        background: $bg-white;
+        border: 1px solid $border-color;
+        border-radius: 12px;
         cursor: grab;
         transition: all 0.2s ease;
 
         &:hover {
-          border-color: #1976d2;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          border-color: $primary-color;
+          box-shadow: 0 4px 12px rgba($primary-color, 0.1);
           transform: translateY(-1px);
         }
 
         &:active {
           cursor: grabbing;
+          transform: scale(0.98);
         }
 
         .item-icon {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: 8px;
-          font-size: 16px;
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          font-size: 18px;
+          transition: all 0.2s ease;
         }
 
         span {
           font-size: 13px;
           font-weight: 500;
-          color: #424242;
+          color: $text-primary;
         }
 
         // 不同类型节点的颜色
         &.start {
-          border-left: 3px solid #4caf50;
-          .item-icon { background: #e8f5e9; color: #4caf50; }
+          border-left: 3px solid $success-color;
+          .item-icon { background: rgba($success-color, 0.1); color: $success-color; }
+          &:hover { border-color: rgba($success-color, 0.5); }
         }
         &.end {
-          border-left: 3px solid #ef5350;
-          .item-icon { background: #ffebee; color: #ef5350; }
+          border-left: 3px solid #ef4444;
+          .item-icon { background: rgba(#ef4444, 0.1); color: #ef4444; }
+          &:hover { border-color: rgba(#ef4444, 0.5); }
         }
         &.llm {
-          border-left: 3px solid #2196f3;
-          .item-icon { background: #e3f2fd; color: #2196f3; }
+          border-left: 3px solid #3b82f6;
+          .item-icon { background: rgba(#3b82f6, 0.1); color: #3b82f6; }
+          &:hover { border-color: rgba(#3b82f6, 0.5); }
         }
         &.tool {
-          border-left: 3px solid #ff9800;
-          .item-icon { background: #fff3e0; color: #ff9800; }
+          border-left: 3px solid $warning-color;
+          .item-icon { background: rgba($warning-color, 0.1); color: $warning-color; }
+          &:hover { border-color: rgba($warning-color, 0.5); }
         }
         &.condition {
-          border-left: 3px solid #9c27b0;
-          .item-icon { background: #f3e5f5; color: #9c27b0; }
+          border-left: 3px solid #7c3aed;
+          .item-icon { background: rgba(#7c3aed, 0.1); color: #7c3aed; }
+          &:hover { border-color: rgba(#7c3aed, 0.5); }
         }
         &.code {
-          border-left: 3px solid #607d8b;
-          .item-icon { background: #eceff1; color: #607d8b; }
+          border-left: 3px solid #64748b;
+          .item-icon { background: rgba(#64748b, 0.1); color: #64748b; }
+          &:hover { border-color: rgba(#64748b, 0.5); }
         }
         &.http {
-          border-left: 3px solid #00bcd4;
-          .item-icon { background: #e0f7fa; color: #00bcd4; }
+          border-left: 3px solid #06b6d4;
+          .item-icon { background: rgba(#06b6d4, 0.1); color: #06b6d4; }
+          &:hover { border-color: rgba(#06b6d4, 0.5); }
         }
         &.agent {
-          border-left: 3px solid #e91e63;
-          .item-icon { background: #fce4ec; color: #e91e63; }
+          border-left: 3px solid #ec4899;
+          .item-icon { background: rgba(#ec4899, 0.1); color: #ec4899; }
+          &:hover { border-color: rgba(#ec4899, 0.5); }
         }
         &.parallel {
-          border-left: 3px solid #7c4dff;
-          .item-icon { background: #ede7f6; color: #7c4dff; }
+          border-left: 3px solid #8b5cf6;
+          .item-icon { background: rgba(#8b5cf6, 0.1); color: #8b5cf6; }
+          &:hover { border-color: rgba(#8b5cf6, 0.5); }
         }
         &.join {
-          border-left: 3px solid #00bfa5;
-          .item-icon { background: #e0f2f1; color: #00bfa5; }
+          border-left: 3px solid #14b8a6;
+          .item-icon { background: rgba(#14b8a6, 0.1); color: #14b8a6; }
+          &:hover { border-color: rgba(#14b8a6, 0.5); }
         }
       }
     }
   }
 
   .sidebar-footer {
-    padding: 12px 16px;
-    border-top: 1px solid #e0e0e0;
-    display: flex;
-    justify-content: center;
+    padding: 16px;
+    border-top: 1px solid $border-color;
 
     .el-button {
       width: 100%;
-      border-radius: 10px;
+      border-radius: 12px;
+      justify-content: center;
+      font-weight: 600;
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+      border: none;
+      color: white;
+      
+      &:hover {
+        background: linear-gradient(135deg, $primary-light, $primary-color);
+      }
     }
   }
 }
@@ -505,26 +597,83 @@ const onDragStart = (event, nodeType) => {
   max-height: 500px;
   overflow-y: auto;
 
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $border-color;
+    border-radius: 3px;
+  }
+
   .empty-schema {
     text-align: center;
-    padding: 24px;
-    color: #909399;
+    padding: 32px;
+    color: $text-muted;
 
-    p { margin: 0 0 8px; }
-    .hint { font-size: 12px; color: #c0c4cc; }
+    p { 
+      margin: 0 0 10px;
+      font-size: 14px;
+    }
+    .hint { 
+      font-size: 12px; 
+      color: $text-muted;
+    }
   }
 
   .schema-field-item {
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
     .field-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
 
       .field-index {
         font-size: 14px;
         font-weight: 600;
-        color: #409eff;
+        color: $primary-color;
+        background: rgba($primary-color, 0.1);
+        padding: 4px 10px;
+        border-radius: 6px;
+      }
+      
+      .el-button {
+        color: #ef4444;
+      }
+    }
+    
+    :deep(.el-form-item) {
+      margin-bottom: 12px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .el-form-item__label {
+        color: $text-secondary;
+        font-weight: 500;
+        font-size: 12px;
+      }
+      
+      .el-input__wrapper,
+      .el-textarea__inner {
+        background: $bg-white;
+        border: 1px solid $border-color;
+        border-radius: 8px;
+        
+        &:hover, &:focus {
+          border-color: $primary-color;
+        }
       }
     }
   }

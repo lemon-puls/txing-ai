@@ -1,12 +1,9 @@
 <template>
   <div class="parallel-node">
-    <!-- 输入连接点 - 顶部 -->
     <Handle type="target" :position="Position.Top" id="input" />
 
     <div class="node-header">
-      <div class="node-icon">
-        <el-icon><Grid /></el-icon>
-      </div>
+      <div class="node-icon"><el-icon><Grid /></el-icon></div>
       <div class="node-title">{{ label }}</div>
     </div>
 
@@ -17,7 +14,6 @@
       </div>
     </div>
 
-    <!-- 输出连接点 - 底部 -->
     <Handle type="source" :position="Position.Bottom" id="output" />
   </div>
 </template>
@@ -29,74 +25,71 @@ import { Grid, Tickets } from '@element-plus/icons-vue'
 
 const props = defineProps({
   id: String,
-  data: {
-    type: Object,
-    default: () => ({})
-  }
+  data: { type: Object, default: () => ({}) }
 })
 
 const label = computed(() => props.data?.label || '并行组')
-const branchCount = computed(() => {
-  // 简单计算：如果有配置则使用，否则默认显示 2
-  return props.data?.parallelConfig?.branchCount || 2
-})
+const branchCount = computed(() => props.data?.parallelConfig?.branchCount || 2)
 </script>
 
 <style lang="scss" scoped>
+$text-primary: #1e293b;
+
 .parallel-node {
   padding: 0;
   background: white;
-  border: 2px solid #7c4dff;
-  border-radius: 12px;
+  border: 2px solid #8b5cf6;
+  border-radius: 14px;
   min-width: 160px;
-  box-shadow: 0 2px 8px rgba(124, 77, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.12);
   transition: all 0.2s ease;
   overflow: hidden;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(124, 77, 255, 0.25);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+    transform: translateY(-1px);
   }
 
   .node-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%);
-    border-bottom: 1px solid #b39ddb;
+    gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(#8b5cf6, 0.1) 0%, rgba(#8b5cf6, 0.05) 100%);
+    border-bottom: 1px solid rgba(#8b5cf6, 0.15);
 
     .node-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: #7c4dff;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      background: #8b5cf6;
+      border-radius: 8px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .node-title {
       font-size: 14px;
       font-weight: 600;
-      color: #4527a0;
+      color: $text-primary;
     }
   }
 
   .node-content {
-    padding: 10px 12px;
+    padding: 12px 14px;
 
     .branch-count {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       font-size: 12px;
-      color: #7c4dff;
-      background: rgba(124, 77, 255, 0.08);
-      padding: 6px 10px;
-      border-radius: 6px;
+      color: #8b5cf6;
+      background: rgba(#8b5cf6, 0.08);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(#8b5cf6, 0.15);
     }
   }
 }
@@ -104,7 +97,7 @@ const branchCount = computed(() => {
 :deep(.vue-flow__handle) {
   width: 12px;
   height: 12px;
-  background: #7c4dff;
+  background: #8b5cf6;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 

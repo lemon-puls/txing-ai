@@ -1,8 +1,6 @@
 <template>
   <div class="agent-node">
-    <!-- 输入连接点 - 左侧 -->
     <Handle type="target" :position="Position.Left" id="input-left" />
-    <!-- 输入连接点 - 右侧 -->
     <Handle type="target" :position="Position.Right" id="input-right" />
 
     <div class="node-header">
@@ -25,19 +23,9 @@
         <span class="info-label">工具:</span>
         <span class="info-value">{{ agentConfig.tools.length }} 个</span>
       </div>
-      <div class="info-row" v-if="agentConfig?.maxRunSteps">
-        <span class="info-label">最大步数:</span>
-        <span class="info-value">{{ agentConfig.maxRunSteps }}</span>
-      </div>
-      <div class="info-row" v-if="agentConfig?.systemPrompt">
-        <span class="info-label">提示词:</span>
-        <span class="info-value prompt-preview">{{ promptPreview }}</span>
-      </div>
     </div>
 
-    <!-- 输出连接点 - 右侧 -->
     <Handle type="source" :position="Position.Right" id="output-right" />
-    <!-- 输出连接点 - 左侧 -->
     <Handle type="source" :position="Position.Left" id="output-left" />
   </div>
 </template>
@@ -49,95 +37,85 @@ import { Avatar } from '@element-plus/icons-vue'
 
 const props = defineProps({
   id: String,
-  data: {
-    type: Object,
-    default: () => ({})
-  }
+  data: { type: Object, default: () => ({}) }
 })
 
 const label = computed(() => props.data?.label || 'Agent')
 const agentConfig = computed(() => props.data?.agentConfig || {})
 const modelConfig = computed(() => props.data?.modelConfig || {})
-const promptPreview = computed(() => {
-  const prompt = agentConfig.value?.systemPrompt || ''
-  return prompt.length > 30 ? prompt.substring(0, 30) + '...' : prompt
-})
 </script>
 
 <style lang="scss" scoped>
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .agent-node {
   padding: 0;
   background: white;
-  border: 2px solid #e91e63;
-  border-radius: 12px;
+  border: 2px solid #ec4899;
+  border-radius: 14px;
   min-width: 200px;
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.15);
+  box-shadow: 0 2px 12px rgba(236, 72, 153, 0.12);
   transition: all 0.2s ease;
   overflow: hidden;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(233, 30, 99, 0.25);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(236, 72, 153, 0.2);
+    transform: translateY(-1px);
   }
 
   .node-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
-    border-bottom: 1px solid #f48fb1;
+    gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(#ec4899, 0.1) 0%, rgba(#ec4899, 0.05) 100%);
+    border-bottom: 1px solid rgba(#ec4899, 0.15);
 
     .node-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: #e91e63;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      background: #ec4899;
+      border-radius: 8px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .node-title {
       font-size: 14px;
       font-weight: 600;
-      color: #c2185b;
+      color: $text-primary;
     }
   }
 
   .node-content {
-    padding: 10px 12px;
+    padding: 12px 14px;
 
     .info-row {
       display: flex;
       align-items: flex-start;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       font-size: 12px;
 
-      &:last-child {
-        margin-bottom: 0;
-      }
+      &:last-child { margin-bottom: 0; }
 
       .info-label {
         flex-shrink: 0;
-        width: 50px;
-        color: #90a4ae;
+        width: 48px;
+        color: $text-muted;
       }
 
       .info-value {
         flex: 1;
-        color: #455a64;
+        color: $text-secondary;
         word-break: break-all;
 
-        &.prompt-preview {
-          color: #78909c;
-          font-style: italic;
-        }
-
         &.model-default {
-          color: #bdbdbd;
+          color: $text-muted;
           font-style: italic;
         }
       }
@@ -148,7 +126,7 @@ const promptPreview = computed(() => {
 :deep(.vue-flow__handle) {
   width: 12px;
   height: 12px;
-  background: #e91e63;
+  background: #ec4899;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 

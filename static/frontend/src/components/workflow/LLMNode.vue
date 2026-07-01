@@ -1,8 +1,6 @@
 <template>
   <div class="llm-node">
-    <!-- 输入连接点 - 左侧 -->
     <Handle type="target" :position="Position.Left" id="input-left" />
-    <!-- 输入连接点 - 右侧 -->
     <Handle type="target" :position="Position.Right" id="input-right" />
 
     <div class="node-header">
@@ -27,9 +25,7 @@
       </div>
     </div>
 
-    <!-- 输出连接点 - 右侧 -->
     <Handle type="source" :position="Position.Right" id="output-right" />
-    <!-- 输出连接点 - 左侧 -->
     <Handle type="source" :position="Position.Left" id="output-left" />
   </div>
 </template>
@@ -41,10 +37,7 @@ import { ChatDotRound } from '@element-plus/icons-vue'
 
 const props = defineProps({
   id: String,
-  data: {
-    type: Object,
-    default: () => ({})
-  }
+  data: { type: Object, default: () => ({}) }
 })
 
 const label = computed(() => props.data?.label || '大模型')
@@ -56,55 +49,59 @@ const promptPreview = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .llm-node {
   padding: 0;
   background: white;
-  border: 2px solid #2196f3;
-  border-radius: 12px;
-  min-width: 200px;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+  border: 2px solid #3b82f6;
+  border-radius: 14px;
+  min-width: 220px;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.12);
   transition: all 0.2s ease;
   overflow: hidden;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(33, 150, 243, 0.25);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
   }
 
   .node-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-bottom: 1px solid #90caf9;
+    gap: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(#3b82f6, 0.1) 0%, rgba(#3b82f6, 0.05) 100%);
+    border-bottom: 1px solid rgba(#3b82f6, 0.15);
 
     .node-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: #2196f3;
-      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      background: #3b82f6;
+      border-radius: 8px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .node-title {
       font-size: 14px;
       font-weight: 600;
-      color: #1565c0;
+      color: $text-primary;
     }
   }
 
   .node-content {
-    padding: 10px 12px;
+    padding: 12px 14px;
 
     .info-row {
       display: flex;
       align-items: flex-start;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       font-size: 12px;
 
       &:last-child {
@@ -113,17 +110,17 @@ const promptPreview = computed(() => {
 
       .info-label {
         flex-shrink: 0;
-        width: 50px;
-        color: #90a4ae;
+        width: 48px;
+        color: $text-muted;
       }
 
       .info-value {
         flex: 1;
-        color: #455a64;
+        color: $text-secondary;
         word-break: break-all;
 
         &.prompt-preview {
-          color: #78909c;
+          color: $text-muted;
           font-style: italic;
         }
       }
@@ -134,7 +131,7 @@ const promptPreview = computed(() => {
 :deep(.vue-flow__handle) {
   width: 12px;
   height: 12px;
-  background: #2196f3;
+  background: #3b82f6;
   border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 

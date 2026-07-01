@@ -56,11 +56,7 @@
                 {{ tool.displayName }}
               </el-checkbox>
             </el-checkbox-group>
-            <div class="form-tip">LLM 将通过 Function Calling 自主决定是否调用这些工具（支持多轮调用）</div>
-          </el-form-item>
-          <el-form-item label="最大工具调用轮次" v-if="localData.modelConfig.tools && localData.modelConfig.tools.length > 0">
-            <el-input-number v-model="localData.modelConfig.maxToolRounds" :min="1" :max="20" :step="1" style="width: 100%" />
-            <div class="form-tip">控制 LLM 最多执行多少轮工具调用，防止无限循环</div>
+            <div class="form-tip">LLM 将通过 Function Calling 自主决定是否调用这些工具</div>
           </el-form-item>
         </el-form>
       </div>
@@ -73,18 +69,18 @@
             <el-select v-model="localData.toolConfig.toolName" placeholder="请选择工具" style="width: 100%" clearable>
               <el-option v-for="tool in toolList" :key="tool.name" :label="tool.displayName" :value="tool.name" />
             </el-select>
-            <div class="form-tip">直接执行工具，不经过大模型，不消耗 Token</div>
+            <div class="form-tip">直接执行工具，不经过大模型</div>
           </el-form-item>
           <el-form-item label="工具参数">
             <el-input
               v-model="toolParamsStr"
               type="textarea"
               :rows="4"
-              placeholder='JSON 格式参数，例如: {"query": "北京天气"}'
+              placeholder='JSON 格式参数'
               style="font-family: monospace;"
               @change="parseToolParams"
             />
-            <div class="form-tip">输入 JSON 格式的工具参数，上游节点的输入内容会自动作为 toolInput 参数传入</div>
+            <div class="form-tip">输入 JSON 格式的工具参数</div>
           </el-form-item>
         </el-form>
       </div>
@@ -101,85 +97,44 @@
             </el-radio-group>
           </el-form-item>
 
-          <!-- 表达式条件 -->
           <template v-if="localData.conditionConfig.type === 'expression'">
             <el-form-item label="条件表达式">
-              <el-input
-                v-model="localData.conditionConfig.expression"
-                placeholder="例如: {{output}} contains '成功'"
-              />
-              <div class="form-tip">
-                支持运算符：<br/>
-                • contains - 包含子串<br/>
-                • equals - 精确匹配<br/>
-                • starts_with - 前缀匹配<br/>
-                • ends_with - 后缀匹配<br/>
-                • matches - 正则匹配<br/>
-                • greater_than - 数值大于<br/>
-                • less_than - 数值小于<br/>
-                • contains_any - 包含任意一个（逗号分隔或JSON数组）
-              </div>
+              <el-input v-model="localData.conditionConfig.expression" placeholder="例如: {{output}} contains '成功'" />
+              <div class="form-tip">支持运算符：contains, equals, matches 等</div>
             </el-form-item>
           </template>
 
-          <!-- AI判断 -->
           <template v-if="localData.conditionConfig.type === 'llm'">
             <el-form-item label="判断提示词">
               <el-input
                 v-model="localData.conditionConfig.llmPrompt"
                 type="textarea"
                 :rows="3"
-                placeholder="请输入让AI判断的提示词，例如：请判断以下内容是否包含积极的情绪"
+                placeholder="请输入让AI判断的提示词"
               />
-              <div class="form-tip">AI 将返回结构化 JSON 结果 {result: true/false, reason: '判断原因'}</div>
             </el-form-item>
           </template>
 
-          <!-- 工具结果 -->
           <template v-if="localData.conditionConfig.type === 'tool_result'">
             <el-form-item label="工具名称">
               <el-select v-model="localData.conditionConfig.toolName" placeholder="请选择工具">
                 <el-option v-for="tool in toolList" :key="tool.name" :label="tool.displayName" :value="tool.name" />
               </el-select>
             </el-form-item>
-            <el-form-item label="结果字段">
-              <el-input v-model="localData.conditionConfig.toolResultKey" placeholder="例如: status, code" />
-            </el-form-item>
             <el-form-item label="期望值">
-              <el-input v-model="localData.conditionConfig.expectedValue" placeholder="与期望值比较，例如: success, 200" />
-              <div class="form-tip">如果结果等于期望值，条件为 true</div>
+              <el-input v-model="localData.conditionConfig.expectedValue" placeholder="例如: success, 200" />
             </el-form-item>
           </template>
 
-          <!-- 错误处理策略 -->
           <div class="divider"></div>
           <div class="sub-section-title">错误处理</div>
           <el-form-item label="判断失败时的处理">
             <el-radio-group v-model="localData.conditionConfig.failureAction">
-              <el-radio label="default_false">
-                <span>默认走 false 分支</span>
-                <div class="radio-desc">条件判断出错时自动走 false 分支继续执行</div>
-              </el-radio>
-              <el-radio label="terminate">
-                <span>终止工作流</span>
-                <div class="radio-desc">条件判断出错时停止整个工作流，返回错误</div>
-              </el-radio>
-              <el-radio label="configurable">
-                <span>自定义默认分支</span>
-                <div class="radio-desc">条件判断出错时走指定的分支</div>
-              </el-radio>
+              <el-radio label="default_false">默认走 false 分支</el-radio>
+              <el-radio label="terminate">终止工作流</el-radio>
+              <el-radio label="configurable">自定义默认分支</el-radio>
             </el-radio-group>
           </el-form-item>
-
-          <!-- 自定义错误分支 -->
-          <template v-if="localData.conditionConfig.failureAction === 'configurable'">
-            <el-form-item label="错误时的默认分支">
-              <el-radio-group v-model="localData.conditionConfig.failureBranch">
-                <el-radio label="true">走 true 分支</el-radio>
-                <el-radio label="false">走 false 分支</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </template>
         </el-form>
       </div>
 
@@ -201,12 +156,7 @@
               placeholder="在此编写代码"
               style="font-family: monospace;"
             />
-            <div class="form-tip">
-              可用变量：<br/>
-              • input - 输入内容（字符串）<br/>
-              • output - 等同于 input（兼容其他节点）<br/>
-              使用 return 返回结果
-            </div>
+            <div class="form-tip">可用变量：input, output，使用 return 返回结果</div>
           </el-form-item>
           <el-form-item label="超时时间（秒）">
             <el-input-number v-model="localData.codeConfig.timeout" :min="1" :max="300" :step="1" style="width: 100%" />
@@ -227,10 +177,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="请求 URL">
-            <el-input
-              v-model="localData.httpConfig.url"
-              placeholder="例如: https://api.example.com/data"
-            />
+            <el-input v-model="localData.httpConfig.url" placeholder="例如: https://api.example.com/data" />
             <div class="form-tip">支持变量替换：{{input}}、{{output}}</div>
           </el-form-item>
           <el-form-item label="请求头">
@@ -238,7 +185,7 @@
               v-model="httpHeadersStr"
               type="textarea"
               :rows="3"
-              placeholder='每行一个，格式: Key: Value&#10;例如:&#10;Authorization: Bearer token&#10;Content-Type: application/json'
+              placeholder='每行一个，格式: Key: Value'
               @change="parseHttpHeaders"
             />
           </el-form-item>
@@ -249,7 +196,6 @@
               :rows="4"
               placeholder="请求体内容（支持 JSON）"
             />
-            <div class="form-tip">支持变量替换：{{input}}、{{output}}</div>
           </el-form-item>
           <el-form-item label="超时时间（秒）">
             <el-input-number v-model="localData.httpConfig.timeout" :min="1" :max="300" :step="1" style="width: 100%" />
@@ -261,10 +207,9 @@
       <div class="config-section" v-if="nodeType === 'agent'">
         <div class="section-title">Agent 配置</div>
         <el-form label-position="top" size="small">
-          <!-- 模型配置 / Model config -->
           <div class="sub-section-title">模型配置</div>
           <el-form-item label="选择模型">
-            <el-select v-model="localData.modelConfig.model" placeholder="请选择模型（留空则使用工作流默认模型）" style="width: 100%" clearable>
+            <el-select v-model="localData.modelConfig.model" placeholder="请选择模型" style="width: 100%" clearable>
               <el-option v-for="model in modelList" :key="model.name" :label="model.name" :value="model.name" />
             </el-select>
           </el-form-item>
@@ -273,18 +218,11 @@
               v-model="localData.modelConfig.systemPrompt"
               type="textarea"
               :rows="4"
-              placeholder="指导 Agent 的行为；为空时使用 Agent 配置中的系统提示词"
+              placeholder="指导 Agent 的行为"
             />
-            <div class="form-tip">模型配置中的系统提示词优先级高于 Agent 配置</div>
           </el-form-item>
           <el-form-item label="温度 (Temperature)">
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
-          </el-form-item>
-          <el-form-item label="最大Token数">
-            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
-          </el-form-item>
-          <el-form-item label="启用上下文记忆">
-            <el-switch v-model="localData.modelConfig.contextEnabled" />
           </el-form-item>
           <el-form-item label="绑定工具">
             <el-checkbox-group v-model="localData.modelConfig.tools">
@@ -292,16 +230,9 @@
                 {{ tool.displayName }}
               </el-checkbox>
             </el-checkbox-group>
-            <div class="form-tip">模型配置中的工具列表优先级高于 Agent 配置</div>
-          </el-form-item>
-          <el-form-item label="最大工具调用轮次" v-if="localData.modelConfig.tools && localData.modelConfig.tools.length > 0">
-            <el-input-number v-model="localData.modelConfig.maxToolRounds" :min="1" :max="20" :step="1" style="width: 100%" />
-            <div class="form-tip">控制 Agent 最多执行多少轮工具调用，防止无限循环</div>
           </el-form-item>
 
           <div class="divider"></div>
-
-          <!-- Agent 行为配置 / Agent behavior config -->
           <div class="sub-section-title">Agent 行为</div>
           <el-form-item label="系统提示词 (Agent 兜底)">
             <el-input
@@ -317,11 +248,9 @@
                 {{ tool.displayName }}
               </el-checkbox>
             </el-checkbox-group>
-            <div class="form-tip">当上方模型配置的工具列表为空时使用</div>
           </el-form-item>
           <el-form-item label="最大执行步数">
             <el-input-number v-model="localData.agentConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
-            <div class="form-tip">控制 Agent 整体最多执行多少步，防止整体无限循环</div>
           </el-form-item>
         </el-form>
       </div>
@@ -348,18 +277,8 @@
         <el-form label-position="top" size="small">
           <el-form-item label="汇聚策略">
             <el-select v-model="localData.joinConfig.strategy" placeholder="请选择策略" style="width: 100%">
-              <el-option label="全部完成" value="all">
-                <div class="option-content">
-                  <span>全部完成</span>
-                  <span class="option-hint">等待所有并行分支完成</span>
-                </div>
-              </el-option>
-              <el-option label="任一完成" value="any">
-                <div class="option-content">
-                  <span>任一完成</span>
-                  <span class="option-hint">任一分支完成即继续</span>
-                </div>
-              </el-option>
+              <el-option label="全部完成" value="all" />
+              <el-option label="任一完成" value="any" />
             </el-select>
           </el-form-item>
           <el-form-item label="超时时间（秒）">
@@ -390,7 +309,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { Setting, Close, Document, Check, Grid, Connection } from '@element-plus/icons-vue'
+import { Setting, Close, Document, Check } from '@element-plus/icons-vue'
 
 const props = defineProps({
   selectedNode: {
@@ -411,7 +330,6 @@ const emit = defineEmits(['update', 'close'])
 
 const nodeType = computed(() => props.selectedNode?.data?.nodeType)
 
-// 本地数据副本
 const localData = ref({
   label: '',
   description: '',
@@ -467,83 +385,30 @@ const localData = ref({
   }
 })
 
-// HTTP 请求头字符串（用于编辑）
 const httpHeadersStr = ref('')
-
-// 工具参数字符串（用于编辑）
 const toolParamsStr = ref('')
 
-// 监听选中节点变化，更新本地数据
 watch(() => props.selectedNode, (newNode) => {
   if (newNode) {
     localData.value = {
       label: newNode.data?.label || '',
       description: newNode.data?.description || '',
-      modelConfig: newNode.data?.modelConfig || {
-        model: '',
-        systemPrompt: '',
-        temperature: 0.7,
-        maxTokens: 4096,
-        contextEnabled: true,
-        tools: [],
-        maxToolRounds: 5
-      },
-      toolConfig: newNode.data?.toolConfig || {
-        toolName: '',
-        params: {},
-        tools: []
-      },
-      conditionConfig: newNode.data?.conditionConfig || {
-        type: 'expression',
-        expression: '',
-        llmPrompt: '',
-        toolName: '',
-        toolResultKey: '',
-        expectedValue: '',
-        failureAction: 'default_false',
-        failureBranch: 'false'
-      },
-      codeConfig: newNode.data?.codeConfig || {
-        language: 'javascript',
-        code: '',
-        timeout: 30
-      },
-      httpConfig: newNode.data?.httpConfig || {
-        method: 'GET',
-        url: '',
-        headers: {},
-        body: '',
-        timeout: 30
-      },
-      agentConfig: newNode.data?.agentConfig || {
-        systemPrompt: '',
-        tools: [],
-        maxRunSteps: 30
-      },
-      parallelConfig: newNode.data?.parallelConfig || {
-        maxConcurrency: 3,
-        waitStrategy: 'all',
-        timeout: 60
-      },
-      joinConfig: newNode.data?.joinConfig || {
-        strategy: 'all',
-        timeout: 60
-      }
+      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 4096, contextEnabled: true, tools: [], maxToolRounds: 5 },
+      toolConfig: newNode.data?.toolConfig || { toolName: '', params: {}, tools: [] },
+      conditionConfig: newNode.data?.conditionConfig || { type: 'expression', expression: '', llmPrompt: '', toolName: '', toolResultKey: '', expectedValue: '', failureAction: 'default_false', failureBranch: 'false' },
+      codeConfig: newNode.data?.codeConfig || { language: 'javascript', code: '', timeout: 30 },
+      httpConfig: newNode.data?.httpConfig || { method: 'GET', url: '', headers: {}, body: '', timeout: 30 },
+      agentConfig: newNode.data?.agentConfig || { systemPrompt: '', tools: [], maxRunSteps: 30 },
+      parallelConfig: newNode.data?.parallelConfig || { maxConcurrency: 3, waitStrategy: 'all', timeout: 60 },
+      joinConfig: newNode.data?.joinConfig || { strategy: 'all', timeout: 60 }
     }
-
-    // 将 headers 对象转为字符串
     const headers = localData.value.httpConfig.headers || {}
-    httpHeadersStr.value = Object.entries(headers)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('\n')
-
-    // 将 params 对象转为字符串
+    httpHeadersStr.value = Object.entries(headers).map(([key, value]) => `${key}: ${value}`).join('\n')
     const params = localData.value.toolConfig.params || {}
     toolParamsStr.value = Object.keys(params).length > 0 ? JSON.stringify(params, null, 2) : ''
   }
 }, { immediate: true })
 
-// 解析 HTTP 请求头字符串
 const parseHttpHeaders = (str) => {
   const headers = {}
   if (str) {
@@ -561,7 +426,6 @@ const parseHttpHeaders = (str) => {
   localData.value.httpConfig.headers = headers
 }
 
-// 解析工具参数 JSON
 const parseToolParams = () => {
   try {
     const parsed = JSON.parse(toolParamsStr.value)
@@ -580,22 +444,37 @@ const handleApply = () => {
 </script>
 
 <style lang="scss" scoped>
+// 设计变量 / Design Variables (浅色主题)
+$primary-color: #3b82f6;
+$primary-light: #60a5fa;
+$primary-dark: #2563eb;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$bg-white: #ffffff;
+$bg-light: #f8fafc;
+$bg-card: #f1f5f9;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .property-panel {
-  width: 340px;
+  width: 360px;
   height: 100%;
-  background: white;
-  border-left: 1px solid #e8e8e8;
+  background: $bg-white;
+  border-left: 1px solid $border-color;
   display: flex;
   flex-direction: column;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.03);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
 
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e8e8e8;
-    background: #fafbfc;
+    padding: 18px 20px;
+    border-bottom: 1px solid $border-color;
+    background: $bg-light;
 
     .header-title {
       display: flex;
@@ -603,10 +482,23 @@ const handleApply = () => {
       gap: 10px;
       font-size: 15px;
       font-weight: 600;
-      color: #1a1a1a;
+      color: $text-primary;
 
       .el-icon {
-        color: #1976d2;
+        color: $primary-color;
+        font-size: 18px;
+      }
+    }
+    
+    .el-button {
+      border-radius: 8px;
+      color: $text-secondary;
+      background: transparent;
+      border: none;
+      
+      &:hover {
+        background: rgba($primary-color, 0.08);
+        color: $primary-color;
       }
     }
   }
@@ -616,42 +508,73 @@ const handleApply = () => {
     overflow-y: auto;
     padding: 20px;
 
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: $border-color;
+      border-radius: 3px;
+    }
+
     .config-section {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid $border-color;
+
+      &:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
 
       .section-title {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
-        color: #1976d2;
-        margin-bottom: 14px;
-        padding-left: 10px;
-        border-left: 3px solid #1976d2;
+        color: $primary-color;
+        margin-bottom: 16px;
+        padding-left: 12px;
+        border-left: 3px solid $primary-color;
         display: flex;
         align-items: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       :deep(.el-form-item) {
-        margin-bottom: 16px;
+        margin-bottom: 18px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
 
         .el-form-item__label {
           font-weight: 500;
-          color: #424242;
+          color: $text-secondary;
+          font-size: 12px;
+          margin-bottom: 8px;
         }
 
         .el-input__wrapper,
         .el-textarea__inner {
+          background: $bg-white;
+          border: 1px solid $border-color;
           border-radius: 10px;
-          border-color: #e0e0e0;
+          box-shadow: none;
 
-          &:hover, &:focus-within {
-            border-color: #1976d2;
+          &:hover {
+            border-color: darken($border-color, 10%);
+          }
+
+          &:focus-within {
+            border-color: $primary-color;
+            box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
           }
         }
 
         .el-select {
           width: 100%;
 
-          .el-input__wrapper {
+          :deep(.el-input__wrapper) {
             border-radius: 10px;
           }
         }
@@ -659,21 +582,24 @@ const handleApply = () => {
         .el-checkbox-group {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 8px;
 
           .el-checkbox {
             margin-right: 0;
-            padding: 8px 12px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            transition: all 0.2s;
+            padding: 10px 14px;
+            background: $bg-card;
+            border: 1px solid $border-color;
+            border-radius: 10px;
+            transition: all 0.2s ease;
 
             &:hover {
-              background: #e3f2fd;
+              background: rgba($primary-color, 0.05);
+              border-color: rgba($primary-color, 0.3);
             }
 
             &.is-checked {
-              background: #e3f2fd;
+              background: rgba($primary-color, 0.08);
+              border-color: rgba($primary-color, 0.4);
             }
           }
         }
@@ -685,19 +611,13 @@ const handleApply = () => {
 
           .el-radio {
             margin-right: 0;
-            padding: 10px 14px;
-            background: #f5f5f5;
+            padding: 12px 16px;
+            background: $bg-card;
+            border: 1px solid $border-color;
             border-radius: 10px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             height: auto !important;
             align-items: flex-start;
-
-            :deep(.el-radio__content) {
-              display: flex;
-              flex-direction: column;
-              flex: 1;
-              min-width: 0;
-            }
 
             :deep(.el-radio__label) {
               display: flex;
@@ -706,106 +626,126 @@ const handleApply = () => {
               padding-left: 0;
               white-space: normal;
               line-height: 1.5;
+              color: $text-primary;
+              font-weight: 500;
             }
 
             &:hover {
-              background: #f0f0f0;
+              background: rgba($primary-color, 0.05);
+              border-color: rgba($primary-color, 0.3);
             }
 
             &.is-checked {
-              background: #e3f2fd;
-              border: 1px solid #1976d2;
+              background: rgba($primary-color, 0.08);
+              border-color: rgba($primary-color, 0.5);
             }
+          }
+        }
+
+        :deep(.el-slider) {
+          .el-slider__runway {
+            background: $border-color;
+            border-radius: 4px;
+          }
+          
+          .el-slider__bar {
+            background: linear-gradient(90deg, $primary-color, $primary-light);
+            border-radius: 4px;
+          }
+          
+          .el-slider__button {
+            border-color: $primary-color;
+            background: $primary-color;
           }
         }
       }
 
       .form-tip {
         font-size: 11px;
-        color: #9e9e9e;
-        margin-top: 6px;
-        line-height: 1.4;
+        color: $text-muted;
+        margin-top: 8px;
+        line-height: 1.5;
+        padding: 10px 12px;
+        background: $bg-card;
+        border-radius: 8px;
+        border-left: 2px solid $text-muted;
       }
 
       .info-tip {
         font-size: 12px;
-        color: #7c4dff;
-        background: rgba(124, 77, 255, 0.08);
-        padding: 10px 12px;
-        border-radius: 8px;
-        line-height: 1.5;
-      }
-
-      .option-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        .option-hint {
-          font-size: 11px;
-          color: #9e9e9e;
-        }
+        color: $primary-color;
+        background: rgba($primary-color, 0.05);
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba($primary-color, 0.1);
+        line-height: 1.6;
       }
 
       .divider {
         height: 1px;
-        background: #e0e0e0;
-        margin: 16px 0;
+        background: $border-color;
+        margin: 20px 0;
       }
 
       .sub-section-title {
-        font-size: 12px;
-        font-weight: 600;
-        color: #757575;
-        margin-bottom: 12px;
-      }
-
-      .radio-desc {
         font-size: 11px;
-        color: #9e9e9e;
-        margin-top: 2px;
-        line-height: 1.4;
-        display: block;
-        width: 100%;
+        font-weight: 600;
+        color: $text-muted;
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
     }
   }
 
   .panel-footer {
-    padding: 14px 20px;
-    border-top: 1px solid #e8e8e8;
-    background: #fafbfc;
+    padding: 16px 20px;
+    border-top: 1px solid $border-color;
+    background: $bg-light;
     display: flex;
     justify-content: flex-end;
 
     .el-button {
-      border-radius: 10px;
-      padding: 10px 24px;
-      font-weight: 500;
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-weight: 600;
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+      border: none;
+      color: white;
+      
+      &:hover {
+        background: linear-gradient(135deg, $primary-light, $primary-color);
+      }
     }
   }
 
   &.empty {
     justify-content: center;
     align-items: center;
-    background: #fafbfc;
+    background: $bg-light;
 
     .empty-content {
       text-align: center;
-      color: #9e9e9e;
+      color: $text-muted;
+      padding: 40px;
 
       .el-icon {
-        color: #bdbdbd;
+        color: $text-muted;
+        opacity: 0.4;
+        font-size: 56px;
+        margin-bottom: 16px;
       }
 
       p {
         margin-top: 16px;
         font-size: 14px;
+        font-weight: 500;
+        color: $text-secondary;
 
         &.tip {
           font-size: 12px;
-          color: #bdbdbd;
-          margin-top: 8px;
+          color: $text-muted;
+          margin-top: 10px;
         }
       }
     }
