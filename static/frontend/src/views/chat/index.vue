@@ -162,7 +162,7 @@
                   {{ message.role === 'user' ? 'U' : (currentChat.preset?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
-              <div class="message-content">
+              <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
                 <!-- 应用标签 -->
                 <div v-if="message.appName" class="message-app-tag">
                   <el-icon><Share /></el-icon>
@@ -2578,6 +2578,26 @@ const batchDelete = async () => {
 
   @media screen and (min-width: 1600px) {
     max-width: 1000px;
+  }
+
+  // 包含 WorkflowMessage 时撑满最大宽度
+  &.has-workflow {
+    width: 100%;
+  }
+
+  // WorkflowMessage 撑满宽度
+  .workflow-message {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    width: calc(100% + 32px);
+
+    .workflow-card {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
   }
 
   .message-app-tag {
