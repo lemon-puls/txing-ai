@@ -95,7 +95,7 @@ RUN update-ca-certificates
 
 # 设置 npm 镜像源
 RUN npm config set registry https://registry.npmmirror.com
-st
+
 # 设置工作目录
 WORKDIR /app
 
