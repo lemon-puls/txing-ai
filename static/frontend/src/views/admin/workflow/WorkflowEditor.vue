@@ -342,6 +342,8 @@ import ConditionNode from '@/components/workflow/ConditionNode.vue'
 import CodeNode from '@/components/workflow/CodeNode.vue'
 import HTTPNode from '@/components/workflow/HTTPNode.vue'
 import AgentNode from '@/components/workflow/AgentNode.vue'
+import ParallelNode from '@/components/workflow/ParallelNode.vue'
+import JoinNode from '@/components/workflow/JoinNode.vue'
 import NodeSidebar from '@/components/workflow/NodeSidebar.vue'
 import PropertyPanel from '@/components/workflow/PropertyPanel.vue'
 import ExecutionLogPanel from '@/components/workflow/ExecutionLogPanel.vue'
@@ -431,7 +433,9 @@ const nodeTypes = {
   agent: markRaw(AgentNode),
   condition: markRaw(ConditionNode),
   code: markRaw(CodeNode),
-  http: markRaw(HTTPNode)
+  http: markRaw(HTTPNode),
+  parallel: markRaw(ParallelNode),
+  join: markRaw(JoinNode)
 }
 
 // 连接线样式
@@ -584,6 +588,28 @@ const onDrop = (event) => {
           systemPrompt: '',
           tools: [],
           maxRunSteps: 30
+        },
+        modelConfig: {
+          model: '',
+          systemPrompt: '',
+          temperature: 0.7,
+          maxTokens: 4096,
+          contextEnabled: true,
+          tools: [],
+          maxToolRounds: 5
+        }
+      } : {}),
+      ...(type === 'parallel' ? {
+        parallelConfig: {
+          maxConcurrency: 0,
+          waitStrategy: 'all',
+          timeout: 0
+        }
+      } : {}),
+      ...(type === 'join' ? {
+        joinConfig: {
+          strategy: 'all',
+          timeout: 0
         }
       } : {})
     }
@@ -601,7 +627,9 @@ const getDefaultLabel = (type) => {
     agent: 'Agent',
     condition: '条件分支',
     code: '代码',
-    http: 'HTTP'
+    http: 'HTTP',
+    parallel: '并行组',
+    join: '汇聚'
   }
   return map[type] || '未知节点'
 }
@@ -1236,23 +1264,55 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// 设计变量 / Design Variables (浅色主题)
+$primary-color: #3b82f6;
+$primary-light: #60a5fa;
+$primary-dark: #2563eb;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$bg-white: #ffffff;
+$bg-light: #f8fafc;
+$bg-card: #f1f5f9;
+$border-color: #e2e8f0;
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .workflow-editor-container {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 100px);
-  background: #f8f9fa;
+  background: linear-gradient(180deg, $bg-light 0%, $bg-card 100%);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04);
 
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 14px 24px;
-    background: white;
-    border-bottom: 1px solid #e8e8e8;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    background: $bg-white;
+    border-bottom: 1px solid $border-color;
+    position: relative;
+
+    // 顶部装饰线
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, 
+        $primary-color 0%, 
+        $primary-light 50%, 
+        $primary-color 100%
+      );
+    }
 
     .title {
       display: flex;
@@ -1262,26 +1322,126 @@ onUnmounted(() => {
       .workflow-name-input {
         width: 280px;
         font-size: 16px;
-        font-weight: 500;
+        font-weight: 600;
 
         :deep(.el-input__wrapper) {
-          background: #f5f5f5;
+          background: $bg-card;
           border-radius: 10px;
           box-shadow: none;
+          border: 1px solid $border-color;
+          transition: all 0.3s ease;
 
           &:hover, &:focus-within {
-            background: white;
-            box-shadow: 0 0 0 1px #1976d2;
+            background: $bg-white;
+            border-color: $primary-color;
+            box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+          }
+
+          .el-input__inner {
+            color: $text-primary;
+            font-weight: 500;
+            
+            &::placeholder {
+              color: $text-muted;
+            }
           }
         }
       }
     }
 
     .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
       .el-button {
         border-radius: 10px;
-        padding: 10px 24px;
+        padding: 10px 20px;
         font-weight: 500;
+        transition: all 0.2s ease;
+        border: 1px solid $border-color;
+        background: $bg-white;
+        color: $text-secondary;
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        // 危险按钮
+        &.is-danger {
+          background: rgba($danger-color, 0.08);
+          border-color: rgba($danger-color, 0.2);
+          color: $danger-color;
+          
+          &:hover {
+            background: rgba($danger-color, 0.12);
+            border-color: rgba($danger-color, 0.3);
+          }
+        }
+
+        // 警告按钮
+        &.is-warning {
+          background: rgba($warning-color, 0.08);
+          border-color: rgba($warning-color, 0.2);
+          color: darken($warning-color, 10%);
+          
+          &:hover {
+            background: rgba($warning-color, 0.12);
+            border-color: rgba($warning-color, 0.3);
+          }
+        }
+
+        // 信息按钮
+        &.is-info {
+          background: $bg-card;
+          border-color: $border-color;
+          color: $text-secondary;
+          
+          &:hover {
+            background: darken($bg-card, 2%);
+            border-color: darken($border-color, 5%);
+          }
+        }
+
+        // 成功按钮
+        &.is-success {
+          background: linear-gradient(135deg, $primary-color 0%, $primary-dark 100%);
+          border-color: $primary-color;
+          color: white;
+          box-shadow: 
+            0 2px 8px rgba($primary-color, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          
+          &:hover {
+            background: linear-gradient(135deg, $primary-light 0%, $primary-color 100%);
+            box-shadow: 
+              0 4px 16px rgba($primary-color, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          }
+        }
+
+        // 主要按钮
+        &.el-button--primary {
+          background: linear-gradient(135deg, $primary-color 0%, $primary-dark 100%);
+          border-color: $primary-color;
+          color: white;
+          box-shadow: 
+            0 2px 8px rgba($primary-color, 0.25),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          
+          &:hover {
+            background: linear-gradient(135deg, $primary-light 0%, $primary-color 100%);
+            box-shadow: 
+              0 4px 16px rgba($primary-color, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          }
+        }
+
+        .el-tag {
+          border-radius: 6px;
+          font-weight: 600;
+        }
       }
     }
   }
@@ -1294,8 +1454,25 @@ onUnmounted(() => {
     .canvas-area {
       flex: 1;
       position: relative;
-      background: linear-gradient(135deg, #fafbfc 0%, #f0f2f5 100%);
+      background: 
+        radial-gradient(ellipse at center, rgba($primary-color, 0.02) 0%, transparent 70%),
+        $bg-light;
       outline: none;
+
+      // 网格纹理
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+          linear-gradient(rgba($primary-color, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba($primary-color, 0.04) 1px, transparent 1px);
+        background-size: 20px 20px;
+        pointer-events: none;
+      }
 
       &:focus {
         outline: none;
@@ -1306,8 +1483,11 @@ onUnmounted(() => {
 
 // Vue Flow 全局样式覆盖
 :deep(.vue-flow) {
+  background: transparent;
+  
   .vue-flow__edge-path {
     stroke-width: 2;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
   }
 
   .vue-flow__edge.animated path {
@@ -1323,40 +1503,44 @@ onUnmounted(() => {
 
   .vue-flow__node {
     cursor: pointer;
-    transition: box-shadow 0.2s ease, border-color 0.3s ease;
+    transition: all 0.2s ease;
 
     &:hover {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      filter: brightness(0.98);
+      transform: translateY(-1px);
     }
 
     // 运行中 - 呼吸脉冲
     &.node-running {
-      border: 2px solid #2196f3 !important;
-      box-shadow: 0 0 20px rgba(33, 150, 243, 0.4);
+      border: 2px solid #3b82f6 !important;
+      box-shadow: 
+        0 0 0 3px rgba(59, 130, 246, 0.15),
+        0 4px 12px rgba(59, 130, 246, 0.2);
       animation: nodePulse 1.5s ease-in-out infinite;
       z-index: 100;
     }
 
     // 已完成 - 绿色边框
     &.node-completed {
-      border: 2px solid #4caf50 !important;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+      border: 2px solid $success-color !important;
+      box-shadow: 0 0 0 3px rgba($success-color, 0.1);
     }
 
-    // 失败 - 红色边框 + 抖动
+    // 失败 - 红色边框
     &.node-failed {
-      border: 2px solid #f44336 !important;
+      border: 2px solid $danger-color !important;
+      box-shadow: 0 0 0 3px rgba($danger-color, 0.1);
       animation: nodeShake 0.5s ease-in-out;
     }
   }
 
   .vue-flow__node.selected {
-    outline: 2px solid #1976d2;
+    outline: 2px solid $primary-color;
     outline-offset: 2px;
   }
 
   .vue-flow__edge.selected .vue-flow__edge-path {
-    stroke: #1976d2;
+    stroke: $primary-color;
     stroke-width: 3;
   }
 
@@ -1364,9 +1548,9 @@ onUnmounted(() => {
     z-index: 10;
   }
 
-  // 活跃边 - 流动动画
+  // 活跃边
   .vue-flow__edge.edge-active .vue-flow__edge-path {
-    stroke: #2196f3;
+    stroke: #3b82f6;
     stroke-width: 3;
     stroke-dasharray: 10 5;
     animation: edgeFlow 1s linear infinite;
@@ -1375,7 +1559,7 @@ onUnmounted(() => {
   .vue-flow__handle {
     width: 12px;
     height: 12px;
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
 
     &:hover {
       transform: scale(1.3);
@@ -1383,30 +1567,108 @@ onUnmounted(() => {
   }
 
   .vue-flow__connection-path {
-    stroke: #1976d2;
+    stroke: $primary-color;
     stroke-width: 2;
   }
 
   .vue-flow__controls {
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
     button {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
+      background: transparent;
+      border: none;
+      color: $text-secondary;
+      transition: all 0.2s ease;
 
       &:hover {
-        background: #f0f0f0;
+        background: rgba($primary-color, 0.1);
+        color: $primary-color;
+      }
+
+      svg {
+        fill: currentColor;
       }
     }
   }
+
+  .vue-flow__minimap {
+    background: $bg-white;
+    border-radius: 12px;
+    border: 1px solid $border-color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 }
 
-// 测试对话框 - 缩小宽度，运行时自动关闭
+@keyframes nodePulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 3px rgba(59, 130, 246, 0.15),
+      0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 6px rgba(59, 130, 246, 0.1),
+      0 4px 20px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes nodeShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes edgeFlow {
+  to {
+    stroke-dashoffset: -15;
+  }
+}
+
+// 测试对话框
 :deep(.test-dialog) {
   .el-dialog {
-    border-radius: 14px;
+    border-radius: 16px;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    
+    .el-dialog__header {
+      border-bottom: 1px solid $border-color;
+      padding: 20px 24px;
+      
+      .el-dialog__title {
+        color: $text-primary;
+        font-weight: 600;
+      }
+    }
+    
+    .el-dialog__body {
+      padding: 24px;
+      
+      .el-textarea__inner {
+        background: $bg-card;
+        border-color: $border-color;
+        color: $text-primary;
+        border-radius: 10px;
+        
+        &:focus {
+          border-color: $primary-color;
+          box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+        }
+      }
+    }
+    
+    .el-dialog__footer {
+      border-top: 1px solid $border-color;
+      padding: 16px 24px;
+    }
   }
 }
 
@@ -1416,48 +1678,49 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  background: $bg-white;
+  border: 1px solid $border-color;
+  border-top: 3px solid $primary-color;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
   z-index: 50;
-  border-radius: 14px 14px 0 0;
-  max-height: 260px;
+  max-height: 280px;
   display: flex;
   flex-direction: column;
+  border-radius: 16px 16px 0 0;
 
   .result-panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 14px 20px;
+    border-bottom: 1px solid $border-color;
     flex-shrink: 0;
 
     .result-panel-title {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
+      gap: 10px;
+      font-size: 14px;
       font-weight: 500;
-      color: #333;
+      color: $text-primary;
 
       .status-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
-        background: #bdbdbd;
+        background: $text-muted;
 
         &.running {
-          background: #ef6c00;
+          background: $warning-color;
           animation: dotPulse 1s ease-in-out infinite;
         }
 
         &.success {
-          background: #4caf50;
+          background: $success-color;
         }
 
         &.error {
-          background: #f44336;
+          background: $danger-color;
         }
       }
     }
@@ -1465,12 +1728,25 @@ onUnmounted(() => {
     .result-panel-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
+      
+      .el-button {
+        border-radius: 8px;
+        background: $bg-card;
+        border-color: $border-color;
+        color: $text-secondary;
+        
+        &:hover {
+          background: rgba($primary-color, 0.1);
+          border-color: rgba($primary-color, 0.2);
+          color: $primary-color;
+        }
+      }
     }
   }
 
   .result-panel-body {
-    padding: 14px 20px;
+    padding: 16px 20px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -1478,28 +1754,37 @@ onUnmounted(() => {
     .running-indicator {
       display: flex;
       align-items: center;
-      gap: 10px;
-      color: #ef6c00;
+      gap: 12px;
+      color: $warning-color;
       font-size: 13px;
 
       .loading-icon {
         animation: rotate 1s linear infinite;
+        font-size: 16px;
       }
     }
 
     .error-message {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #c62828;
+      gap: 10px;
+      color: $danger-color;
       font-size: 13px;
+      padding: 12px 16px;
+      background: rgba($danger-color, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba($danger-color, 0.1);
     }
 
     .result-text {
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.7;
       white-space: pre-wrap;
-      color: #424242;
+      color: $text-secondary;
+      padding: 12px 16px;
+      background: $bg-card;
+      border-radius: 10px;
+      border: 1px solid $border-color;
     }
   }
 }
@@ -1507,7 +1792,7 @@ onUnmounted(() => {
 // 底部面板滑入/滑出动画
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .slide-up-enter-from,
@@ -1521,52 +1806,84 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-@keyframes nodePulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(33, 150, 243, 0.6), 0 0 40px rgba(33, 150, 243, 0.2);
-  }
-}
-
 @keyframes dotPulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-@keyframes nodeShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(3px); }
-}
-
-@keyframes edgeFlow {
-  to {
-    stroke-dashoffset: -15;
-  }
+  50% { opacity: 0.5; }
 }
 
 // 校验结果对话框
 :deep(.validation-dialog) {
   .el-dialog {
-    border-radius: 14px;
-  }
-
-  .el-dialog__body {
-    padding: 16px 20px;
+    border-radius: 16px;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    
+    .el-dialog__header {
+      border-bottom: 1px solid $border-color;
+      padding: 20px 24px;
+      
+      .el-dialog__title {
+        color: $text-primary;
+        font-weight: 600;
+      }
+    }
+    
+    .el-dialog__body {
+      padding: 24px;
+    }
+    
+    .el-dialog__footer {
+      border-top: 1px solid $border-color;
+      padding: 16px 24px;
+    }
   }
 }
 
 :deep(.template-dialog) {
   .el-dialog {
-    border-radius: 14px;
-  }
-
-  .el-dialog__body {
-    padding: 16px 20px;
+    border-radius: 16px;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    
+    .el-dialog__header {
+      border-bottom: 1px solid $border-color;
+      padding: 20px 24px;
+      
+      .el-dialog__title {
+        color: $text-primary;
+        font-weight: 600;
+      }
+    }
+    
+    .el-dialog__body {
+      padding: 24px;
+      
+      .el-input__wrapper,
+      .el-textarea__inner {
+        background: $bg-card;
+        border-color: $border-color;
+        color: $text-primary;
+        border-radius: 10px;
+        
+        &:focus {
+          border-color: $primary-color;
+          box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+        }
+      }
+      
+      .el-select {
+        .el-input__wrapper {
+          border-radius: 10px;
+        }
+      }
+    }
+    
+    .el-dialog__footer {
+      border-top: 1px solid $border-color;
+      padding: 16px 24px;
+    }
   }
 }
 
@@ -1574,93 +1891,98 @@ onUnmounted(() => {
   .validation-status {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    font-weight: 500;
-    font-size: 14px;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 15px;
 
     &.valid {
-      background: #e8f5e9;
-      color: #2e7d32;
+      background: rgba($success-color, 0.08);
+      color: darken($success-color, 5%);
+      border: 1px solid rgba($success-color, 0.2);
     }
 
     &.invalid {
-      background: #ffebee;
-      color: #c62828;
+      background: rgba($danger-color, 0.08);
+      color: $danger-color;
+      border: 1px solid rgba($danger-color, 0.2);
     }
   }
 
   .validation-section {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 
     .section-title {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 8px;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
 
       &.error-title {
-        color: #c62828;
+        color: $danger-color;
       }
 
       &.warning-title {
-        color: #ef6c00;
+        color: darken($warning-color, 5%);
       }
     }
 
     .issue-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .issue-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 8px;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
       font-size: 13px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
 
       &:hover {
-        background: #f5f5f5;
+        transform: translateX(4px);
       }
 
       &.error-item {
-        background: #fff3f3;
+        background: rgba($danger-color, 0.05);
+        border: 1px solid rgba($danger-color, 0.15);
       }
 
       &.warning-item {
-        background: #fff8e1;
+        background: rgba($warning-color, 0.05);
+        border: 1px solid rgba($warning-color, 0.15);
       }
 
       .issue-badge {
         flex-shrink: 0;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
 
         &.error {
-          background: #ffcdd2;
-          color: #c62828;
+          background: rgba($danger-color, 0.1);
+          color: $danger-color;
         }
 
         &.warning {
-          background: #ffe0b2;
-          color: #ef6c00;
+          background: rgba($warning-color, 0.1);
+          color: darken($warning-color, 5%);
         }
       }
 
       .issue-message {
         flex: 1;
-        color: #333;
+        color: $text-primary;
+        line-height: 1.5;
       }
 
       .locate-btn {
@@ -1674,12 +1996,13 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 24px;
-    color: #2e7d32;
+    gap: 16px;
+    padding: 32px;
+    color: darken($success-color, 5%);
 
     p {
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 500;
       margin: 0;
     }
   }
@@ -1688,6 +2011,20 @@ onUnmounted(() => {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
+  
+  .el-button {
+    border-radius: 10px;
+    padding: 10px 20px;
+    
+    &.is-primary {
+      background: linear-gradient(135deg, $primary-color, $primary-dark);
+      border-color: $primary-color;
+      
+      &:hover {
+        background: linear-gradient(135deg, $primary-light, $primary-color);
+      }
+    }
+  }
 }
 </style>

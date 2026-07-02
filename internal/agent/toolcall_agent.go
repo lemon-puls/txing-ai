@@ -65,17 +65,42 @@ func (a *ToolCallAgent) Execute(ctx context.Context,
 	return response, nil
 }
 
+// AgentExecConfig Agent 执行可选配置 / Optional agent execution config
+type AgentExecConfig struct {
+	Temperature *float32 // 温度；nil 使用模型默认
+	MaxTokens   *int     // 最大 Token；nil 使用模型默认
+}
+
+// ExecuteStream 覆写流式执行方法
 func (a *ToolCallAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
+	return a.ExecuteStreamWithConfig(ctx, endpoint, apiKey, model, input, filePath, callback, nil)
+}
 
-	// 设置 LLM 响应最大 token 数量，一些模型（例如 DeepSeek v3）默认是 4k，这里上调到 8k，否则最终生成的结果可能会超长导致被截断
+// ExecuteStreamWithConfig 带可选配置的流式执行入口
+// ExecuteStreamWithConfig is the entry point that accepts optional agent execution config.
+func (a *ToolCallAgent) ExecuteStreamWithConfig(ctx context.Context, endpoint string, apiKey string, model string,
+	input string, filePath string, callback func(chunk *global.Chunk) error,
+	cfg *AgentExecConfig) (string, error) {
+
+	// 默认 maxTokens 8k，温度由调用方决定 / Default maxTokens 8k; temperature is decided by caller
 	maxTokens := 8192
-	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
+	chatModelConfig := &openai.ChatModelConfig{
 		BaseURL:   endpoint,
-		Model:     model, // 使用的模型版本
+		Model:     model,
 		APIKey:    apiKey,
 		MaxTokens: &maxTokens,
-	})
+	}
+	if cfg != nil {
+		if cfg.MaxTokens != nil && *cfg.MaxTokens > 0 {
+			chatModelConfig.MaxTokens = cfg.MaxTokens
+		}
+		if cfg.Temperature != nil {
+			chatModelConfig.Temperature = cfg.Temperature
+		}
+	}
+
+	chatModel, err := openai.NewChatModel(ctx, chatModelConfig)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create chat model: %w", err)
 	}

@@ -1,9 +1,7 @@
 <template>
   <div class="code-node">
     <div class="node-header">
-      <div class="node-icon">
-        <el-icon><Monitor /></el-icon>
-      </div>
+      <div class="node-icon"><el-icon><Monitor /></el-icon></div>
       <div class="node-title">{{ data.label || '代码节点' }}</div>
     </div>
     <div class="node-body">
@@ -22,35 +20,36 @@ import { Handle, Position } from '@vue-flow/core'
 import { Monitor } from '@element-plus/icons-vue'
 
 const props = defineProps({
-  data: {
-    type: Object,
-    default: () => ({})
-  }
+  data: { type: Object, default: () => ({}) }
 })
 </script>
 
 <style lang="scss" scoped>
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
 .code-node {
   background: white;
-  border: 2px solid #607d8b;
-  border-radius: 12px;
+  border: 2px solid #64748b;
+  border-radius: 14px;
   padding: 0;
   min-width: 180px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(100, 116, 139, 0.12);
   transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 16px rgba(100, 116, 139, 0.2);
+    transform: translateY(-1px);
   }
 
   .node-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 16px;
-    background: #eceff1;
-    border-radius: 10px 10px 0 0;
-    border-bottom: 1px solid #cfd8dc;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(#64748b, 0.1) 0%, rgba(#64748b, 0.05) 100%);
+    border-bottom: 1px solid rgba(#64748b, 0.15);
 
     .node-icon {
       display: flex;
@@ -58,40 +57,54 @@ const props = defineProps({
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: #607d8b;
-      border-radius: 6px;
+      background: #64748b;
+      border-radius: 8px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .node-title {
       font-size: 14px;
       font-weight: 600;
-      color: #37474f;
+      color: $text-primary;
     }
   }
 
   .node-body {
-    padding: 12px 16px;
+    padding: 12px 14px;
 
     .node-info {
       margin-bottom: 8px;
 
       .language-tag {
         display: inline-block;
-        padding: 2px 8px;
-        background: #e0e0e0;
-        border-radius: 4px;
+        padding: 4px 10px;
+        background: rgba(#64748b, 0.1);
+        border: 1px solid rgba(#64748b, 0.2);
+        border-radius: 6px;
         font-size: 11px;
-        color: #616161;
+        color: $text-secondary;
         font-family: monospace;
+        text-transform: uppercase;
       }
     }
 
     .node-hint {
       font-size: 12px;
-      color: #9e9e9e;
+      color: $text-muted;
     }
+  }
+}
+
+:deep(.vue-flow__handle) {
+  width: 12px;
+  height: 12px;
+  background: #64748b;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    transform: scale(1.2);
   }
 }
 </style>

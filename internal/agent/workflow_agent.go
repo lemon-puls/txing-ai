@@ -39,6 +39,9 @@ type WorkflowAgent struct {
 	topology      string
 	modelResolver ModelResolver
 	resProvider   iface.ResourceProvider
+	endpoint      string // LLM 调用端点 / LLM endpoint
+	apiKey        string // LLM API 密钥 / LLM API key
+	model         string // 默认模型名 / Default model name
 }
 
 // RetryConfig 重试配置
@@ -121,6 +124,9 @@ type NodeData struct {
 	HTTPConfig        *HTTPConfig         `json:"httpConfig,omitempty"`
 	SubWorkflowConfig *SubWorkflowConfig  `json:"subWorkflowConfig,omitempty"`
 	AgentConfig       *AgentConfig        `json:"agentConfig,omitempty"`
+	ParallelConfig    *ParallelConfig     `json:"parallelConfig,omitempty"`  // 并行组配置 / Parallel group config
+	JoinConfig        *JoinConfig         `json:"joinConfig,omitempty"`      // 汇聚节点配置 / Join node config
+	Extra             map[string]interface{} `json:"extra,omitempty"`        // 扩展字段，用于存储 parallelId 等 / Extra fields for parallelId etc.
 }
 
 // NodeExecutionLog 节点执行日志
@@ -418,8 +424,42 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 	var startNodeId, endNodeId string
 
 	// 添加节点
+	// 收集所有并行组覆盖的分支节点，避免重复构建
+	// Collect all branch nodes covered by parallel groups to avoid duplicate building
+	parallelExecutorForScan := NewParallelExecutor(a, 10, "", "", "")
+	parallelBranchNodes := make(map[string]struct{})
+	for _, node := range topo.Nodes {
+		if node.Data.NodeType == "parallel" {
+			groups, _ := parallelExecutorForScan.IdentifyParallelGroups(&topo)
+			for _, group := range groups {
+				if group.ParallelID == node.Id {
+					for _, branch := range group.Branches {
+						for _, n := range branch {
+							parallelBranchNodes[n.Id] = struct{}{}
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+
 	for _, node := range topo.Nodes {
 		nodeId := node.Id
+
+		// 跳过已被并行组处理的分支节点，添加占位节点以保证边的引用存在
+		// Skip branch nodes handled by parallel groups, but add placeholder nodes so edge references resolve
+		if _, skip := parallelBranchNodes[nodeId]; skip {
+			// 占位节点：直接透传输入（实际执行由 parallel 节点完成）
+			placeholderId := nodeId
+			graph.AddLambdaNode(placeholderId, compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) (*schema.Message, error) {
+				if len(input) > 0 {
+					return input[len(input)-1], nil
+				}
+				return schema.UserMessage(""), nil
+			}))
+			continue
+		}
 
 		switch node.Data.NodeType {
 		case "start":
@@ -1006,21 +1046,65 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}
 			agentEndpoint, agentAPIKey, agentModel := a.resolveModelInfo(agentModelName, endpoint, apiKey, model)
 
-			// 最大执行步数
+			// 字段合并：ModelConfig 优先，缺失字段回退 AgentConfig / Merge fields: ModelConfig wins, fall back to AgentConfig
+			systemPrompt := agentConfig.SystemPrompt
+			var agentTools []string
 			agentMaxRunSteps := 30
 			if agentConfig.MaxRunSteps > 0 {
 				agentMaxRunSteps = agentConfig.MaxRunSteps
 			}
+			// 仅 ModelConfig 提供 / ModelConfig-only fields
+			maxToolRounds := 0
+			temperature := float32(0.7)
+			maxTokens := 4096
+			var retryConfig *RetryConfig
+
+			if node.Data.ModelConfig != nil {
+				mc := node.Data.ModelConfig
+				if mc.SystemPrompt != "" {
+					systemPrompt = mc.SystemPrompt
+				}
+				if len(mc.Tools) > 0 {
+					agentTools = mc.Tools
+				}
+				if mc.MaxToolRounds > 0 {
+					maxToolRounds = mc.MaxToolRounds
+				}
+				if mc.Temperature > 0 {
+					temperature = float32(mc.Temperature)
+				}
+				if mc.MaxTokens > 0 {
+					maxTokens = mc.MaxTokens
+				}
+				retryConfig = mc.Retry
+			}
+			// agentConfig.Tools 仅在 modelConfig 未指定时回退 / Fallback tools to agentConfig only when modelConfig didn't provide any
+			if len(agentTools) == 0 && len(agentConfig.Tools) > 0 {
+				agentTools = agentConfig.Tools
+			}
+
+			// 第一版：MaxToolRounds / Retry 暂未接入 ToolCallAgent 内部循环，仅记录日志
+			// First version: MaxToolRounds / Retry are not yet wired into ToolCallAgent's internal loop, only logged
+			if maxToolRounds > 0 || retryConfig != nil {
+				log.Info("Agent 节点高级配置已读取（第一版未接入 ToolCallAgent 内部循环）",
+					zap.String("nodeId", nodeId),
+					zap.Int("maxToolRounds", maxToolRounds),
+					zap.Any("retry", retryConfig))
+			}
 
 			// 创建 ToolCallAgent 实例
 			toolCallAgent := NewToolCallAgent(a.resProvider)
-			toolCallAgent.SetSystemPrompt(agentConfig.SystemPrompt)
+			toolCallAgent.SetSystemPrompt(systemPrompt)
 			toolCallAgent.SetMaxRunSteps(agentMaxRunSteps)
 
 			// 如果指定了工具列表，按名称过滤
-			if len(agentConfig.Tools) > 0 {
-				toolCallAgent.tools = a.getToolsByNames(agentConfig.Tools)
+			if len(agentTools) > 0 {
+				toolCallAgent.tools = a.getToolsByNames(agentTools)
 			}
+
+			// 捕获变量供闭包使用 / Capture variables for closure
+			agentTemperature := temperature
+			agentMaxTokens := maxTokens
 
 			statusCbAgent := nodeStatusCallback(callback, nodeId, "agent", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
@@ -1031,7 +1115,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					StartTime: time.Now().UnixMilli(),
 				}
 				statusCbAgent("running")
-				log.Info("Executing Agent node", zap.String("nodeId", nodeId))
+				log.Info("Executing Agent node", zap.String("nodeId", nodeId), zap.String("model", agentModel))
 
 				inputContent := ""
 				if input != nil {
@@ -1048,7 +1132,10 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 
 				// 使用 ToolCallAgent 执行多轮工具调用循环
-				response, err := toolCallAgent.ExecuteStream(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback)
+				response, err := toolCallAgent.ExecuteStreamWithConfig(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback, &AgentExecConfig{
+					Temperature: &agentTemperature,
+					MaxTokens:   &agentMaxTokens,
+				})
 				if err != nil {
 					log.Error("Agent node execution failed", zap.Error(err))
 					execLog.Status = "failed"
@@ -1067,6 +1154,143 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				sendExecutionLog(callback, execLog)
 				statusCbAgent("completed")
 				return schema.AssistantMessage(response, nil), nil
+			}))
+
+		case "parallel":
+			// 并行组入口节点：创建并行执行节点
+			parallelConfig := &ParallelConfig{
+				MaxConcurrency: 0,
+				WaitStrategy:   "all",
+				Timeout:        0,
+			}
+			// 从节点配置读取
+			if node.Data.ParallelConfig != nil {
+				parallelConfig = node.Data.ParallelConfig
+			}
+
+			// 创建并行执行器
+			parallelExecutor := NewParallelExecutor(a, parallelConfig.MaxConcurrency, endpoint, apiKey, model)
+
+			statusCbParallel := nodeStatusCallback(callback, nodeId, "parallel", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "parallel",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbParallel("running")
+
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
+				}
+
+				// 识别并行组
+				parallelGroups, err := parallelExecutor.IdentifyParallelGroups(&topo)
+				if err != nil {
+					log.Error("识别并行组失败", zap.String("nodeId", nodeId), zap.Error(err))
+					execLog.Status = "failed"
+					execLog.Error = err.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("failed")
+					return nil, err
+				}
+
+				// 找到当前 parallel 节点对应的并行组
+				var currentGroup *ParallelGroup
+				for _, group := range parallelGroups {
+					if group.ParallelID == nodeId {
+						currentGroup = group
+						break
+					}
+				}
+
+				if currentGroup == nil {
+					log.Warn("未找到对应的并行组", zap.String("nodeId", nodeId))
+					execLog.Status = "completed"
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("completed")
+					return input, nil
+				}
+
+				// 执行并行组
+				results, err := parallelExecutor.ExecuteParallelGroup(ctx, currentGroup, inputContent, callback)
+				if err != nil {
+					log.Error("并行组执行失败", zap.String("nodeId", nodeId), zap.Error(err))
+					execLog.Status = "failed"
+					execLog.Error = err.Error()
+					execLog.EndTime = time.Now().UnixMilli()
+					execLog.Duration = execLog.EndTime - execLog.StartTime
+					sendExecutionLog(callback, execLog)
+					statusCbParallel("failed")
+					return nil, err
+				}
+
+				// 合并结果
+				mergedOutput := parallelExecutor.MergeResults(results)
+
+				execLog.Status = "completed"
+				execLog.Output = mergedOutput
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbParallel("completed")
+
+				// 并行节点完成：结果已经写入 executionLog.output，
+				// 这里不再通过 callback 推送 Content（避免被前端当作最终输出渲染）
+				// Only emit a lightweight progress hint so the node panel updates.
+				log.Info("并行节点执行完成",
+					zap.String("nodeId", nodeId),
+					zap.Int("outputLen", len(mergedOutput)),
+					zap.Bool("hasCallback", callback != nil))
+				if callback != nil {
+					if err := callback(&global.Chunk{
+						NodeId:     nodeId,
+						NodeType:   "parallel",
+						NodeStatus: "completed",
+						ShowMsg:    "并行执行完成",
+					}); err != nil {
+						log.Error("并行结果 callback 失败", zap.Error(err))
+					}
+				}
+
+				return schema.AssistantMessage(mergedOutput, nil), nil
+			}))
+
+		case "join":
+			// 汇聚节点：创建汇聚等待节点（实际汇聚逻辑在 parallel 节点完成）
+			// Join node: the actual join logic is handled in the parallel node
+			statusCbJoin := nodeStatusCallback(callback, nodeId, "join", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "join",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbJoin("running")
+
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
+				}
+
+				// 汇聚节点直接返回输入（实际汇聚逻辑在 parallel 节点完成）
+				execLog.Status = "completed"
+				execLog.Output = inputContent
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				sendExecutionLog(callback, execLog)
+				statusCbJoin("completed")
+
+				return input, nil
 			}))
 
 		}
@@ -1113,11 +1337,27 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			continue
 		}
 
+		// 跳过并行组相关的边（分支节点由 ParallelExecutor 内部执行，不需要 graph 边连接）
+		// Skip parallel group edges (branch nodes are executed internally by ParallelExecutor)
+		if sourceNodeType == "parallel" {
+			continue
+		}
+		if _, isBranchNode := parallelBranchNodes[edge.Source]; isBranchNode {
+			// branch 占位节点的出边跳过（branch → join 由 parallel → join 代替）
+			continue
+		}
+		if _, isBranchNode := parallelBranchNodes[edge.Target]; isBranchNode {
+			continue
+		}
+
 		err := graph.AddEdge(edge.Source, edge.Target)
 		if err != nil {
 			log.Warn("添加边失败", zap.String("source", edge.Source), zap.String("target", edge.Target), zap.Error(err))
 		}
 	}
+
+	// 为每个并行节点补一条直接到下游 join 节点的边（让 eino 调度能找到 join）
+	buildParallelJoinEdges(graph, &topo, parallelBranchNodes)
 
 	// 为条件节点添加 Branch
 	for conditionNodeId, branches := range conditionBranches {
@@ -1194,9 +1434,61 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 	return graph, nil
 }
 
+// buildParallelJoinEdges 为每个并行节点补一条直接到下游 join 节点的边
+// 因为 branch 占位节点不会被 eino 调度，join 节点需要直接连到 parallel 节点
+// Add edge: parallelId → joinId, skipping branch nodes that never receive inputs.
+func buildParallelJoinEdges(graph *compose.Graph[[]*schema.Message, *schema.Message], topo *Topology, parallelBranchNodes map[string]struct{}) {
+	// 先一次性算出所有并行组
+	groups, _ := NewParallelExecutor(nil, 0, "", "", "").IdentifyParallelGroups(topo)
+
+	// branchId -> parallelId
+	branchToParallel := make(map[string]string)
+	for _, g := range groups {
+		for _, branch := range g.Branches {
+			for _, b := range branch {
+				branchToParallel[b.Id] = g.ParallelNode.Id
+			}
+		}
+	}
+
+	// 用 set 去重：每个 (parallelId, joinId) 只加一次
+	addedPairs := make(map[string]struct{})
+
+	// 对每条 (branch -> X) 边，如果 branch 属于某个 parallel，则加 (parallel -> X) 边
+	for _, edge := range topo.Edges {
+		if _, isBranch := parallelBranchNodes[edge.Source]; !isBranch {
+			continue
+		}
+		parallelId, ok := branchToParallel[edge.Source]
+		if !ok {
+			continue
+		}
+		pairKey := parallelId + "->" + edge.Target
+		if _, already := addedPairs[pairKey]; already {
+			continue
+		}
+		addedPairs[pairKey] = struct{}{}
+
+		err := graph.AddEdge(parallelId, edge.Target)
+		if err != nil {
+			log.Warn("添加并行→汇聚边失败",
+				zap.String("source", parallelId),
+				zap.String("target", edge.Target),
+				zap.Error(err))
+			continue
+		}
+		log.Info("已建立并行→汇聚边", zap.String("source", parallelId), zap.String("target", edge.Target))
+	}
+}
+
 // ExecuteStream 覆写流式执行方法
 func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
 	input string, filePath string, callback func(chunk *global.Chunk) error) (string, error) {
+
+	// 保存凭证供并行执行器使用 / Save credentials for parallel executor
+	a.endpoint = endpoint
+	a.apiKey = apiKey
+	a.model = model
 
 	// 包装 callback，追踪图执行过程中是否已发送过 Content
 	// 避免 BaseAgent.ExecuteStream 在图执行完毕后重复发送

@@ -50,6 +50,8 @@ type Chunk struct {
 	NodeType   string `json:"node_type,omitempty"`
 	NodeLabel  string `json:"node_label,omitempty"`
 	NodeStatus string `json:"node_status,omitempty"` // "running" | "completed" | "failed"
+	// 并行分支 ID（用于区分并行执行中的不同分支）
+	BranchID string `json:"branch_id,omitempty"`
 	// 执行日志信息
 	ExecutionLog *ExecutionLogInfo `json:"execution_log,omitempty"`
 }

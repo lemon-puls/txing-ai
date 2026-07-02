@@ -669,26 +669,32 @@ const startExecute = async () => {
         const data = JSON.parse(payload)
         if (data.nodeId) updateNodeLog(data)
         if (data.content) {
+          // 中间节点的回调内容不追加到最终输出（仅展示在节点折叠详情里）
+          // Skip intermediate node callbacks (parallel / join / etc.) from final stream output
+          // 后端 Chunk.NodeType 在 controller 推送时映射为 camelCase nodeType 字段
+          const nodeType = data.node_type || data.nodeType
+          const intermediateNodeTypes = ['parallel', 'join']
+          const isIntermediateNode = nodeType && intermediateNodeTypes.includes(nodeType)
+
           // 防止内容重复：如果新内容与已累积内容的尾部大量重复，跳过
           const existing = streamContent.value
           const incoming = data.content
+          let isDuplicate = false
           if (existing && incoming.length > 50) {
-            // 检查新内容是否是已有内容尾部的重复（取最长匹配）
             const checkLen = Math.min(incoming.length, existing.length, 2000)
             const existingTail = existing.slice(-checkLen)
-            // 在 existingTail 中查找 incoming 的前缀
             const overlapIdx = existingTail.indexOf(incoming.slice(0, 100))
             if (overlapIdx >= 0) {
-              // 找到重叠，检查重叠长度是否足够大（超过 100 字符视为重复）
               const overlapLen = checkLen - overlapIdx
               if (overlapLen >= 100 && incoming.length <= overlapLen + 50) {
-                // 新内容基本全是重复，跳过
-                return
+                isDuplicate = true
               }
             }
           }
-          streamContent.value += incoming
-          scrollToBottom()
+          if (!isIntermediateNode && !isDuplicate) {
+            streamContent.value += incoming
+            scrollToBottom()
+          }
         }
         if (data.end) {
           isExecuting.value = false

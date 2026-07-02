@@ -133,7 +133,7 @@ func executeHTTPNode(
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
 		sendExecutionLog(callback, execLog)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	execLog.Status = "completed"

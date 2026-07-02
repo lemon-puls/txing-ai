@@ -239,7 +239,18 @@ func validateLLMNode(node *TopoNode, result *ValidationResult) {
 
 // validateToolNode 校验工具节点配置
 func validateToolNode(node *TopoNode, result *ValidationResult) {
-	if node.Data.ToolConfig == nil || len(node.Data.ToolConfig.Tools) == 0 {
+	if node.Data.ToolConfig == nil {
+		result.Errors = append(result.Errors, ValidationError{
+			Level:   LevelError,
+			NodeID:  node.Id,
+			Code:    CodeToolNodeNoTools,
+			Message: fmt.Sprintf("工具节点「%s」未选择任何工具", node.Data.Label),
+		})
+		result.Valid = false
+		return
+	}
+	// ToolName 为单工具模式（直接执行），Tools 为多工具模式（LLM 调用）
+	if node.Data.ToolConfig.ToolName == "" && len(node.Data.ToolConfig.Tools) == 0 {
 		result.Errors = append(result.Errors, ValidationError{
 			Level:   LevelError,
 			NodeID:  node.Id,

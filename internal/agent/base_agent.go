@@ -3,6 +3,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	_ "github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
@@ -104,11 +105,19 @@ func (a *BaseAgent) Execute(ctx context.Context,
 		log.Error("agent graph compile failed", zap.Error(err))
 	}
 
+	if agent == nil {
+		log.Error("agent graph compile returned nil agent")
+		return "", fmt.Errorf("graph compile returned nil agent")
+	}
+
+	log.Info("agent graph compiled, starting invoke")
 	response, err := agent.Invoke(ctx, messages)
 	if err != nil {
+		log.Error("agent invoke failed", zap.Error(err))
 		return "", err
 	}
 
+	log.Info("agent invoke completed", zap.Int("responseLen", len(response.Content)))
 	return response.Content, nil
 }
 

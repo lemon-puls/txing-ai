@@ -1,9 +1,7 @@
 <template>
   <div class="http-node">
     <div class="node-header">
-      <div class="node-icon">
-        <el-icon><Link /></el-icon>
-      </div>
+      <div class="node-icon"><el-icon><Link /></el-icon></div>
       <div class="node-title">{{ data.label || 'HTTP 节点' }}</div>
     </div>
     <div class="node-body">
@@ -24,48 +22,46 @@ import { Handle, Position } from '@vue-flow/core'
 import { Link } from '@element-plus/icons-vue'
 
 const props = defineProps({
-  data: {
-    type: Object,
-    default: () => ({})
-  }
+  data: { type: Object, default: () => ({}) }
 })
 
-const methodClass = computed(() => {
-  const method = props.data?.httpConfig?.method?.toLowerCase() || 'get'
-  return `method-${method}`
-})
-
+const methodClass = computed(() => `method-${props.data?.httpConfig?.method?.toLowerCase() || 'get'}`)
 const truncatedUrl = computed(() => {
   const url = props.data?.httpConfig?.url || ''
-  if (url.length > 30) {
-    return url.substring(0, 30) + '...'
-  }
-  return url
+  return url.length > 30 ? url.substring(0, 30) + '...' : url
 })
 </script>
 
 <style lang="scss" scoped>
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$danger-color: #ef4444;
+$info-color: #3b82f6;
+
 .http-node {
   background: white;
-  border: 2px solid #00bcd4;
-  border-radius: 12px;
+  border: 2px solid #06b6d4;
+  border-radius: 14px;
   padding: 0;
   min-width: 180px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(6, 182, 212, 0.12);
   transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2);
+    transform: translateY(-1px);
   }
 
   .node-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 16px;
-    background: #e0f7fa;
-    border-radius: 10px 10px 0 0;
-    border-bottom: 1px solid #b2ebf2;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(#06b6d4, 0.1) 0%, rgba(#06b6d4, 0.05) 100%);
+    border-bottom: 1px solid rgba(#06b6d4, 0.15);
 
     .node-icon {
       display: flex;
@@ -73,21 +69,21 @@ const truncatedUrl = computed(() => {
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: #00bcd4;
-      border-radius: 6px;
+      background: #06b6d4;
+      border-radius: 8px;
       color: white;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     .node-title {
       font-size: 14px;
       font-weight: 600;
-      color: #006064;
+      color: $text-primary;
     }
   }
 
   .node-body {
-    padding: 12px 16px;
+    padding: 12px 14px;
 
     .node-info {
       display: flex;
@@ -97,33 +93,21 @@ const truncatedUrl = computed(() => {
 
       .method-tag {
         display: inline-block;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 4px 8px;
+        border-radius: 6px;
         font-size: 11px;
         font-weight: 600;
         font-family: monospace;
 
-        &.method-get {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-        &.method-post {
-          background: #fff3e0;
-          color: #ef6c00;
-        }
-        &.method-put {
-          background: #e3f2fd;
-          color: #1565c0;
-        }
-        &.method-delete {
-          background: #ffebee;
-          color: #c62828;
-        }
+        &.method-get { background: rgba($success-color, 0.1); color: $success-color; border: 1px solid rgba($success-color, 0.2); }
+        &.method-post { background: rgba($warning-color, 0.1); color: $warning-color; border: 1px solid rgba($warning-color, 0.2); }
+        &.method-put { background: rgba($info-color, 0.1); color: $info-color; border: 1px solid rgba($info-color, 0.2); }
+        &.method-delete { background: rgba($danger-color, 0.1); color: $danger-color; border: 1px solid rgba($danger-color, 0.2); }
       }
 
       .url-text {
         font-size: 11px;
-        color: #757575;
+        color: $text-muted;
         font-family: monospace;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -133,8 +117,20 @@ const truncatedUrl = computed(() => {
 
     .node-hint {
       font-size: 12px;
-      color: #9e9e9e;
+      color: $text-muted;
     }
+  }
+}
+
+:deep(.vue-flow__handle) {
+  width: 12px;
+  height: 12px;
+  background: #06b6d4;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    transform: scale(1.2);
   }
 }
 </style>

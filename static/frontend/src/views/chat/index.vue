@@ -162,7 +162,7 @@
                   {{ message.role === 'user' ? 'U' : (currentChat.preset?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
-              <div class="message-content">
+              <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
                 <!-- 应用标签 -->
                 <div v-if="message.appName" class="message-app-tag">
                   <el-icon><Share /></el-icon>
@@ -340,12 +340,6 @@
               @select="handleAppSelect"
               @close="showAppMention = false"
             />
-            <!-- 已选应用标签 -->
-            <div v-if="selectedApp" class="selected-app-tag">
-              <el-icon><Share /></el-icon>
-              <span>{{ selectedApp.name }}</span>
-              <el-icon class="remove-tag" @click="removeSelectedApp"><Close /></el-icon>
-            </div>
             <!-- 应用文件上传区域 -->
             <div v-if="selectedApp && hasFileField" class="app-file-upload">
               <div v-for="field in fileFields" :key="field.name" class="file-field">
@@ -357,7 +351,7 @@
                 </div>
                 <div v-else class="upload-trigger" @click="triggerAppFileInput(field.name)">
                   <el-icon><Upload /></el-icon>
-                  <span>{{ field.label || '上传文件' }}</span>
+                  <span>{{ field.label || '上传文件' }}<span v-if="field.required" class="required-mark">*</span></span>
                   <span class="upload-hint" v-if="field.accept">{{ field.accept }}</span>
                 </div>
               </div>
@@ -369,6 +363,7 @@
             />
             <!-- 拖拽上传区域 -->
             <div
+              ref="textareaWrapperRef"
               class="textarea-wrapper"
               :class="{ 'is-dragging': isDragging }"
               @drop="handleDrop"
@@ -376,9 +371,9 @@
               @dragenter="handleDragEnter"
               @dragleave="handleDragLeave"
             >
-              <!-- 多模态上传按钮 -->
-              <div v-if="isMultimodalModel" class="multimodal-actions">
-                <el-tooltip content="上传图片" placement="top">
+              <!-- 文件上传按钮 -->
+              <div class="multimodal-actions">
+                <el-tooltip v-if="isMultimodalModel" content="上传图片" placement="top">
                   <div class="upload-btn" @click="triggerFileInput('image')">
                     <el-icon><Picture /></el-icon>
                   </div>
@@ -389,18 +384,18 @@
                   </div>
                 </el-tooltip>
               </div>
-              <el-input
-                v-model="messageInput"
-                type="textarea"
-                :rows="textareaRows"
-                :placeholder="getInputPlaceholder()"
-                resize="none"
-                @keydown.enter.exact.prevent="sendMessage"
-                @input="handleInput"
-                @keydown="handleInputKeydown"
-                @paste="handlePaste"
-                class="custom-input"
-              />
+              <div class="input-area" ref="inputAreaRef">
+                <div
+                  ref="editorRef"
+                  class="editor-div"
+                  contenteditable="true"
+                  :data-placeholder="getInputPlaceholder()"
+                  @input="handleEditorInput"
+                  @keydown="handleInputKeydown"
+                  @paste="handlePaste"
+                  spellcheck="false"
+                ></div>
+              </div>
               <!-- 拖拽提示 -->
               <div v-if="isDragging" class="drag-overlay">
                 <el-icon class="drag-icon"><Upload /></el-icon>
@@ -561,7 +556,7 @@
 </template>
 
 <script setup name="ChatView">
-import {ref, computed, onMounted, nextTick, onUnmounted} from 'vue'
+import {ref, computed, onMounted, nextTick, onUnmounted, watch} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {ElMessage, ElMessageBox, ElCheckbox} from 'element-plus'
 import {useConversationStore} from '@/stores/conversation'
@@ -813,6 +808,9 @@ const selectedApp = ref(null)
 const appMentionPopup = ref(null)
 const appInputSchema = ref([]) // 选中应用的 inputSchema
 const appUploadedFiles = ref({}) // 选中应用上传的文件 { fieldName: File }
+const textareaWrapperRef = ref(null)
+const editorRef = ref(null)
+const inputAreaRef = ref(null)
 const appFileInputRef = ref(null)
 
 // 多模态文件上传相关
@@ -928,9 +926,24 @@ const handlePaste = (event) => {
 
 // 处理文件列表
 const processFiles = (files) => {
+  // 非多模态模型过滤掉图片文件，只保留文档
   if (!isMultimodalModel.value) {
-    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
-    return
+    files = files.filter(file => {
+      if (supportedImageTypes.includes(file.type)) {
+        return false
+      }
+      // 通过扩展名判断是否为图片
+      const ext = file.name.split('.').pop().toLowerCase()
+      const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+      if (imageExts.includes(ext)) {
+        return false
+      }
+      return true
+    })
+    if (files.length === 0) {
+      ElMessage.warning('当前模型不支持上传图片，请切换到支持多模态的模型')
+      return
+    }
   }
 
   if (chatFiles.value.length + files.length > maxFiles) {
@@ -1005,11 +1018,6 @@ const removeChatFile = (index) => {
 
 // 触发文件选择
 const triggerFileInput = (type) => {
-  if (!isMultimodalModel.value) {
-    ElMessage.warning('当前模型不支持上传文件，请切换到支持多模态的模型')
-    return
-  }
-
   const input = document.createElement('input')
   input.type = 'file'
   input.multiple = true
@@ -1114,15 +1122,54 @@ const uploadFilesToCOS = async () => {
 
 // 发送消息
 const sendMessage = async () => {
+  // 应用列表弹出中，Enter 用于选中应用而非发送
+  if (showAppMention.value) return
+  // 同步编辑器内容（processInput 用了 rAF 节流，快速输入时可能还没同步）
+  const el = editorRef.value
+  if (el) {
+    messageInput.value = el.innerText || ''
+  }
   if ((!messageInput.value.trim() && chatFiles.value.length === 0) || !currentChat.value) return
+
+  // 校验 @ 应用的必填输入项
+  if (selectedApp.value && appInputSchema.value.length > 0) {
+    // 检查必填的文件字段
+    const requiredFileFields = appInputSchema.value.filter(f => f.type === 'file' && f.required)
+    for (const field of requiredFileFields) {
+      if (!appUploadedFiles.value[field.name]) {
+        ElMessage.warning(`请上传 ${field.label || field.name}`)
+        return
+      }
+    }
+
+    // 检查必填的文本字段（排除 @应用名 前缀后的内容）
+    const requiredTextFields = appInputSchema.value.filter(f => f.type === 'text' && f.required)
+    if (requiredTextFields.length > 0) {
+      // 获取实际输入内容（去掉 @应用名 前缀）
+      let actualContent = messageInput.value
+      if (selectedApp.value) {
+        const mentionPrefix = '@' + selectedApp.value.name + ' '
+        actualContent = actualContent.replace(mentionPrefix, '').trim()
+      }
+      if (!actualContent) {
+        ElMessage.warning('请输入内容')
+        return
+      }
+    }
+  }
 
   // 获取用户ID (如果登录的话)
   const userId = userStore.userId || '0'
   await NewChatConnectionIfNeed(currentChat.value, userId, currentChat.value.presetId);
 
-  // 如果是会话的第一条消息，就把该消息设置为会话的名称
-  if (messageInput.value.trim()) {
-    conversationStore.updateCurrentChatName(messageInput.value)
+  // 如果是会话的第一条消息，就把该消息设置为会话的名称（剥离 @应用名 前缀）
+  let displayMessage = messageInput.value
+  if (selectedApp.value) {
+    const mentionPrefix = '@' + selectedApp.value.name + ' '
+    displayMessage = displayMessage.replace(mentionPrefix, '')
+  }
+  if (displayMessage.trim()) {
+    conversationStore.updateCurrentChatName(displayMessage)
   }
 
   // 上传多模态文件（如果有）
@@ -1195,8 +1242,19 @@ const sendMessage = async () => {
   }
   currentChat.value.messages.push(userMsg)
 
-  const message = messageInput.value
+  // 发送到后端的消息剥离 @应用名 前缀（后端通过 workflowId 路由）
+  let message = messageInput.value
+  if (selectedApp.value) {
+    const mentionPrefix = '@' + selectedApp.value.name + ' '
+    message = message.replace(mentionPrefix, '')
+  }
   messageInput.value = ''
+  // 同步清空 contenteditable DOM
+  const editorEl = editorRef.value
+  if (editorEl) {
+    editorEl.innerText = ''
+    editorEl.style.height = 'auto'
+  }
   chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
   await scrollToBottom()
@@ -1566,12 +1624,9 @@ const parseJsonField = (value) => {
 // 获取输入框占位文本
 const getInputPlaceholder = () => {
   if (selectedApp.value) {
-    return `向 ${selectedApp.name} 提问...`
+    return `向 ${selectedApp.value.name} 提问...`
   }
-  if (isMultimodalModel.value) {
-    return '输入消息，支持拖拽/粘贴文件，Enter 发送'
-  }
-  return '输入消息，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
+  return '输入消息，支持拖拽/粘贴文件，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
 }
 
 // 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
@@ -1777,6 +1832,11 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to initialize chat:', error)
     ElMessage.error('初始化聊天失败')
+  } finally {
+    // 最后初始化编辑器内容
+    nextTick(() => {
+      initEditor()
+    })
   }
 })
 
@@ -1786,6 +1846,7 @@ let startY = 0
 let startHeight = 0
 const minRows = 3
 const maxRows = 15
+const lineHeight = 22.4 // 14px * 1.6
 
 // 新增：每个会话的"AI 正在思考中"动画状态 Map
 // Map<chatId, boolean>
@@ -1829,32 +1890,106 @@ const handlePresetSelect = (preset) => {
 }
 
 // @ 应用相关
-const handleInput = (value) => {
-  // 检测输入中是否有 @ 触发符
-  const atIndex = value.lastIndexOf('@')
-  if (atIndex >= 0 && !selectedApp.value) {
-    showAppMention.value = true
-  } else if (selectedApp.value) {
-    // 已选中应用时，如果用户清空了输入，保持应用选中状态
-  }
-}
-
 const handleInputKeydown = (e) => {
   if (showAppMention.value) {
     appMentionPopup.value?.handleKeydown(e)
+    return
+  }
+  // Enter 发送，Shift+Enter 换行
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendMessage()
   }
 }
 
 const handleAppSelect = async (app) => {
   selectedApp.value = app
   showAppMention.value = false
-  // 移除输入的 @ 符号及之后的内容
+  // 将 @ 替换为 @应用名
   const atIndex = messageInput.value.lastIndexOf('@')
   if (atIndex >= 0) {
-    messageInput.value = messageInput.value.slice(0, atIndex)
+    messageInput.value = messageInput.value.slice(0, atIndex) + '@' + app.name + ' '
+  }
+  // 同步更新 contenteditable DOM，避免 processInput 从 innerText 读到旧内容
+  const el = editorRef.value
+  if (el) {
+    el.innerText = messageInput.value
   }
   // 加载应用的 inputSchema
   await loadAppInputSchema(app.id)
+  // 聚焦到编辑器末尾
+  nextTick(() => {
+    if (el) {
+      el.focus()
+      // 将光标移到末尾
+      const range = document.createRange()
+      const sel = window.getSelection()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(range)
+    }
+  })
+}
+
+// 处理编辑器输入
+let inputRafId = 0
+const processInput = () => {
+  inputRafId = 0
+  const el = editorRef.value
+  if (!el) return
+  // 去掉 HTML 标签，只保留纯文本（浏览器原生渲染，不做任何 DOM 替换）
+  const text = el.innerText || ''
+  messageInput.value = text
+  autoResizeEditor()
+  // @ 检测逻辑
+  const atIndex = text.lastIndexOf('@')
+  // 防止 autoResizeEditor 等副作用触发的递归 input 事件在显示弹窗时错误关闭它
+  const typingMention = atIndex >= 0 && !selectedApp.value
+  if (selectedApp.value) {
+    const mentionText = '@' + selectedApp.value.name + ' '
+    if (!text.includes(mentionText)) {
+      selectedApp.value = null
+      appInputSchema.value = []
+      appUploadedFiles.value = []
+      appUploadedFiles.value = {}
+    }
+  } else if (atIndex >= 0) {
+    showAppMention.value = true
+  } else if (showAppMention.value && !typingMention) {
+    // 延迟关闭：autoResizeEditor 等副作用可能在下一次 input 之前临时让 innerText 变空，
+    // 推迟到下一个 microtask 看是否真要把弹窗关掉。
+    Promise.resolve().then(() => {
+      const cur = (editorRef.value && editorRef.value.innerText) || ''
+      if (cur.lastIndexOf('@') < 0 && !selectedApp.value) {
+        showAppMention.value = false
+      }
+    })
+  }
+}
+
+const handleEditorInput = () => {
+  if (inputRafId) return
+  inputRafId = requestAnimationFrame(processInput)
+}
+
+// 初始化编辑器内容（仅在挂载/切换会话时调用一次）
+let editorInitialized = false
+const initEditor = () => {
+  const el = editorRef.value
+  if (!el) return
+  if (messageInput.value) {
+    el.innerText = messageInput.value
+  }
+  editorInitialized = true
+}
+
+// 自动调整编辑器高度
+const autoResizeEditor = () => {
+  const el = editorRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, maxRows * lineHeight) + 'px'
 }
 
 // 加载应用的 inputSchema
@@ -1877,6 +2012,10 @@ const loadAppInputSchema = async (appId) => {
 
 // 移除选中的应用
 const removeSelectedApp = () => {
+  if (selectedApp.value) {
+    const mentionText = '@' + selectedApp.value.name + ' '
+    messageInput.value = messageInput.value.replace(mentionText, '')
+  }
   selectedApp.value = null
   appInputSchema.value = []
   appUploadedFiles.value = {}
@@ -2309,20 +2448,17 @@ const batchDelete = async () => {
   &::after {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     bottom: 0;
     height: 1px;
     background: linear-gradient(90deg,
       rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
+      rgba(var(--divider-rgb), 0.15) 20%,
+      rgba(var(--divider-rgb), 0.25) 50%,
+      rgba(var(--divider-rgb), 0.15) 80%,
       rgba(var(--divider-rgb), 0) 100%
     );
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .chat-title {
@@ -2442,6 +2578,26 @@ const batchDelete = async () => {
 
   @media screen and (min-width: 1600px) {
     max-width: 1000px;
+  }
+
+  // 包含 WorkflowMessage 时撑满最大宽度
+  &.has-workflow {
+    width: 100%;
+  }
+
+  // WorkflowMessage 撑满宽度
+  .workflow-message {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    width: calc(100% + 32px);
+
+    .workflow-card {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
+    }
   }
 
   .message-app-tag {
@@ -2797,25 +2953,22 @@ const batchDelete = async () => {
 }
 
 .chat-input {
-  padding: 0px 24px 16px;
+  padding: 12px 24px 16px;
   background: var(--el-bg-color);
   position: relative;
-  border-top: 1px solid var(--el-border-color-light);
 
   &::before {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     top: 0;
     height: 1px;
     background: linear-gradient(90deg,
       rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
+      rgba(var(--divider-rgb), 0.15) 20%,
+      rgba(var(--divider-rgb), 0.25) 50%,
+      rgba(var(--divider-rgb), 0.15) 80%,
       rgba(var(--divider-rgb), 0) 100%
     );
     z-index: 1;
@@ -2826,15 +2979,14 @@ const batchDelete = async () => {
     left: 0;
     right: 0;
     top: 0;
-    //height: 1px;
     cursor: row-resize;
     z-index: 2;
-    background: #f5f7fa;
+    background: transparent;
     transition: background 0.2s ease;
 
     &:hover {
       background: linear-gradient(180deg,
-        rgba(var(--divider-rgb), 0.3) 0%,
+        rgba(var(--divider-rgb), 0.2) 0%,
         rgba(var(--divider-rgb), 0) 100%
       );
     }
@@ -2850,9 +3002,9 @@ const batchDelete = async () => {
       border-radius: 2px;
       background: linear-gradient(90deg,
         rgba(var(--divider-rgb), 0) 0%,
-        rgba(var(--divider-rgb), 0.5) 20%,
-        rgba(var(--divider-rgb), 0.8) 50%,
-        rgba(var(--divider-rgb), 0.5) 80%,
+        rgba(var(--divider-rgb), 0.3) 20%,
+        rgba(var(--divider-rgb), 0.5) 50%,
+        rgba(var(--divider-rgb), 0.3) 80%,
         rgba(var(--divider-rgb), 0) 100%
       );
       opacity: 0;
@@ -2875,23 +3027,6 @@ const batchDelete = async () => {
   border-radius: 6px;
   position: relative;
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -8px;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.5) 15%,
-      rgba(var(--divider-rgb), 0.7) 30%,
-      rgba(var(--divider-rgb), 0.9) 50%,
-      rgba(var(--divider-rgb), 0.7) 70%,
-      rgba(var(--divider-rgb), 0.5) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-  }
 }
 
 .model-selector {
@@ -3084,34 +3219,6 @@ const batchDelete = async () => {
 .input-wrapper {
   position: relative;
 
-  .selected-app-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    margin-bottom: 8px;
-    background: rgba(25, 118, 210, 0.08);
-    border: 1px solid rgba(25, 118, 210, 0.2);
-    border-radius: 16px;
-    font-size: 12px;
-    color: #1976d2;
-
-    .el-icon {
-      font-size: 14px;
-    }
-
-    .remove-tag {
-      cursor: pointer;
-      margin-left: 2px;
-      border-radius: 50%;
-      transition: all 0.15s;
-
-      &:hover {
-        background: rgba(25, 118, 210, 0.15);
-      }
-    }
-  }
-
   .app-file-upload {
     display: flex;
     flex-wrap: wrap;
@@ -3160,6 +3267,7 @@ const batchDelete = async () => {
         }
 
         .upload-hint { color: var(--el-text-color-secondary); }
+        .required-mark { color: var(--el-color-danger); margin-left: 2px; }
       }
     }
   }
@@ -3168,11 +3276,9 @@ const batchDelete = async () => {
     position: relative;
 
     &.is-dragging {
-      .custom-input {
-        :deep(.el-textarea__inner) {
-          border-color: var(--el-color-primary);
-          background: var(--el-color-primary-light-9);
-        }
+      .editor-div {
+        border-color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
       }
     }
 
@@ -3237,19 +3343,48 @@ const batchDelete = async () => {
     }
   }
 
-  .custom-input {
-    transition: all 0.3s ease;
+  .input-area {
+    position: relative;
+  }
 
-    :deep(.el-textarea__inner) {
-      resize: none !important;
-      transition: all 0.3s ease;
-      padding-right: 90px;
-      line-height: 1.6;
-      font-size: 14px;
+  .editor-div {
+    width: 100%;
+    min-height: 60px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 5px 90px 5px 11px;
+    line-height: 1.6;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--el-text-color-primary);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    outline: none;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    scrollbar-width: thin;
+    scrollbar-color: var(--el-scrollbar-bar-color) transparent;
 
-      &:focus {
-        box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
-      }
+    &:focus {
+      border-color: var(--el-color-primary);
+      box-shadow: 0 0 0 2px var(--el-color-primary-light-8);
+    }
+
+    &:empty::before {
+      content: attr(data-placeholder);
+      color: var(--el-text-color-placeholder);
+      pointer-events: none;
+    }
+
+    :deep(.mention-highlight) {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+      border-radius: 3px;
+      padding: 0 2px;
+      font-weight: 500;
     }
   }
 

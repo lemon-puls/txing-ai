@@ -50,9 +50,12 @@ func executeCodeNode(
 	execLog.Input = inputContent
 
 	// 准备代码（替换变量）
+	// 支持 {{input}}、{{output}}、{{input.xxx}}、{{output.xxx}}
+	// Supports {{input}}, {{output}}, {{input.xxx}}, {{output.xxx}}
 	code := config.Code
 	code = strings.ReplaceAll(code, "{{input}}", inputContent)
 	code = strings.ReplaceAll(code, "{{output}}", inputContent)
+	code = replaceNestedVars(code, inputContent, inputContent)
 
 	// 设置超时
 	timeout := 30

@@ -44,6 +44,10 @@ class WebSocketManager {
         case 'idUpdated':
           break
 
+        case 'connectionStatus':
+          // handled by addEventListener in hasConnection
+          break
+
         default:
           console.warn(`Unknown message type from worker: ${type}`)
       }
