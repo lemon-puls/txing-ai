@@ -54,6 +54,11 @@
             <template #title>工具网站管理</template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/about">
+            <el-icon><UserFilled /></el-icon>
+            <template #title>关于我页面</template>
+          </el-menu-item>
+
 
 <!--          <el-menu-item index="/pricing">-->
 <!--            <el-icon><Wallet /></el-icon>-->
@@ -186,7 +191,8 @@ import {
   FullScreen,
   SwitchButton,
   HomeFilled,
-  Share
+  Share,
+  UserFilled
 } from '@element-plus/icons-vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()

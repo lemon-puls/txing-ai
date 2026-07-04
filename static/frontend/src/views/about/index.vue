@@ -10,13 +10,13 @@
       <div class="hero-content animate-on-scroll">
         <div class="avatar-wrapper">
           <div class="main-avatar">
-            <span class="avatar-text">T</span>
+            <span class="avatar-text">{{ heroData.avatarText }}</span>
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
           </div>
           <div class="status-badge">
             <span class="status-dot"></span>
-            Ready for New Challenges
+            {{ heroData.statusText }}
           </div>
         </div>
         <h1 class="hero-title">
@@ -130,7 +130,7 @@
         <div v-for="(project, index) in projects" :key="project.name" 
              class="project-card"
              :class="{ 'expanded': expandedProject === index }">
-          <div class="project-image" :class="`project-gradient-${index + 1}`" @click="toggleProject(index)">
+          <div class="project-image" :class="project.gradient" @click="toggleProject(index)">
             <div class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
             </div>
@@ -243,16 +243,18 @@
         <div class="contact-particles">
           <div v-for="i in 20" :key="i" class="contact-particle" :style="getContactParticleStyle(i)"></div>
         </div>
-        <h2>准备好一起创造价值了吗？</h2>
-        <p>我一直在寻找具有挑战性的机会，期待与优秀的团队共同成长。</p>
+        <h2>{{ contactView.title }}</h2>
+        <p>{{ contactView.desc }}</p>
         <div class="contact-links">
-          <a href="mailto:contact@txing.ai" class="contact-link">
-            <el-icon><Message /></el-icon>
-            <span>邮件联系</span>
-          </a>
-          <a href="https://github.com/lemon-puls/txing-ai" target="_blank" class="contact-link">
-            <el-icon><Github /></el-icon>
-            <span>GitHub 仓库</span>
+          <a
+            v-for="(link, idx) in contactView.links"
+            :key="idx"
+            :href="link.url"
+            target="_blank"
+            class="contact-link"
+          >
+            <el-icon><component :is="link.icon" /></el-icon>
+            <span>{{ link.label }}</span>
           </a>
         </div>
       </div>
@@ -282,24 +284,46 @@ import {
   ChatDotRound,
   DataLine
 } from '@element-plus/icons-vue'
+import { defaultApi } from '@/api'
+import { resolveIcon } from '@/utils/iconResolver.js'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
 }
 
-// Typing effect
-const fullText = 'Txing'
+// 后台配置数据
+// Backend-configured data
+const loading = ref(true)
+const heroData = ref({
+  avatarText: 'T',
+  statusText: 'Ready for New Challenges',
+  name: 'Txing',
+  subtitle: '全栈开发工程师 / AI 架构爱好者 / 产品极客'
+})
+
+// Typing effect（基于 heroData）
+// 用 watch 把 heroData 同步到本地字符串，便于在 setInterval 中通过下标访问
+let fullText = ''
+let fullSubtitle = ''
 const displayedName = ref('')
 const nameIndex = ref(0)
-
-const fullSubtitle = '全栈开发工程师 / AI 架构爱好者 / 产品极客'
 const displayedSubtitle = ref('')
 const subtitleIndex = ref(0)
 
 const typingInterval = ref(null)
 const subtitleInterval = ref(null)
 
-onMounted(() => {
+const startTyping = () => {
+  if (!fullText) return
+  // 重置
+  displayedName.value = ''
+  displayedSubtitle.value = ''
+  nameIndex.value = 0
+  subtitleIndex.value = 0
+
+  if (typingInterval.value) clearInterval(typingInterval.value)
+  if (subtitleInterval.value) clearInterval(subtitleInterval.value)
+
   // Start typing name
   typingInterval.value = setInterval(() => {
     if (nameIndex.value < fullText.length) {
@@ -320,6 +344,16 @@ onMounted(() => {
       }, 300)
     }
   }, 150)
+}
+
+onMounted(async () => {
+  // 先加载后台配置
+  await loadAboutSnapshot()
+  // 同步 typing 字符串
+  fullText = heroData.value.name || ''
+  fullSubtitle = heroData.value.subtitle || ''
+  // 启动打字机
+  startTyping()
 
   // Setup Intersection Observer
   setupScrollAnimations()
@@ -354,219 +388,122 @@ const setupScrollAnimations = () => {
   }, 100)
 }
 
-// Floating icons data
-const floatingIcons = [
-  { name: 'Vue', symbol: '⚡' },
-  { name: 'Go', symbol: '🔧' },
-  { name: 'AI', symbol: '🤖' },
-  { name: 'Code', symbol: '💻' },
-  { name: 'Database', symbol: '🗄️' },
-  { name: 'Cloud', symbol: '☁️' }
-]
+// 浮动小图标（来自后台）
+// Floating icons (from backend)
+const floatingIcons = ref([])
 
-// Why Choose Me data
-const whyChooseMe = [
-  {
-    emoji: '🔥',
-    title: '热爱技术，深度钻研',
-    desc: '不仅仅是使用框架，更追求理解底层原理。深入研读 Hermes、Gin 等优秀开源项目源码，从大师代码中汲取设计智慧。',
-    tags: ['源码阅读', '架构设计', '持续学习'],
-    stats: [
-      { value: '10+', label: '源码项目' },
-      { value: '500+', label: '技术文章' }
-    ]
-  },
-  {
-    emoji: '🚀',
-    title: '独立交付，全栈能力',
-    desc: '从需求分析到架构设计，从后端 API 到前端 UI，独立完成多个完整系统的开发与上线。具备端到端的项目交付能力。',
-    tags: ['全栈开发', '独立交付', '产品思维'],
-    stats: [
-      { value: '5+', label: '独立项目' },
-      { value: '100%', label: '交付率' }
-    ]
-  },
-  {
-    emoji: '🤖',
-    title: 'AI 原生，创新实践',
-    desc: '深度实践 AI Agent 架构，掌握 MCP 协议、RAG、Prompt Engineering 等前沿技术。将 AI 能力融入产品，创造真实价值。',
-    tags: ['AI Agent', 'MCP Protocol', 'RAG'],
-    stats: [
-      { value: '3+', label: 'AI 项目' },
-      { value: '20+', label: 'Agent 技能' }
-    ]
-  },
-  {
-    emoji: '💡',
-    title: '产品思维，用户至上',
-    desc: '不只是写代码，更关注用户体验和产品价值。每一个功能都经过精心设计，确保简洁、高效、易用。',
-    tags: ['UX 设计', '性能优化', '用户研究']
-  }
-]
+// 为什么选择我（来自后台）
+// Why choose me cards (from backend)
+const whyChooseMe = ref([])
 
-const skillSets = [
-  {
-    category: '后端开发',
-    icon: Cpu,
-    tags: ['Go / Gin', 'MySQL', 'Redis', 'GORM', 'RESTful API', 'Microservices'],
-    level: 92
-  },
-  {
-    category: '前端开发',
-    icon: Monitor,
-    tags: ['Vue 3', 'Element Plus', 'TypeScript', 'Vite', 'Pinia', 'SCSS'],
-    level: 88
-  },
-  {
-    category: 'AI & 创新',
-    icon: Promotion,
-    tags: ['LLM Prompting', 'RAG', 'Agent Orchestration', 'MCP Protocol', 'SSE'],
-    level: 85
-  }
-]
+// 核心能力（来自后台）
+// Skill sets (from backend)
+// 通过 iconKey 动态解析为组件
+const skillSets = computed(() =>
+  skills.value.map((s) => ({
+    category: s.category,
+    icon: resolveIcon(s.iconKey) || Monitor,
+    tags: s.tags || [],
+    level: s.level,
+    sort: s.sort
+  }))
+)
 
-const projects = [
-  {
-    name: 'Txing AI',
-    desc: '一个现代化智能 AI 平台，集成多模型能力，提供个性化助手市场与智能工具集。',
-    icon: Platform,
-    tags: ['Go', 'Vue 3', 'AI Agent'],
-    link: 'https://github.com/lemon-puls/txing-ai',
-    badge: '旗舰项目',
-    highlights: [
-      '实现多模型动态路由与统一 API 网关',
-      '构建可扩展的 AI 助手预设系统',
-      '优化 SSE 流式响应，提升交互实时感'
-    ],
-    media: [
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern+AI+platform+dashboard+dark+theme+purple+gradient&image_size=landscape_16_9', caption: '平台主界面' },
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=AI+chat+interface+with+streaming+response+modern+UI&image_size=landscape_16_9', caption: '智能对话界面' },
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=workflow+editor+node+based+visual+programming&image_size=landscape_16_9', caption: '可视化工作流编辑器' }
-    ],
-    techStack: [
-      { name: 'Go', icon: '🔧' },
-      { name: 'Vue 3', icon: '⚡' },
-      { name: 'MySQL', icon: '🗄️' },
-      { name: 'Redis', icon: '💾' },
-      { name: 'SSE', icon: '📡' },
-      { name: 'Docker', icon: '🐳' }
-    ],
-    features: [
-      { icon: '🤖', title: '多模型支持', desc: '集成 OpenAI、Claude 等主流 LLM，智能路由分发' },
-      { icon: '⚡', title: '实时流式响应', desc: 'SSE 长连接，打字机效果，极致交互体验' },
-      { icon: '🔧', title: '可视化工作流', desc: '拖拽式 Agent 编排，支持复杂业务逻辑' },
-      { icon: '🏪', title: '助手市场', desc: '丰富的预设模板，一键创建专属 AI 助手' }
-    ]
-  },
-  {
-    name: 'AI 简历优化系统',
-    desc: '基于 Agent 架构的简历分析与优化工具，帮助用户针对目标岗位提升竞争力。',
-    icon: Document,
-    tags: ['Agent', 'PDF Processing', 'RAG'],
-    link: '#',
-    badge: '创新项目',
-    highlights: [
-      '设计多步工作流：分析 → 优化 → 生成',
-      '支持 PDF/Word 文件的智能解析与重构',
-      '提供详细的 AI 推理过程可视化'
-    ],
-    media: [
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=resume+analysis+AI+dashboard+modern+clean+design&image_size=landscape_16_9', caption: '简历分析界面' },
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=AI+workflow+visualization+steps+arrows+modern+UI&image_size=landscape_16_9', caption: '优化工作流' }
-    ],
-    techStack: [
-      { name: 'Go', icon: '🔧' },
-      { name: 'Vue 3', icon: '⚡' },
-      { name: 'PDF.js', icon: '📄' },
-      { name: 'LLM API', icon: '🤖' }
-    ],
-    features: [
-      { icon: '📄', title: '智能解析', desc: '支持 PDF、Word 等多种格式，精准提取简历内容' },
-      { icon: '🎯', title: '岗位匹配', desc: '根据目标岗位要求，智能分析简历匹配度' },
-      { icon: '✨', title: 'AI 优化', desc: '自动生成优化建议，一键应用改进方案' },
-      { icon: '📊', title: '可视化报告', desc: '详细的分析报告，直观展示优化效果' }
-    ]
-  },
-  {
-    name: '智能客服助手',
-    desc: '基于 RAG 技术的智能客服系统，支持多轮对话、知识库检索和意图识别。',
-    icon: ChatDotRound,
-    tags: ['RAG', 'NLP', 'WebSocket'],
-    link: '#',
-    badge: '企业级',
-    highlights: [
-      '实现基于向量检索的知识库问答',
-      '支持多轮对话上下文理解',
-      '实时 WebSocket 消息推送'
-    ],
-    media: [
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=AI+customer+service+chat+interface+modern+dark+theme&image_size=landscape_16_9', caption: '客服对话界面' },
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=knowledge+base+management+dashboard+analytics&image_size=landscape_16_9', caption: '知识库管理' }
-    ],
-    techStack: [
-      { name: 'Go', icon: '🔧' },
-      { name: 'Vue 3', icon: '⚡' },
-      { name: 'WebSocket', icon: '🔌' },
-      { name: 'Milvus', icon: '🧠' }
-    ],
-    features: [
-      { icon: '💬', title: '多轮对话', desc: '支持上下文理解，连续对话不丢失语境' },
-      { icon: '🔍', title: '知识检索', desc: '基于向量相似度的精准知识库检索' },
-      { icon: '📊', title: '数据分析', desc: '对话数据统计分析，优化服务质量' },
-      { icon: '🔌', title: 'API 集成', desc: '提供标准 RESTful API，轻松接入现有系统' }
-    ]
-  },
-  {
-    name: '数据可视化平台',
-    desc: '企业级数据分析与可视化平台，支持多数据源接入和自定义仪表盘。',
-    icon: DataLine,
-    tags: ['ECharts', 'Data Analysis', 'Dashboard'],
-    link: '#',
-    badge: '数据驱动',
-    highlights: [
-      '支持 10+ 种图表类型',
-      '拖拽式仪表盘构建',
-      '实时数据流更新'
-    ],
-    media: [
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=data+visualization+dashboard+charts+graphs+modern+dark+theme&image_size=landscape_16_9', caption: '数据仪表盘' },
-      { type: 'image', url: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=drag+drop+dashboard+builder+interface+modern+UI&image_size=landscape_16_9', caption: '仪表盘编辑器' }
-    ],
-    techStack: [
-      { name: 'Vue 3', icon: '⚡' },
-      { name: 'ECharts', icon: '📊' },
-      { name: 'Pinia', icon: '🍍' },
-      { name: 'Tailwind', icon: '🎨' }
-    ],
-    features: [
-      { icon: '📊', title: '丰富图表', desc: '支持折线图、柱状图、饼图等 10+ 种图表' },
-      { icon: '🎛️', title: '拖拽构建', desc: '可视化拖拽编辑器，零代码构建仪表盘' },
-      { icon: '⚡', title: '实时更新', desc: 'WebSocket 推送，数据变化即时呈现' },
-      { icon: '📱', title: '响应式', desc: '完美适配桌面端和移动端' }
-    ]
-  }
-]
+// 精选作品（来自后台）
+// Projects (from backend)
+const projects = computed(() =>
+  projectsRaw.value.map((p) => ({
+    ...p,
+    icon: resolveIcon(p.iconKey) || Platform,
+    gradient: `project-gradient-${p.gradient || 1}`
+  }))
+)
 
-const timeline = [
-  {
-    time: '2024 - 至今',
-    title: '全栈研发 / 独立开发者',
-    desc: '主导 Txing AI 项目从 0 到 1 的开发，负责从数据库设计到前端 UI 的全链路实现。',
-    tags: ['Go', 'Vue 3', 'AI Agent', 'Docker']
-  },
-  {
-    time: '2023 - 2024',
-    title: '技术钻研期',
-    desc: '深耕 Go 语言后端生态，探索 Vue 3 组合式 API，并开始研究大语言模型应用开发。',
-    tags: ['Go', 'Vue 3', 'LLM']
-  },
-  {
-    time: '2022 - 2023',
-    title: '全栈成长期',
-    desc: '系统学习前后端技术栈，完成多个全栈项目，积累实战经验。',
-    tags: ['JavaScript', 'Node.js', 'React']
+// 成长轨迹（来自后台）
+// Timeline (from backend)
+const timeline = computed(() =>
+  timelineRaw.value.map((t) => ({
+    ...t,
+    tags: t.tags || []
+  }))
+)
+
+// 联系区（来自后台）
+// Contact section (from backend)
+const contactData = ref({
+  title: '准备好一起创造价值了吗？',
+  desc: '我一直在寻找具有挑战性的机会，期待与优秀的团队共同成长。',
+  links: [
+    {
+      iconKey: 'Message',
+      label: '邮件联系',
+      url: 'mailto:contact@txing.ai'
+    },
+    {
+      iconKey: 'Github',
+      label: 'GitHub 仓库',
+      url: 'https://github.com/lemon-puls/txing-ai'
+    }
+  ]
+})
+
+// 联系区视图对象（按 iconKey 解析图标组件）
+const contactView = computed(() => ({
+  title: contactData.value.title,
+  desc: contactData.value.desc,
+  links: (contactData.value.links || []).map((l) => ({
+    ...l,
+    icon: resolveIcon(l.iconKey) || Message
+  }))
+}))
+
+// 内部使用的原始数据 ref（不被组件直接消费，由上面的 computed 加工）
+const skills = ref([])
+const projectsRaw = ref([])
+const timelineRaw = ref([])
+
+// 加载关于我页面聚合数据
+// Load aggregated about-me snapshot from backend
+const loadAboutSnapshot = async () => {
+  loading.value = true
+  try {
+    const res = await defaultApi.apiAboutGet()
+    if (res?.code === 0 && res.data) {
+      const data = res.data
+      // Hero
+      if (data.hero) {
+        heroData.value = {
+          avatarText: data.hero.avatarText || 'T',
+          statusText: data.hero.statusText || '',
+          name: data.hero.name || 'Txing',
+          subtitle: data.hero.subtitle || ''
+        }
+      }
+      floatingIcons.value = data.floatingIcons || []
+      whyChooseMe.value = (data.reasons || []).map((r) => ({
+        emoji: r.emoji,
+        title: r.title,
+        desc: r.desc,
+        tags: r.tags || [],
+        stats: r.stats || []
+      }))
+      skills.value = data.skills || []
+      projectsRaw.value = data.projects || []
+      timelineRaw.value = data.timeline || []
+      if (data.contact) {
+        contactData.value = {
+          title: data.contact.title || contactData.value.title,
+          desc: data.contact.desc || '',
+          links: data.contact.links || contactData.value.links
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[About] 加载关于我数据失败：', err)
+  } finally {
+    loading.value = false
   }
-]
+}
 
 // Project expand state
 const expandedProject = ref(null)
@@ -1281,25 +1218,27 @@ const scrollToContact = () => {
 
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  gap: 30px;
-
-  @media (max-width: 500px) {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: 1fr;
+  gap: 36px;
+  max-width: 1080px;
+  margin: 0 auto;
 }
 
 .project-card {
   background: var(--el-bg-color);
   border-radius: 24px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 42% 1fr;
+  }
 
   &:hover {
-    transform: translateY(-10px);
+    transform: translateY(-6px);
     box-shadow: 0 24px 50px rgba(43, 94, 255, 0.15);
   }
 
@@ -1308,13 +1247,18 @@ const scrollToContact = () => {
   }
 
   .project-image {
-    height: 220px;
+    height: 280px;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     cursor: pointer;
+
+    @media (min-width: 768px) {
+      height: auto;
+      min-height: 320px;
+    }
 
     &.project-gradient-1 {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1400,10 +1344,16 @@ const scrollToContact = () => {
   }
 
   .project-info {
-    padding: 28px;
+    padding: 32px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1;
+    min-width: 0;
+
+    @media (min-width: 768px) {
+      padding: 36px 40px;
+    }
 
     .project-tags {
       display: flex;
@@ -1493,10 +1443,14 @@ const scrollToContact = () => {
 
   /* Expanded Detail */
   .project-detail {
+    grid-column: 1 / -1;
     border-top: 1px solid var(--el-border-color-lighter);
-    padding: 28px;
+    padding: 32px 40px;
     background: var(--el-fill-color-lighter);
-    border-radius: 0 0 24px 24px;
+
+    @media (max-width: 767px) {
+      padding: 28px;
+    }
 
     .detail-header {
       display: flex;
@@ -1962,7 +1916,7 @@ const scrollToContact = () => {
   }
 
   .projects-grid {
-    grid-template-columns: 1fr;
+    max-width: 100%;
   }
 
   .skills-grid {
@@ -1997,6 +1951,17 @@ const scrollToContact = () => {
   }
 
   .project-card {
+    grid-template-columns: 1fr;
+
+    .project-image {
+      height: 220px;
+      min-height: 0;
+    }
+
+    .project-info {
+      padding: 28px;
+    }
+
     .project-detail {
       .features-grid {
         grid-template-columns: 1fr;

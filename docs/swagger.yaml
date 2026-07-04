@@ -39,6 +39,143 @@ definitions:
       pageSize:
         type: integer
     type: object
+  dto.CreateAboutMeFloatingIconReq:
+    properties:
+      name:
+        type: string
+      sort:
+        type: integer
+      symbol:
+        type: string
+    required:
+    - name
+    - symbol
+    type: object
+  dto.CreateAboutMeProjectReq:
+    properties:
+      badge:
+        type: string
+      desc:
+        type: string
+      features:
+        items:
+          properties:
+            desc:
+              type: string
+            icon:
+              type: string
+            title:
+              type: string
+          type: object
+        type: array
+      gradient:
+        type: string
+      highlights:
+        items:
+          type: string
+        type: array
+      iconKey:
+        type: string
+      link:
+        type: string
+      media:
+        items:
+          properties:
+            caption:
+              type: string
+            type:
+              type: string
+            url:
+              type: string
+          type: object
+        type: array
+      name:
+        type: string
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      techStack:
+        items:
+          properties:
+            icon:
+              type: string
+            name:
+              type: string
+          type: object
+        type: array
+    required:
+    - desc
+    - iconKey
+    - name
+    type: object
+  dto.CreateAboutMeReasonReq:
+    properties:
+      desc:
+        type: string
+      emoji:
+        type: string
+      sort:
+        type: integer
+      stats:
+        items:
+          properties:
+            label:
+              type: string
+            value:
+              type: string
+          type: object
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    required:
+    - desc
+    - emoji
+    - title
+    type: object
+  dto.CreateAboutMeSkillReq:
+    properties:
+      category:
+        type: string
+      iconKey:
+        type: string
+      level:
+        type: integer
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+    required:
+    - category
+    - iconKey
+    type: object
+  dto.CreateAboutMeTimelineReq:
+    properties:
+      desc:
+        type: string
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      time:
+        type: string
+      title:
+        type: string
+    required:
+    - desc
+    - time
+    - title
+    type: object
   dto.CreateAgentFlowReq:
     properties:
       description:
@@ -324,6 +461,159 @@ definitions:
     required:
     - email
     type: object
+  dto.UpdateAboutMeContactReq:
+    properties:
+      desc:
+        type: string
+      links:
+        items:
+          properties:
+            iconKey:
+              type: string
+            label:
+              type: string
+            url:
+              type: string
+          type: object
+        type: array
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  dto.UpdateAboutMeFloatingIconReq:
+    properties:
+      name:
+        type: string
+      sort:
+        type: integer
+      symbol:
+        type: string
+    type: object
+  dto.UpdateAboutMeHeroReq:
+    properties:
+      avatarText:
+        type: string
+      name:
+        type: string
+      statusText:
+        type: string
+      subtitle:
+        type: string
+    required:
+    - avatarText
+    - name
+    type: object
+  dto.UpdateAboutMeProjectReq:
+    properties:
+      badge:
+        type: string
+      desc:
+        type: string
+      features:
+        items:
+          properties:
+            desc:
+              type: string
+            icon:
+              type: string
+            title:
+              type: string
+          type: object
+        type: array
+      gradient:
+        type: string
+      highlights:
+        items:
+          type: string
+        type: array
+      iconKey:
+        type: string
+      link:
+        type: string
+      media:
+        items:
+          properties:
+            caption:
+              type: string
+            type:
+              type: string
+            url:
+              type: string
+          type: object
+        type: array
+      name:
+        type: string
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      techStack:
+        items:
+          properties:
+            icon:
+              type: string
+            name:
+              type: string
+          type: object
+        type: array
+    type: object
+  dto.UpdateAboutMeReasonReq:
+    properties:
+      desc:
+        type: string
+      emoji:
+        type: string
+      sort:
+        type: integer
+      stats:
+        items:
+          properties:
+            label:
+              type: string
+            value:
+              type: string
+          type: object
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  dto.UpdateAboutMeSkillReq:
+    properties:
+      category:
+        type: string
+      iconKey:
+        type: string
+      level:
+        type: integer
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  dto.UpdateAboutMeTimelineReq:
+    properties:
+      desc:
+        type: string
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      time:
+        type: string
+      title:
+        type: string
+    type: object
   dto.UpdateAgentFlowReq:
     properties:
       description:
@@ -564,6 +854,209 @@ definitions:
         type: integer
       data: {}
       msg:
+        type: string
+    type: object
+  vo.AboutMeContactLink:
+    properties:
+      iconKey:
+        type: string
+      label:
+        type: string
+      url:
+        type: string
+    type: object
+  vo.AboutMeContactVO:
+    properties:
+      desc:
+        type: string
+      id:
+        type: integer
+      links:
+        items:
+          $ref: '#/definitions/vo.AboutMeContactLink'
+        type: array
+      title:
+        type: string
+    type: object
+  vo.AboutMeFeatureItem:
+    properties:
+      desc:
+        type: string
+      icon:
+        type: string
+      title:
+        type: string
+    type: object
+  vo.AboutMeFloatingIconVO:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      sort:
+        type: integer
+      symbol:
+        type: string
+    type: object
+  vo.AboutMeHeroVO:
+    properties:
+      avatarText:
+        type: string
+      createAt:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      statusText:
+        type: string
+      subtitle:
+        type: string
+      updateAt:
+        type: string
+    type: object
+  vo.AboutMeMediaItem:
+    properties:
+      caption:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  vo.AboutMeProjectVO:
+    properties:
+      badge:
+        type: string
+      desc:
+        type: string
+      features:
+        items:
+          $ref: '#/definitions/vo.AboutMeFeatureItem'
+        type: array
+      gradient:
+        type: string
+      highlights:
+        items:
+          type: string
+        type: array
+      iconKey:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      media:
+        items:
+          $ref: '#/definitions/vo.AboutMeMediaItem'
+        type: array
+      name:
+        type: string
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      techStack:
+        items:
+          $ref: '#/definitions/vo.AboutMeTechItem'
+        type: array
+    type: object
+  vo.AboutMeReasonVO:
+    properties:
+      desc:
+        type: string
+      emoji:
+        type: string
+      id:
+        type: integer
+      sort:
+        type: integer
+      stats:
+        items:
+          $ref: '#/definitions/vo.AboutMeStatItem'
+        type: array
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  vo.AboutMeSkillVO:
+    properties:
+      category:
+        type: string
+      iconKey:
+        type: string
+      id:
+        type: integer
+      level:
+        type: integer
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+    type: object
+  vo.AboutMeSnapshotVO:
+    properties:
+      contact:
+        $ref: '#/definitions/vo.AboutMeContactVO'
+      floatingIcons:
+        items:
+          $ref: '#/definitions/vo.AboutMeFloatingIconVO'
+        type: array
+      hero:
+        $ref: '#/definitions/vo.AboutMeHeroVO'
+      projects:
+        items:
+          $ref: '#/definitions/vo.AboutMeProjectVO'
+        type: array
+      reasons:
+        items:
+          $ref: '#/definitions/vo.AboutMeReasonVO'
+        type: array
+      skills:
+        items:
+          $ref: '#/definitions/vo.AboutMeSkillVO'
+        type: array
+      timeline:
+        items:
+          $ref: '#/definitions/vo.AboutMeTimelineVO'
+        type: array
+    type: object
+  vo.AboutMeStatItem:
+    properties:
+      label:
+        type: string
+      value:
+        type: string
+    type: object
+  vo.AboutMeTechItem:
+    properties:
+      icon:
+        type: string
+      name:
+        type: string
+    type: object
+  vo.AboutMeTimelineVO:
+    properties:
+      desc:
+        type: string
+      id:
+        type: integer
+      sort:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      time:
+        type: string
+      title:
         type: string
     type: object
   vo.AgentFlowVO:
@@ -1071,6 +1564,632 @@ info:
   title: Txing AI API
   version: "1.0"
 paths:
+  /api/about:
+    get:
+      description: 返回 Hero/Reasons/Skills/Projects/Timeline/Contact 完整数据，无需鉴权
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeSnapshotVO'
+              type: object
+      summary: 关于我页面聚合数据（公开）
+      tags:
+      - 关于我
+  /api/admin/about/contact:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeContactVO'
+              type: object
+      summary: 获取联系区配置
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 联系区配置
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeContactReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeContactVO'
+              type: object
+      summary: 创建或更新联系区配置
+      tags:
+      - 关于我管理
+  /api/admin/about/floating-icon:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 浮动图标
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAboutMeFloatingIconReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeFloatingIconVO'
+              type: object
+      summary: 新增浮动图标
+      tags:
+      - 关于我管理
+  /api/admin/about/floating-icon/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除浮动图标
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 浮动图标
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeFloatingIconReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeFloatingIconVO'
+              type: object
+      summary: 更新浮动图标
+      tags:
+      - 关于我管理
+  /api/admin/about/floating-icon/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 浮动图标列表
+      tags:
+      - 关于我管理
+  /api/admin/about/hero:
+    get:
+      description: 获取关于我页面 Hero 区配置
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeHeroVO'
+              type: object
+      summary: 获取 Hero 配置
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      description: 不存在则创建，存在则更新
+      parameters:
+      - description: Hero 配置
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeHeroReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeHeroVO'
+              type: object
+      summary: 创建或更新 Hero 配置
+      tags:
+      - 关于我管理
+  /api/admin/about/project:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 项目
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAboutMeProjectReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeProjectVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/project/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      tags:
+      - 关于我管理
+    get:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeProjectVO'
+              type: object
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 项目
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeProjectReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeProjectVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/project/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 精选作品列表
+      tags:
+      - 关于我管理
+  /api/admin/about/reason:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 卡片内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAboutMeReasonReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeReasonVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/reason/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 卡片内容
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeReasonReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeReasonVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/reason/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: '"为什么选择我"列表'
+      tags:
+      - 关于我管理
+  /api/admin/about/skill:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 技能
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAboutMeSkillReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeSkillVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/skill/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 技能
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeSkillReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeSkillVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/skill/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 核心能力列表
+      tags:
+      - 关于我管理
+  /api/admin/about/timeline:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 时间线
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAboutMeTimelineReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeTimelineVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/timeline/{id}:
+    delete:
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      tags:
+      - 关于我管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 时间线
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateAboutMeTimelineReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.AboutMeTimelineVO'
+              type: object
+      tags:
+      - 关于我管理
+  /api/admin/about/timeline/list:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: 排序字段
+        in: query
+        name: order_by
+        type: string
+      - description: 排序方式
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 成长轨迹列表
+      tags:
+      - 关于我管理
   /api/admin/channel:
     post:
       consumes:

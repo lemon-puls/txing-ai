@@ -104,8 +104,7 @@ var TxingAiApi = require('txing_ai_api');
 
 
 var api = new TxingAiApi.DefaultApi()
-var id = 56; // {Number} 渠道ID
-api.apiAdminChannelIdDelete(id).then(function(data) {
+api.apiAboutGet().then(function(data) {
   console.log('API called successfully. Returned data: ' + data);
 }, function(error) {
   console.error(error);
@@ -120,6 +119,32 @@ All URIs are relative to *http://localhost:8080*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*TxingAiApi.DefaultApi* | [**apiAboutGet**](docs/DefaultApi.md#apiAboutGet) | **GET** /api/about | 关于我页面聚合数据（公开）
+*TxingAiApi.DefaultApi* | [**apiAdminAboutContactGet**](docs/DefaultApi.md#apiAdminAboutContactGet) | **GET** /api/admin/about/contact | 获取联系区配置
+*TxingAiApi.DefaultApi* | [**apiAdminAboutContactPut**](docs/DefaultApi.md#apiAdminAboutContactPut) | **PUT** /api/admin/about/contact | 创建或更新联系区配置
+*TxingAiApi.DefaultApi* | [**apiAdminAboutFloatingIconIdDelete**](docs/DefaultApi.md#apiAdminAboutFloatingIconIdDelete) | **DELETE** /api/admin/about/floating-icon/{id} | 删除浮动图标
+*TxingAiApi.DefaultApi* | [**apiAdminAboutFloatingIconIdPut**](docs/DefaultApi.md#apiAdminAboutFloatingIconIdPut) | **PUT** /api/admin/about/floating-icon/{id} | 更新浮动图标
+*TxingAiApi.DefaultApi* | [**apiAdminAboutFloatingIconListGet**](docs/DefaultApi.md#apiAdminAboutFloatingIconListGet) | **GET** /api/admin/about/floating-icon/list | 浮动图标列表
+*TxingAiApi.DefaultApi* | [**apiAdminAboutFloatingIconPost**](docs/DefaultApi.md#apiAdminAboutFloatingIconPost) | **POST** /api/admin/about/floating-icon | 新增浮动图标
+*TxingAiApi.DefaultApi* | [**apiAdminAboutHeroGet**](docs/DefaultApi.md#apiAdminAboutHeroGet) | **GET** /api/admin/about/hero | 获取 Hero 配置
+*TxingAiApi.DefaultApi* | [**apiAdminAboutHeroPut**](docs/DefaultApi.md#apiAdminAboutHeroPut) | **PUT** /api/admin/about/hero | 创建或更新 Hero 配置
+*TxingAiApi.DefaultApi* | [**apiAdminAboutProjectIdDelete**](docs/DefaultApi.md#apiAdminAboutProjectIdDelete) | **DELETE** /api/admin/about/project/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutProjectIdGet**](docs/DefaultApi.md#apiAdminAboutProjectIdGet) | **GET** /api/admin/about/project/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutProjectIdPut**](docs/DefaultApi.md#apiAdminAboutProjectIdPut) | **PUT** /api/admin/about/project/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutProjectListGet**](docs/DefaultApi.md#apiAdminAboutProjectListGet) | **GET** /api/admin/about/project/list | 精选作品列表
+*TxingAiApi.DefaultApi* | [**apiAdminAboutProjectPost**](docs/DefaultApi.md#apiAdminAboutProjectPost) | **POST** /api/admin/about/project | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutReasonIdDelete**](docs/DefaultApi.md#apiAdminAboutReasonIdDelete) | **DELETE** /api/admin/about/reason/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutReasonIdPut**](docs/DefaultApi.md#apiAdminAboutReasonIdPut) | **PUT** /api/admin/about/reason/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutReasonListGet**](docs/DefaultApi.md#apiAdminAboutReasonListGet) | **GET** /api/admin/about/reason/list | \&quot;为什么选择我\&quot;列表
+*TxingAiApi.DefaultApi* | [**apiAdminAboutReasonPost**](docs/DefaultApi.md#apiAdminAboutReasonPost) | **POST** /api/admin/about/reason | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutSkillIdDelete**](docs/DefaultApi.md#apiAdminAboutSkillIdDelete) | **DELETE** /api/admin/about/skill/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutSkillIdPut**](docs/DefaultApi.md#apiAdminAboutSkillIdPut) | **PUT** /api/admin/about/skill/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutSkillListGet**](docs/DefaultApi.md#apiAdminAboutSkillListGet) | **GET** /api/admin/about/skill/list | 核心能力列表
+*TxingAiApi.DefaultApi* | [**apiAdminAboutSkillPost**](docs/DefaultApi.md#apiAdminAboutSkillPost) | **POST** /api/admin/about/skill | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutTimelineIdDelete**](docs/DefaultApi.md#apiAdminAboutTimelineIdDelete) | **DELETE** /api/admin/about/timeline/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutTimelineIdPut**](docs/DefaultApi.md#apiAdminAboutTimelineIdPut) | **PUT** /api/admin/about/timeline/{id} | 
+*TxingAiApi.DefaultApi* | [**apiAdminAboutTimelineListGet**](docs/DefaultApi.md#apiAdminAboutTimelineListGet) | **GET** /api/admin/about/timeline/list | 成长轨迹列表
+*TxingAiApi.DefaultApi* | [**apiAdminAboutTimelinePost**](docs/DefaultApi.md#apiAdminAboutTimelinePost) | **POST** /api/admin/about/timeline | 
 *TxingAiApi.DefaultApi* | [**apiAdminChannelIdDelete**](docs/DefaultApi.md#apiAdminChannelIdDelete) | **DELETE** /api/admin/channel/{id} | 删除渠道
 *TxingAiApi.DefaultApi* | [**apiAdminChannelIdGet**](docs/DefaultApi.md#apiAdminChannelIdGet) | **GET** /api/admin/channel/{id} | 获取渠道详情
 *TxingAiApi.DefaultApi* | [**apiAdminChannelIdPut**](docs/DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
@@ -187,6 +212,14 @@ Class | Method | HTTP request | Description
 
 ## Documentation for Models
 
+ - [TxingAiApi.ApiAboutGet200Response](docs/ApiAboutGet200Response.md)
+ - [TxingAiApi.ApiAdminAboutContactGet200Response](docs/ApiAdminAboutContactGet200Response.md)
+ - [TxingAiApi.ApiAdminAboutFloatingIconPost200Response](docs/ApiAdminAboutFloatingIconPost200Response.md)
+ - [TxingAiApi.ApiAdminAboutHeroGet200Response](docs/ApiAdminAboutHeroGet200Response.md)
+ - [TxingAiApi.ApiAdminAboutProjectPost200Response](docs/ApiAdminAboutProjectPost200Response.md)
+ - [TxingAiApi.ApiAdminAboutReasonPost200Response](docs/ApiAdminAboutReasonPost200Response.md)
+ - [TxingAiApi.ApiAdminAboutSkillPost200Response](docs/ApiAdminAboutSkillPost200Response.md)
+ - [TxingAiApi.ApiAdminAboutTimelinePost200Response](docs/ApiAdminAboutTimelinePost200Response.md)
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
  - [TxingAiApi.ApiAdminWebsitesFaviconPost200Response](docs/ApiAdminWebsitesFaviconPost200Response.md)
@@ -207,6 +240,15 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoBatchDeleteRequest](docs/DtoBatchDeleteRequest.md)
  - [TxingAiApi.DtoCloneTemplateReq](docs/DtoCloneTemplateReq.md)
  - [TxingAiApi.DtoConversationListRequest](docs/DtoConversationListRequest.md)
+ - [TxingAiApi.DtoCreateAboutMeFloatingIconReq](docs/DtoCreateAboutMeFloatingIconReq.md)
+ - [TxingAiApi.DtoCreateAboutMeProjectReq](docs/DtoCreateAboutMeProjectReq.md)
+ - [TxingAiApi.DtoCreateAboutMeProjectReqFeaturesInner](docs/DtoCreateAboutMeProjectReqFeaturesInner.md)
+ - [TxingAiApi.DtoCreateAboutMeProjectReqMediaInner](docs/DtoCreateAboutMeProjectReqMediaInner.md)
+ - [TxingAiApi.DtoCreateAboutMeProjectReqTechStackInner](docs/DtoCreateAboutMeProjectReqTechStackInner.md)
+ - [TxingAiApi.DtoCreateAboutMeReasonReq](docs/DtoCreateAboutMeReasonReq.md)
+ - [TxingAiApi.DtoCreateAboutMeReasonReqStatsInner](docs/DtoCreateAboutMeReasonReqStatsInner.md)
+ - [TxingAiApi.DtoCreateAboutMeSkillReq](docs/DtoCreateAboutMeSkillReq.md)
+ - [TxingAiApi.DtoCreateAboutMeTimelineReq](docs/DtoCreateAboutMeTimelineReq.md)
  - [TxingAiApi.DtoCreateAgentFlowReq](docs/DtoCreateAgentFlowReq.md)
  - [TxingAiApi.DtoCreateChannelReq](docs/DtoCreateChannelReq.md)
  - [TxingAiApi.DtoCreateModelReq](docs/DtoCreateModelReq.md)
@@ -220,6 +262,14 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoPublishVersionReq](docs/DtoPublishVersionReq.md)
  - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
  - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeContactReq](docs/DtoUpdateAboutMeContactReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeContactReqLinksInner](docs/DtoUpdateAboutMeContactReqLinksInner.md)
+ - [TxingAiApi.DtoUpdateAboutMeFloatingIconReq](docs/DtoUpdateAboutMeFloatingIconReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeHeroReq](docs/DtoUpdateAboutMeHeroReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeProjectReq](docs/DtoUpdateAboutMeProjectReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeReasonReq](docs/DtoUpdateAboutMeReasonReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeSkillReq](docs/DtoUpdateAboutMeSkillReq.md)
+ - [TxingAiApi.DtoUpdateAboutMeTimelineReq](docs/DtoUpdateAboutMeTimelineReq.md)
  - [TxingAiApi.DtoUpdateAgentFlowReq](docs/DtoUpdateAgentFlowReq.md)
  - [TxingAiApi.DtoUpdateChannelReq](docs/DtoUpdateChannelReq.md)
  - [TxingAiApi.DtoUpdateModelReq](docs/DtoUpdateModelReq.md)
@@ -233,6 +283,19 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
  - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
  - [TxingAiApi.UtilsResponse](docs/UtilsResponse.md)
+ - [TxingAiApi.VoAboutMeContactLink](docs/VoAboutMeContactLink.md)
+ - [TxingAiApi.VoAboutMeContactVO](docs/VoAboutMeContactVO.md)
+ - [TxingAiApi.VoAboutMeFeatureItem](docs/VoAboutMeFeatureItem.md)
+ - [TxingAiApi.VoAboutMeFloatingIconVO](docs/VoAboutMeFloatingIconVO.md)
+ - [TxingAiApi.VoAboutMeHeroVO](docs/VoAboutMeHeroVO.md)
+ - [TxingAiApi.VoAboutMeMediaItem](docs/VoAboutMeMediaItem.md)
+ - [TxingAiApi.VoAboutMeProjectVO](docs/VoAboutMeProjectVO.md)
+ - [TxingAiApi.VoAboutMeReasonVO](docs/VoAboutMeReasonVO.md)
+ - [TxingAiApi.VoAboutMeSkillVO](docs/VoAboutMeSkillVO.md)
+ - [TxingAiApi.VoAboutMeSnapshotVO](docs/VoAboutMeSnapshotVO.md)
+ - [TxingAiApi.VoAboutMeStatItem](docs/VoAboutMeStatItem.md)
+ - [TxingAiApi.VoAboutMeTechItem](docs/VoAboutMeTechItem.md)
+ - [TxingAiApi.VoAboutMeTimelineVO](docs/VoAboutMeTimelineVO.md)
  - [TxingAiApi.VoAgentFlowVO](docs/VoAgentFlowVO.md)
  - [TxingAiApi.VoAgentFlowVersionVO](docs/VoAgentFlowVersionVO.md)
  - [TxingAiApi.VoAttachmentVO](docs/VoAttachmentVO.md)

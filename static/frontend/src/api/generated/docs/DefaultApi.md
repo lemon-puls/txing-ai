@@ -4,6 +4,32 @@ All URIs are relative to *http://localhost:8080*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**apiAboutGet**](DefaultApi.md#apiAboutGet) | **GET** /api/about | 关于我页面聚合数据（公开）
+[**apiAdminAboutContactGet**](DefaultApi.md#apiAdminAboutContactGet) | **GET** /api/admin/about/contact | 获取联系区配置
+[**apiAdminAboutContactPut**](DefaultApi.md#apiAdminAboutContactPut) | **PUT** /api/admin/about/contact | 创建或更新联系区配置
+[**apiAdminAboutFloatingIconIdDelete**](DefaultApi.md#apiAdminAboutFloatingIconIdDelete) | **DELETE** /api/admin/about/floating-icon/{id} | 删除浮动图标
+[**apiAdminAboutFloatingIconIdPut**](DefaultApi.md#apiAdminAboutFloatingIconIdPut) | **PUT** /api/admin/about/floating-icon/{id} | 更新浮动图标
+[**apiAdminAboutFloatingIconListGet**](DefaultApi.md#apiAdminAboutFloatingIconListGet) | **GET** /api/admin/about/floating-icon/list | 浮动图标列表
+[**apiAdminAboutFloatingIconPost**](DefaultApi.md#apiAdminAboutFloatingIconPost) | **POST** /api/admin/about/floating-icon | 新增浮动图标
+[**apiAdminAboutHeroGet**](DefaultApi.md#apiAdminAboutHeroGet) | **GET** /api/admin/about/hero | 获取 Hero 配置
+[**apiAdminAboutHeroPut**](DefaultApi.md#apiAdminAboutHeroPut) | **PUT** /api/admin/about/hero | 创建或更新 Hero 配置
+[**apiAdminAboutProjectIdDelete**](DefaultApi.md#apiAdminAboutProjectIdDelete) | **DELETE** /api/admin/about/project/{id} | 
+[**apiAdminAboutProjectIdGet**](DefaultApi.md#apiAdminAboutProjectIdGet) | **GET** /api/admin/about/project/{id} | 
+[**apiAdminAboutProjectIdPut**](DefaultApi.md#apiAdminAboutProjectIdPut) | **PUT** /api/admin/about/project/{id} | 
+[**apiAdminAboutProjectListGet**](DefaultApi.md#apiAdminAboutProjectListGet) | **GET** /api/admin/about/project/list | 精选作品列表
+[**apiAdminAboutProjectPost**](DefaultApi.md#apiAdminAboutProjectPost) | **POST** /api/admin/about/project | 
+[**apiAdminAboutReasonIdDelete**](DefaultApi.md#apiAdminAboutReasonIdDelete) | **DELETE** /api/admin/about/reason/{id} | 
+[**apiAdminAboutReasonIdPut**](DefaultApi.md#apiAdminAboutReasonIdPut) | **PUT** /api/admin/about/reason/{id} | 
+[**apiAdminAboutReasonListGet**](DefaultApi.md#apiAdminAboutReasonListGet) | **GET** /api/admin/about/reason/list | \&quot;为什么选择我\&quot;列表
+[**apiAdminAboutReasonPost**](DefaultApi.md#apiAdminAboutReasonPost) | **POST** /api/admin/about/reason | 
+[**apiAdminAboutSkillIdDelete**](DefaultApi.md#apiAdminAboutSkillIdDelete) | **DELETE** /api/admin/about/skill/{id} | 
+[**apiAdminAboutSkillIdPut**](DefaultApi.md#apiAdminAboutSkillIdPut) | **PUT** /api/admin/about/skill/{id} | 
+[**apiAdminAboutSkillListGet**](DefaultApi.md#apiAdminAboutSkillListGet) | **GET** /api/admin/about/skill/list | 核心能力列表
+[**apiAdminAboutSkillPost**](DefaultApi.md#apiAdminAboutSkillPost) | **POST** /api/admin/about/skill | 
+[**apiAdminAboutTimelineIdDelete**](DefaultApi.md#apiAdminAboutTimelineIdDelete) | **DELETE** /api/admin/about/timeline/{id} | 
+[**apiAdminAboutTimelineIdPut**](DefaultApi.md#apiAdminAboutTimelineIdPut) | **PUT** /api/admin/about/timeline/{id} | 
+[**apiAdminAboutTimelineListGet**](DefaultApi.md#apiAdminAboutTimelineListGet) | **GET** /api/admin/about/timeline/list | 成长轨迹列表
+[**apiAdminAboutTimelinePost**](DefaultApi.md#apiAdminAboutTimelinePost) | **POST** /api/admin/about/timeline | 
 [**apiAdminChannelIdDelete**](DefaultApi.md#apiAdminChannelIdDelete) | **DELETE** /api/admin/channel/{id} | 删除渠道
 [**apiAdminChannelIdGet**](DefaultApi.md#apiAdminChannelIdGet) | **GET** /api/admin/channel/{id} | 获取渠道详情
 [**apiAdminChannelIdPut**](DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
@@ -66,6 +92,1142 @@ Method | HTTP request | Description
 [**apiWorkflowToolsGet**](DefaultApi.md#apiWorkflowToolsGet) | **GET** /api/workflow/tools | 获取可用工具列表
 [**apiWorkflowValidatePost**](DefaultApi.md#apiWorkflowValidatePost) | **POST** /api/workflow/validate | 校验工作流拓扑
 
+
+
+## apiAboutGet
+
+> ApiAboutGet200Response apiAboutGet()
+
+关于我页面聚合数据（公开）
+
+返回 Hero/Reasons/Skills/Projects/Timeline/Contact 完整数据，无需鉴权
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAboutGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ApiAboutGet200Response**](ApiAboutGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutContactGet
+
+> ApiAdminAboutContactGet200Response apiAdminAboutContactGet()
+
+获取联系区配置
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminAboutContactGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ApiAdminAboutContactGet200Response**](ApiAdminAboutContactGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutContactPut
+
+> ApiAdminAboutContactGet200Response apiAdminAboutContactPut(data)
+
+创建或更新联系区配置
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoUpdateAboutMeContactReq(); // DtoUpdateAboutMeContactReq | 联系区配置
+apiInstance.apiAdminAboutContactPut(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoUpdateAboutMeContactReq**](DtoUpdateAboutMeContactReq.md)| 联系区配置 | 
+
+### Return type
+
+[**ApiAdminAboutContactGet200Response**](ApiAdminAboutContactGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutFloatingIconIdDelete
+
+> UtilsResponse apiAdminAboutFloatingIconIdDelete(id)
+
+删除浮动图标
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutFloatingIconIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutFloatingIconIdPut
+
+> ApiAdminAboutFloatingIconPost200Response apiAdminAboutFloatingIconIdPut(id, data)
+
+更新浮动图标
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+let data = new TxingAiApi.DtoUpdateAboutMeFloatingIconReq(); // DtoUpdateAboutMeFloatingIconReq | 浮动图标
+apiInstance.apiAdminAboutFloatingIconIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+ **data** | [**DtoUpdateAboutMeFloatingIconReq**](DtoUpdateAboutMeFloatingIconReq.md)| 浮动图标 | 
+
+### Return type
+
+[**ApiAdminAboutFloatingIconPost200Response**](ApiAdminAboutFloatingIconPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutFloatingIconListGet
+
+> UtilsResponse apiAdminAboutFloatingIconListGet(page, limit, opts)
+
+浮动图标列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example" // String | 排序方式
+};
+apiInstance.apiAdminAboutFloatingIconListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutFloatingIconPost
+
+> ApiAdminAboutFloatingIconPost200Response apiAdminAboutFloatingIconPost(data)
+
+新增浮动图标
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAboutMeFloatingIconReq(); // DtoCreateAboutMeFloatingIconReq | 浮动图标
+apiInstance.apiAdminAboutFloatingIconPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAboutMeFloatingIconReq**](DtoCreateAboutMeFloatingIconReq.md)| 浮动图标 | 
+
+### Return type
+
+[**ApiAdminAboutFloatingIconPost200Response**](ApiAdminAboutFloatingIconPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutHeroGet
+
+> ApiAdminAboutHeroGet200Response apiAdminAboutHeroGet()
+
+获取 Hero 配置
+
+获取关于我页面 Hero 区配置
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminAboutHeroGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ApiAdminAboutHeroGet200Response**](ApiAdminAboutHeroGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutHeroPut
+
+> ApiAdminAboutHeroGet200Response apiAdminAboutHeroPut(data)
+
+创建或更新 Hero 配置
+
+不存在则创建，存在则更新
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoUpdateAboutMeHeroReq(); // DtoUpdateAboutMeHeroReq | Hero 配置
+apiInstance.apiAdminAboutHeroPut(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoUpdateAboutMeHeroReq**](DtoUpdateAboutMeHeroReq.md)| Hero 配置 | 
+
+### Return type
+
+[**ApiAdminAboutHeroGet200Response**](ApiAdminAboutHeroGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutProjectIdDelete
+
+> UtilsResponse apiAdminAboutProjectIdDelete(id)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutProjectIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutProjectIdGet
+
+> ApiAdminAboutProjectPost200Response apiAdminAboutProjectIdGet(id)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutProjectIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**ApiAdminAboutProjectPost200Response**](ApiAdminAboutProjectPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutProjectIdPut
+
+> ApiAdminAboutProjectPost200Response apiAdminAboutProjectIdPut(id, data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+let data = new TxingAiApi.DtoUpdateAboutMeProjectReq(); // DtoUpdateAboutMeProjectReq | 项目
+apiInstance.apiAdminAboutProjectIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+ **data** | [**DtoUpdateAboutMeProjectReq**](DtoUpdateAboutMeProjectReq.md)| 项目 | 
+
+### Return type
+
+[**ApiAdminAboutProjectPost200Response**](ApiAdminAboutProjectPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutProjectListGet
+
+> UtilsResponse apiAdminAboutProjectListGet(page, limit, opts)
+
+精选作品列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example" // String | 排序方式
+};
+apiInstance.apiAdminAboutProjectListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutProjectPost
+
+> ApiAdminAboutProjectPost200Response apiAdminAboutProjectPost(data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAboutMeProjectReq(); // DtoCreateAboutMeProjectReq | 项目
+apiInstance.apiAdminAboutProjectPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAboutMeProjectReq**](DtoCreateAboutMeProjectReq.md)| 项目 | 
+
+### Return type
+
+[**ApiAdminAboutProjectPost200Response**](ApiAdminAboutProjectPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutReasonIdDelete
+
+> UtilsResponse apiAdminAboutReasonIdDelete(id)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutReasonIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutReasonIdPut
+
+> ApiAdminAboutReasonPost200Response apiAdminAboutReasonIdPut(id, data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+let data = new TxingAiApi.DtoUpdateAboutMeReasonReq(); // DtoUpdateAboutMeReasonReq | 卡片内容
+apiInstance.apiAdminAboutReasonIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+ **data** | [**DtoUpdateAboutMeReasonReq**](DtoUpdateAboutMeReasonReq.md)| 卡片内容 | 
+
+### Return type
+
+[**ApiAdminAboutReasonPost200Response**](ApiAdminAboutReasonPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutReasonListGet
+
+> UtilsResponse apiAdminAboutReasonListGet(page, limit, opts)
+
+\&quot;为什么选择我\&quot;列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example" // String | 排序方式
+};
+apiInstance.apiAdminAboutReasonListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutReasonPost
+
+> ApiAdminAboutReasonPost200Response apiAdminAboutReasonPost(data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAboutMeReasonReq(); // DtoCreateAboutMeReasonReq | 卡片内容
+apiInstance.apiAdminAboutReasonPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAboutMeReasonReq**](DtoCreateAboutMeReasonReq.md)| 卡片内容 | 
+
+### Return type
+
+[**ApiAdminAboutReasonPost200Response**](ApiAdminAboutReasonPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutSkillIdDelete
+
+> UtilsResponse apiAdminAboutSkillIdDelete(id)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutSkillIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutSkillIdPut
+
+> ApiAdminAboutSkillPost200Response apiAdminAboutSkillIdPut(id, data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+let data = new TxingAiApi.DtoUpdateAboutMeSkillReq(); // DtoUpdateAboutMeSkillReq | 技能
+apiInstance.apiAdminAboutSkillIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+ **data** | [**DtoUpdateAboutMeSkillReq**](DtoUpdateAboutMeSkillReq.md)| 技能 | 
+
+### Return type
+
+[**ApiAdminAboutSkillPost200Response**](ApiAdminAboutSkillPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutSkillListGet
+
+> UtilsResponse apiAdminAboutSkillListGet(page, limit, opts)
+
+核心能力列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example" // String | 排序方式
+};
+apiInstance.apiAdminAboutSkillListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutSkillPost
+
+> ApiAdminAboutSkillPost200Response apiAdminAboutSkillPost(data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAboutMeSkillReq(); // DtoCreateAboutMeSkillReq | 技能
+apiInstance.apiAdminAboutSkillPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAboutMeSkillReq**](DtoCreateAboutMeSkillReq.md)| 技能 | 
+
+### Return type
+
+[**ApiAdminAboutSkillPost200Response**](ApiAdminAboutSkillPost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutTimelineIdDelete
+
+> UtilsResponse apiAdminAboutTimelineIdDelete(id)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+apiInstance.apiAdminAboutTimelineIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: */*
+
+
+## apiAdminAboutTimelineIdPut
+
+> ApiAdminAboutTimelinePost200Response apiAdminAboutTimelineIdPut(id, data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | ID
+let data = new TxingAiApi.DtoUpdateAboutMeTimelineReq(); // DtoUpdateAboutMeTimelineReq | 时间线
+apiInstance.apiAdminAboutTimelineIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| ID | 
+ **data** | [**DtoUpdateAboutMeTimelineReq**](DtoUpdateAboutMeTimelineReq.md)| 时间线 | 
+
+### Return type
+
+[**ApiAdminAboutTimelinePost200Response**](ApiAdminAboutTimelinePost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminAboutTimelineListGet
+
+> UtilsResponse apiAdminAboutTimelineListGet(page, limit, opts)
+
+成长轨迹列表
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let page = 56; // Number | 页码
+let limit = 56; // Number | 每页数量
+let opts = {
+  'orderBy': "orderBy_example", // String | 排序字段
+  'order': "order_example" // String | 排序方式
+};
+apiInstance.apiAdminAboutTimelineListGet(page, limit, opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | 
+ **limit** | **Number**| 每页数量 | 
+ **orderBy** | **String**| 排序字段 | [optional] 
+ **order** | **String**| 排序方式 | [optional] 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminAboutTimelinePost
+
+> ApiAdminAboutTimelinePost200Response apiAdminAboutTimelinePost(data)
+
+
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoCreateAboutMeTimelineReq(); // DtoCreateAboutMeTimelineReq | 时间线
+apiInstance.apiAdminAboutTimelinePost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoCreateAboutMeTimelineReq**](DtoCreateAboutMeTimelineReq.md)| 时间线 | 
+
+### Return type
+
+[**ApiAdminAboutTimelinePost200Response**](ApiAdminAboutTimelinePost200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 
 ## apiAdminChannelIdDelete

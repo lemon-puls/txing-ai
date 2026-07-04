@@ -69,7 +69,7 @@ import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
 import 'vue-cropper/dist/index.css'
-import { defaultApi } from '@/api'
+import { uploadFileToOSS, compressImage, isImage } from '@/utils/ossUpload'
 
 const props = defineProps({
   // v-model 绑定值，用于显示和更新图片 URL
@@ -161,74 +161,26 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'success', 'error'])
 
-// 裁剪相关
 const cropperVisible = ref(false)
 const cropperImage = ref('')
 const cropperRef = ref(null)
 const uploading = ref(false)
 
-// 压缩图片
-const compressImage = async (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = (e) => {
-      const img = new Image()
-      img.src = e.target.result
-      img.onload = () => {
-        // 计算压缩后的尺寸
-        let width = img.width
-        let height = img.height
-
-        if (width > props.maxWidth || height > props.maxHeight) {
-          const ratio = Math.min(props.maxWidth / width, props.maxHeight / height)
-          width = Math.floor(width * ratio)
-          height = Math.floor(height * ratio)
-        }
-
-        // 创建 canvas 进行压缩
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        canvas.width = width
-        canvas.height = height
-
-        // 绘制图片
-        ctx.fillStyle = '#fff'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(img, 0, 0, width, height)
-
-        // 转换为 blob
-        canvas.toBlob(
-          (blob) => {
-            resolve(blob)
-          },
-          'image/jpeg',
-          props.compressQuality
-        )
-      }
-    }
-  })
-}
-
 // 处理文件选择
 const handleFileChange = async (file) => {
   if (!file) return
 
-  // 验证文件类型和大小
-  const isImage = file.raw.type.startsWith('image/')
-  const isLtMax = file.raw.size / 1024 / 1024 < props.maxSize
-
-  if (!isImage) {
+  if (!isImage(file.raw)) {
     ElMessage.error('请上传图片文件！')
     return
   }
-  if (!isLtMax) {
+  if (file.raw.size / 1024 / 1024 >= props.maxSize) {
     ElMessage.error(`图片大小不能超过 ${props.maxSize}MB！`)
     return
   }
 
   if (props.enableCrop) {
-    // 开启裁剪功能，显示裁剪对话框
+    // 开启裁剪：先把图读成 dataURL 传入裁剪框
     const reader = new FileReader()
     reader.readAsDataURL(file.raw)
     reader.onload = (e) => {
@@ -236,56 +188,22 @@ const handleFileChange = async (file) => {
       cropperVisible.value = true
     }
   } else {
-    // 不开启裁剪功能，直接上传
     try {
       uploading.value = true
-
-      // 处理图片文件
-      let uploadFile = file.raw
+      let blob = file.raw
       if (props.enableCompress) {
-        uploadFile = await compressImage(file.raw)
+        blob = await compressImage(file.raw, {
+          quality: props.compressQuality,
+          maxWidth: props.maxWidth,
+          maxHeight: props.maxHeight
+        })
       }
-
-      // 生成随机文件名
-      const fileExt = props.enableCompress ? 'jpg' : (file.raw.name.split('.').pop() || 'png')
-      const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
-
-      // 获取预签名 URL
-      const res = await defaultApi.apiCosPresignedUrlPost({
-        type: 'upload',
-        key: fileName
+      const result = await uploadFileToOSS(blob, {
+        keyPrefix: 'image',
+        mimeType: props.enableCompress ? 'image/jpeg' : file.raw.type
       })
-
-      if (res.code !== 0) {
-        throw new Error(res.msg || '获取上传地址失败')
-      }
-
-      // 上传文件到预签名 URL
-      const response = await fetch(res.data.url, {
-        method: 'PUT',
-        body: uploadFile,
-        headers: {
-          'Content-Type': props.enableCompress ? 'image/jpeg' : file.raw.type
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('上传失败')
-      }
-
-      // 获取待签名下载 URL
-      const res1 = await defaultApi.apiCosPresignedUrlPost({
-        key: fileName,
-        type: 'download'
-      })
-
-      if (res1.code !== 0) {
-        throw new Error(res1.msg || '获取访问地址失败')
-      }
-
-      // 更新 v-model
-      emit('update:modelValue', res1.data.url)
-      emit('success', res1.data.url)
+      emit('update:modelValue', result.url)
+      emit('success', result)
       ElMessage.success('上传成功')
     } catch (error) {
       console.error('上传失败:', error)
@@ -308,70 +226,30 @@ const handleCropImage = async () => {
     const base64Data = await new Promise((resolve) => {
       cropperRef.value.getCropData((data) => resolve(data))
     })
-
     // 将 base64 转换为 Blob
-    const blob = await fetch(base64Data).then(res => res.blob())
+    let blob = await fetch(base64Data).then(res => res.blob())
 
-    // 处理图片文件
-    let uploadFile = blob
     if (props.enableCompress) {
-      uploadFile = await compressImage(blob)
+      blob = await compressImage(blob, {
+        quality: props.compressQuality,
+        maxWidth: props.maxWidth,
+        maxHeight: props.maxHeight
+      })
     }
 
-    // 生成随机文件名
-    const fileExt = props.enableCompress ? 'jpg' : 'png'
-    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`
+    const result = await uploadFileToOSS(blob, {
+      keyPrefix: 'image',
+      mimeType: props.enableCompress ? 'image/jpeg' : 'image/png'
+    })
 
-    try {
-      // 获取预签名 URL
-      const res = await defaultApi.apiCosPresignedUrlPost({
-        type: 'upload',
-        key: fileName
-      })
-
-      if (res.code !== 0) {
-        throw new Error(res.msg || '获取上传地址失败')
-      }
-
-      // 上传文件到预签名 URL
-      const response = await fetch(res.data.url, {
-        method: 'PUT',
-        body: uploadFile,
-        headers: {
-          'Content-Type': props.enableCompress ? 'image/jpeg' : 'image/png'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('上传失败')
-      }
-
-      // 获取待签名下载 URL
-      const res1 = await defaultApi.apiCosPresignedUrlPost({
-        key: fileName,
-        type: 'download'
-      })
-
-      if (res1.code !== 0) {
-        throw new Error(res1.msg || '获取访问地址失败')
-      }
-
-      // 更新 v-model
-      emit('update:modelValue', res1.data.url)
-      emit('success', res1.data.url)
-
-      // 关闭裁剪对话框
-      cropperVisible.value = false
-      ElMessage.success('上传成功')
-    } catch (error) {
-      console.error('上传失败:', error)
-      emit('error', error)
-      ElMessage.error(error.message || '上传失败，请重试')
-    }
+    emit('update:modelValue', result.url)
+    emit('success', result)
+    cropperVisible.value = false
+    ElMessage.success('上传成功')
   } catch (error) {
-    console.error('裁剪失败:', error)
+    console.error('上传失败:', error)
     emit('error', error)
-    ElMessage.error('图片裁剪失败，请重试')
+    ElMessage.error(error.message || '上传失败，请重试')
   } finally {
     uploading.value = false
   }

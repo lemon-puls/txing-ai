@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
+	"txing-ai/internal/controller/aboutme"
 	"txing-ai/internal/controller/agent"
 	"txing-ai/internal/controller/captcha"
 	"txing-ai/internal/controller/channel"
@@ -56,6 +57,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	// 文件上传下载相关路由
 	file.Register(group)
+
+	// 关于我页面路由（公开 + 管理后台）
+	aboutme.Register(group)
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

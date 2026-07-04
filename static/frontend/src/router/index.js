@@ -242,6 +242,16 @@ const router = createRouter({
             icon: 'Link',
             roles: ['admin']
           }
+        },
+        {
+          path: 'about',
+          name: 'AdminAbout',
+          component: () => import('@/views/admin/about/AboutMeAdmin.vue'),
+          meta: {
+            title: '关于我页面',
+            icon: 'UserFilled',
+            roles: ['admin']
+          }
         }
       ]
     },
