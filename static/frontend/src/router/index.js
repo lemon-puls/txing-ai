@@ -108,6 +108,21 @@ const router = createRouter({
         //   ]
         // },
         {
+          path: 'about',
+          name: 'about',
+          component: () => import('@/layouts/HeaderLayout.vue'),
+          children: [
+            {
+              component: () => import('@/views/about/index.vue'),
+              path: '',
+              meta: {
+                title: '关于作者',
+                icon: 'user'
+              }
+            }
+          ]
+        },
+        {
           path: 'workflow',
           name: 'workflowMarket',
           component: () => import('@/layouts/HeaderLayout.vue'),
@@ -225,6 +240,16 @@ const router = createRouter({
           meta: {
             title: '网站管理',
             icon: 'Link',
+            roles: ['admin']
+          }
+        },
+        {
+          path: 'about',
+          name: 'AdminAbout',
+          component: () => import('@/views/admin/about/AboutMeAdmin.vue'),
+          meta: {
+            title: '关于我页面',
+            icon: 'UserFilled',
             roles: ['admin']
           }
         }

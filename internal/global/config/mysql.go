@@ -86,6 +86,15 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 	db.AutoMigrate(&model.AgentFlowVersion{})
 	db.AutoMigrate(&model.WorkflowExecution{})
 
+	// 关于我页面
+	db.AutoMigrate(&model.AboutMeHero{})
+	db.AutoMigrate(&model.AboutMeFloatingIcon{})
+	db.AutoMigrate(&model.AboutMeReason{})
+	db.AutoMigrate(&model.AboutMeSkill{})
+	db.AutoMigrate(&model.AboutMeProject{})
+	db.AutoMigrate(&model.AboutMeTimeline{})
+	db.AutoMigrate(&model.AboutMeContact{})
+
 	// 设置 GORM 的 JSON 序列化器
 	db.Config.PrepareStmt = true
 	db.Config.DisableForeignKeyConstraintWhenMigrating = true
