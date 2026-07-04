@@ -20,18 +20,6 @@ import (
 	mytool "txing-ai/internal/tool"
 )
 
-// ModelInfo 模型信息（包含端点和密钥）
-type ModelInfo struct {
-	Endpoint string
-	APIKey   string
-	Model    string // 映射后的模型名称
-}
-
-// ModelResolver 模型解析器接口，用于根据模型名称获取对应的端点和密钥
-type ModelResolver interface {
-	Resolve(modelName string) (*ModelInfo, error)
-}
-
 // WorkflowAgent 工作流智能体
 type WorkflowAgent struct {
 	*BaseAgent
@@ -42,156 +30,6 @@ type WorkflowAgent struct {
 	endpoint      string // LLM 调用端点 / LLM endpoint
 	apiKey        string // LLM API 密钥 / LLM API key
 	model         string // 默认模型名 / Default model name
-}
-
-// RetryConfig 重试配置
-type RetryConfig struct {
-	MaxRetries  int    `json:"maxRetries,omitempty"`  // 最大重试次数，默认 0（不重试）
-	RetryDelay  int    `json:"retryDelay,omitempty"`  // 重试间隔（毫秒），默认 1000
-	BackoffType string `json:"backoffType,omitempty"` // 退避策略: "fixed" | "exponential"，默认 "fixed"
-}
-
-// ModelConfig 模型配置
-type ModelConfig struct {
-	Model          string       `json:"model"`
-	SystemPrompt   string       `json:"systemPrompt"`
-	Temperature    float64      `json:"temperature"`
-	MaxTokens      int          `json:"maxTokens"`
-	ContextEnabled bool         `json:"contextEnabled"`
-	Tools          []string     `json:"tools,omitempty"`  // 绑定的工具列表（LLM 通过 Function Calling 自主调用）
-	MaxToolRounds  int          `json:"maxToolRounds,omitempty"` // 最大工具调用轮次，默认 5
-	Retry          *RetryConfig `json:"retry,omitempty"` // 重试配置
-}
-
-// ToolConfig 工具配置
-type ToolConfig struct {
-	ToolName string                 `json:"toolName,omitempty"` // 单个工具名称（直接执行模式）
-	Params   map[string]interface{} `json:"params,omitempty"`   // 工具参数（直接执行模式）
-	Tools    []string               `json:"tools,omitempty"`    // 工具名称列表（兼容旧配置）
-	Retry    *RetryConfig           `json:"retry,omitempty"`    // 重试配置
-}
-
-// ConditionConfig 条件配置（旧版本，保持兼容）
-type ConditionConfig struct {
-	Type          string `json:"type"` // expression | llm | tool_result
-	Expression    string `json:"expression,omitempty"`
-	LLMPrompt     string `json:"llmPrompt,omitempty"`
-	ToolName      string `json:"toolName,omitempty"`
-	ToolResultKey string `json:"toolResultKey,omitempty"`
-	ExpectedValue string `json:"expectedValue,omitempty"` // 新增：期望值
-	FailureAction string `json:"failureAction,omitempty"` // 新增：错误处理策略
-	FailureBranch string `json:"failureBranch,omitempty"` // 新增：错误时的默认分支
-}
-
-// CodeConfig 代码节点配置
-type CodeConfig struct {
-	Language string `json:"language"`           // 语言: "javascript" | "python" | "go"
-	Code     string `json:"code"`               // 代码内容
-	Timeout  int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 30
-}
-
-// HTTPConfig HTTP 节点配置
-type HTTPConfig struct {
-	Method  string            `json:"method"`            // HTTP 方法: "GET" | "POST" | "PUT" | "DELETE"
-	URL     string            `json:"url"`               // 请求 URL
-	Headers map[string]string `json:"headers,omitempty"` // 请求头
-	Body    string            `json:"body,omitempty"`    // 请求体（支持 {{output}} 变量替换）
-	Timeout int               `json:"timeout,omitempty"` // 超时时间（秒），默认 30
-}
-
-// SubWorkflowConfig 子工作流节点配置
-type SubWorkflowConfig struct {
-	WorkflowID int64  `json:"workflowId"`          // 子工作流 ID
-	Input      string `json:"input,omitempty"`     // 输入模板（支持 {{output}} 变量替换）
-	Timeout    int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 60
-}
-
-// AgentConfig Agent 节点配置（支持多轮工具调用循环）
-type AgentConfig struct {
-	SystemPrompt string   `json:"systemPrompt"`         // 系统提示词
-	Tools        []string `json:"tools,omitempty"`       // 工具名称列表（为空则使用全部工具）
-	MaxRunSteps  int      `json:"maxRunSteps,omitempty"` // 最大执行步数，默认 30
-}
-
-// NodeData 节点数据（配置直接放在 data 层级，与前端 JSON 结构一致）
-type NodeData struct {
-	NodeType          string              `json:"nodeType"`
-	Label             string              `json:"label"`
-	ModelConfig       *ModelConfig        `json:"modelConfig,omitempty"`
-	ToolConfig        *ToolConfig         `json:"toolConfig,omitempty"`
-	ConditionConf     *ConditionConfig    `json:"conditionConfig,omitempty"`
-	CodeConfig        *CodeConfig         `json:"codeConfig,omitempty"`
-	HTTPConfig        *HTTPConfig         `json:"httpConfig,omitempty"`
-	SubWorkflowConfig *SubWorkflowConfig  `json:"subWorkflowConfig,omitempty"`
-	AgentConfig       *AgentConfig        `json:"agentConfig,omitempty"`
-	ParallelConfig    *ParallelConfig     `json:"parallelConfig,omitempty"`  // 并行组配置 / Parallel group config
-	JoinConfig        *JoinConfig         `json:"joinConfig,omitempty"`      // 汇聚节点配置 / Join node config
-	Extra             map[string]interface{} `json:"extra,omitempty"`        // 扩展字段，用于存储 parallelId 等 / Extra fields for parallelId etc.
-}
-
-// NodeExecutionLog 节点执行日志
-type NodeExecutionLog struct {
-	NodeID    string `json:"nodeId"`
-	NodeType  string `json:"nodeType"`
-	NodeLabel string `json:"nodeLabel"`
-	Status    string `json:"status"` // running, completed, failed
-	StartTime int64  `json:"startTime"`
-	EndTime   int64  `json:"endTime"`
-	Duration  int64  `json:"duration"` // 毫秒
-	Input     string `json:"input,omitempty"`
-	Output    string `json:"output,omitempty"`
-	Error     string `json:"error,omitempty"`
-	Retry     int    `json:"retry,omitempty"` // 当前重试次数
-}
-
-// TopoNode 拓扑节点
-type TopoNode struct {
-	Id       string   `json:"id"`
-	Type     string   `json:"type"`
-	Position Position `json:"position"`
-	Data     NodeData `json:"data"`
-}
-
-// Position 节点位置
-type Position struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
-
-// TopoEdge 拓扑边
-type TopoEdge struct {
-	Id           string `json:"id"`
-	Source       string `json:"source"`
-	Target       string `json:"target"`
-	SourceHandle string `json:"sourceHandle,omitempty"`
-	TargetHandle string `json:"targetHandle,omitempty"`
-}
-
-// SchemaField Schema 字段定义
-type SchemaField struct {
-	Name        string `json:"name"`                    // 字段名称（英文标识，用作表单字段名）
-	Type        string `json:"type"`                    // 字段类型: file, text, textarea
-	Label       string `json:"label,omitempty"`         // 显示标签（如"上传简历"）
-	Placeholder string `json:"placeholder,omitempty"`   // 占位提示文字
-	Required    bool   `json:"required,omitempty"`      // 是否必填
-	Accept      string `json:"accept,omitempty"`        // 文件类型限制（type=file 时），如 ".pdf,.doc,.docx"
-	Default     string `json:"default,omitempty"`       // 默认值
-	Description string `json:"description,omitempty"`   // 字段描述说明
-}
-
-// WorkflowConfig 工作流级别配置
-type WorkflowConfig struct {
-	DefaultModel string        `json:"defaultModel,omitempty"` // 默认模型名称
-	MaxRunSteps  int           `json:"maxRunSteps,omitempty"`  // 最大执行步数
-	InputSchema  []SchemaField `json:"inputSchema,omitempty"`  // 输入 Schema
-	OutputSchema []SchemaField `json:"outputSchema,omitempty"` // 输出 Schema
-}
-
-// Topology 工作流拓扑图结构
-type Topology struct {
-	Nodes  []TopoNode     `json:"nodes"`
-	Edges  []TopoEdge     `json:"edges"`
-	Config *WorkflowConfig `json:"config,omitempty"`
 }
 
 // WorkflowAgentState 工作流状态
@@ -288,29 +126,6 @@ func executeWithRetry(retryConfig *RetryConfig, fn func() error) error {
 	}
 
 	return fmt.Errorf("执行失败（已重试 %d 次）: %w", maxRetries, lastErr)
-}
-
-// sendExecutionLog 发送执行日志到回调
-func sendExecutionLog(callback func(chunk *global.Chunk) error, execLog *NodeExecutionLog) {
-	if callback == nil || execLog == nil {
-		return
-	}
-	callback(&global.Chunk{
-		NodeId:     execLog.NodeID,
-		NodeType:   execLog.NodeType,
-		NodeLabel:  execLog.NodeLabel,
-		NodeStatus: execLog.Status,
-		ShowMsg:    fmt.Sprintf("[%s] %s (耗时: %dms)", execLog.NodeLabel, execLog.Status, execLog.Duration),
-		ExecutionLog: &global.ExecutionLogInfo{
-			StartTime: execLog.StartTime,
-			EndTime:   execLog.EndTime,
-			Duration:  execLog.Duration,
-			Input:     execLog.Input,
-			Output:    execLog.Output,
-			Error:     execLog.Error,
-			Retry:     execLog.Retry,
-		},
-	})
 }
 
 // nodeStatusCallback 创建节点状态回调，包装原始 callback 发送 running/completed/failed 状态

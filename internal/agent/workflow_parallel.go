@@ -19,22 +19,6 @@ import (
 	"txing-ai/internal/global/logging/log"
 )
 
-// ParallelConfig 并行组节点配置
-// ParallelConfig defines the configuration for parallel execution groups
-type ParallelConfig struct {
-	MaxConcurrency int          `json:"maxConcurrency"` // 最大并发数，0=无限制 / Max concurrency, 0=unlimited
-	WaitStrategy   string      `json:"waitStrategy"`   // 等待策略：all / Wait strategy: all
-	Timeout        int         `json:"timeout"`        // 超时时间（秒）/ Timeout in seconds
-	BranchRetry    *RetryConfig `json:"branchRetry,omitempty"`
-}
-
-// JoinConfig 汇聚节点配置
-// JoinConfig defines the configuration for join nodes
-type JoinConfig struct {
-	Strategy string `json:"strategy"` // 汇聚策略：all/any / Join strategy: all/any
-	Timeout  int    `json:"timeout"`  // 超时时间（秒）/ Timeout in seconds
-}
-
 // ParallelGroup 并行组结构
 // ParallelGroup represents a parallel execution group with its branches and join node
 type ParallelGroup struct {
