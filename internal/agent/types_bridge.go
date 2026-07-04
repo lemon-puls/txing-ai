@@ -2,6 +2,7 @@ package agent
 
 import (
 	"txing-ai/internal/global"
+	"txing-ai/internal/agent/workflow/condition"
 	"txing-ai/internal/agent/workflow/types"
 )
 
@@ -29,6 +30,28 @@ type (
 	JoinConfig         = types.JoinConfig
 	ParallelResult     = types.ParallelResult
 	JoinResult         = types.JoinResult
+)
+
+type (
+	ConditionType       = condition.ConditionType
+	FailureAction       = condition.FailureAction
+	ConditionConfigV2   = condition.ConditionConfigV2
+	ConditionResult     = condition.ConditionResult
+	ExpressionEvaluator = condition.ExpressionEvaluator
+	LLMJudgmentResponse = condition.LLMJudgmentResponse
+)
+
+var (
+	NewExpressionEvaluator  = condition.NewExpressionEvaluator
+	NewConditionResult      = condition.NewConditionResult
+	NewConditionError       = condition.NewConditionError
+	DefaultConditionConfig  = condition.DefaultConditionConfig
+)
+
+const (
+	ConditionTypeExpression = condition.ConditionTypeExpression
+	ConditionTypeLLM        = condition.ConditionTypeLLM
+	ConditionTypeToolResult = condition.ConditionTypeToolResult
 )
 
 func sendExecutionLog(callback func(chunk *global.Chunk) error, execLog *NodeExecutionLog) {

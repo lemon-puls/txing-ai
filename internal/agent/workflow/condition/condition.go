@@ -1,4 +1,4 @@
-package agent
+package condition
 
 // ConditionType 条件类型
 type ConditionType string

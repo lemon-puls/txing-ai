@@ -1,4 +1,4 @@
-package agent
+package condition
 
 import (
 	"encoding/json"
