@@ -3,6 +3,7 @@ package agent
 import (
 	"txing-ai/internal/global"
 	"txing-ai/internal/agent/workflow/condition"
+	"txing-ai/internal/agent/workflow/parallel"
 	"txing-ai/internal/agent/workflow/resolver"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/agent/workflow/validator"
@@ -43,6 +44,12 @@ type (
 	LLMJudgmentResponse = condition.LLMJudgmentResponse
 )
 
+type (
+	ParallelExecutor = parallel.ParallelExecutor
+	ParallelContext  = parallel.ParallelContext
+	ParallelGroup    = parallel.ParallelGroup
+)
+
 type ChannelModelResolver = resolver.ChannelModelResolver
 
 type (
@@ -55,6 +62,12 @@ var (
 	NewConditionResult      = condition.NewConditionResult
 	NewConditionError       = condition.NewConditionError
 	DefaultConditionConfig  = condition.DefaultConditionConfig
+)
+
+var (
+	NewParallelExecutor = parallel.NewParallelExecutor
+	NewParallelContext  = parallel.NewParallelContext
+	ReplaceVarsInParams = parallel.ReplaceVarsInParams
 )
 
 var NewChannelModelResolver = resolver.NewChannelModelResolver
