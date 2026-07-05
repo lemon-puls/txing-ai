@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sort"
 
-	"go.uber.org/zap"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
-)
 
+	"go.uber.org/zap"
+)
 
 // IdentifyParallelGroups 从拓扑中识别所有并行组
 // IdentifyParallelGroups identifies all parallel groups from the topology
@@ -42,7 +42,6 @@ func (e *ParallelExecutor) IdentifyParallelGroups(topo *types.Topology) ([]*Para
 
 	return parallelGroups, nil
 }
-
 
 // extractParallelGroup 提取单个并行组的详细信息
 // extractParallelGroup extracts detailed information for a single parallel group
@@ -115,7 +114,6 @@ func (e *ParallelExecutor) extractParallelGroup(parallelNode *types.TopoNode, ed
 	return group
 }
 
-
 // traceBranchPath 追踪单个分支的路径直到汇聚节点
 // traceBranchPath traces a single branch path until reaching the join node
 func (e *ParallelExecutor) traceBranchPath(startNodeID string, edges []types.TopoEdge, nodeMap map[string]*types.TopoNode, parallelID string, joinNodeID *string) []*types.TopoNode {
@@ -171,7 +169,6 @@ func (e *ParallelExecutor) traceBranchPath(startNodeID string, edges []types.Top
 	return path
 }
 
-
 // findBranchesByParallelId 通过 parallelId 属性查找分支
 // findBranchesByParallelId finds branches by parallelId property
 func (e *ParallelExecutor) findBranchesByParallelId(parallelID string, nodeMap map[string]*types.TopoNode, edges []types.TopoEdge) map[string][]*types.TopoNode {
@@ -212,7 +209,6 @@ func (e *ParallelExecutor) findBranchesByParallelId(parallelID string, nodeMap m
 	return branchNodes
 }
 
-
 // getNodeParallelId 获取节点的并行组ID
 // getNodeParallelId gets the parallel group ID of a node
 func (e *ParallelExecutor) getNodeParallelId(node *types.TopoNode) string {
@@ -222,8 +218,6 @@ func (e *ParallelExecutor) getNodeParallelId(node *types.TopoNode) string {
 	}
 	return node.Id
 }
-
-
 
 // BuildParallelGraph 构建并行执行图（与现有 BuildGraph 集成）
 // BuildParallelGraph builds a parallel execution graph (integrated with existing BuildGraph)
@@ -249,7 +243,6 @@ func (e *ParallelExecutor) BuildParallelGraph(ctx context.Context, topo *types.T
 
 	return nil
 }
-
 
 // TopologicalSort 对节点列表进行拓扑排序
 // TopologicalSort performs topological sort on a list of nodes
@@ -312,7 +305,6 @@ func (e *ParallelExecutor) TopologicalSort(nodes []*types.TopoNode, edges []type
 	return sorted, nil
 }
 
-
 // ValidateParallelGroup 验证并行组的有效性
 // ValidateParallelGroup validates the correctness of a parallel group
 func (e *ParallelExecutor) ValidateParallelGroup(group *ParallelGroup) error {
@@ -341,5 +333,3 @@ func (e *ParallelExecutor) ValidateParallelGroup(group *ParallelGroup) error {
 
 	return nil
 }
-
-

@@ -148,12 +148,30 @@ Channel configuration includes priority, weight, model mappings for load balanci
 
 ## Agent System
 
-Located in `internal/agent/`:
-- `base_agent.go` - Base agent implementation
-- `general_agent.go` - General-purpose agent
-- `toolcall_agent.go` - Agent with tool calling
-- `resume_agent.go` - Resume assistant
-- `travel_agent.go` - Travel assistant
+Located in `internal/agent/`, organized into subpackages:
+
+**Agents** (`internal/agent/agent/`):
+- `base.go` - Base agent implementation with streaming support
+- `general.go` - General-purpose conversational agent
+- `toolcall.go` - Agent with tool calling capabilities
+- `resume.go` - Resume assistant
+- `travel.go` - Travel planning assistant
+- `factory.go` - Agent factory for creating agent instances
+
+**Workflow Engine** (`internal/agent/workflow/`):
+- `engine.go` - Core workflow orchestration engine
+- `node_exec.go` - Node execution logic
+- `condition_exec.go` - Condition branch evaluation
+- `retry.go` - Retry logic for failed nodes
+- `join_edges.go` - Join node edge handling
+
+**Workflow Subpackages**:
+- `types/` - Shared types (ExecutionLog, WorkflowResult, ModelResolver, etc.)
+- `condition/` - Expression evaluation and condition logic
+- `node/` - Node implementations (Code, HTTP, SubWorkflow)
+- `parallel/` - Parallel execution context and variable management
+- `validator/` - Workflow validators (structural and LLM-based)
+- `resolver/` - Channel and model resolution
 
 Tools are in `internal/tool/` including file operations, web scraping, MCP integration.
 
