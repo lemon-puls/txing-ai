@@ -3,6 +3,7 @@ package agent
 import (
 	"txing-ai/internal/global"
 	"txing-ai/internal/agent/workflow/condition"
+	"txing-ai/internal/agent/workflow/resolver"
 	"txing-ai/internal/agent/workflow/types"
 )
 
@@ -41,12 +42,16 @@ type (
 	LLMJudgmentResponse = condition.LLMJudgmentResponse
 )
 
+type ChannelModelResolver = resolver.ChannelModelResolver
+
 var (
 	NewExpressionEvaluator  = condition.NewExpressionEvaluator
 	NewConditionResult      = condition.NewConditionResult
 	NewConditionError       = condition.NewConditionError
 	DefaultConditionConfig  = condition.DefaultConditionConfig
 )
+
+var NewChannelModelResolver = resolver.NewChannelModelResolver
 
 const (
 	ConditionTypeExpression = condition.ConditionTypeExpression

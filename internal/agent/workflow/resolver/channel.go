@@ -1,7 +1,8 @@
-package agent
+package resolver
 
 import (
 	"errors"
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	channelservice "txing-ai/internal/service/channel"
 
@@ -19,7 +20,7 @@ func NewChannelModelResolver(db *gorm.DB) *ChannelModelResolver {
 }
 
 // Resolve 根据模型名称解析对应的端点和密钥
-func (r *ChannelModelResolver) Resolve(modelName string) (*ModelInfo, error) {
+func (r *ChannelModelResolver) Resolve(modelName string) (*types.ModelInfo, error) {
 	if modelName == "" {
 		return nil, errors.New("模型名称为空")
 	}
@@ -33,7 +34,7 @@ func (r *ChannelModelResolver) Resolve(modelName string) (*ModelInfo, error) {
 		return nil, err
 	}
 
-	return &ModelInfo{
+	return &types.ModelInfo{
 		Endpoint: channel.GetEndpoint(),
 		APIKey:   channel.GetRandomSecret(),
 		Model:    mappingModel,
