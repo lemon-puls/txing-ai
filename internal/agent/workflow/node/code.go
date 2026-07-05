@@ -1,4 +1,4 @@
-package agent
+package node
 
 import (
 	"context"
@@ -10,20 +10,21 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 )
 
-// executeCodeNode 执行代码节点
-func executeCodeNode(
+// ExecuteCodeNode 执行代码节点
+func ExecuteCodeNode(
 	ctx context.Context,
 	nodeId string,
 	nodeLabel string,
-	config *CodeConfig,
+	config *types.CodeConfig,
 	input *schema.Message,
 	callback func(chunk *global.Chunk) error,
 ) (*schema.Message, error) {
-	execLog := &NodeExecutionLog{
+	execLog := &types.NodeExecutionLog{
 		NodeID:    nodeId,
 		NodeType:  "code",
 		NodeLabel: nodeLabel,
@@ -55,7 +56,7 @@ func executeCodeNode(
 	code := config.Code
 	code = strings.ReplaceAll(code, "{{input}}", inputContent)
 	code = strings.ReplaceAll(code, "{{output}}", inputContent)
-	code = replaceNestedVars(code, inputContent, inputContent)
+	code = types.ReplaceNestedVars(code, inputContent, inputContent)
 
 	// 设置超时
 	timeout := 30
@@ -84,7 +85,7 @@ func executeCodeNode(
 		execLog.Error = err.Error()
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, err
 	}
 
@@ -92,7 +93,7 @@ func executeCodeNode(
 	execLog.Output = result
 	execLog.EndTime = time.Now().UnixMilli()
 	execLog.Duration = execLog.EndTime - execLog.StartTime
-	sendExecutionLog(callback, execLog)
+	types.SendExecutionLog(callback, execLog)
 
 	if callback != nil {
 		callback(&global.Chunk{

@@ -15,6 +15,8 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
+	nodeexec "txing-ai/internal/agent/workflow/node"
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 )
@@ -806,7 +808,7 @@ func (e *ParallelExecutor) executeCodeNodeParallel(ctx context.Context, node *To
 
 	// 调用 node_code.go 中的实际实现
 	schemaMsg := &schema.Message{Content: input}
-	result, err := executeCodeNode(ctx, node.Id, node.Data.Label, codeConfig, schemaMsg, callback)
+	result, err := nodeexec.ExecuteCodeNode(ctx, node.Id, node.Data.Label, codeConfig, schemaMsg, callback)
 	if err != nil {
 		log.Error("代码节点执行失败", zap.String("nodeId", node.Id), zap.Error(err))
 		return input, err
@@ -844,7 +846,7 @@ func (e *ParallelExecutor) executeHTTPNodeParallel(ctx context.Context, node *To
 
 	// 调用 node_http.go 中的实际实现
 	schemaMsg := &schema.Message{Content: input}
-	result, err := executeHTTPNode(ctx, node.Id, node.Data.Label, httpConfig, schemaMsg, callback)
+	result, err := nodeexec.ExecuteHTTPNode(ctx, node.Id, node.Data.Label, httpConfig, schemaMsg, callback)
 	if err != nil {
 		log.Error("HTTP 节点执行失败", zap.String("nodeId", node.Id), zap.Error(err))
 		return input, err
@@ -1207,7 +1209,7 @@ func replaceVarValue(v interface{}, input, output string) interface{} {
 		replaced := val
 		replaced = strings.ReplaceAll(replaced, "{{input}}", input)
 		replaced = strings.ReplaceAll(replaced, "{{output}}", output)
-		replaced = replaceNestedVars(replaced, input, output)
+		replaced = types.ReplaceNestedVars(replaced, input, output)
 		return replaced
 	case map[string]interface{}:
 		m := make(map[string]interface{})
@@ -1226,11 +1228,11 @@ func replaceVarValue(v interface{}, input, output string) interface{} {
 	}
 }
 
-// replaceNestedVars 替换 {{input.xxx}} 和 {{output.xxx}} 格式的嵌套变量
-// replaceNestedVars replaces nested variables like {{input.xxx}} and {{output.xxx}}
+// ReplaceNestedVars 替换 {{input.xxx}} 和 {{output.xxx}} 格式的嵌套变量
+// ReplaceNestedVars replaces nested variables like {{input.xxx}} and {{output.xxx}}
 // 支持 JSON 字段访问：如果 input/output 是 JSON 字符串，会解析并提取对应字段
 // Supports JSON field access: parses input/output as JSON if it's a JSON string
-func replaceNestedVars(s, input, output string) string {
+func ReplaceNestedVars(s, input, output string) string {
 	re := regexp.MustCompile(`\{\{(input|output)(?:\.(\w+))?\}\}`)
 	return re.ReplaceAllStringFunc(s, func(match string) string {
 		// 提取变量名和字段名 / Extract variable name and field name

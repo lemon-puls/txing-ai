@@ -1,4 +1,4 @@
-package agent
+package node
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 )
@@ -18,17 +19,17 @@ type SubWorkflowExecutor interface {
 	ExecuteSubWorkflow(ctx context.Context, workflowID int64, input string, callback func(chunk *global.Chunk) error) (string, error)
 }
 
-// executeSubWorkflowNode 执行子工作流节点
-func executeSubWorkflowNode(
+// ExecuteSubWorkflowNode 执行子工作流节点
+func ExecuteSubWorkflowNode(
 	ctx context.Context,
 	nodeId string,
 	nodeLabel string,
-	config *SubWorkflowConfig,
+	config *types.SubWorkflowConfig,
 	input *schema.Message,
 	executor SubWorkflowExecutor,
 	callback func(chunk *global.Chunk) error,
 ) (*schema.Message, error) {
-	execLog := &NodeExecutionLog{
+	execLog := &types.NodeExecutionLog{
 		NodeID:    nodeId,
 		NodeType:  "subworkflow",
 		NodeLabel: nodeLabel,
@@ -79,7 +80,7 @@ func executeSubWorkflowNode(
 		execLog.Error = err.Error()
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, err
 	}
 
@@ -87,7 +88,7 @@ func executeSubWorkflowNode(
 	execLog.Output = result
 	execLog.EndTime = time.Now().UnixMilli()
 	execLog.Duration = execLog.EndTime - execLog.StartTime
-	sendExecutionLog(callback, execLog)
+	types.SendExecutionLog(callback, execLog)
 
 	if callback != nil {
 		callback(&global.Chunk{

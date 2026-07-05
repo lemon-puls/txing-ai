@@ -14,6 +14,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
@@ -791,7 +792,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
 				// executeCodeNode 内部已处理 running/completed/failed 状态和执行日志
-				result, err := executeCodeNode(ctx, nodeId, node.Data.Label, codeConfig, input, callback)
+				result, err := nodeexec.ExecuteCodeNode(ctx, nodeId, node.Data.Label, codeConfig, input, callback)
 				if err != nil {
 					return nil, err
 				}
@@ -808,7 +809,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
 				// executeHTTPNode 内部已处理 running/completed/failed 状态和执行日志
-				result, err := executeHTTPNode(ctx, nodeId, node.Data.Label, httpConfig, input, callback)
+				result, err := nodeexec.ExecuteHTTPNode(ctx, nodeId, node.Data.Label, httpConfig, input, callback)
 				if err != nil {
 					return nil, err
 				}
