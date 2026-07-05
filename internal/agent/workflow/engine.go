@@ -1,11 +1,9 @@
-package agent
+package workflow
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
-	"strings"
 	"time"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
@@ -14,6 +12,8 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	agentpkg "txing-ai/internal/agent/agent"
+	"txing-ai/internal/agent/workflow/condition"
 	nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/agent/workflow/parallel"
 	"txing-ai/internal/agent/workflow/types"
@@ -25,10 +25,10 @@ import (
 
 // WorkflowAgent 工作流智能体
 type WorkflowAgent struct {
-	*BaseAgent
+	*agentpkg.BaseAgent
 	tools         []tool.BaseTool
 	topology      string
-	modelResolver ModelResolver
+	modelResolver types.ModelResolver
 	resProvider   iface.ResourceProvider
 	endpoint      string // LLM 调用端点 / LLM endpoint
 	apiKey        string // LLM API 密钥 / LLM API key
@@ -41,8 +41,8 @@ type WorkflowAgentState struct {
 }
 
 // NewWorkflowAgent 创建一个新的工作流智能体
-func NewWorkflowAgent(res iface.ResourceProvider, topology string, modelResolver ModelResolver) *WorkflowAgent {
-	baseAgent := NewBaseAgent("WorkflowAgent", "A dynamic workflow agent based on JSON topology")
+func NewWorkflowAgent(res iface.ResourceProvider, topology string, modelResolver types.ModelResolver) *WorkflowAgent {
+	baseAgent := agentpkg.NewBaseAgent("WorkflowAgent", "A dynamic workflow agent based on JSON topology")
 	baseAgent.SetSystemPrompt("You are a helpful AI assistant executing a workflow.")
 
 	return &WorkflowAgent{
@@ -77,74 +77,6 @@ func (a *WorkflowAgent) getToolsByNames(names []string) []tool.BaseTool {
 	return result
 }
 
-// calculateRetryDelay 计算重试延迟
-func calculateRetryDelay(retryConfig *RetryConfig, attempt int) time.Duration {
-	if retryConfig == nil {
-		return 0
-	}
-	baseDelay := time.Duration(retryConfig.RetryDelay) * time.Millisecond
-	if baseDelay == 0 {
-		baseDelay = 1000 * time.Millisecond
-	}
-
-	switch retryConfig.BackoffType {
-	case "exponential":
-		return time.Duration(float64(baseDelay) * math.Pow(2, float64(attempt)))
-	default: // "fixed"
-		return baseDelay
-	}
-}
-
-// getMaxRetries 获取最大重试次数
-func getMaxRetries(retryConfig *RetryConfig) int {
-	if retryConfig == nil {
-		return 0
-	}
-	return retryConfig.MaxRetries
-}
-
-// executeWithRetry 带重试的执行函数
-func executeWithRetry(retryConfig *RetryConfig, fn func() error) error {
-	maxRetries := getMaxRetries(retryConfig)
-	var lastErr error
-
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		if attempt > 0 {
-			delay := calculateRetryDelay(retryConfig, attempt-1)
-			log.Info("重试执行",
-				zap.Int("attempt", attempt),
-				zap.Int("maxRetries", maxRetries),
-				zap.Duration("delay", delay))
-			time.Sleep(delay)
-		}
-
-		lastErr = fn()
-		if lastErr == nil {
-			return nil
-		}
-
-		log.Warn("执行失败",
-			zap.Int("attempt", attempt+1),
-			zap.Error(lastErr))
-	}
-
-	return fmt.Errorf("执行失败（已重试 %d 次）: %w", maxRetries, lastErr)
-}
-
-// nodeStatusCallback 创建节点状态回调，包装原始 callback 发送 running/completed/failed 状态
-func nodeStatusCallback(callback func(chunk *global.Chunk) error, nodeId, nodeType, nodeLabel string) func(status string) {
-	return func(status string) {
-		if callback == nil {
-			return
-		}
-		callback(&global.Chunk{
-			NodeId:     nodeId,
-			NodeType:   nodeType,
-			NodeLabel:  nodeLabel,
-			NodeStatus: status,
-		})
-	}
-}
 
 // resolveModelInfo 解析模型信息，支持节点级别覆盖
 func (a *WorkflowAgent) resolveModelInfo(nodeModel string, defaultEndpoint, defaultAPIKey, defaultModel string) (endpoint, apiKey, model string) {
@@ -174,7 +106,7 @@ func (a *WorkflowAgent) resolveModelInfo(nodeModel string, defaultEndpoint, defa
 
 // BuildGraph 构建执行图（简化版本，使用 DAG 模式）
 func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model string, callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
-	var topo Topology
+	var topo types.Topology
 	if err := json.Unmarshal([]byte(a.topology), &topo); err != nil {
 		return nil, fmt.Errorf("解析拓扑图失败: %w", err)
 	}
@@ -285,7 +217,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			statusCb := nodeStatusCallback(callback, nodeId, "start", node.Data.Label)
 			// 开始节点：将输入消息转换为消息列表
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input []*schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "start",
 					NodeLabel: node.Data.Label,
@@ -303,7 +235,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Status = "completed"
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCb("completed")
 				return result, nil
 			}))
@@ -313,7 +245,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			statusCb := nodeStatusCallback(callback, nodeId, "end", node.Data.Label)
 			// 结束节点：直接返回输入
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "end",
 					NodeLabel: node.Data.Label,
@@ -327,7 +259,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Status = "completed"
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCb("completed")
 				return input, nil
 			}))
@@ -338,7 +270,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			nodeMaxTokens := defaultMaxTokens
 			var nodeTemperature float32 = 0.7
 			systemPrompt := ""
-			var retryConfig *RetryConfig
+			var retryConfig *types.RetryConfig
 			var llmToolNames []string
 			llmMaxToolRounds := 5 // 默认最大工具调用轮次
 
@@ -416,7 +348,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			statusCbLLM := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
 			llmRetryCfg := retryConfig
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "llm",
 					NodeLabel: node.Data.Label,
@@ -448,7 +380,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbLLM("failed")
 					return nil, execErr
 				}
@@ -546,7 +478,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Output = response.Content
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbLLM("completed")
 				return response, nil
 			}))
@@ -555,7 +487,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			// 工具节点：直接执行工具（不经过 LLM，不消耗 Token）
 			var toolName string
 			var toolParams map[string]interface{}
-			var toolRetryConfig *RetryConfig
+			var toolRetryConfig *types.RetryConfig
 			if node.Data.ToolConfig != nil {
 				tc := node.Data.ToolConfig
 				// 优先使用 ToolName（新配置），兼容 Tools[0]（旧配置）
@@ -602,7 +534,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			statusCbTool := nodeStatusCallback(callback, nodeId, "tool", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "tool",
 					NodeLabel: node.Data.Label,
@@ -655,7 +587,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbTool("failed")
 					return nil, execErr
 				}
@@ -677,24 +609,24 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Output = result
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbTool("completed")
 				return schema.AssistantMessage(result, nil), nil
 			}))
 
 		case "condition":
 			// 条件节点：执行条件判断并添加分支
-			conditionConfig := DefaultConditionConfig()
+			conditionConfig := condition.DefaultConditionConfig()
 			if node.Data.ConditionConf != nil {
 				oldConfig := node.Data.ConditionConf
-				conditionConfig.Type = ConditionType(oldConfig.Type)
+				conditionConfig.Type = condition.ConditionType(oldConfig.Type)
 				conditionConfig.Expression = oldConfig.Expression
 				conditionConfig.LLMPrompt = oldConfig.LLMPrompt
 				conditionConfig.ToolName = oldConfig.ToolName
 				conditionConfig.ToolResultKey = oldConfig.ToolResultKey
 				conditionConfig.ExpectedValue = oldConfig.ExpectedValue
 				if oldConfig.FailureAction != "" {
-					conditionConfig.FailureAction = FailureAction(oldConfig.FailureAction)
+					conditionConfig.FailureAction = condition.FailureAction(oldConfig.FailureAction)
 				}
 				conditionConfig.FailureBranch = oldConfig.FailureBranch
 			}
@@ -702,7 +634,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			// 添加条件判断节点
 			statusCbCond := nodeStatusCallback(callback, nodeId, "condition", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "condition",
 					NodeLabel: node.Data.Label,
@@ -719,33 +651,33 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					return schema.UserMessage("ERROR:EMPTY_INPUT"), nil
 				}
 
-				var result *ConditionResult
+				var result *condition.ConditionResult
 
 				switch conditionConfig.Type {
-				case ConditionTypeExpression:
+				case condition.ConditionTypeExpression:
 					// 表达式判断 - 使用变量替换
-					eval := NewExpressionEvaluator()
+					eval := condition.NewExpressionEvaluator()
 					vars := map[string]string{
 						"output": input.Content,
 					}
 					result = eval.EvaluateWithVars(conditionConfig.Expression, vars)
 
-				case ConditionTypeLLM:
+				case condition.ConditionTypeLLM:
 					// AI判断 - 使用 LLM 判断
 					llmResult, err := a.executeLLMCondition(ctx, endpoint, apiKey, model, conditionConfig.LLMPrompt, input.Content, callback)
 					if err != nil {
-						result = NewConditionError(err, conditionConfig)
+						result = condition.NewConditionError(err, conditionConfig)
 					} else {
 						result = llmResult
 					}
 
-				case ConditionTypeToolResult:
+				case condition.ConditionTypeToolResult:
 					// 工具结果判断 - 需要结合前面的工具执行结果
 					toolResult := a.executeToolResultCondition(ctx, conditionConfig, input)
 					result = toolResult
 
 				default:
-					result = NewConditionError(fmt.Errorf("未知的条件类型: %s", conditionConfig.Type), conditionConfig)
+					result = condition.NewConditionError(fmt.Errorf("未知的条件类型: %s", conditionConfig.Type), conditionConfig)
 				}
 
 				log.Info("Condition result",
@@ -779,7 +711,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Status = "completed"
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbCond("completed")
 				return outputMsg, nil
 			}))
@@ -830,7 +762,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			log.Warn("子工作流节点暂未实现完整执行逻辑", zap.String("nodeId", nodeId))
 			statusCbSub := nodeStatusCallback(callback, nodeId, "subworkflow", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "subworkflow",
 					NodeLabel: node.Data.Label,
@@ -844,7 +776,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Status = "completed"
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbSub("completed")
 				return input, nil
 			}))
@@ -875,7 +807,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			maxToolRounds := 0
 			temperature := float32(0.7)
 			maxTokens := 4096
-			var retryConfig *RetryConfig
+			var retryConfig *types.RetryConfig
 
 			if node.Data.ModelConfig != nil {
 				mc := node.Data.ModelConfig
@@ -911,7 +843,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}
 
 			// 创建 ToolCallAgent 实例
-			toolCallAgent := NewToolCallAgent(a.resProvider)
+			toolCallAgent := agentpkg.NewToolCallAgent(a.resProvider)
 			toolCallAgent.SetSystemPrompt(systemPrompt)
 			toolCallAgent.SetMaxRunSteps(agentMaxRunSteps)
 
@@ -926,7 +858,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			statusCbAgent := nodeStatusCallback(callback, nodeId, "agent", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "agent",
 					NodeLabel: node.Data.Label,
@@ -950,7 +882,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 
 				// 使用 ToolCallAgent 执行多轮工具调用循环
-				response, err := toolCallAgent.ExecuteStreamWithConfig(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback, &AgentExecConfig{
+				response, err := toolCallAgent.ExecuteStreamWithConfig(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback, &agentpkg.AgentExecConfig{
 					Temperature: &agentTemperature,
 					MaxTokens:   &agentMaxTokens,
 				})
@@ -960,7 +892,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbAgent("failed")
 					return nil, err
 				}
@@ -969,14 +901,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Output = response
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbAgent("completed")
 				return schema.AssistantMessage(response, nil), nil
 			}))
 
 		case "parallel":
 			// 并行组入口节点：创建并行执行节点
-			parallelConfig := &ParallelConfig{
+			parallelConfig := &types.ParallelConfig{
 				MaxConcurrency: 0,
 				WaitStrategy:   "all",
 				Timeout:        0,
@@ -991,7 +923,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			statusCbParallel := nodeStatusCallback(callback, nodeId, "parallel", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "parallel",
 					NodeLabel: node.Data.Label,
@@ -1013,13 +945,13 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbParallel("failed")
 					return nil, err
 				}
 
 				// 找到当前 parallel 节点对应的并行组
-				var currentGroup *ParallelGroup
+				var currentGroup *parallel.ParallelGroup
 				for _, group := range parallelGroups {
 					if group.ParallelID == nodeId {
 						currentGroup = group
@@ -1032,7 +964,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Status = "completed"
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbParallel("completed")
 					return input, nil
 				}
@@ -1045,7 +977,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
-					sendExecutionLog(callback, execLog)
+					types.SendExecutionLog(callback, execLog)
 					statusCbParallel("failed")
 					return nil, err
 				}
@@ -1057,7 +989,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Output = mergedOutput
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbParallel("completed")
 
 				// 并行节点完成：结果已经写入 executionLog.output，
@@ -1086,7 +1018,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			// Join node: the actual join logic is handled in the parallel node
 			statusCbJoin := nodeStatusCallback(callback, nodeId, "join", node.Data.Label)
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
-				execLog := &NodeExecutionLog{
+				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
 					NodeType:  "join",
 					NodeLabel: node.Data.Label,
@@ -1105,7 +1037,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				execLog.Output = inputContent
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
-				sendExecutionLog(callback, execLog)
+				types.SendExecutionLog(callback, execLog)
 				statusCbJoin("completed")
 
 				return input, nil
@@ -1255,49 +1187,6 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 // buildParallelJoinEdges 为每个并行节点补一条直接到下游 join 节点的边
 // 因为 branch 占位节点不会被 eino 调度，join 节点需要直接连到 parallel 节点
 // Add edge: parallelId → joinId, skipping branch nodes that never receive inputs.
-func buildParallelJoinEdges(graph *compose.Graph[[]*schema.Message, *schema.Message], topo *Topology, parallelBranchNodes map[string]struct{}) {
-	// 先一次性算出所有并行组
-	groups, _ := parallel.NewParallelExecutor(nil, 0, "", "", "").IdentifyParallelGroups(topo)
-
-	// branchId -> parallelId
-	branchToParallel := make(map[string]string)
-	for _, g := range groups {
-		for _, branch := range g.Branches {
-			for _, b := range branch {
-				branchToParallel[b.Id] = g.ParallelNode.Id
-			}
-		}
-	}
-
-	// 用 set 去重：每个 (parallelId, joinId) 只加一次
-	addedPairs := make(map[string]struct{})
-
-	// 对每条 (branch -> X) 边，如果 branch 属于某个 parallel，则加 (parallel -> X) 边
-	for _, edge := range topo.Edges {
-		if _, isBranch := parallelBranchNodes[edge.Source]; !isBranch {
-			continue
-		}
-		parallelId, ok := branchToParallel[edge.Source]
-		if !ok {
-			continue
-		}
-		pairKey := parallelId + "->" + edge.Target
-		if _, already := addedPairs[pairKey]; already {
-			continue
-		}
-		addedPairs[pairKey] = struct{}{}
-
-		err := graph.AddEdge(parallelId, edge.Target)
-		if err != nil {
-			log.Warn("添加并行→汇聚边失败",
-				zap.String("source", parallelId),
-				zap.String("target", edge.Target),
-				zap.Error(err))
-			continue
-		}
-		log.Info("已建立并行→汇聚边", zap.String("source", parallelId), zap.String("target", edge.Target))
-	}
-}
 
 // ExecuteStream 覆写流式执行方法
 func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiKey string, model string,
@@ -1340,370 +1229,6 @@ func (a *WorkflowAgent) ExecuteStream(ctx context.Context, endpoint string, apiK
 }
 
 // executeLLMCondition 使用 LLM 执行条件判断
-func (a *WorkflowAgent) executeLLMCondition(ctx context.Context, endpoint, apiKey, model string, prompt string, input string, callback func(chunk *global.Chunk) error) (*ConditionResult, error) {
-	if prompt == "" {
-		return nil, fmt.Errorf("LLM 判断提示词为空")
-	}
-
-	// 创建 LLM 模型
-	maxTokens := 1024 // 判断结果不需要太长
-	temperature := float32(0.1) // 低温度使结果更确定
-
-	chatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-		BaseURL:     endpoint,
-		Model:       model,
-		APIKey:      apiKey,
-		MaxTokens:   &maxTokens,
-		Temperature: &temperature,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("创建判断模型失败: %w", err)
-	}
-
-	// 构建判断提示
-	systemPrompt := `你是一个条件判断助手。请根据用户的输入内容，判断是否满足指定条件。
-
-你必须严格按照以下 JSON 格式返回结果，不要包含任何其他内容：
-{"result": true, "reason": "判断原因"}
-或
-{"result": false, "reason": "判断原因"}
-
-result 必须是布尔值 true 或 false。
-reason 简要说明判断原因。`
-
-	messages := []*schema.Message{
-		schema.SystemMessage(systemPrompt),
-		schema.UserMessage(fmt.Sprintf("判断条件：%s\n\n输入内容：%s\n\n请判断输入内容是否满足条件。", prompt, input)),
-	}
-
-	if callback != nil {
-		callback(&global.Chunk{ShowMsg: "[条件判断] AI 正在分析..."})
-	}
-
-	response, err := chatModel.Generate(ctx, messages)
-	if err != nil {
-		return nil, fmt.Errorf("LLM 判断失败: %w", err)
-	}
-
-	// 解析 JSON 响应
-	content := strings.TrimSpace(response.Content)
-	// 尝试提取 JSON（处理可能的 markdown 代码块）
-	if strings.HasPrefix(content, "```") {
-		// 移除 markdown 代码块
-		lines := strings.Split(content, "\n")
-		var jsonLines []string
-		inBlock := false
-		for _, line := range lines {
-			if strings.HasPrefix(line, "```") {
-				inBlock = !inBlock
-				continue
-			}
-			if inBlock {
-				jsonLines = append(jsonLines, line)
-			}
-		}
-		content = strings.Join(jsonLines, "\n")
-	}
-
-	var llmResponse LLMJudgmentResponse
-	if err := json.Unmarshal([]byte(content), &llmResponse); err != nil {
-		// 尝试从文本中提取 true/false
-		lowerContent := strings.ToLower(content)
-		if strings.Contains(lowerContent, "true") || strings.Contains(lowerContent, "是") || strings.Contains(lowerContent, "yes") {
-			return NewConditionResult(true, "从响应文本中推断: "+content), nil
-		}
-		if strings.Contains(lowerContent, "false") || strings.Contains(lowerContent, "否") || strings.Contains(lowerContent, "no") {
-			return NewConditionResult(false, "从响应文本中推断: "+content), nil
-		}
-		return nil, fmt.Errorf("解析 LLM 判断结果失败: %w, 响应内容: %s", err, content)
-	}
-
-	if callback != nil {
-		callback(&global.Chunk{ShowMsg: fmt.Sprintf("[条件判断] 结果: %v, 原因: %s", llmResponse.Result, llmResponse.Reason)})
-	}
-
-	return NewConditionResult(llmResponse.Result, llmResponse.Reason), nil
-}
-
-// executeToolResultCondition 基于工具结果执行条件判断
-func (a *WorkflowAgent) executeToolResultCondition(ctx context.Context, config *ConditionConfigV2, input *schema.Message) *ConditionResult {
-	// 工具结果判断需要从消息的 Extra 中获取工具执行结果
-	if input == nil || input.Extra == nil {
-		return NewConditionError(fmt.Errorf("无法获取工具执行结果"), config)
-	}
-
-	// 尝试从 Extra 中获取工具结果
-	var toolResult interface{}
-	var found bool
-
-	// 查找工具结果
-	if config.ToolResultKey != "" {
-		if result, ok := input.Extra[config.ToolResultKey]; ok {
-			toolResult = result
-			found = true
-		}
-	}
-
-	// 如果没有指定 key，尝试从常见字段获取
-	if !found {
-		for _, key := range []string{"result", "output", "data", "tool_result"} {
-			if result, ok := input.Extra[key]; ok {
-				toolResult = result
-				found = true
-				break
-			}
-		}
-	}
-
-	if !found {
-		// 如果 Extra 中没有工具结果，尝试使用消息内容
-		toolResult = input.Content
-	}
-
-	// 将结果转为字符串进行比较
-	resultStr := fmt.Sprintf("%v", toolResult)
-
-	// 与期望值比较
-	if config.ExpectedValue != "" {
-		if resultStr == config.ExpectedValue {
-			return NewConditionResult(true, fmt.Sprintf("工具结果 '%s' 等于期望值 '%s'", resultStr, config.ExpectedValue))
-		}
-		return NewConditionResult(false, fmt.Sprintf("工具结果 '%s' 不等于期望值 '%s'", resultStr, config.ExpectedValue))
-	}
-
-	// 如果没有期望值，检查是否有表达式
-	if config.Expression != "" {
-		eval := NewExpressionEvaluator()
-		return eval.Evaluate(config.Expression, resultStr)
-	}
-
-	// 默认：非空即为 true
-	if resultStr != "" && resultStr != "null" && resultStr != "nil" {
-		return NewConditionResult(true, "工具结果非空: "+resultStr)
-	}
-
-	return NewConditionResult(false, "工具结果为空")
-}
 
 // ExecuteLLMNodeInParallel 在并行上下文中执行 LLM 节点（实现 parallel.NodeExecutor 接口）
 // ExecuteLLMNodeInParallel executes an LLM node in parallel context with real LLM calls
-func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
-	modelConfig := node.Data.ModelConfig
-	if modelConfig == nil {
-		return "", fmt.Errorf("LLM 节点缺少模型配置")
-	}
-
-	nodeModelName := modelConfig.Model
-	nodeMaxTokens := 8192
-	if modelConfig.MaxTokens > 0 {
-		nodeMaxTokens = modelConfig.MaxTokens
-	}
-	nodeTemperature := float32(0.7)
-	if modelConfig.Temperature > 0 {
-		nodeTemperature = float32(modelConfig.Temperature)
-	}
-	systemPrompt := modelConfig.SystemPrompt
-	llmToolNames := modelConfig.Tools
-	llmMaxToolRounds := modelConfig.MaxToolRounds
-	if llmMaxToolRounds <= 0 {
-		llmMaxToolRounds = 5
-	}
-
-	// 解析节点模型信息
-	var nodeEndpoint, nodeAPIKey, nodeModel string
-	if e.modelResolver != nil {
-		info, err := e.modelResolver.Resolve(nodeModelName)
-		if err == nil {
-			nodeEndpoint = info.Endpoint
-			nodeAPIKey = info.APIKey
-			nodeModel = info.Model
-		} else if nodeModelName != "" {
-			nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
-		}
-	} else if nodeModelName != "" {
-		nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
-	}
-	if nodeEndpoint == "" {
-		nodeEndpoint = e.endpoint
-	}
-	if nodeAPIKey == "" {
-		nodeAPIKey = e.apiKey
-	}
-	if nodeModel == "" {
-		nodeModel = e.model
-	}
-
-	// 创建节点专属模型
-	nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-		BaseURL:     nodeEndpoint,
-		Model:       nodeModel,
-		APIKey:      nodeAPIKey,
-		MaxTokens:   &nodeMaxTokens,
-		Temperature: &nodeTemperature,
-	})
-	if err != nil {
-		return "", fmt.Errorf("创建节点模型失败: %w", err)
-	}
-
-	// 绑定工具（如果配置了）
-	var llmToolNode *compose.ToolsNode
-	if len(llmToolNames) > 0 {
-		llmNodeTools := e.getToolsByNames(llmToolNames)
-		if len(llmNodeTools) > 0 {
-			nodeToolInfos := make([]*schema.ToolInfo, 0, len(llmNodeTools))
-			for _, t := range llmNodeTools {
-				info, err := t.Info(ctx)
-				if err != nil {
-					continue
-				}
-				nodeToolInfos = append(nodeToolInfos, info)
-			}
-			if err := nodeChatModel.BindTools(nodeToolInfos); err != nil {
-				log.Warn("LLM 节点绑定工具失败", zap.String("nodeId", node.Id), zap.Error(err))
-			} else {
-				llmToolNode, _ = compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
-					Tools:               llmNodeTools,
-					ExecuteSequentially: true,
-				})
-			}
-		}
-	}
-
-	// 构建消息
-	var messages []*schema.Message
-	if systemPrompt != "" {
-		messages = append(messages, schema.SystemMessage(systemPrompt))
-	}
-	if input != "" {
-		messages = append(messages, schema.UserMessage(input))
-	}
-
-	// 首次 LLM 调用
-	response, genErr := nodeChatModel.Generate(ctx, messages)
-	if genErr != nil {
-		return "", fmt.Errorf("LLM 调用失败: %w", genErr)
-	}
-
-	// 工具调用循环
-	for round := 0; round < llmMaxToolRounds; round++ {
-		if len(response.ToolCalls) == 0 {
-			break
-		}
-
-		// 发送工具调用开始消息
-		if callback != nil {
-			for _, tc := range response.ToolCalls {
-				callback(&global.Chunk{
-					NodeId:     node.Id,
-					NodeType:   "llm",
-					NodeLabel:  node.Data.Label,
-					ToolCallId: tc.ID,
-					ToolName:   tc.Function.Name,
-					ToolParams: tc.Function.Arguments,
-					ToolStatus: "running",
-					ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
-				})
-			}
-		}
-
-		messages = append(messages, response)
-
-		if llmToolNode != nil {
-			toolResults, toolErr := llmToolNode.Invoke(ctx, response)
-			if toolErr != nil {
-				messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
-			} else {
-				if callback != nil {
-					for _, tr := range toolResults {
-						callback(&global.Chunk{
-							NodeId:     node.Id,
-							NodeType:   "llm",
-							NodeLabel:  node.Data.Label,
-							ToolCallId: tr.ToolCallID,
-							ToolName:   tr.ToolName,
-							ToolResult: tr.Content,
-							ToolStatus: "completed",
-							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
-						})
-					}
-				}
-				messages = append(messages, toolResults...)
-			}
-		}
-
-		response, genErr = nodeChatModel.Generate(ctx, messages)
-		if genErr != nil {
-			break
-		}
-	}
-
-	result := ""
-	if response != nil {
-		result = response.Content
-	}
-	return result, nil
-}
-
-// executeToolNode 在并行上下文中执行工具节点
-// executeToolNode executes a tool node in parallel context
-
-// ExecuteToolNodeInParallel 在并行上下文中执行工具节点（实现 parallel.NodeExecutor 接口）
-// ExecuteToolNodeInParallel executes a tool node in parallel context
-func (e *WorkflowAgent) ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
-	toolConfig := node.Data.ToolConfig
-	if toolConfig == nil {
-		return input, nil
-	}
-
-	toolName := toolConfig.ToolName
-	if toolName == "" && len(toolConfig.Tools) > 0 {
-		toolName = toolConfig.Tools[0]
-	}
-
-	if toolName == "" {
-		log.Warn("工具节点未配置工具名称", zap.String("nodeId", node.Id))
-		return input, nil
-	}
-
-	// 查找指定工具
-	toolTools := e.getToolsByNames([]string{toolName})
-	if len(toolTools) == 0 {
-		log.Warn("工具节点找不到指定工具", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
-		return input, nil
-	}
-
-	// 获取工具参数，并替换变量占位符
-	toolParams := ReplaceVarsInParams(toolConfig.Params, input, input)
-
-	// 构建工具参数：如果有输入，将输入内容合并到参数中
-	paramsJSON, _ := json.Marshal(toolParams)
-	if input != "" {
-		var paramsMap map[string]interface{}
-		if err := json.Unmarshal(paramsJSON, &paramsMap); err == nil {
-			if _, exists := paramsMap["toolInput"]; !exists {
-				paramsMap["toolInput"] = input
-				paramsJSON, _ = json.Marshal(paramsMap)
-			}
-		}
-	}
-
-	// 断言为 InvokableTool（直接执行）
-	invokableTool, ok := toolTools[0].(tool.InvokableTool)
-	if !ok {
-		log.Warn("工具不支持直接执行", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
-		return input, nil
-	}
-
-	// 执行工具
-	result, err := invokableTool.InvokableRun(ctx, string(paramsJSON))
-	if err != nil {
-		log.Error("工具执行失败", zap.String("nodeId", node.Id), zap.Error(err))
-		return "", err
-	}
-
-	log.Info("工具执行成功", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
-	return result, nil
-}
-
-// executeConditionNodeParallel 并行执行条件节点
-// executeConditionNodeParallel executes a condition node in parallel context
