@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"time"
-	"txing-ai/internal/agent"
+	agent "txing-ai/internal/agent/agent"
 	"txing-ai/internal/utils"
 )
 

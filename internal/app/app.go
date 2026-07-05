@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"net/http"
-	"txing-ai/internal/agent"
+	agent "txing-ai/internal/agent/agent"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/config"
 	"txing-ai/internal/global/logging/log"
