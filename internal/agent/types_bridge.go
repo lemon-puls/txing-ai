@@ -5,6 +5,7 @@ import (
 	"txing-ai/internal/agent/workflow/condition"
 	"txing-ai/internal/agent/workflow/resolver"
 	"txing-ai/internal/agent/workflow/types"
+	"txing-ai/internal/agent/workflow/validator"
 )
 
 // 临时桥接：Task 9 迁移 core 后删除本文件
@@ -44,6 +45,11 @@ type (
 
 type ChannelModelResolver = resolver.ChannelModelResolver
 
+type (
+	ValidationResult = validator.ValidationResult
+	ValidationError  = validator.ValidationError
+)
+
 var (
 	NewExpressionEvaluator  = condition.NewExpressionEvaluator
 	NewConditionResult      = condition.NewConditionResult
@@ -52,6 +58,11 @@ var (
 )
 
 var NewChannelModelResolver = resolver.NewChannelModelResolver
+
+var (
+	ValidateTopology        = validator.ValidateTopology
+	ValidateTopologyWithLLM = validator.ValidateTopologyWithLLM
+)
 
 const (
 	ConditionTypeExpression = condition.ConditionTypeExpression
