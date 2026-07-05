@@ -33,6 +33,11 @@ func NewToolCallAgent(res iface.ResourceProvider) *ToolCallAgent {
 	}
 }
 
+// SetTools 设置工具列表 / Set tools list
+func (a *ToolCallAgent) SetTools(tools []tool.BaseTool) {
+	a.tools = tools
+}
+
 // Execute 执行通用智能体任务
 func (a *ToolCallAgent) Execute(ctx context.Context,
 	endpoint string, apiKey string, model string, input string) (string, error) {

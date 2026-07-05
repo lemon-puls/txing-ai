@@ -2,6 +2,7 @@ package agent
 
 import (
 	"txing-ai/internal/global"
+	agentpkg "txing-ai/internal/agent/agent"
 	"txing-ai/internal/agent/workflow/condition"
 	"txing-ai/internal/agent/workflow/parallel"
 	"txing-ai/internal/agent/workflow/resolver"
@@ -10,6 +11,22 @@ import (
 )
 
 // 临时桥接：Task 9 迁移 core 后删除本文件
+
+// Agent abstraction bridges
+type (
+	BaseAgent          = agentpkg.BaseAgent
+	AgentExecConfig    = agentpkg.AgentExecConfig
+	ToolCallAgent      = agentpkg.ToolCallAgent
+	AgentFactory       = agentpkg.AgentFactory
+	SimpleAgentFactory = agentpkg.SimpleAgentFactory
+	AgentType          = agentpkg.AgentType
+)
+
+var (
+	NewBaseAgent          = agentpkg.NewBaseAgent
+	NewToolCallAgent      = agentpkg.NewToolCallAgent
+	NewSimpleAgentFactory = agentpkg.NewSimpleAgentFactory
+)
 type (
 	ModelInfo          = types.ModelInfo
 	ModelResolver      = types.ModelResolver

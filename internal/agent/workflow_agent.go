@@ -917,7 +917,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			// 如果指定了工具列表，按名称过滤
 			if len(agentTools) > 0 {
-				toolCallAgent.tools = a.getToolsByNames(agentTools)
+				toolCallAgent.SetTools(a.getToolsByNames(agentTools))
 			}
 
 			// 捕获变量供闭包使用 / Capture variables for closure
