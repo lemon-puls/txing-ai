@@ -1,4 +1,6 @@
-package agent
+package parallel
+
+import "txing-ai/internal/agent/workflow/types"
 
 import (
 	"context"
@@ -25,7 +27,7 @@ func TestParallelContext_AddResult(t *testing.T) {
 	ctx := NewParallelContext(3)
 
 	// 添加第一个结果
-	result1 := &ParallelResult{BranchID: "branch1", Status: "completed", Output: "output1"}
+	result1 := &types.ParallelResult{BranchID: "branch1", Status: "completed", Output: "output1"}
 	ctx.AddResult("branch1", result1)
 
 	if ctx.GetCompletedCount() != 1 {
@@ -33,7 +35,7 @@ func TestParallelContext_AddResult(t *testing.T) {
 	}
 
 	// 添加第二个结果
-	result2 := &ParallelResult{BranchID: "branch2", Status: "completed", Output: "output2"}
+	result2 := &types.ParallelResult{BranchID: "branch2", Status: "completed", Output: "output2"}
 	ctx.AddResult("branch2", result2)
 
 	if ctx.GetCompletedCount() != 2 {
@@ -58,9 +60,9 @@ func TestParallelContext_IsAllCompleted(t *testing.T) {
 	}
 
 	// 添加 3 个结果
-	ctx.AddResult("branch1", &ParallelResult{BranchID: "branch1", Status: "completed"})
-	ctx.AddResult("branch2", &ParallelResult{BranchID: "branch2", Status: "completed"})
-	ctx.AddResult("branch3", &ParallelResult{BranchID: "branch3", Status: "completed"})
+	ctx.AddResult("branch1", &types.ParallelResult{BranchID: "branch1", Status: "completed"})
+	ctx.AddResult("branch2", &types.ParallelResult{BranchID: "branch2", Status: "completed"})
+	ctx.AddResult("branch3", &types.ParallelResult{BranchID: "branch3", Status: "completed"})
 
 	if !ctx.IsAllCompleted() {
 		t.Error("应全部完成")
@@ -105,8 +107,8 @@ func TestParallelContext_SetCancelFunc(t *testing.T) {
 func TestParallelContext_GetResults_ReturnsCopy(t *testing.T) {
 	ctx := NewParallelContext(2)
 
-	ctx.AddResult("branch1", &ParallelResult{BranchID: "branch1", Output: "output1"})
-	ctx.AddResult("branch2", &ParallelResult{BranchID: "branch2", Output: "output2"})
+	ctx.AddResult("branch1", &types.ParallelResult{BranchID: "branch1", Output: "output1"})
+	ctx.AddResult("branch2", &types.ParallelResult{BranchID: "branch2", Output: "output2"})
 
 	results1 := ctx.GetResults()
 	results2 := ctx.GetResults()
@@ -124,7 +126,7 @@ func TestParallelContext_GetResults_ReturnsCopy(t *testing.T) {
 	}
 
 	// 修改一个副本不应影响另一个副本的 map 引用
-	results1["branch3"] = &ParallelResult{BranchID: "branch3"}
+	results1["branch3"] = &types.ParallelResult{BranchID: "branch3"}
 	if _, exists := results2["branch3"]; exists {
 		t.Error("副本修改不应影响另一个副本")
 	}
@@ -139,7 +141,7 @@ func TestParallelContext_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			ctx.AddResult(string(rune('a'+id)), &ParallelResult{
+			ctx.AddResult(string(rune('a'+id)), &types.ParallelResult{
 				BranchID: string(rune('a' + id)),
 				Status:   "completed",
 				Output:   "output",
@@ -175,7 +177,7 @@ func TestParallelContext_ResultCh(t *testing.T) {
 	}
 
 	// 添加第一个结果 - 应触发通知
-	ctx.AddResult("branch1", &ParallelResult{BranchID: "branch1", Status: "completed"})
+	ctx.AddResult("branch1", &types.ParallelResult{BranchID: "branch1", Status: "completed"})
 
 	// 验证 channel 不是 nil
 	if ctx.ResultCh() == nil {
@@ -183,7 +185,7 @@ func TestParallelContext_ResultCh(t *testing.T) {
 	}
 
 	// 验证 AddResult 没有 panic（线程安全测试）
-	ctx.AddResult("branch2", &ParallelResult{BranchID: "branch2", Status: "completed"})
+	ctx.AddResult("branch2", &types.ParallelResult{BranchID: "branch2", Status: "completed"})
 }
 
 func TestParallelContext_AllCompletedClosesChannel(t *testing.T) {
@@ -192,7 +194,7 @@ func TestParallelContext_AllCompletedClosesChannel(t *testing.T) {
 	resultCh := ctx.ResultCh()
 
 	// 添加第一个结果
-	ctx.AddResult("branch1", &ParallelResult{BranchID: "branch1", Status: "completed"})
+	ctx.AddResult("branch1", &types.ParallelResult{BranchID: "branch1", Status: "completed"})
 
 	// channel 仍未关闭
 	select {
@@ -202,7 +204,7 @@ func TestParallelContext_AllCompletedClosesChannel(t *testing.T) {
 	}
 
 	// 添加第二个结果，所有分支完成
-	ctx.AddResult("branch2", &ParallelResult{BranchID: "branch2", Status: "completed"})
+	ctx.AddResult("branch2", &types.ParallelResult{BranchID: "branch2", Status: "completed"})
 
 	// 等待一小段时间确保 channel 关闭
 	time.Sleep(10 * time.Millisecond)
@@ -219,7 +221,7 @@ func TestParallelContext_AllCompletedClosesChannel(t *testing.T) {
 }
 
 func TestParallelResult_Structure(t *testing.T) {
-	result := &ParallelResult{
+	result := &types.ParallelResult{
 		BranchID:  "test-branch",
 		NodeIDs:   []string{"node1", "node2"},
 		Output:    "test output",
@@ -247,8 +249,8 @@ func TestParallelResult_Structure(t *testing.T) {
 }
 
 func TestJoinResult_Structure(t *testing.T) {
-	result := &JoinResult{
-		CompletedBranches: map[string]*ParallelResult{
+	result := &types.JoinResult{
+		CompletedBranches: map[string]*types.ParallelResult{
 			"branch1": {BranchID: "branch1", Status: "completed"},
 		},
 		AllResultsMerged: "merged output",

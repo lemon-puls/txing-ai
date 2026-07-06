@@ -1,15 +1,17 @@
-package agent
+package parallel
 
 import (
 	"context"
 	"sync"
+
+	"txing-ai/internal/agent/workflow/types"
 )
 
 // ParallelContext 并行执行上下文结构体，管理并行分支的结果收集和状态
 // ParallelContext manages parallel execution context, including result collection and state tracking
 type ParallelContext struct {
 	mu sync.RWMutex
-	results         map[string]*ParallelResult // 分支结果 / Branch results
+	results         map[string]*types.ParallelResult // 分支结果 / Branch results
 	completedCount  int32                    // 已完成计数 / Completed count
 	totalCount      int                      // 总数 / Total count
 	cancelled       bool                     // 取消标志 / Cancellation flag
@@ -21,7 +23,7 @@ type ParallelContext struct {
 // NewParallelContext creates a new parallel context instance
 func NewParallelContext(total int) *ParallelContext {
 	return &ParallelContext{
-		results:    make(map[string]*ParallelResult),
+		results:    make(map[string]*types.ParallelResult),
 		totalCount:  total,
 		resultCh:    make(chan struct{}),
 	}
@@ -37,7 +39,7 @@ func (pc *ParallelContext) SetCancelFunc(cancel context.CancelFunc) {
 
 // AddResult 添加分支执行结果
 // AddResult adds a branch execution result
-func (pc *ParallelContext) AddResult(branchId string, result *ParallelResult) {
+func (pc *ParallelContext) AddResult(branchId string, result *types.ParallelResult) {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
 
@@ -53,12 +55,12 @@ func (pc *ParallelContext) AddResult(branchId string, result *ParallelResult) {
 
 // GetResults 获取所有结果（返回副本）
 // GetResults returns all results (returns a copy)
-func (pc *ParallelContext) GetResults() map[string]*ParallelResult {
+func (pc *ParallelContext) GetResults() map[string]*types.ParallelResult {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()
 
 	// 返回副本以保证线程安全 / Return a copy for thread safety
-	resultsCopy := make(map[string]*ParallelResult, len(pc.results))
+	resultsCopy := make(map[string]*types.ParallelResult, len(pc.results))
 	for k, v := range pc.results {
 		resultsCopy[k] = v
 	}
@@ -113,27 +115,4 @@ func (pc *ParallelContext) Cancel() {
 // ResultCh returns the result change notification channel
 func (pc *ParallelContext) ResultCh() <-chan struct{} {
 	return pc.resultCh
-}
-
-// ParallelResult 分支执行结果结构体
-// ParallelResult represents the execution result of a single branch
-type ParallelResult struct {
-	BranchID  string   `json:"branchId"`  // 分支ID / Branch ID
-	NodeIDs   []string `json:"nodeIds"`   // 该分支包含的节点ID列表 / List of node IDs in this branch
-	Output    string   `json:"output"`    // 最终输出 / Final output
-	Status    string   `json:"status"`    // completed/failed/running
-	Error     error    `json:"error"`     // 错误信息 / Error information
-	StartTime int64    `json:"startTime"` // 开始时间戳 / Start timestamp
-	EndTime   int64    `json:"endTime"`   // 结束时间戳 / End timestamp
-}
-
-// JoinResult 汇聚结果结构体
-// JoinResult represents the result of a join operation
-type JoinResult struct {
-	CompletedBranches map[string]*ParallelResult `json:"completedBranches"` // 已完成的分支结果 / Completed branch results
-	AllResultsMerged string                      `json:"allResultsMerged"`  // 合并后的结果 / Merged results
-	CompletedCount   int                         `json:"completedCount"`    // 已完成数量 / Completed count
-	TotalCount       int                         `json:"totalCount"`        // 总数量 / Total count
-	Strategy         string                      `json:"strategy"`          // 汇聚策略 / Join strategy
-	TimedOut         bool                        `json:"timedOut"`          // 是否超时 / Whether timed out
 }

@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"txing-ai/internal/agent"
+	"txing-ai/internal/agent/workflow"
+	"txing-ai/internal/agent/workflow/resolver"
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
@@ -74,7 +76,7 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	}
 
 	// 3. 解析拓扑获取 inputSchema
-	var topo agent.Topology
+	var topo types.Topology
 	json.Unmarshal([]byte(flow.Topology), &topo)
 
 	// 4. 查询最近一次执行记录（用于迭代）
@@ -87,10 +89,10 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	fileRefs := buildFileRefs(msg, lastExecution)
 
 	// 7. 创建模型解析器
-	modelResolver := agent.NewChannelModelResolver(db)
+	modelResolver := resolver.NewChannelModelResolver(db)
 
 	// 8. 初始化 WorkflowAgent
-	workflowAgent := agent.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
+	workflowAgent := workflow.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
 
 	// 9. 获取默认模型
 	defaultModel := "deepseek-v3"
@@ -275,7 +277,7 @@ func findLastExecution(db *gorm.DB, conversationID, workflowID int64) *domain.Wo
 }
 
 // buildWorkflowInput 构建工作流输入内容
-func buildWorkflowInput(msg *dto.WsMessageRequest, lastExecution *domain.WorkflowExecution, config *agent.WorkflowConfig) string {
+func buildWorkflowInput(msg *dto.WsMessageRequest, lastExecution *domain.WorkflowExecution, config *types.WorkflowConfig) string {
 	if config == nil || len(config.InputSchema) == 0 {
 		// 无 inputSchema：直接使用用户消息
 		if lastExecution != nil {

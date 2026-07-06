@@ -1,8 +1,10 @@
-package agent
+package validator
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"txing-ai/internal/agent/workflow/types"
 )
 
 // ValidationLevel 校验级别
@@ -55,7 +57,7 @@ func ValidateTopology(topologyJSON string) *ValidationResult {
 	result := &ValidationResult{Valid: true}
 
 	// 解析拓扑
-	var topo Topology
+	var topo types.Topology
 	if err := json.Unmarshal([]byte(topologyJSON), &topo); err != nil {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -78,14 +80,14 @@ func ValidateTopology(topologyJSON string) *ValidationResult {
 	}
 
 	// 构建节点索引
-	nodeMap := make(map[string]*TopoNode, len(topo.Nodes))
+	nodeMap := make(map[string]*types.TopoNode, len(topo.Nodes))
 	for i := range topo.Nodes {
 		nodeMap[topo.Nodes[i].Id] = &topo.Nodes[i]
 	}
 
 	// 构建入边/出边索引
-	inEdges := make(map[string][]TopoEdge)  // nodeId -> 入边列表
-	outEdges := make(map[string][]TopoEdge) // nodeId -> 出边列表
+	inEdges := make(map[string][]types.TopoEdge)  // nodeId -> 入边列表
+	outEdges := make(map[string][]types.TopoEdge) // nodeId -> 出边列表
 	for _, edge := range topo.Edges {
 		inEdges[edge.Target] = append(inEdges[edge.Target], edge)
 		outEdges[edge.Source] = append(outEdges[edge.Source], edge)
@@ -217,7 +219,7 @@ func ValidateTopology(topologyJSON string) *ValidationResult {
 }
 
 // validateLLMNode 校验 LLM 节点配置
-func validateLLMNode(node *TopoNode, result *ValidationResult) {
+func validateLLMNode(node *types.TopoNode, result *ValidationResult) {
 	if node.Data.ModelConfig == nil || node.Data.ModelConfig.Model == "" {
 		result.Errors = append(result.Errors, ValidationError{
 			Level:   LevelError,
@@ -238,7 +240,7 @@ func validateLLMNode(node *TopoNode, result *ValidationResult) {
 }
 
 // validateToolNode 校验工具节点配置
-func validateToolNode(node *TopoNode, result *ValidationResult) {
+func validateToolNode(node *types.TopoNode, result *ValidationResult) {
 	if node.Data.ToolConfig == nil {
 		result.Errors = append(result.Errors, ValidationError{
 			Level:   LevelError,
@@ -262,7 +264,7 @@ func validateToolNode(node *TopoNode, result *ValidationResult) {
 }
 
 // validateConditionNode 校验条件节点配置
-func validateConditionNode(node *TopoNode, nodeOutEdges []TopoEdge, result *ValidationResult) {
+func validateConditionNode(node *types.TopoNode, nodeOutEdges []types.TopoEdge, result *ValidationResult) {
 	config := node.Data.ConditionConf
 
 	if config == nil {
@@ -343,7 +345,7 @@ func validateConditionNode(node *TopoNode, nodeOutEdges []TopoEdge, result *Vali
 
 // detectCycle 使用 DFS 检测环路
 // 返回是否有环，以及环中涉及的节点 ID
-func detectCycle(nodes []TopoNode, edges []TopoEdge) (bool, []string) {
+func detectCycle(nodes []types.TopoNode, edges []types.TopoEdge) (bool, []string) {
 	// 构建邻接表
 	adj := make(map[string][]string)
 	for _, node := range nodes {

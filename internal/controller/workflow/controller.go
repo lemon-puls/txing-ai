@@ -9,7 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"txing-ai/internal/agent"
+	"txing-ai/internal/agent/workflow"
+	"txing-ai/internal/agent/workflow/resolver"
+	"txing-ai/internal/agent/workflow/types"
+	"txing-ai/internal/agent/workflow/validator"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
@@ -261,7 +264,7 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	}
 
 	// 解析拓扑获取 inputSchema
-	var topo agent.Topology
+	var topo types.Topology
 	json.Unmarshal([]byte(flow.Topology), &topo)
 
 	content := ""
@@ -335,10 +338,10 @@ func Run(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	}
 
 	// 创建模型解析器
-	modelResolver := agent.NewChannelModelResolver(db)
+	modelResolver := resolver.NewChannelModelResolver(db)
 
 	// 初始化 WorkflowAgent
-	workflowAgent := agent.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
+	workflowAgent := workflow.NewWorkflowAgent(resProvider, flow.Topology, modelResolver)
 
 	// 获取默认模型（优先使用拓扑配置中的模型，否则使用系统默认）
 	defaultModel := "deepseek-v3"
@@ -507,7 +510,7 @@ func ValidateTopology(ctx *gin.Context) {
 	}
 
 	// 结构校验
-	result := agent.ValidateTopology(req.Topology)
+	result := validator.ValidateTopology(req.Topology)
 
 	// 转换为 VO
 	utils.OkWithData(ctx, toValidationResultVO(result))
@@ -550,7 +553,7 @@ func ValidateById(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	}
 
 	// 第一层：结构校验
-	structResult := agent.ValidateTopology(flow.Topology)
+	structResult := validator.ValidateTopology(flow.Topology)
 
 	// 如果不需要 LLM 校验，直接返回结构校验结果
 	if !req.UseLLM {
@@ -567,7 +570,7 @@ func ValidateById(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	channel, mappingModel, err := channelservice.ChooseChannelAndModel(db, model, mappingParams)
 	if err != nil {
 		// LLM 校验失败不影响结构校验结果，返回结构校验结果 + warning
-		structResult.Warnings = append(structResult.Warnings, agent.ValidationError{
+		structResult.Warnings = append(structResult.Warnings, validator.ValidationError{
 			Level:   "warning",
 			Code:    "LLM_VALIDATION_UNAVAILABLE",
 			Message: fmt.Sprintf("LLM 校验不可用: %v，已返回结构校验结果", err),
@@ -576,11 +579,11 @@ func ValidateById(ctx *gin.Context, resProvider iface.ResourceProvider) {
 		return
 	}
 
-	llmResult, err := agent.ValidateTopologyWithLLM(
+	llmResult, err := validator.ValidateTopologyWithLLM(
 		ctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, flow.Topology,
 	)
 	if err != nil {
-		structResult.Warnings = append(structResult.Warnings, agent.ValidationError{
+		structResult.Warnings = append(structResult.Warnings, validator.ValidationError{
 			Level:   "warning",
 			Code:    "LLM_VALIDATION_FAILED",
 			Message: fmt.Sprintf("LLM 校验执行失败: %v，已返回结构校验结果", err),
@@ -594,8 +597,8 @@ func ValidateById(ctx *gin.Context, resProvider iface.ResourceProvider) {
 	utils.OkWithData(ctx, toValidationResultVO(merged))
 }
 
-// toValidationResultVO 将 agent.ValidationResult 转换为 vo.ValidationResultVO
-func toValidationResultVO(result *agent.ValidationResult) vo.ValidationResultVO {
+// toValidationResultVO 将 validator.ValidationResult 转换为 vo.ValidationResultVO
+func toValidationResultVO(result *validator.ValidationResult) vo.ValidationResultVO {
 	voResult := vo.ValidationResultVO{
 		Valid: result.Valid,
 	}
@@ -622,8 +625,8 @@ func toValidationResultVO(result *agent.ValidationResult) vo.ValidationResultVO 
 }
 
 // mergeValidationResults 合并两个校验结果
-func mergeValidationResults(a, b *agent.ValidationResult) *agent.ValidationResult {
-	merged := &agent.ValidationResult{
+func mergeValidationResults(a, b *validator.ValidationResult) *validator.ValidationResult {
+	merged := &validator.ValidationResult{
 		Valid: a.Valid && b.Valid,
 	}
 	merged.Errors = append(a.Errors, b.Errors...)

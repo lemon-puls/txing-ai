@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 	"net/url"
 	"strings"
-	"txing-ai/internal/agent"
+	agent "txing-ai/internal/agent/agent"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"

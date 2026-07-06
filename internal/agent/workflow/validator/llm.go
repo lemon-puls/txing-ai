@@ -1,4 +1,4 @@
-package agent
+package validator
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global/logging/log"
 )
 
@@ -175,7 +176,7 @@ type edgeSummary struct {
 
 // buildTopologySummary 从拓扑 JSON 中提取逻辑摘要，去除位置等无关信息
 func buildTopologySummary(topologyJSON string) (string, error) {
-	var topo Topology
+	var topo types.Topology
 	if err := json.Unmarshal([]byte(topologyJSON), &topo); err != nil {
 		return "", err
 	}

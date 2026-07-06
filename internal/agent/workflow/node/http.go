@@ -1,4 +1,4 @@
-package agent
+package node
 
 import (
 	"context"
@@ -11,20 +11,21 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 )
 
-// executeHTTPNode 执行 HTTP 节点
-func executeHTTPNode(
+// ExecuteHTTPNode 执行 HTTP 节点
+func ExecuteHTTPNode(
 	ctx context.Context,
 	nodeId string,
 	nodeLabel string,
-	config *HTTPConfig,
+	config *types.HTTPConfig,
 	input *schema.Message,
 	callback func(chunk *global.Chunk) error,
 ) (*schema.Message, error) {
-	execLog := &NodeExecutionLog{
+	execLog := &types.NodeExecutionLog{
 		NodeID:    nodeId,
 		NodeType:  "http",
 		NodeLabel: nodeLabel,
@@ -80,7 +81,7 @@ func executeHTTPNode(
 		execLog.Error = err.Error()
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, err
 	}
 
@@ -105,7 +106,7 @@ func executeHTTPNode(
 		execLog.Error = err.Error()
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -118,7 +119,7 @@ func executeHTTPNode(
 		execLog.Error = err.Error()
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, err
 	}
 
@@ -132,7 +133,7 @@ func executeHTTPNode(
 		execLog.Error = errMsg
 		execLog.EndTime = time.Now().UnixMilli()
 		execLog.Duration = execLog.EndTime - execLog.StartTime
-		sendExecutionLog(callback, execLog)
+		types.SendExecutionLog(callback, execLog)
 		return nil, fmt.Errorf("%s", errMsg)
 	}
 
@@ -140,7 +141,7 @@ func executeHTTPNode(
 	execLog.Output = result
 	execLog.EndTime = time.Now().UnixMilli()
 	execLog.Duration = execLog.EndTime - execLog.StartTime
-	sendExecutionLog(callback, execLog)
+	types.SendExecutionLog(callback, execLog)
 
 	if callback != nil {
 		callback(&global.Chunk{
