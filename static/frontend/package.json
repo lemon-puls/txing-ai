@@ -23,7 +23,7 @@
     "frontend": "file:",
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
-    "marked": "^15.0.8",
+    "marked": "^18.0.5",
     "pinia": "^2.3.0",
     "pinia-plugin-persistedstate": "^4.2.0",
     "superagent": "^10.2.0",
