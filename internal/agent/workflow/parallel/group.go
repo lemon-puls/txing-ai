@@ -82,10 +82,12 @@ func (e *ParallelExecutor) extractParallelGroup(parallelNode *types.TopoNode, ed
 		}
 	}
 
-	// 如果没有通过边找到分支，尝试通过 parallelId 属性查找
-	// If no branches found via edges, try finding via parallelId property
+	// 如果没有通过边找到分支，说明拓扑结构异常
+	// If no branches found via edges, the topology is invalid
 	if len(branchNodes) == 0 {
-		branchNodes = e.findBranchesByParallelId(parallelID, nodeMap, edges)
+		log.Warn("并行节点没有找到任何分支，请检查拓扑连接",
+			zap.String("parallelId", parallelID))
+		return nil
 	}
 
 	// 转换为分支列表，按 branch_X 序号排序以保证确定性 / Convert to branch list, sorted by branch_X index for determinism
@@ -167,56 +169,6 @@ func (e *ParallelExecutor) traceBranchPath(startNodeID string, edges []types.Top
 	}
 
 	return path
-}
-
-// findBranchesByParallelId 通过 parallelId 属性查找分支
-// findBranchesByParallelId finds branches by parallelId property
-func (e *ParallelExecutor) findBranchesByParallelId(parallelID string, nodeMap map[string]*types.TopoNode, edges []types.TopoEdge) map[string][]*types.TopoNode {
-	branchNodes := make(map[string][]*types.TopoNode)
-
-	// 遍历所有节点查找属于该并行组的节点
-	// Iterate all nodes to find those belonging to this parallel group
-	for _, node := range nodeMap {
-		// 检查节点的并行组ID / Check node's parallel group ID
-		nodeParallelID := e.getNodeParallelId(node)
-
-		// 检查是否属于当前并行组 / Check if belongs to current parallel group
-		if nodeParallelID != parallelID {
-			continue
-		}
-
-		// 跳过 parallel 和 join 节点 / Skip parallel and join nodes
-		if node.Data.NodeType == "parallel" || node.Data.NodeType == "join" {
-			continue
-		}
-
-		// 根据边关系确定分支归属 / Determine branch ownership by edge relationships
-		// 查找以该节点为终点的边 / Find edges ending at this node
-		for _, edge := range edges {
-			if edge.Target == node.Id {
-				sourceNode := nodeMap[edge.Source]
-				if sourceNode != nil {
-					sourceParallelID := e.getNodeParallelId(sourceNode)
-					if sourceParallelID == parallelID || sourceNode.Data.NodeType == "parallel" {
-						// 添加到对应分支 / Add to corresponding branch
-						branchNodes[edge.Source] = append(branchNodes[edge.Source], node)
-					}
-				}
-			}
-		}
-	}
-
-	return branchNodes
-}
-
-// getNodeParallelId 获取节点的并行组ID
-// getNodeParallelId gets the parallel group ID of a node
-func (e *ParallelExecutor) getNodeParallelId(node *types.TopoNode) string {
-	// 优先使用 Label 作为 parallelId / Prefer using Label as parallelId
-	if node.Data.Label != "" && node.Data.Label != node.Id {
-		return node.Data.Label
-	}
-	return node.Id
 }
 
 // BuildParallelGraph 构建并行执行图（与现有 BuildGraph 集成）
