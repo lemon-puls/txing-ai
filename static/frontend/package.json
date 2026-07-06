@@ -24,7 +24,7 @@
     "github-markdown-css": "^5.8.1",
     "highlight.js": "^11.11.1",
     "marked": "^15.0.8",
-    "pinia": "^2.3.0",
+    "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.2.0",
     "superagent": "^10.2.0",
     "vite-plugin-vue-devtools": "^7.7.0",
