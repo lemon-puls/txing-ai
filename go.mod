@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/anaskhan96/go-password-encoder v0.0.0-20201010210601-c765b799fd72
-	github.com/cloudwego/eino v0.7.13
+	github.com/cloudwego/eino v0.9.10
 	github.com/cloudwego/eino-ext/components/model/openai v0.1.13
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.4
 	github.com/fsnotify/fsnotify v1.7.0
@@ -21,6 +21,7 @@ require (
 	github.com/mark3labs/mcp-go v0.40.0
 	github.com/mojocn/base64Captcha v1.3.6
 	github.com/natefinch/lumberjack v2.0.0+incompatible
+	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db
 	github.com/redis/go-redis/v9 v9.7.1
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/samber/lo v1.49.1
@@ -33,6 +34,7 @@ require (
 	github.com/tencentyun/qcloud-cos-sts-sdk v0.0.0-20250416063818-9d1689d8400b
 	github.com/volcengine/volcengine-go-sdk v1.1.1
 	go.uber.org/zap v1.27.0
+	golang.org/x/net v0.44.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )
@@ -91,7 +93,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mozillazg/go-httpheader v0.2.1 // indirect
-	github.com/nguyenthenguyen/docx v0.0.0-20230621112118-9c8e795a11db // indirect
 	github.com/nikolalohinski/gonja v1.5.3 // indirect
 	github.com/nlnwa/whatwg-url v0.6.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
@@ -118,7 +119,6 @@ require (
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
 	golang.org/x/image v0.15.0 // indirect
-	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
