@@ -1046,20 +1046,16 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 		}
 	}
 
+	// 预建节点类型索引，避免内层循环重复查找
+	nodeTypeMap := make(map[string]string, len(topo.Nodes))
+	for _, n := range topo.Nodes {
+		nodeTypeMap[n.Id] = n.Data.NodeType
+	}
+
 	// 收集条件节点的分支映射
 	conditionBranches := make(map[string]map[string]string) // nodeId -> {handle: targetId}
 	for _, edge := range topo.Edges {
-		// 查找源节点类型
-		var sourceNodeType string
-		for _, n := range topo.Nodes {
-			if n.Id == edge.Source {
-				sourceNodeType = n.Data.NodeType
-				break
-			}
-		}
-
-		// 如果是条件节点的边，记录分支映射
-		if sourceNodeType == "condition" {
+		if nodeTypeMap[edge.Source] == "condition" {
 			if conditionBranches[edge.Source] == nil {
 				conditionBranches[edge.Source] = make(map[string]string)
 			}
@@ -1073,14 +1069,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 	// 添加边（跳过条件节点的边，改用 Branch）
 	for _, edge := range topo.Edges {
-		// 查找源节点类型
-		var sourceNodeType string
-		for _, n := range topo.Nodes {
-			if n.Id == edge.Source {
-				sourceNodeType = n.Data.NodeType
-				break
-			}
-		}
+		sourceNodeType := nodeTypeMap[edge.Source]
 
 		// 条件节点使用 Branch 而不是 Edge
 		if sourceNodeType == "condition" {
@@ -1107,7 +1096,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 	}
 
 	// 为每个并行节点补一条直接到下游 join 节点的边（让 eino 调度能找到 join）
-	buildParallelJoinEdges(graph, &topo, parallelBranchNodes)
+	buildParallelJoinEdges(graph, &topo)
 
 	// 为条件节点添加 Branch
 	for conditionNodeId, branches := range conditionBranches {
