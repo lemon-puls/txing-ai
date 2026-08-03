@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudwego/eino/schema"
-	"go.uber.org/zap"
 	"txing-ai/internal/agent/workflow/condition"
 	nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	"github.com/cloudwego/eino/schema"
+	"go.uber.org/zap"
 )
 
 // NodeExecutor 由 workflow 核心实现，供并行分支回调执行 LLM/Tool 节点
@@ -28,10 +29,10 @@ type NodeExecutor interface {
 // ParallelGroup 并行组结构
 // ParallelGroup represents a parallel execution group with its branches and join node
 type ParallelGroup struct {
-	ParallelNode *types.TopoNode      // 并行入口节点 / Parallel entry node
-	Branches     [][]*types.TopoNode  // 每个分支的节点列表 / Node list for each branch
-	JoinNode     *types.TopoNode      // 汇聚节点 / Join node
-	ParallelID   string               // 并行组ID / Parallel group ID
+	ParallelNode *types.TopoNode       // 并行入口节点 / Parallel entry node
+	Branches     [][]*types.TopoNode   // 每个分支的节点列表 / Node list for each branch
+	JoinNode     *types.TopoNode       // 汇聚节点 / Join node
+	ParallelID   string                // 并行组ID / Parallel group ID
 	Config       *types.ParallelConfig // 并行配置 / Parallel configuration
 }
 
@@ -59,6 +60,7 @@ func NewParallelExecutor(executor NodeExecutor, maxWorkers int, endpoint, apiKey
 		model:      model,
 	}
 }
+
 // ExecuteBranch 执行单个分支
 // ExecuteBranch executes a single branch of the parallel group
 func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, branchNodes []*types.TopoNode,
@@ -88,7 +90,7 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 	var branchErr error
 
 	// 按顺序执行分支内的节点 / Execute nodes in branch sequentially
-	for i, node := range branchNodes {
+	for _, node := range branchNodes {
 		select {
 		case <-branchCtx.Done():
 			branchErr = branchCtx.Err()
@@ -122,8 +124,6 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 			})
 		}
 
-		// 避免最后一个节点重复发送消息 / Avoid duplicate message on last node
-		_ = i
 	}
 
 	endTime := time.Now().UnixMilli()
@@ -468,44 +468,44 @@ func (e *ParallelExecutor) ExecuteParallelGroup(ctx context.Context, group *Para
 
 	// 并行启动所有分支 / Start all branches in parallel
 	for i, branch := range group.Branches {
+		// 诊断日志 / Diagnostic logs
+		ctxErrStr := "nil"
+		if ctx.Err() != nil {
+			ctxErrStr = ctx.Err().Error()
+		}
+		log.Info("准备启动分支 goroutine",
+			zap.String("parallelId", group.ParallelID),
+			zap.Int("branchIndex", i),
+			zap.String("ctx.Err()", ctxErrStr),
+			zap.Int("branchCount", len(group.Branches)))
+
+		go func(branchIndex int, branchNodes []*types.TopoNode) {
+			defer wg.Done()
+
 			// 诊断日志 / Diagnostic logs
 			ctxErrStr := "nil"
 			if ctx.Err() != nil {
 				ctxErrStr = ctx.Err().Error()
 			}
-			log.Info("准备启动分支 goroutine",
+			log.Info("分支 goroutine 启动",
 				zap.String("parallelId", group.ParallelID),
-				zap.Int("branchIndex", i),
-				zap.String("ctx.Err()", ctxErrStr),
-				zap.Int("branchCount", len(group.Branches)))
+				zap.Int("branchIndex", branchIndex),
+				zap.String("ctx.Err()", ctxErrStr))
 
-			go func(branchIndex int, branchNodes []*types.TopoNode) {
-				defer wg.Done()
+			// 获取信号量 / Acquire semaphore
+			if sem != nil {
+				sem <- struct{}{}
+				defer func() { <-sem }()
+			}
 
-				// 诊断日志 / Diagnostic logs
-				ctxErrStr := "nil"
-				if ctx.Err() != nil {
-					ctxErrStr = ctx.Err().Error()
-				}
-				log.Info("分支 goroutine 启动",
-					zap.String("parallelId", group.ParallelID),
+			// 执行分支 / Execute branch
+			err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
+			if err != nil {
+				log.Warn("分支执行出错（不影响其他分支）",
 					zap.Int("branchIndex", branchIndex),
-					zap.String("ctx.Err()", ctxErrStr))
-
-				// 获取信号量 / Acquire semaphore
-				if sem != nil {
-					sem <- struct{}{}
-					defer func() { <-sem }()
-				}
-
-				// 执行分支 / Execute branch
-				err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
-				if err != nil {
-					log.Warn("分支执行出错（不影响其他分支）",
-						zap.Int("branchIndex", branchIndex),
-						zap.Error(err))
-				}
-			}(i, branch)
+					zap.Error(err))
+			}
+		}(i, branch)
 	}
 
 	// 等待所有分支完成 / Wait for all branches to complete
@@ -621,13 +621,14 @@ func (e *ParallelExecutor) buildJoinResult(completedBranches map[string]*types.P
 
 	return &types.JoinResult{
 		CompletedBranches: completedBranches,
-		AllResultsMerged: mergedOutput.String(),
-		CompletedCount:   len(completedBranches),
-		TotalCount:       totalCount,
-		Strategy:         strategy,
-		TimedOut:         timedOut,
+		AllResultsMerged:  mergedOutput.String(),
+		CompletedCount:    len(completedBranches),
+		TotalCount:        totalCount,
+		Strategy:          strategy,
+		TimedOut:          timedOut,
 	}
 }
+
 // ReplaceNestedVars 替换 {{input.xxx}} 和 {{output.xxx}} 格式的嵌套变量
 // ReplaceNestedVars replaces nested variables like {{input.xxx}} and {{output.xxx}}
 // 支持 JSON 字段访问：如果 input/output 是 JSON 字符串，会解析并提取对应字段
@@ -675,4 +676,3 @@ func ReplaceNestedVars(s, input, output string) string {
 		return source
 	})
 }
-
