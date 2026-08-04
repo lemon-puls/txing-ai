@@ -78,32 +78,6 @@ func (a *WorkflowAgent) getToolsByNames(names []string) []tool.BaseTool {
 }
 
 
-// resolveModelInfo 解析模型信息，支持节点级别覆盖
-func (a *WorkflowAgent) resolveModelInfo(nodeModel string, defaultEndpoint, defaultAPIKey, defaultModel string) (endpoint, apiKey, model string) {
-	endpoint = defaultEndpoint
-	apiKey = defaultAPIKey
-	model = defaultModel
-
-	// 如果节点指定了模型，尝试使用 ModelResolver 解析
-	if nodeModel != "" && a.modelResolver != nil {
-		info, err := a.modelResolver.Resolve(nodeModel)
-		if err != nil {
-			log.Warn("解析节点模型失败，使用默认模型",
-				zap.String("nodeModel", nodeModel),
-				zap.Error(err))
-		} else {
-			endpoint = info.Endpoint
-			apiKey = info.APIKey
-			model = info.Model
-		}
-	} else if nodeModel != "" {
-		// 没有 ModelResolver 但节点指定了模型，仅覆盖模型名称
-		model = nodeModel
-	}
-
-	return endpoint, apiKey, model
-}
-
 // BuildGraph 构建执行图（简化版本，使用 DAG 模式）
 func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model string, callback func(chunk *global.Chunk) error) (*compose.Graph[[]*schema.Message, *schema.Message], error) {
 	var topo types.Topology
@@ -293,60 +267,31 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 			}
 
-			// 解析节点模型信息（支持节点级别覆盖）
-			nodeEndpoint, nodeAPIKey, nodeModel := a.resolveModelInfo(nodeModelName, endpoint, apiKey, model)
+			statusCbLLM := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
 
-			// 创建节点专属的模型
-			nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-				BaseURL:     nodeEndpoint,
-				Model:       nodeModel,
-				APIKey:      nodeAPIKey,
-				MaxTokens:   &nodeMaxTokens,
-				Temperature: &nodeTemperature,
-			})
-			if err != nil {
-				log.Error("创建节点模型失败", zap.String("nodeId", nodeId), zap.Error(err))
-				// 使用默认模型
-				nodeChatModel = defaultChatModel
+			// 构建共享 LLM 执行配置，实际执行委托给 ExecuteLLM
+			// Build the shared LLM exec config; execution is delegated to ExecuteLLM.
+			llmNodeCfg := &LLMExecConfig{
+				NodeID:            nodeId,
+				NodeLabel:         node.Data.Label,
+				NodeType:          "llm",
+				ModelResolver:     a.modelResolver,
+				ModelName:         nodeModelName,
+				DefaultEndpoint:   endpoint,
+				DefaultAPIKey:     apiKey,
+				DefaultModel:      model,
+				FallbackChatModel: defaultChatModel,
+				MaxTokens:         nodeMaxTokens,
+				Temperature:       nodeTemperature,
+				SystemPrompt:      systemPrompt,
+				AllTools:          a.tools,
+				ToolNames:         llmToolNames,
+				MaxToolRounds:     llmMaxToolRounds,
+				Retry:             retryConfig,
+				EmitFinalContent:  true,
 			}
-
-			// 如果配置了工具，绑定到模型
-			var llmNodeTools []tool.BaseTool
-			var llmToolNode *compose.ToolsNode
-			if len(llmToolNames) > 0 {
-				llmNodeTools = a.getToolsByNames(llmToolNames)
-				if len(llmNodeTools) > 0 {
-					nodeToolInfos := make([]*schema.ToolInfo, 0, len(llmNodeTools))
-					for _, t := range llmNodeTools {
-						info, err := t.Info(ctx)
-						if err != nil {
-							continue
-						}
-						nodeToolInfos = append(nodeToolInfos, info)
-					}
-					if err := nodeChatModel.BindTools(nodeToolInfos); err != nil {
-						log.Warn("LLM 节点绑定工具失败", zap.String("nodeId", nodeId), zap.Error(err))
-					} else {
-						log.Info("LLM 节点绑定工具成功", zap.String("nodeId", nodeId), zap.Int("toolCount", len(nodeToolInfos)))
-						// 创建工具执行器
-						llmToolNode, err = compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
-							Tools:               llmNodeTools,
-							ExecuteSequentially: true,
-						})
-						if err != nil {
-							log.Error("创建 LLM 节点工具执行器失败", zap.String("nodeId", nodeId), zap.Error(err))
-						}
-					}
-				}
-			}
-
-			// 捕获变量供闭包使用
-			llmBoundToolNode := llmToolNode
-			llmBoundMaxRounds := llmMaxToolRounds
 
 			// 创建 LLM 节点 Lambda
-			statusCbLLM := nodeStatusCallback(callback, nodeId, "llm", node.Data.Label)
-			llmRetryCfg := retryConfig
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
 				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
@@ -355,27 +300,18 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					StartTime: time.Now().UnixMilli(),
 				}
 				statusCbLLM("running")
-				log.Info("Executing LLM node", zap.String("nodeId", nodeId), zap.String("model", nodeModel))
+				log.Info("Executing LLM node", zap.String("nodeId", nodeId))
 
-				// 构建消息列表
-				var messages []*schema.Message
-				if systemPrompt != "" {
-					messages = append(messages, schema.SystemMessage(systemPrompt))
-				}
-				if input != nil && input.Content != "" {
-					messages = append(messages, input)
-					execLog.Input = input.Content
+				inputContent := ""
+				if input != nil {
+					inputContent = input.Content
+					execLog.Input = inputContent
 				}
 
-				var response *schema.Message
-				// 带重试的首次执行
-				execErr := executeWithRetry(llmRetryCfg, func() error {
-					var genErr error
-					response, genErr = nodeChatModel.Generate(ctx, messages)
-					return genErr
-				})
+				// 委托共享执行核心（模型解析/工具绑定/多轮工具循环均在 ExecuteLLM 内完成）
+				// Delegate to the shared execution core.
+				result, execErr := ExecuteLLM(ctx, llmNodeCfg, inputContent, callback)
 				if execErr != nil {
-					log.Error("LLM generate error", zap.Error(execErr))
 					execLog.Status = "failed"
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
@@ -385,102 +321,13 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					return nil, execErr
 				}
 
-				// 如果绑定了工具，执行多轮工具调用循环
-				if llmBoundToolNode != nil {
-					for round := 0; round < llmBoundMaxRounds; round++ {
-						// 检查是否有工具调用
-						if len(response.ToolCalls) == 0 {
-							break
-						}
-
-						log.Info("LLM 节点工具调用", zap.String("nodeId", nodeId), zap.Int("round", round+1), zap.Int("toolCallCount", len(response.ToolCalls)))
-
-						// 发送每个工具调用的详细信息
-						if callback != nil {
-							for _, tc := range response.ToolCalls {
-								callback(&global.Chunk{
-									NodeId:     nodeId,
-									NodeType:   "llm",
-									NodeLabel:  node.Data.Label,
-									ToolCallId: tc.ID,
-									ToolName:   tc.Function.Name,
-									ToolParams: tc.Function.Arguments,
-									ToolStatus: "running",
-									ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
-								})
-							}
-						}
-
-						// 将 assistant 消息（含 ToolCalls）加入消息列表
-						messages = append(messages, response)
-
-						// 执行工具调用
-						toolResults, toolErr := llmBoundToolNode.Invoke(ctx, response)
-						if toolErr != nil {
-							log.Error("LLM 节点工具执行失败", zap.String("nodeId", nodeId), zap.Error(toolErr))
-							if callback != nil {
-								callback(&global.Chunk{
-									NodeId:     nodeId,
-									NodeType:   "llm",
-									NodeLabel:  node.Data.Label,
-									ToolStatus: "failed",
-									ShowMsg:    fmt.Sprintf("[%s] 工具执行失败: %s", node.Data.Label, toolErr.Error()),
-								})
-							}
-							messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
-						} else {
-							// 发送工具执行结果
-							if callback != nil {
-								for _, tr := range toolResults {
-									callback(&global.Chunk{
-										NodeId:     nodeId,
-										NodeType:   "llm",
-										NodeLabel:  node.Data.Label,
-										ToolCallId: tr.ToolCallID,
-										ToolName:   tr.ToolName,
-										ToolResult: tr.Content,
-										ToolStatus: "completed",
-										ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
-									})
-								}
-							}
-							messages = append(messages, toolResults...)
-						}
-
-						if callback != nil {
-							callback(&global.Chunk{
-								NodeId:    nodeId,
-								NodeType:  "llm",
-								NodeLabel: node.Data.Label,
-								ShowMsg:   fmt.Sprintf("[%s] 继续思考... (第%d轮)", node.Data.Label, round+1),
-							})
-						}
-
-						// 再次调用 LLM
-						execErr = executeWithRetry(llmRetryCfg, func() error {
-							var genErr error
-							response, genErr = nodeChatModel.Generate(ctx, messages)
-							return genErr
-						})
-						if execErr != nil {
-							log.Error("LLM 多轮调用 generate error", zap.Error(execErr), zap.Int("round", round+1))
-							break
-						}
-					}
-				}
-
-				// 回调最终结果
-				if callback != nil && response.Content != "" {
-					callback(&global.Chunk{Content: response.Content, ShowMsg: fmt.Sprintf("[%s] 思考中...", node.Data.Label)})
-				}
-
 				execLog.Status = "completed"
-				execLog.Output = response.Content
+				execLog.Output = result
 				execLog.EndTime = time.Now().UnixMilli()
 				execLog.Duration = execLog.EndTime - execLog.StartTime
 				types.SendExecutionLog(callback, execLog)
 				statusCbLLM("completed")
-				return response, nil
+				return schema.AssistantMessage(result, nil), nil
 			}))
 
 		case "tool":
@@ -794,7 +641,6 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			if node.Data.ModelConfig != nil && node.Data.ModelConfig.Model != "" {
 				agentModelName = node.Data.ModelConfig.Model
 			}
-			agentEndpoint, agentAPIKey, agentModel := a.resolveModelInfo(agentModelName, endpoint, apiKey, model)
 
 			// 字段合并：ModelConfig 优先，缺失字段回退 AgentConfig / Merge fields: ModelConfig wins, fall back to AgentConfig
 			systemPrompt := agentConfig.SystemPrompt
@@ -833,30 +679,37 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				agentTools = agentConfig.Tools
 			}
 
-			// 第一版：MaxToolRounds / Retry 暂未接入 ToolCallAgent 内部循环，仅记录日志
-			// First version: MaxToolRounds / Retry are not yet wired into ToolCallAgent's internal loop, only logged
-			if maxToolRounds > 0 || retryConfig != nil {
-				log.Info("Agent 节点高级配置已读取（第一版未接入 ToolCallAgent 内部循环）",
-					zap.String("nodeId", nodeId),
-					zap.Int("maxToolRounds", maxToolRounds),
-					zap.Any("retry", retryConfig))
+			// 工具调用轮次上限：优先 ModelConfig.MaxToolRounds，否则回退 AgentConfig.MaxRunSteps
+			// Tool-call round limit: ModelConfig.MaxToolRounds wins, falling back to AgentConfig.MaxRunSteps
+			agentMaxToolRounds := agentMaxRunSteps
+			if maxToolRounds > 0 {
+				agentMaxToolRounds = maxToolRounds
 			}
-
-			// 创建 ToolCallAgent 实例
-			toolCallAgent := agentpkg.NewToolCallAgent(a.resProvider)
-			toolCallAgent.SetSystemPrompt(systemPrompt)
-			toolCallAgent.SetMaxRunSteps(agentMaxRunSteps)
-
-			// 如果指定了工具列表，按名称过滤
-			if len(agentTools) > 0 {
-				toolCallAgent.SetTools(a.getToolsByNames(agentTools))
-			}
-
-			// 捕获变量供闭包使用 / Capture variables for closure
-			agentTemperature := temperature
-			agentMaxTokens := maxTokens
 
 			statusCbAgent := nodeStatusCallback(callback, nodeId, "agent", node.Data.Label)
+
+			// 构建共享 LLM 执行配置；未配置工具时回退为全部工具（保留 Agent 节点语义）
+			// Build the shared LLM exec config. When no tools are configured,
+			// fall back to all tools to preserve Agent-node semantics.
+			agentNodeCfg := &LLMExecConfig{
+				NodeID:               nodeId,
+				NodeLabel:            node.Data.Label,
+				NodeType:             "agent",
+				ModelResolver:        a.modelResolver,
+				ModelName:            agentModelName,
+				DefaultEndpoint:      endpoint,
+				DefaultAPIKey:        apiKey,
+				DefaultModel:         model,
+				MaxTokens:            maxTokens,
+				Temperature:          temperature,
+				SystemPrompt:         systemPrompt,
+				AllTools:             a.tools,
+				ToolNames:            agentTools,
+				UseAllToolsWhenEmpty: true,
+				MaxToolRounds:        agentMaxToolRounds,
+				Retry:                retryConfig,
+				EmitFinalContent:     true,
+			}
 			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
 				execLog := &types.NodeExecutionLog{
 					NodeID:    nodeId,
@@ -865,7 +718,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					StartTime: time.Now().UnixMilli(),
 				}
 				statusCbAgent("running")
-				log.Info("Executing Agent node", zap.String("nodeId", nodeId), zap.String("model", agentModel))
+				log.Info("Executing Agent node", zap.String("nodeId", nodeId))
 
 				inputContent := ""
 				if input != nil {
@@ -873,19 +726,21 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 					execLog.Input = inputContent
 				}
 
-				// 包装 callback，为 ToolCallAgent 发送的所有 Chunk 注入 NodeId
-				agentNodeCallback := func(chunk *global.Chunk) error {
-					chunk.NodeId = nodeId
-					chunk.NodeType = "agent"
-					chunk.NodeLabel = node.Data.Label
-					return callback(chunk)
+				// 包装 callback，为执行核心发送的所有 Chunk 注入节点信息
+				// Inject node info into every chunk emitted by the shared executor.
+				agentNodeCallback := callback
+				if callback != nil {
+					agentNodeCallback = func(chunk *global.Chunk) error {
+						chunk.NodeId = nodeId
+						chunk.NodeType = "agent"
+						chunk.NodeLabel = node.Data.Label
+						return callback(chunk)
+					}
 				}
 
-				// 使用 ToolCallAgent 执行多轮工具调用循环
-				response, err := toolCallAgent.ExecuteStreamWithConfig(ctx, agentEndpoint, agentAPIKey, agentModel, inputContent, "", agentNodeCallback, &agentpkg.AgentExecConfig{
-					Temperature: &agentTemperature,
-					MaxTokens:   &agentMaxTokens,
-				})
+				// 委托共享执行核心执行多轮工具调用循环
+				// Delegate the multi-round tool-calling loop to the shared executor.
+				response, err := ExecuteLLM(ctx, agentNodeCfg, inputContent, agentNodeCallback)
 				if err != nil {
 					log.Error("Agent node execution failed", zap.Error(err))
 					execLog.Status = "failed"

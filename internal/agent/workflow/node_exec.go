@@ -5,10 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/tool"
-	"github.com/cloudwego/eino/compose"
-	"github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 
 	"txing-ai/internal/agent/workflow/parallel"
@@ -18,14 +15,15 @@ import (
 )
 
 // ExecuteLLMNodeInParallel 在并行上下文中执行 LLM 节点（实现 parallel.NodeExecutor 接口）
-// ExecuteLLMNodeInParallel executes an LLM node in parallel context with real LLM calls
+// ExecuteLLMNodeInParallel executes an LLM node in parallel context with real LLM calls.
+// 实际执行委托给共享执行核心 ExecuteLLM，与 LLM/Agent 节点共用同一套逻辑
+// （模型解析、工具绑定、带重试的多轮工具循环），能力保持对齐。
 func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
 	modelConfig := node.Data.ModelConfig
 	if modelConfig == nil {
 		return "", fmt.Errorf("LLM 节点缺少模型配置")
 	}
 
-	nodeModelName := modelConfig.Model
 	nodeMaxTokens := 8192
 	if modelConfig.MaxTokens > 0 {
 		nodeMaxTokens = modelConfig.MaxTokens
@@ -34,146 +32,33 @@ func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *type
 	if modelConfig.Temperature > 0 {
 		nodeTemperature = float32(modelConfig.Temperature)
 	}
-	systemPrompt := modelConfig.SystemPrompt
-	llmToolNames := modelConfig.Tools
 	llmMaxToolRounds := modelConfig.MaxToolRounds
 	if llmMaxToolRounds <= 0 {
 		llmMaxToolRounds = 5
 	}
 
-	// 解析节点模型信息
-	var nodeEndpoint, nodeAPIKey, nodeModel string
-	if e.modelResolver != nil {
-		info, err := e.modelResolver.Resolve(nodeModelName)
-		if err == nil {
-			nodeEndpoint = info.Endpoint
-			nodeAPIKey = info.APIKey
-			nodeModel = info.Model
-		} else if nodeModelName != "" {
-			nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
-		}
-	} else if nodeModelName != "" {
-		nodeEndpoint, nodeAPIKey, nodeModel = nodeModelName, "", nodeModelName
-	}
-	if nodeEndpoint == "" {
-		nodeEndpoint = e.endpoint
-	}
-	if nodeAPIKey == "" {
-		nodeAPIKey = e.apiKey
-	}
-	if nodeModel == "" {
-		nodeModel = e.model
+	cfg := &LLMExecConfig{
+		NodeID:          node.Id,
+		NodeLabel:       node.Data.Label,
+		NodeType:        "llm",
+		ModelResolver:   e.modelResolver,
+		ModelName:       modelConfig.Model,
+		DefaultEndpoint: e.endpoint,
+		DefaultAPIKey:   e.apiKey,
+		DefaultModel:    e.model,
+		MaxTokens:       nodeMaxTokens,
+		Temperature:     nodeTemperature,
+		SystemPrompt:    modelConfig.SystemPrompt,
+		AllTools:        e.tools,
+		ToolNames:       modelConfig.Tools,
+		MaxToolRounds:   llmMaxToolRounds,
+		Retry:           modelConfig.Retry,
+		// 并行分支输出由 MergeResults 统一汇总，不作为最终内容推送
+		// Branch outputs are merged by MergeResults; do not push them as final content.
+		EmitFinalContent: false,
 	}
 
-	// 创建节点专属模型
-	nodeChatModel, err := openai.NewChatModel(ctx, &openai.ChatModelConfig{
-		BaseURL:     nodeEndpoint,
-		Model:       nodeModel,
-		APIKey:      nodeAPIKey,
-		MaxTokens:   &nodeMaxTokens,
-		Temperature: &nodeTemperature,
-	})
-	if err != nil {
-		return "", fmt.Errorf("创建节点模型失败: %w", err)
-	}
-
-	// 绑定工具（如果配置了）
-	var llmToolNode *compose.ToolsNode
-	if len(llmToolNames) > 0 {
-		llmNodeTools := e.getToolsByNames(llmToolNames)
-		if len(llmNodeTools) > 0 {
-			nodeToolInfos := make([]*schema.ToolInfo, 0, len(llmNodeTools))
-			for _, t := range llmNodeTools {
-				info, err := t.Info(ctx)
-				if err != nil {
-					continue
-				}
-				nodeToolInfos = append(nodeToolInfos, info)
-			}
-			if err := nodeChatModel.BindTools(nodeToolInfos); err != nil {
-				log.Warn("LLM 节点绑定工具失败", zap.String("nodeId", node.Id), zap.Error(err))
-			} else {
-				llmToolNode, _ = compose.NewToolNode(ctx, &compose.ToolsNodeConfig{
-					Tools:               llmNodeTools,
-					ExecuteSequentially: true,
-				})
-			}
-		}
-	}
-
-	// 构建消息
-	var messages []*schema.Message
-	if systemPrompt != "" {
-		messages = append(messages, schema.SystemMessage(systemPrompt))
-	}
-	if input != "" {
-		messages = append(messages, schema.UserMessage(input))
-	}
-
-	// 首次 LLM 调用
-	response, genErr := nodeChatModel.Generate(ctx, messages)
-	if genErr != nil {
-		return "", fmt.Errorf("LLM 调用失败: %w", genErr)
-	}
-
-	// 工具调用循环
-	for round := 0; round < llmMaxToolRounds; round++ {
-		if len(response.ToolCalls) == 0 {
-			break
-		}
-
-		// 发送工具调用开始消息
-		if callback != nil {
-			for _, tc := range response.ToolCalls {
-				callback(&global.Chunk{
-					NodeId:     node.Id,
-					NodeType:   "llm",
-					NodeLabel:  node.Data.Label,
-					ToolCallId: tc.ID,
-					ToolName:   tc.Function.Name,
-					ToolParams: tc.Function.Arguments,
-					ToolStatus: "running",
-					ShowMsg:    fmt.Sprintf("[%s] 调用工具: %s", node.Data.Label, tc.Function.Name),
-				})
-			}
-		}
-
-		messages = append(messages, response)
-
-		if llmToolNode != nil {
-			toolResults, toolErr := llmToolNode.Invoke(ctx, response)
-			if toolErr != nil {
-				messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
-			} else {
-				if callback != nil {
-					for _, tr := range toolResults {
-						callback(&global.Chunk{
-							NodeId:     node.Id,
-							NodeType:   "llm",
-							NodeLabel:  node.Data.Label,
-							ToolCallId: tr.ToolCallID,
-							ToolName:   tr.ToolName,
-							ToolResult: tr.Content,
-							ToolStatus: "completed",
-							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", node.Data.Label, tr.ToolName),
-						})
-					}
-				}
-				messages = append(messages, toolResults...)
-			}
-		}
-
-		response, genErr = nodeChatModel.Generate(ctx, messages)
-		if genErr != nil {
-			break
-		}
-	}
-
-	result := ""
-	if response != nil {
-		result = response.Content
-	}
-	return result, nil
+	return ExecuteLLM(ctx, cfg, input, callback)
 }
 
 // ExecuteToolNodeInParallel 在并行上下文中执行工具节点（实现 parallel.NodeExecutor 接口）
