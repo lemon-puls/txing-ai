@@ -331,7 +331,38 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}))
 
 		case "tool":
-			// 工具节点：直接执行工具（不经过 LLM，不消耗 Token）
+			// [TOOL-NODE-DISABLED] 工具节点已停用 / Tool node is DISABLED.
+			// 工具调用能力改由 LLM 节点绑定工具（Function Calling）提供。
+			// 为兼容存量工作流，此处注册一个透传节点保持图连通性：
+			// 运行时仅记录警告并原样传递输入，不再真正执行工具。
+			// 重新启用：删除下方透传实现，并恢复 [TOOL-NODE-DISABLED] 注释块中的原实现。
+			statusCbTool := nodeStatusCallback(callback, nodeId, "tool", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &types.NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "tool",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbTool("running")
+				log.Warn("tool 节点已停用，直接透传输入 / tool node disabled, passing input through",
+					zap.String("nodeId", nodeId), zap.String("label", node.Data.Label))
+				if input != nil {
+					execLog.Input = input.Content
+					execLog.Output = input.Content
+				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				types.SendExecutionLog(callback, execLog)
+				statusCbTool("completed")
+				return input, nil
+			}))
+
+			/* [TOOL-NODE-DISABLED] 工具节点原实现：直接执行工具（不经过 LLM，不消耗 Token）
+			   重新启用时取消本块注释，并删除上方透传实现。
+			   Original tool-node implementation. Uncomment this block and remove the
+			   passthrough above to re-enable.
 			var toolName string
 			var toolParams map[string]interface{}
 			var toolRetryConfig *types.RetryConfig
@@ -460,6 +491,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				statusCbTool("completed")
 				return schema.AssistantMessage(result, nil), nil
 			}))
+			*/
 
 		case "condition":
 			// 条件节点：执行条件判断并添加分支

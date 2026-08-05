@@ -23,7 +23,8 @@ import (
 // NodeExecutor is implemented by the workflow core to execute LLM/Tool nodes within parallel branches
 type NodeExecutor interface {
 	ExecuteLLMNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
-	ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
+	// [TOOL-NODE-DISABLED] 工具节点已停用，重新启用时恢复本方法
+	// ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
 }
 
 // ParallelGroup 并行组结构
@@ -202,8 +203,9 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *types.TopoNode
 	switch nodeType {
 	case "llm":
 		output, err = e.executeLLMNode(ctx, node, input, callback)
-	case "tool":
-		output, err = e.executeToolNode(ctx, node, input, callback)
+	// [TOOL-NODE-DISABLED] 工具节点已停用，落入 default 分支透传输入
+	// case "tool":
+	// 	output, err = e.executeToolNode(ctx, node, input, callback)
 	case "condition":
 		output, err = e.executeConditionNode(ctx, node, input, callback)
 	case "code":
@@ -293,6 +295,10 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *types.TopoN
 	return output, nil
 }
 
+/* [TOOL-NODE-DISABLED] 工具节点已停用：并行分支中的 tool 节点现由 executeNode 的
+   default 分支透传输入。重新启用时取消本块注释，并恢复 NodeExecutor 接口中的
+   ExecuteToolNodeInParallel 方法与 executeNode 中的 case "tool"。
+   Original implementation of parallel tool-node execution. Uncomment to re-enable.
 // executeToolNode 并行执行工具节点
 // executeToolNode executes a tool node in parallel context
 func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
@@ -320,6 +326,7 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *types.Topo
 	// 降级返回输入
 	return input, nil
 }
+*/
 
 // executeConditionNodeParallel 并行执行条件节点
 // executeConditionNodeParallel executes a condition node in parallel context

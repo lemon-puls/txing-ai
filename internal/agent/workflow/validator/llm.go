@@ -203,10 +203,11 @@ func buildTopologySummary(topologyJSON string) (string, error) {
 				config["temperature"] = node.Data.ModelConfig.Temperature
 				config["maxTokens"] = node.Data.ModelConfig.MaxTokens
 			}
-		case "tool":
-			if node.Data.ToolConfig != nil {
-				config["tools"] = node.Data.ToolConfig.Tools
-			}
+		// [TOOL-NODE-DISABLED] 工具节点已停用，不再提取其配置
+		// case "tool":
+		// 	if node.Data.ToolConfig != nil {
+		// 		config["tools"] = node.Data.ToolConfig.Tools
+		// 	}
 		case "condition":
 			if node.Data.ConditionConf != nil {
 				config["type"] = node.Data.ConditionConf.Type

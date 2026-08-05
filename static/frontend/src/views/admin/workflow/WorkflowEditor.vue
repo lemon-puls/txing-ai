@@ -425,6 +425,7 @@ const validationDialogVisible = ref(false)
 const validationForSave = ref(false) // 是否是保存前触发的校验
 
 // 注册自定义节点类型
+// [TOOL-NODE-DISABLED] tool 节点已停用添加与执行，但保留渲染注册以兼容存量工作流画布
 const nodeTypes = {
   start: markRaw(StartNode),
   end: markRaw(EndNode),
@@ -548,13 +549,14 @@ const onDrop = (event) => {
           maxToolRounds: 5
         }
       } : {}),
-      ...(type === 'tool' ? {
-        toolConfig: {
-          toolName: '',
-          params: {},
-          tools: []
-        }
-      } : {}),
+      // [TOOL-NODE-DISABLED] 工具节点已停用，不再在添加节点时创建 toolConfig
+      // ...(type === 'tool' ? {
+      //   toolConfig: {
+      //     toolName: '',
+      //     params: {},
+      //     tools: []
+      //   }
+      // } : {}),
       ...(type === 'condition' ? {
         conditionConfig: {
           type: 'expression',

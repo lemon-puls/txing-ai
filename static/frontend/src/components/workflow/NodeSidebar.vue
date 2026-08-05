@@ -140,6 +140,8 @@
             </div>
             <span>大模型节点</span>
           </div>
+          <!-- [TOOL-NODE-DISABLED] 工具节点已停用：工具调用改由 LLM 节点绑定工具提供。
+               重新启用时取消下方注释，并恢复后端 [TOOL-NODE-DISABLED] 标记的代码。
           <div
             class="node-item tool"
             draggable="true"
@@ -150,6 +152,8 @@
             </div>
             <span>工具节点</span>
           </div>
+          -->
+
           <div
             class="node-item agent"
             draggable="true"

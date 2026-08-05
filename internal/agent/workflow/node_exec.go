@@ -2,16 +2,17 @@ package workflow
 
 import (
 	"context"
-	"encoding/json"
+	// [TOOL-NODE-DISABLED] 工具节点停用后以下导入暂无使用，重新启用时恢复
+	// "encoding/json"
 	"fmt"
 
-	"github.com/cloudwego/eino/components/tool"
-	"go.uber.org/zap"
+	// "github.com/cloudwego/eino/components/tool"
+	// "go.uber.org/zap"
 
-	"txing-ai/internal/agent/workflow/parallel"
+	// "txing-ai/internal/agent/workflow/parallel"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
-	"txing-ai/internal/global/logging/log"
+	// "txing-ai/internal/global/logging/log"
 )
 
 // ExecuteLLMNodeInParallel 在并行上下文中执行 LLM 节点（实现 parallel.NodeExecutor 接口）
@@ -61,6 +62,10 @@ func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *type
 	return ExecuteLLM(ctx, cfg, input, callback)
 }
 
+/* [TOOL-NODE-DISABLED] 工具节点已停用（实现 parallel.NodeExecutor 接口）。
+   工具调用能力改由 LLM 节点绑定工具提供。重新启用时取消本块注释，并恢复
+   parallel.NodeExecutor 接口中的 ExecuteToolNodeInParallel 方法声明。
+   Original implementation of tool-node execution in parallel context.
 // ExecuteToolNodeInParallel 在并行上下文中执行工具节点（实现 parallel.NodeExecutor 接口）
 // ExecuteToolNodeInParallel executes a tool node in parallel context
 func (e *WorkflowAgent) ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
@@ -118,3 +123,4 @@ func (e *WorkflowAgent) ExecuteToolNodeInParallel(ctx context.Context, node *typ
 	log.Info("工具执行成功", zap.String("nodeId", node.Id), zap.String("toolName", toolName))
 	return result, nil
 }
+*/

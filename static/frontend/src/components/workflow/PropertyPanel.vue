@@ -61,7 +61,9 @@
         </el-form>
       </div>
 
-      <!-- 工具节点配置 -->
+      <!-- [TOOL-NODE-DISABLED] 工具节点已停用：配置区不再展示。
+           脚本中的 toolConfig 默认值与 toolParamsStr/parseToolParams 暂保留，
+           用于兼容存量 tool 节点数据加载；重新启用时取消下方注释即可。
       <div class="config-section" v-if="nodeType === 'tool'">
         <div class="section-title">工具配置</div>
         <el-form label-position="top" size="small">
@@ -84,6 +86,8 @@
           </el-form-item>
         </el-form>
       </div>
+      -->
+
 
       <!-- 条件节点配置 -->
       <div class="config-section" v-if="nodeType === 'condition'">
