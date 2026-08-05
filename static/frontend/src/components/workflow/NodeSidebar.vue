@@ -204,7 +204,8 @@
         </div>
       </div>
 
-      <!-- 集成节点 -->
+      <!-- [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码/HTTP 节点已停用（功能尚不完善，先行隐藏）。
+           整个"集成"分类一并注释。重新启用时取消下方注释，并恢复后端 [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 标记的接线。
       <div class="category">
         <div class="category-title">集成</div>
         <div class="category-items">
@@ -230,6 +231,8 @@
           </div>
         </div>
       </div>
+      -->
+
     </div>
 
     <div class="sidebar-footer">

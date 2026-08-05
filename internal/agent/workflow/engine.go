@@ -14,7 +14,8 @@ import (
 
 	agentpkg "txing-ai/internal/agent/agent"
 	"txing-ai/internal/agent/workflow/condition"
-	nodeexec "txing-ai/internal/agent/workflow/node"
+	// [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 节点停用后 node 子包暂无调用方，重新启用时恢复
+	// nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/agent/workflow/parallel"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
@@ -596,7 +597,34 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			}))
 
 		case "code":
-			// 代码节点：执行自定义代码
+			// [CODE-NODE-DISABLED] 代码节点已停用：功能尚不完善（参数注入等），先行隐藏。
+			// 实现文件 node/code.go 保留；重新启用时恢复下方注释的接线，
+			// 并恢复前端 [CODE-NODE-DISABLED] 标记的代码。
+			// 为兼容存量工作流，注册透传节点保持图连通性。
+			statusCbCode := nodeStatusCallback(callback, nodeId, "code", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &types.NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "code",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbCode("running")
+				log.Warn("code 节点已停用，直接透传输入 / code node disabled, passing input through",
+					zap.String("nodeId", nodeId), zap.String("label", node.Data.Label))
+				if input != nil {
+					execLog.Input = input.Content
+					execLog.Output = input.Content
+				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				types.SendExecutionLog(callback, execLog)
+				statusCbCode("completed")
+				return input, nil
+			}))
+
+			/* [CODE-NODE-DISABLED] 原接线：调用 nodeexec.ExecuteCodeNode 执行自定义代码
 			codeConfig := node.Data.CodeConfig
 			if codeConfig == nil {
 				log.Warn("代码节点配置为空，跳过", zap.String("nodeId", nodeId))
@@ -611,9 +639,37 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				return result, nil
 			}))
+			*/
 
 		case "http":
-			// HTTP 节点：发送 HTTP 请求
+			// [HTTP-NODE-DISABLED] HTTP 节点已停用：功能尚不完善（请求方式/参数形式等），先行隐藏。
+			// 实现文件 node/http.go 保留；重新启用时恢复下方注释的接线，
+			// 并恢复前端 [HTTP-NODE-DISABLED] 标记的代码。
+			// 为兼容存量工作流，注册透传节点保持图连通性。
+			statusCbHTTP := nodeStatusCallback(callback, nodeId, "http", node.Data.Label)
+			graph.AddLambdaNode(nodeId, compose.InvokableLambda(func(ctx context.Context, input *schema.Message) (*schema.Message, error) {
+				execLog := &types.NodeExecutionLog{
+					NodeID:    nodeId,
+					NodeType:  "http",
+					NodeLabel: node.Data.Label,
+					StartTime: time.Now().UnixMilli(),
+				}
+				statusCbHTTP("running")
+				log.Warn("http 节点已停用，直接透传输入 / http node disabled, passing input through",
+					zap.String("nodeId", nodeId), zap.String("label", node.Data.Label))
+				if input != nil {
+					execLog.Input = input.Content
+					execLog.Output = input.Content
+				}
+				execLog.Status = "completed"
+				execLog.EndTime = time.Now().UnixMilli()
+				execLog.Duration = execLog.EndTime - execLog.StartTime
+				types.SendExecutionLog(callback, execLog)
+				statusCbHTTP("completed")
+				return input, nil
+			}))
+
+			/* [HTTP-NODE-DISABLED] 原接线：调用 nodeexec.ExecuteHTTPNode 发送 HTTP 请求
 			httpConfig := node.Data.HTTPConfig
 			if httpConfig == nil {
 				log.Warn("HTTP 节点配置为空，跳过", zap.String("nodeId", nodeId))
@@ -628,6 +684,7 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				return result, nil
 			}))
+			*/
 
 		case "subworkflow":
 			// 子工作流节点：调用其他工作流

@@ -142,7 +142,9 @@
         </el-form>
       </div>
 
-      <!-- 代码节点配置 -->
+      <!-- [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码/HTTP 节点已停用，配置区不再展示。
+           脚本中的 codeConfig/httpConfig 默认值与 httpHeadersStr/parseHttpHeaders 暂保留，
+           用于兼容存量节点数据加载；重新启用时取消下方注释即可。
       <div class="config-section" v-if="nodeType === 'code'">
         <div class="section-title">代码配置</div>
         <el-form label-position="top" size="small">
@@ -168,7 +170,6 @@
         </el-form>
       </div>
 
-      <!-- HTTP 节点配置 -->
       <div class="config-section" v-if="nodeType === 'http'">
         <div class="section-title">HTTP 配置</div>
         <el-form label-position="top" size="small">
@@ -206,6 +207,8 @@
           </el-form-item>
         </el-form>
       </div>
+      -->
+
 
       <!-- Agent 节点配置 -->
       <div class="config-section" v-if="nodeType === 'agent'">

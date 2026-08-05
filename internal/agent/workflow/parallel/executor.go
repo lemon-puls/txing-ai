@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"txing-ai/internal/agent/workflow/condition"
-	nodeexec "txing-ai/internal/agent/workflow/node"
+	// [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 节点停用后以下导入暂无使用，重新启用时恢复
+	// nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 
-	"github.com/cloudwego/eino/schema"
+	// "github.com/cloudwego/eino/schema"
 	"go.uber.org/zap"
 )
 
@@ -208,10 +209,12 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *types.TopoNode
 	// 	output, err = e.executeToolNode(ctx, node, input, callback)
 	case "condition":
 		output, err = e.executeConditionNode(ctx, node, input, callback)
-	case "code":
-		output, err = e.executeCodeNodeParallel(ctx, node, input, callback)
-	case "http":
-		output, err = e.executeHTTPNodeParallel(ctx, node, input, callback)
+	// [CODE-NODE-DISABLED] 代码节点已停用，落入 default 分支透传输入
+	// case "code":
+	// 	output, err = e.executeCodeNodeParallel(ctx, node, input, callback)
+	// [HTTP-NODE-DISABLED] HTTP 节点已停用，落入 default 分支透传输入
+	// case "http":
+	// 	output, err = e.executeHTTPNodeParallel(ctx, node, input, callback)
 	case "start", "end":
 		output, err = input, nil
 	default:
@@ -354,6 +357,10 @@ func (e *ParallelExecutor) executeConditionNode(ctx context.Context, node *types
 	}
 }
 
+/* [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码节点与 HTTP 节点已停用：
+   并行分支中的 code/http 节点现由 executeNode 的 default 分支透传输入。
+   重新启用时取消本块注释，并恢复 executeNode 中的 case "code" / case "http"。
+   Original implementations of parallel code/http node execution. Uncomment to re-enable.
 // executeCodeNodeParallel 在并行上下文中执行代码节点
 // executeCodeNodeParallel executes a code node in parallel context
 func (e *ParallelExecutor) executeCodeNodeParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
@@ -428,6 +435,7 @@ func (e *ParallelExecutor) executeHTTPNodeParallel(ctx context.Context, node *ty
 	}
 	return input, nil
 }
+*/
 
 // ExecuteParallelGroup 使用 goroutine pool 并行执行所有分支
 // ExecuteParallelGroup executes all branches in parallel using goroutine pool

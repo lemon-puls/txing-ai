@@ -426,6 +426,7 @@ const validationForSave = ref(false) // 是否是保存前触发的校验
 
 // 注册自定义节点类型
 // [TOOL-NODE-DISABLED] tool 节点已停用添加与执行，但保留渲染注册以兼容存量工作流画布
+// [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] code/http 节点已停用，同样保留渲染注册
 const nodeTypes = {
   start: markRaw(StartNode),
   end: markRaw(EndNode),
@@ -569,22 +570,23 @@ const onDrop = (event) => {
           failureBranch: 'false'
         }
       } : {}),
-      ...(type === 'code' ? {
-        codeConfig: {
-          language: 'javascript',
-          code: '// 在此编写代码\n// 输入变量: input\n// 输出: return 结果\nreturn input;',
-          timeout: 30
-        }
-      } : {}),
-      ...(type === 'http' ? {
-        httpConfig: {
-          method: 'GET',
-          url: '',
-          headers: {},
-          body: '',
-          timeout: 30
-        }
-      } : {}),
+      // [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 节点已停用，不再在添加节点时创建默认配置
+      // ...(type === 'code' ? {
+      //   codeConfig: {
+      //     language: 'javascript',
+      //     code: '// 在此编写代码\n// 输入变量: input\n// 输出: return 结果\nreturn input;',
+      //     timeout: 30
+      //   }
+      // } : {}),
+      // ...(type === 'http' ? {
+      //   httpConfig: {
+      //     method: 'GET',
+      //     url: '',
+      //     headers: {},
+      //     body: '',
+      //     timeout: 30
+      //   }
+      // } : {}),
       ...(type === 'agent' ? {
         agentConfig: {
           systemPrompt: '',
