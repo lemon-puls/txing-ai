@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "whodb-mysql": {
+      "type": "http",
+      "url": "http://localhost:3090/mcp"
+    }
+  }
+}
