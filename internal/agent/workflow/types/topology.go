@@ -60,7 +60,6 @@ type NodeData struct {
 	CodeConfig        *CodeConfig         `json:"codeConfig,omitempty"`
 	HTTPConfig        *HTTPConfig         `json:"httpConfig,omitempty"`
 	SubWorkflowConfig *SubWorkflowConfig  `json:"subWorkflowConfig,omitempty"`
-	AgentConfig       *AgentConfig        `json:"agentConfig,omitempty"`
 	ParallelConfig    *ParallelConfig     `json:"parallelConfig,omitempty"`  // 并行组配置 / Parallel group config
 	JoinConfig        *JoinConfig         `json:"joinConfig,omitempty"`      // 汇聚节点配置 / Join node config
 	Extra             map[string]interface{} `json:"extra,omitempty"`        // 扩展字段，用于存储 parallelId 等 / Extra fields for parallelId etc.

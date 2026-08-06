@@ -588,11 +588,6 @@ const onDrop = (event) => {
       //   }
       // } : {}),
       ...(type === 'agent' ? {
-        agentConfig: {
-          systemPrompt: '',
-          tools: [],
-          maxRunSteps: 30
-        },
         modelConfig: {
           model: '',
           systemPrompt: '',
@@ -600,7 +595,8 @@ const onDrop = (event) => {
           maxTokens: 4096,
           contextEnabled: true,
           tools: [],
-          maxToolRounds: 5
+          maxToolRounds: 5,
+          maxRunSteps: 30
         }
       } : {}),
       ...(type === 'parallel' ? {

@@ -719,26 +719,11 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 		case "agent":
 			// Agent 节点：支持多轮工具调用循环（参照阿里百炼 Agent 节点设计）
-			agentConfig := node.Data.AgentConfig
-			if agentConfig == nil {
-				log.Warn("Agent 节点配置为空，跳过", zap.String("nodeId", nodeId))
-				continue
-			}
-
-			// 解析节点模型信息
+			// 配置统一来自 ModelConfig（AgentConfig 兼容层已移除，maxRunSteps 亦并入 ModelConfig）。
 			agentModelName := ""
-			if node.Data.ModelConfig != nil && node.Data.ModelConfig.Model != "" {
-				agentModelName = node.Data.ModelConfig.Model
-			}
-
-			// 字段合并：ModelConfig 优先，缺失字段回退 AgentConfig / Merge fields: ModelConfig wins, fall back to AgentConfig
-			systemPrompt := agentConfig.SystemPrompt
+			systemPrompt := ""
 			var agentTools []string
 			agentMaxRunSteps := 30
-			if agentConfig.MaxRunSteps > 0 {
-				agentMaxRunSteps = agentConfig.MaxRunSteps
-			}
-			// 仅 ModelConfig 提供 / ModelConfig-only fields
 			maxToolRounds := 0
 			temperature := float32(0.7)
 			maxTokens := 4096
@@ -746,11 +731,13 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 			if node.Data.ModelConfig != nil {
 				mc := node.Data.ModelConfig
-				if mc.SystemPrompt != "" {
-					systemPrompt = mc.SystemPrompt
+				if mc.Model != "" {
+					agentModelName = mc.Model
 				}
-				if len(mc.Tools) > 0 {
-					agentTools = mc.Tools
+				systemPrompt = mc.SystemPrompt
+				agentTools = mc.Tools
+				if mc.MaxRunSteps > 0 {
+					agentMaxRunSteps = mc.MaxRunSteps
 				}
 				if mc.MaxToolRounds > 0 {
 					maxToolRounds = mc.MaxToolRounds
@@ -763,13 +750,9 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				retryConfig = mc.Retry
 			}
-			// agentConfig.Tools 仅在 modelConfig 未指定时回退 / Fallback tools to agentConfig only when modelConfig didn't provide any
-			if len(agentTools) == 0 && len(agentConfig.Tools) > 0 {
-				agentTools = agentConfig.Tools
-			}
 
-			// 工具调用轮次上限：优先 ModelConfig.MaxToolRounds，否则回退 AgentConfig.MaxRunSteps
-			// Tool-call round limit: ModelConfig.MaxToolRounds wins, falling back to AgentConfig.MaxRunSteps
+			// 工具调用轮次上限：优先 ModelConfig.MaxToolRounds，否则回退 ModelConfig.MaxRunSteps
+			// Tool-call round limit: ModelConfig.MaxToolRounds wins, falling back to ModelConfig.MaxRunSteps
 			agentMaxToolRounds := agentMaxRunSteps
 			if maxToolRounds > 0 {
 				agentMaxToolRounds = maxToolRounds

@@ -19,9 +19,9 @@
         <span class="info-label">模型:</span>
         <span class="info-value model-default">未指定</span>
       </div>
-      <div class="info-row" v-if="agentConfig?.tools?.length">
+      <div class="info-row" v-if="modelConfig?.tools?.length">
         <span class="info-label">工具:</span>
-        <span class="info-value">{{ agentConfig.tools.length }} 个</span>
+        <span class="info-value">{{ modelConfig.tools.length }} 个</span>
       </div>
     </div>
 
@@ -41,7 +41,6 @@ const props = defineProps({
 })
 
 const label = computed(() => props.data?.label || 'Agent')
-const agentConfig = computed(() => props.data?.agentConfig || {})
 const modelConfig = computed(() => props.data?.modelConfig || {})
 </script>
 

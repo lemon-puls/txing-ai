@@ -16,6 +16,7 @@ type ModelConfig struct {
 	ContextEnabled bool         `json:"contextEnabled"`
 	Tools          []string     `json:"tools,omitempty"`  // 绑定的工具列表（LLM 通过 Function Calling 自主调用）
 	MaxToolRounds  int          `json:"maxToolRounds,omitempty"` // 最大工具调用轮次，默认 5
+	MaxRunSteps    int          `json:"maxRunSteps,omitempty"`   // 最大执行步数（Agent 节点多轮循环上限），默认 30
 	Retry          *RetryConfig `json:"retry,omitempty"` // 重试配置
 }
 
@@ -60,13 +61,6 @@ type SubWorkflowConfig struct {
 	WorkflowID int64  `json:"workflowId"`          // 子工作流 ID
 	Input      string `json:"input,omitempty"`     // 输入模板（支持 {{output}} 变量替换）
 	Timeout    int    `json:"timeout,omitempty"`   // 超时时间（秒），默认 60
-}
-
-// AgentConfig Agent 节点配置（支持多轮工具调用循环）
-type AgentConfig struct {
-	SystemPrompt string   `json:"systemPrompt"`         // 系统提示词
-	Tools        []string `json:"tools,omitempty"`       // 工具名称列表（为空则使用全部工具）
-	MaxRunSteps  int      `json:"maxRunSteps,omitempty"` // 最大执行步数，默认 30
 }
 
 // ParallelConfig 并行组节点配置

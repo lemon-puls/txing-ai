@@ -239,25 +239,8 @@
             </el-checkbox-group>
           </el-form-item>
 
-          <div class="divider"></div>
-          <div class="sub-section-title">Agent 行为</div>
-          <el-form-item label="系统提示词 (Agent 兜底)">
-            <el-input
-              v-model="localData.agentConfig.systemPrompt"
-              type="textarea"
-              :rows="4"
-              placeholder="当上方模型配置的系统提示词为空时使用"
-            />
-          </el-form-item>
-          <el-form-item label="选择工具 (Agent 兜底)">
-            <el-checkbox-group v-model="localData.agentConfig.tools">
-              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
-                {{ tool.displayName }}
-              </el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
           <el-form-item label="最大执行步数">
-            <el-input-number v-model="localData.agentConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
+            <el-input-number v-model="localData.modelConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
           </el-form-item>
         </el-form>
       </div>
@@ -347,7 +330,8 @@ const localData = ref({
     maxTokens: 4096,
     contextEnabled: true,
     tools: [],
-    maxToolRounds: 5
+    maxToolRounds: 5,
+    maxRunSteps: 30
   },
   toolConfig: {
     toolName: '',
@@ -376,11 +360,6 @@ const localData = ref({
     body: '',
     timeout: 30
   },
-  agentConfig: {
-    systemPrompt: '',
-    tools: [],
-    maxRunSteps: 30
-  },
   parallelConfig: {
     maxConcurrency: 3,
     waitStrategy: 'all',
@@ -400,12 +379,11 @@ watch(() => props.selectedNode, (newNode) => {
     localData.value = {
       label: newNode.data?.label || '',
       description: newNode.data?.description || '',
-      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 4096, contextEnabled: true, tools: [], maxToolRounds: 5 },
+      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 4096, contextEnabled: true, tools: [], maxToolRounds: 5, maxRunSteps: 30 },
       toolConfig: newNode.data?.toolConfig || { toolName: '', params: {}, tools: [] },
       conditionConfig: newNode.data?.conditionConfig || { type: 'expression', expression: '', llmPrompt: '', toolName: '', toolResultKey: '', expectedValue: '', failureAction: 'default_false', failureBranch: 'false' },
       codeConfig: newNode.data?.codeConfig || { language: 'javascript', code: '', timeout: 30 },
       httpConfig: newNode.data?.httpConfig || { method: 'GET', url: '', headers: {}, body: '', timeout: 30 },
-      agentConfig: newNode.data?.agentConfig || { systemPrompt: '', tools: [], maxRunSteps: 30 },
       parallelConfig: newNode.data?.parallelConfig || { maxConcurrency: 3, waitStrategy: 'all', timeout: 60 },
       joinConfig: newNode.data?.joinConfig || { strategy: 'all', timeout: 60 }
     }

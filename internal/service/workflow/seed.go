@@ -77,10 +77,15 @@ func buildTravelTopology() string {
 				"data": map[string]interface{}{
 					"nodeType": "agent",
 					"label":    "旅游攻略生成",
-					"agentConfig": map[string]interface{}{
-						"systemPrompt": getTravelSystemPrompt(),
-						"tools":        travelTools,
-						"maxRunSteps":  50,
+					"modelConfig": map[string]interface{}{
+						"model":          "mimo-v2.5",
+						"systemPrompt":   getTravelSystemPrompt(),
+						"tools":          travelTools,
+						"maxRunSteps":    50,
+						"maxTokens":      4096,
+						"temperature":    0.7,
+						"maxToolRounds":  5,
+						"contextEnabled": true,
 					},
 				},
 			},
