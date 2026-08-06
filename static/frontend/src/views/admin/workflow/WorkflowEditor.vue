@@ -1282,13 +1282,9 @@ $text-muted: #94a3b8;
 .workflow-editor-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 100px);
-  background: linear-gradient(180deg, $bg-light 0%, $bg-card 100%);
-  border-radius: 16px;
+  height: 100vh;
+  background: $bg-light;
   overflow: hidden;
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    0 1px 3px rgba(0, 0, 0, 0.04);
 
   .header {
     display: flex;

@@ -221,7 +221,8 @@ const router = createRouter({
           component: () => import('@/views/admin/workflow/WorkflowEditor.vue'),
           meta: {
             title: '工作流编辑',
-            roles: ['admin']
+            roles: ['admin'],
+            fullscreen: true // 沉浸式编辑：隐藏后台侧边栏与顶栏
           }
         },
         {
