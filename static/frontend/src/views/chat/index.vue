@@ -170,7 +170,7 @@
                 </div>
                 <!-- 多模态图片显示 -->
                 <div v-if="message.images && message.images.length > 0" class="message-images">
-                  <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(imgUrl)">
+                  <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(message.images, idx)">
                     <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
                     <div class="image-overlay">
                       <el-icon><ZoomIn /></el-icon>
@@ -551,6 +551,14 @@
     <!-- Theme Drawer -->
     <ThemeDrawer
       v-model="showThemeDrawer"
+    />
+
+    <!-- 聊天图片预览器 -->
+    <el-image-viewer
+      v-if="imagePreviewVisible"
+      :url-list="imagePreviewList"
+      :initial-index="imagePreviewIndex"
+      @close="imagePreviewVisible = false"
     />
   </div>
 </template>
@@ -998,13 +1006,10 @@ const processFiles = (files) => {
       url: null
     }
 
-    // 为图片生成预览
+    // 为图片生成预览（同步创建 blob URL，确保首帧渲染即回显；
+    // 原 FileReader 异步回写普通对象不触发响应式更新，导致破图）
     if (fileObj.category === 'image') {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        fileObj.preview = e.target.result
-      }
-      reader.readAsDataURL(file)
+      fileObj.preview = URL.createObjectURL(file)
     }
 
     chatFiles.value.push(fileObj)
@@ -1013,7 +1018,15 @@ const processFiles = (files) => {
 
 // 移除文件
 const removeChatFile = (index) => {
+  revokeFilePreview(chatFiles.value[index])
   chatFiles.value.splice(index, 1)
+}
+
+// 释放图片预览的 blob URL，避免内存泄漏
+const revokeFilePreview = (fileObj) => {
+  if (fileObj?.preview?.startsWith('blob:')) {
+    URL.revokeObjectURL(fileObj.preview)
+  }
 }
 
 // 触发文件选择
@@ -1255,6 +1268,7 @@ const sendMessage = async () => {
     editorEl.innerText = ''
     editorEl.style.height = 'auto'
   }
+  chatFiles.value.forEach(revokeFilePreview)
   chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
   await scrollToBottom()
@@ -1636,9 +1650,14 @@ const getMessageWorkflow = (message) => {
   return null
 }
 
-// 预览消息中的图片
-const previewMessageImage = (url) => {
-  window.open(url, '_blank')
+// 预览消息中的图片（页内查看器，支持左右切换，不打开新标签页）
+const imagePreviewVisible = ref(false)
+const imagePreviewList = ref([])
+const imagePreviewIndex = ref(0)
+const previewMessageImage = (images, index) => {
+  imagePreviewList.value = images
+  imagePreviewIndex.value = index
+  imagePreviewVisible.value = true
 }
 
 // 下载附件
@@ -2489,24 +2508,6 @@ const batchDelete = async () => {
     padding: 16px;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
 }
 
 .message-item {
