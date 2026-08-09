@@ -258,9 +258,35 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 		}
 	}
 
+	// [TOOL-ROUND-LIMIT] 轮次耗尽但模型仍在请求工具调用：
+	// 工具调用响应通常无文本内容（Content 为空），直接返回会导致最终输出为空。
+	// 这里执行最后一批工具并做收尾生成，让模型基于结果产出最终答复。
+	if response != nil && len(response.ToolCalls) > 0 && llmToolNode != nil {
+		messages = append(messages, response)
+		if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
+			messages = append(messages, errMsgs...)
+		} else if toolResults, toolErr := llmToolNode.Invoke(ctx, response); toolErr != nil {
+			messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
+		} else {
+			messages = append(messages, toolResults...)
+		}
+		// 收尾生成：本次结果作为最终输出，不再继续工具循环
+		if execErr := executeWithRetry(cfg.Retry, func() error {
+			var genErr error
+			response, genErr = nodeChatModel.Generate(ctx, messages)
+			return genErr
+		}); execErr != nil {
+			log.Error("LLM 收尾生成失败", zap.String("nodeId", cfg.NodeID), zap.Error(execErr))
+		}
+	}
+
 	result := ""
 	if response != nil {
 		result = response.Content
+	}
+	// 最终兜底：仍未产出内容时给出提示，避免返回空字符串
+	if result == "" && cfg.EmitFinalContent {
+		result = "执行未能完成，可能因工具调用轮次达到上限，请稍后重试。"
 	}
 
 	// 推送最终内容 / Emit final content

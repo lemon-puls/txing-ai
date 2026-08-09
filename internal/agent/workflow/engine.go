@@ -724,7 +724,6 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			systemPrompt := ""
 			var agentTools []string
 			agentMaxRunSteps := 30
-			maxToolRounds := 0
 			temperature := float32(0.7)
 			maxTokens := 4096
 			var retryConfig *types.RetryConfig
@@ -739,9 +738,6 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				if mc.MaxRunSteps > 0 {
 					agentMaxRunSteps = mc.MaxRunSteps
 				}
-				if mc.MaxToolRounds > 0 {
-					maxToolRounds = mc.MaxToolRounds
-				}
 				if mc.Temperature > 0 {
 					temperature = float32(mc.Temperature)
 				}
@@ -751,12 +747,11 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				retryConfig = mc.Retry
 			}
 
-			// 工具调用轮次上限：优先 ModelConfig.MaxToolRounds，否则回退 ModelConfig.MaxRunSteps
-			// Tool-call round limit: ModelConfig.MaxToolRounds wins, falling back to ModelConfig.MaxRunSteps
+			// Agent 节点多轮循环上限由 MaxRunSteps 控制：
+			// MaxToolRounds 是 LLM 节点的轮次语义，前端默认填充的 5 不应限制 Agent 的
+			// 自主循环，否则复杂任务（如旅游攻略）在 5 轮内无法完成，最终无输出。
+			// Tool-call round limit for Agent node is driven by MaxRunSteps.
 			agentMaxToolRounds := agentMaxRunSteps
-			if maxToolRounds > 0 {
-				agentMaxToolRounds = maxToolRounds
-			}
 
 			statusCbAgent := nodeStatusCallback(callback, nodeId, "agent", node.Data.Label)
 
