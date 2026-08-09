@@ -39,8 +39,14 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 
 		// 如果消息包含图片，使用 MultiContent 格式
 		if (hasImageContent || hasImageAttachment) && msg.Role == global.User {
+			// 仅发图片未输入文字时，ChatMessagePart.Text 为空会被 omitempty 省略，
+			// 导致上游报 "text is not set"，这里提供占位文本兜底
+			textContent := msg.Content
+			if textContent == "" {
+				textContent = "[图片]"
+			}
 			parts := []schema.ChatMessagePart{
-				{Type: schema.ChatMessagePartTypeText, Text: msg.Content},
+				{Type: schema.ChatMessagePartTypeText, Text: textContent},
 			}
 			// 添加图片 URL
 			for _, imgURL := range msg.Images {
