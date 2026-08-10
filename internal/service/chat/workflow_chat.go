@@ -35,8 +35,26 @@ type NodeLog struct {
 
 // ToolCall 工具调用记录
 type ToolCall struct {
+	ID     string `json:"id,omitempty"`     // 工具调用 ID
 	Name   string `json:"name"`
 	Status string `json:"status"`
+	Args   string `json:"args,omitempty"`   // 调用参数（截断后，仅用于展示）
+	Result string `json:"result,omitempty"` // 执行结果（截断后，仅用于展示）
+}
+
+// 展示用截断阈值（args/result 可能很大，且 nodeLogs 会持久化进会话消息）
+const (
+	toolArgsMaxLen   = 1024
+	toolResultMaxLen = 4096
+)
+
+// truncateForDisplay 按 rune 截断超长文本，避免截断多字节字符
+func truncateForDisplay(s string, max int) string {
+	rs := []rune(s)
+	if len(rs) <= max {
+		return s
+	}
+	return string(rs[:max]) + "\n…(内容过长已截断)"
 }
 
 // HandleWorkflowChat 处理 AI 对话中的工作流执行
@@ -144,8 +162,10 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 			NodeStatus: chunk.NodeStatus,
 			ShowMsg:    chunk.ShowMsg,
 			ToolName:   chunk.ToolName,
+			ToolCallId: chunk.ToolCallId,
+			ToolArgs:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
 			ToolStatus: chunk.ToolStatus,
-			ToolResult: chunk.ToolResult,
+			ToolResult: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
 		}
 
 		// 收集输出内容
@@ -169,17 +189,46 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 					existing.Status = chunk.NodeStatus
 				}
 				if chunk.ToolName != "" {
-					lastIdx := len(existing.ToolCalls) - 1
-					if lastIdx >= 0 && existing.ToolCalls[lastIdx].Name == chunk.ToolName {
-						// 同名工具：更新状态
+					// 优先按 ToolCallId 精确匹配（同轮同名多次调用不互相覆盖）
+					matched := -1
+					if chunk.ToolCallId != "" {
+						for i := range existing.ToolCalls {
+							if existing.ToolCalls[i].ID == chunk.ToolCallId {
+								matched = i
+								break
+							}
+						}
+					} else if chunk.ToolStatus != "running" {
+						// 无 ToolCallId 兜底：结果类 chunk 回填最近一条"同名且仍在执行中"的记录；
+						// running 视为新调用起点，直接追加新记录，避免同名多次调用被合并
+						for i := len(existing.ToolCalls) - 1; i >= 0; i-- {
+							if existing.ToolCalls[i].Name == chunk.ToolName &&
+								existing.ToolCalls[i].Status == "running" {
+								matched = i
+								break
+							}
+						}
+					}
+
+					if matched >= 0 {
+						tc := &existing.ToolCalls[matched]
 						if chunk.ToolStatus != "" {
-							existing.ToolCalls[lastIdx].Status = chunk.ToolStatus
+							tc.Status = chunk.ToolStatus
+						}
+						if chunk.ToolParams != "" {
+							tc.Args = truncateForDisplay(chunk.ToolParams, toolArgsMaxLen)
+						}
+						if chunk.ToolResult != "" {
+							tc.Result = truncateForDisplay(chunk.ToolResult, toolResultMaxLen)
 						}
 					} else {
-						// 不同工具：追加
+						// 新工具调用：追加
 						existing.ToolCalls = append(existing.ToolCalls, ToolCall{
+							ID:     chunk.ToolCallId,
 							Name:   chunk.ToolName,
 							Status: chunk.ToolStatus,
+							Args:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+							Result: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
 						})
 					}
 				}
@@ -196,8 +245,11 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 				var toolCalls []ToolCall
 				if chunk.ToolName != "" {
 					toolCalls = append(toolCalls, ToolCall{
+						ID:     chunk.ToolCallId,
 						Name:   chunk.ToolName,
 						Status: chunk.ToolStatus,
+						Args:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+						Result: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
 					})
 				}
 				nodeLogMap[chunk.NodeId] = len(nodeLogs)

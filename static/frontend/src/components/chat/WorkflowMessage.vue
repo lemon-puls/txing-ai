@@ -31,16 +31,12 @@
             </div>
             <div class="node-body">
               <span class="node-label">{{ log.label || log.type }}</span>
-              <div v-if="log.toolCalls && log.toolCalls.length > 0" class="tool-calls">
-                <div
+              <div v-if="log.toolCalls && log.toolCalls.length > 0" class="tool-call-list">
+                <ToolCallItem
                   v-for="(tc, tcIdx) in log.toolCalls"
-                  :key="tcIdx"
-                  class="tool-chip"
-                  :class="tc.status"
-                >
-                  <el-icon :size="10"><Tools /></el-icon>
-                  <span>{{ tc.name }}</span>
-                </div>
+                  :key="tc.id || log.nodeId + '-' + tcIdx"
+                  :tool-call="tc"
+                />
               </div>
             </div>
           </div>
@@ -61,8 +57,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Share, ArrowDown, Check, Close, Loading, Document, Tools, Download } from '@element-plus/icons-vue'
+import { Share, ArrowDown, Check, Close, Loading, Document, Download } from '@element-plus/icons-vue'
 import { getAuthHeaders } from '@/api/auth'
+import ToolCallItem from './ToolCallItem.vue'
 
 const props = defineProps({
   appName: { type: String, default: '' },
@@ -83,7 +80,14 @@ onMounted(() => {
         type: log.type,
         label: log.label,
         status: log.status,
-        toolCalls: log.toolCalls || []
+        // 归一化字段（旧持久化数据可能缺 id/args/result），保证行与详情正常降级
+        toolCalls: (log.toolCalls || []).map(tc => ({
+          id: tc.id || '',
+          name: tc.name,
+          status: tc.status,
+          args: tc.args || '',
+          result: tc.result || ''
+        }))
       }
       nodeMap.value.set(log.nodeId, entry)
       nodeLogsData.value.push(entry)
@@ -105,11 +109,32 @@ watch(() => props.workflow, (w) => {
   if (existing) {
     existing.status = w.nodeStatus || existing.status
     if (w.toolName) {
-      const lastTc = existing.toolCalls[existing.toolCalls.length - 1]
-      if (lastTc && lastTc.name === w.toolName) {
-        lastTc.status = w.toolStatus || lastTc.status
+      // 优先按 toolCallId 精确匹配
+      let target = w.toolCallId
+        ? existing.toolCalls.find(tc => tc.id === w.toolCallId)
+        : null
+      // 无 id 兜底（兼容旧后端）：结果类数据回填最近一条"同名且仍在执行中"的行；
+      // running 视为新调用起点，直接追加新行，避免同名多次调用被合并
+      if (!target && !w.toolCallId && w.toolStatus && w.toolStatus !== 'running') {
+        for (let i = existing.toolCalls.length - 1; i >= 0; i--) {
+          if (existing.toolCalls[i].name === w.toolName && existing.toolCalls[i].status === 'running') {
+            target = existing.toolCalls[i]
+            break
+          }
+        }
+      }
+      if (target) {
+        if (w.toolStatus) target.status = w.toolStatus
+        if (w.toolArgs) target.args = w.toolArgs
+        if (w.toolResult) target.result = w.toolResult
       } else {
-        existing.toolCalls.push({ name: w.toolName, status: w.toolStatus || 'running' })
+        existing.toolCalls.push({
+          id: w.toolCallId || '',
+          name: w.toolName,
+          status: w.toolStatus || 'running',
+          args: w.toolArgs || '',
+          result: w.toolResult || ''
+        })
       }
     }
     if (w.nodeStatus === 'completed' || w.nodeStatus === 'failed') {
@@ -125,7 +150,13 @@ watch(() => props.workflow, (w) => {
       type: w.nodeType,
       label: w.nodeLabel,
       status: w.nodeStatus || 'running',
-      toolCalls: w.toolName ? [{ name: w.toolName, status: w.toolStatus || 'running' }] : []
+      toolCalls: w.toolName ? [{
+        id: w.toolCallId || '',
+        name: w.toolName,
+        status: w.toolStatus || 'running',
+        args: w.toolArgs || '',
+        result: w.toolResult || ''
+      }] : []
     }
     nodeMap.value.set(w.nodeId, log)
     nodeLogsData.value.push(log)
@@ -370,50 +401,14 @@ $info: #94a3b8;
   line-height: 1.4;
 }
 
-.tool-calls {
+.tool-call-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.tool-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  border: 1px solid var(--el-border-color-lighter);
-  transition: all 0.2s;
-
-  .el-icon {
-    opacity: 0.7;
-  }
-
-  &.running {
-    background: rgba($warning, 0.1);
-    color: $warning;
-    border-color: rgba($warning, 0.2);
-
-    .el-icon {
-      animation: spin 1s linear infinite;
-      opacity: 1;
-    }
-  }
-
-  &.completed {
-    background: rgba($success, 0.08);
-    color: $success;
-    border-color: rgba($success, 0.15);
-  }
-
-  &.failed {
-    background: rgba($danger, 0.08);
-    color: $danger;
-    border-color: rgba($danger, 0.15);
-  }
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

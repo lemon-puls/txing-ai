@@ -62,8 +62,10 @@ type WorkflowProgress struct {
 	NodeStatus string `json:"nodeStatus,omitempty"` // 节点状态
 	ShowMsg    string `json:"showMsg,omitempty"`    // 显示消息
 	ToolName   string `json:"toolName,omitempty"`   // 工具名称
+	ToolCallId string `json:"toolCallId,omitempty"` // 工具调用 ID（用于精确匹配同轮多次调用）
+	ToolArgs   string `json:"toolArgs,omitempty"`   // 工具调用参数（截断后，仅用于展示）
 	ToolStatus string `json:"toolStatus,omitempty"` // 工具调用状态 running/completed/failed
-	ToolResult string `json:"toolResult,omitempty"` // 工具结果
+	ToolResult string `json:"toolResult,omitempty"` // 工具结果（截断后，仅用于展示）
 }
 
 // ArtifactInfo 文件产物信息

@@ -168,6 +168,10 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 				break
 			}
 
+			// 兜底补齐工具调用 ID：部分 provider/中转不返回 ID，缺失会导致
+			// 前后端按 ID 精确匹配失效、同名多次调用被合并成一条
+			ensureToolCallIDs(response.ToolCalls, cfg.NodeID, round)
+
 			log.Info("LLM 节点工具调用",
 				zap.String("nodeId", cfg.NodeID),
 				zap.Int("round", round+1),
@@ -197,6 +201,22 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 			// Validate tool arguments: invalid JSON arguments are not executed;
 			// an error message is fed back so the model can self-repair.
 			if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
+				// 参数非法的工具不会执行，逐个推送 failed，避免前端工具行一直转圈、
+				// 节点收尾时被误标为成功
+				if callback != nil {
+					for _, tc := range response.ToolCalls {
+						callback(&global.Chunk{
+							NodeId:     cfg.NodeID,
+							NodeType:   cfg.NodeType,
+							NodeLabel:  cfg.NodeLabel,
+							ToolCallId: tc.ID,
+							ToolName:   tc.Function.Name,
+							ToolResult: "工具调用参数非法，本次调用未执行",
+							ToolStatus: "failed",
+							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 参数非法", cfg.NodeLabel, tc.Function.Name),
+						})
+					}
+				}
 				messages = append(messages, errMsgs...)
 			} else {
 				// 执行工具调用 / Invoke tools
@@ -205,13 +225,19 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 					log.Error("LLM 节点工具执行失败",
 						zap.String("nodeId", cfg.NodeID), zap.Error(toolErr))
 					if callback != nil {
-						callback(&global.Chunk{
-							NodeId:     cfg.NodeID,
-							NodeType:   cfg.NodeType,
-							NodeLabel:  cfg.NodeLabel,
-							ToolStatus: "failed",
-							ShowMsg:    fmt.Sprintf("[%s] 工具执行失败: %s", cfg.NodeLabel, toolErr.Error()),
-						})
+						// 逐个工具推送 failed（带身份与错误原因），让前端对应行能翻成失败并展示详情
+						for _, tc := range response.ToolCalls {
+							callback(&global.Chunk{
+								NodeId:     cfg.NodeID,
+								NodeType:   cfg.NodeType,
+								NodeLabel:  cfg.NodeLabel,
+								ToolCallId: tc.ID,
+								ToolName:   tc.Function.Name,
+								ToolResult: "工具执行失败: " + toolErr.Error(),
+								ToolStatus: "failed",
+								ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行失败: %s", cfg.NodeLabel, tc.Function.Name, toolErr.Error()),
+							})
+						}
 					}
 					messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
 				} else {
@@ -262,6 +288,8 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	// 工具调用响应通常无文本内容（Content 为空），直接返回会导致最终输出为空。
 	// 这里执行最后一批工具并做收尾生成，让模型基于结果产出最终答复。
 	if response != nil && len(response.ToolCalls) > 0 && llmToolNode != nil {
+		// 与主循环一致：补齐缺失的工具调用 ID，保证 ToolMessage 引用与展示匹配稳定
+		ensureToolCallIDs(response.ToolCalls, cfg.NodeID, maxToolRounds)
 		messages = append(messages, response)
 		if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
 			messages = append(messages, errMsgs...)
@@ -354,6 +382,21 @@ func selectLLMTools(ctx context.Context, cfg *LLMExecConfig) []tool.BaseTool {
 		}
 	}
 	return result
+}
+
+// ensureToolCallIDs 为缺失 ID 的工具调用生成唯一兜底 ID
+// ensureToolCallIDs assigns a synthetic unique ID to tool calls whose ID is
+// empty. Some providers/relays omit tool call IDs; without one, the ID-based
+// matching on both backend and frontend degrades and multiple calls of the
+// same tool get merged into a single row.
+// 注意：会原地修改 toolCalls（同一 response 随后交给 ToolsNode 执行，
+// 结果消息将携带相同 ID，保证 running/completed chunk 能精确对应）。
+func ensureToolCallIDs(toolCalls []schema.ToolCall, nodeID string, round int) {
+	for i := range toolCalls {
+		if toolCalls[i].ID == "" {
+			toolCalls[i].ID = fmt.Sprintf("tc-%s-r%d-%d", nodeID, round, i)
+		}
+	}
 }
 
 // validateToolCallArgs 校验工具调用参数是否为合法 JSON
