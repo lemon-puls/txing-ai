@@ -256,7 +256,8 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 							})
 						}
 					}
-					messages = append(messages, toolResults...)
+					// 回喂前截断超长结果（展示 chunk 已用原始全量内容推送，不受影响）
+					messages = append(messages, capToolResultsForContext(toolResults)...)
 				}
 			}
 
@@ -296,7 +297,7 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 		} else if toolResults, toolErr := llmToolNode.Invoke(ctx, response); toolErr != nil {
 			messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
 		} else {
-			messages = append(messages, toolResults...)
+			messages = append(messages, capToolResultsForContext(toolResults)...)
 		}
 		// 收尾生成：本次结果作为最终输出，不再继续工具循环
 		if execErr := executeWithRetry(cfg.Retry, func() error {
@@ -312,6 +313,36 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	if response != nil {
 		result = response.Content
 	}
+
+	// 截断续写：输出撞 token 上限时 finish_reason=length，内容会停在半截（如表格中间）。
+	// 以半成品为上下文让模型从截断处继续，最多续写 maxContinuations 次，内容拼接为完整结果。
+	// Truncation continuation: when generation stops at the token limit, resume
+	// from the partial answer and concatenate the pieces.
+	const maxContinuations = 2
+	for cont := 0; cont < maxContinuations; cont++ {
+		if response == nil || response.ResponseMeta == nil || response.ResponseMeta.FinishReason != "length" {
+			break
+		}
+		log.Warn("LLM 输出撞 token 上限被截断，尝试续写",
+			zap.String("nodeId", cfg.NodeID),
+			zap.Int("continuation", cont+1),
+			zap.Int("partialLen", len(response.Content)))
+		messages = append(messages, response, schema.UserMessage(
+			"你上面的输出因长度限制被截断。请严格从截断处继续输出：不要重复已输出的内容，不要添加任何前言或说明，直接续写正文。"))
+		contErr := executeWithRetry(cfg.Retry, func() error {
+			var genErr error
+			response, genErr = nodeChatModel.Generate(ctx, messages)
+			return genErr
+		})
+		if contErr != nil {
+			log.Error("LLM 截断续写生成失败", zap.String("nodeId", cfg.NodeID), zap.Error(contErr))
+			break
+		}
+		if response != nil {
+			result += response.Content
+		}
+	}
+
 	// 最终兜底：仍未产出内容时给出提示，避免返回空字符串
 	if result == "" && cfg.EmitFinalContent {
 		result = "执行未能完成，可能因工具调用轮次达到上限，请稍后重试。"
@@ -397,6 +428,40 @@ func ensureToolCallIDs(toolCalls []schema.ToolCall, nodeID string, round int) {
 			toolCalls[i].ID = fmt.Sprintf("tc-%s-r%d-%d", nodeID, round, i)
 		}
 	}
+}
+
+// 回喂 LLM 上下文的工具结果长度上限（按 rune 计）
+// toolContextMaxLen caps how much of each tool result is fed back into the
+// LLM context. Search-type tools can return huge payloads (e.g. image search
+// returns dozens of items per call); appending them in full bloats the
+// context, squeezes the output budget and slows generation down.
+const toolContextMaxLen = 8000
+
+// capToolResultsForContext 截断超长的工具结果以保护上下文预算
+// capToolResultsForContext returns copies of toolResults whose Content is
+// capped at toolContextMaxLen. Original messages are not mutated (display
+// chunks are emitted from the raw content elsewhere).
+func capToolResultsForContext(toolResults []*schema.Message) []*schema.Message {
+	capped := make([]*schema.Message, 0, len(toolResults))
+	for _, tr := range toolResults {
+		if tr == nil || len([]rune(tr.Content)) <= toolContextMaxLen {
+			capped = append(capped, tr)
+			continue
+		}
+		clone := *tr
+		clone.Content = truncateRunes(tr.Content, toolContextMaxLen) + "\n…(内容过长已截断)"
+		capped = append(capped, &clone)
+	}
+	return capped
+}
+
+// truncateRunes 按 rune 截断，避免截断多字节字符
+func truncateRunes(s string, max int) string {
+	rs := []rune(s)
+	if len(rs) <= max {
+		return s
+	}
+	return string(rs[:max])
 }
 
 // validateToolCallArgs 校验工具调用参数是否为合法 JSON

@@ -725,7 +725,9 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 			var agentTools []string
 			agentMaxRunSteps := 30
 			temperature := float32(0.7)
-			maxTokens := 4096
+			// 与 LLM 节点默认值对齐：4096 对长文输出（如旅游攻略）过小，
+			// 会撞输出 token 上限导致回答被截断（finish_reason=length）
+			maxTokens := 8192
 			var retryConfig *types.RetryConfig
 
 			if node.Data.ModelConfig != nil {

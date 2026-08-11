@@ -231,6 +231,10 @@
           <el-form-item label="温度 (Temperature)">
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
           </el-form-item>
+          <el-form-item label="最大Token数">
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
+            <div class="form-tip">单次生成的输出上限；长文输出（如攻略、报告）建议调大，撞顶时后端会自动续写</div>
+          </el-form-item>
           <el-form-item label="绑定工具">
             <el-checkbox-group v-model="localData.modelConfig.tools">
               <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
@@ -327,7 +331,7 @@ const localData = ref({
     model: '',
     systemPrompt: '',
     temperature: 0.7,
-    maxTokens: 4096,
+    maxTokens: 8192,
     contextEnabled: true,
     tools: [],
     maxToolRounds: 5,
@@ -379,7 +383,7 @@ watch(() => props.selectedNode, (newNode) => {
     localData.value = {
       label: newNode.data?.label || '',
       description: newNode.data?.description || '',
-      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 4096, contextEnabled: true, tools: [], maxToolRounds: 5, maxRunSteps: 30 },
+      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 8192, contextEnabled: true, tools: [], maxToolRounds: 5, maxRunSteps: 30 },
       toolConfig: newNode.data?.toolConfig || { toolName: '', params: {}, tools: [] },
       conditionConfig: newNode.data?.conditionConfig || { type: 'expression', expression: '', llmPrompt: '', toolName: '', toolResultKey: '', expectedValue: '', failureAction: 'default_false', failureBranch: 'false' },
       codeConfig: newNode.data?.codeConfig || { language: 'javascript', code: '', timeout: 30 },

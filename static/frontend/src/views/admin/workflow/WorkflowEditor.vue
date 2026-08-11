@@ -544,7 +544,7 @@ const onDrop = (event) => {
           model: '',
           systemPrompt: '',
           temperature: 0.7,
-          maxTokens: 4096,
+          maxTokens: 8192,
           contextEnabled: true,
           tools: [],
           maxToolRounds: 5
@@ -592,7 +592,7 @@ const onDrop = (event) => {
           model: '',
           systemPrompt: '',
           temperature: 0.7,
-          maxTokens: 4096,
+          maxTokens: 8192,
           contextEnabled: true,
           tools: [],
           maxToolRounds: 5,
