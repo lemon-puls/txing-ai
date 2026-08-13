@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"txing-ai/internal/adapter"
@@ -22,6 +23,19 @@ const defaultRespMessage = "Sorry, I don't understand your message."
 const defaultErrRespMessage = "Sorry, System error, please try again later."
 
 const exceedMessageLimit = "您今日的消息次数已达上限（%d条），请明天再试"
+
+// friendlyChatErrorMessage 将底层错误转换为用户可理解的提示信息，
+// 让用户了解失败原因并获得操作指引；无法识别的错误保持通用提示
+func friendlyChatErrorMessage(err error, model string) string {
+	switch {
+	case errors.Is(err, channel.ErrNoChannelFound):
+		return fmt.Sprintf("当前模型「%s」暂无可用的服务渠道，请更换其他模型重试，或联系管理员在「渠道管理」中为该模型配置已启用的渠道。", model)
+	case errors.Is(err, channel.ErrNoAvailableChannel):
+		return fmt.Sprintf("当前请求参数（如「联网搜索」）未匹配到「%s」的可用的渠道映射，请关闭「联网搜索」后重试，或联系管理员检查渠道的模型映射配置。", model)
+	default:
+		return defaultErrRespMessage
+	}
+}
 
 // 通过回调让下层把大模型响应消息块即时通过 chan 传送给上层处理
 type partialChunk struct {
@@ -78,12 +92,13 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 
 	if err != nil {
 		log.Error("execChat failed", zap.Error(err))
+		errMessage := friendlyChatErrorMessage(err, conversation.Model)
 		conn.Send(dto.WsMessageResponse{
-			Content:        defaultErrRespMessage,
+			Content:        errMessage,
 			End:            true,
 			ConversationId: conversation.Id,
 		})
-		return defaultErrRespMessage, ""
+		return errMessage, ""
 	}
 
 	if buffer.IsEmpty() {
@@ -117,8 +132,11 @@ func execChat(ctx context.Context, conn *utils.Connection, conversation *domain.
 	// 启动协程， 调用大模型发送消息，并将响应写入 chan
 	go func() {
 		defer func() {
-			if err := recover(); err != nil {
-				log.Error("execChat panic", zap.Any("err", err))
+			// panic 恢复后也必须通知主循环结束，否则主循环会一直阻塞在 <-chunkChan 上，
+			// 导致客户端连接挂起、协程泄漏
+			if r := recover(); r != nil {
+				log.Error("execChat panic", zap.Any("err", r))
+				chunkChan <- partialChunk{End: true, Err: fmt.Errorf("execChat panic: %v", r)}
 			}
 		}()
 
