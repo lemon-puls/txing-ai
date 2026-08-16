@@ -245,7 +245,7 @@ export const useConversationStore = defineStore('conversation', {
         updateTime: new Date(),
         enableWeb: false,
         context: 10,
-        maxTokens: 2048,
+        maxTokens: 8192,
         temperature: 1.0,
         topP: 0.7,
         topK: 50,

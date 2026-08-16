@@ -291,8 +291,10 @@ func isImageFileType(fileType string) bool {
 }
 
 func (c *Conversation) AddMessageFromAssistant(content, reasoningContent string) {
-	// 如果消息内容为空，则不添加到消息记录中
-	if len(content) == 0 {
+	// 如果内容与思考过程都为空，则不添加到消息记录中。
+	// 注意：只产出思考过程（reasoning 非空、content 为空）时也必须保存，
+	// 否则推理模型的思考内容会被整个丢弃
+	if len(content) == 0 && len(reasoningContent) == 0 {
 		log.Error("response is empty, skip AddMessageFromAssistant")
 		return
 	}

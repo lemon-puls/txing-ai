@@ -104,6 +104,10 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 			return friendlyChatErrorMessage(session.Err(), conversation.Model), ""
 		}
 	}
+	if content == "" && reasoningContent == "" {
+		// LLM 未产生任何输出（含思考过程）：回退默认提示
+		return defaultRespMessage, ""
+	}
 	return content, reasoningContent
 }
 

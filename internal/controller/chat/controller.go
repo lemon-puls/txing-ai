@@ -35,7 +35,7 @@ import (
 // @Failure 401 {object} utils.Response "未授权"
 // @Failure 500 {object} utils.Response "服务器内部错误"
 // @Router /api/chat/ws [get]
-// @x-message-request {"type":"chat","content":"聊天内容","model":"模型标识","context":1,"enableWeb":false,"max_tokens":2048,"temperature":1.0,"top_p":0.7,"top_k":50,"presence_penalty":0.0,"frequency_penalty":0.0,"repetition_penalty":1.0}
+// @x-message-request {"type":"chat","content":"聊天内容","model":"模型标识","context":1,"enableWeb":false,"max_tokens":8192,"temperature":1.0,"top_p":0.7,"top_k":50,"presence_penalty":0.0,"frequency_penalty":0.0,"repetition_penalty":1.0}
 // @x-message-resume {"type":"resume"}
 // @x-message-stop {"type":"stop"}
 // @x-message-response {"conversationId":123,"content":"AI回复内容","reasoning_content":"思考过程","end":false}

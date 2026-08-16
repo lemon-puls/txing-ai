@@ -80,7 +80,7 @@ const currentChat = ref({
   title: '冒泡排序实现',
   model: 'gpt-3.5-turbo',
   webSearch: false,
-  maxTokens: 2048,
+  maxTokens: 8192,
   temperature: 1,
   topP: 0.7,
   topK: 50,

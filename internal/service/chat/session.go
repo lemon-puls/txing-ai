@@ -166,7 +166,9 @@ func (s *StreamSession) Content() (content, reasoningContent string) {
 
 // Attach 绑定一个客户端：先回放当前累积内容快照，再持续推送实时增量。
 // 若流已结束，仅回放最终快照（active=false），不建立消费者；
-// 若该连接已是消费者（重复 resume），直接返回，避免同一连接多个写协程并发写
+// 若该连接已是消费者（重复 resume），直接返回，避免同一连接多个写协程并发写。
+// 仅当已有累积内容或流已结束时才发送快照：全新空会话直接绑定消费者，
+// 避免每条普通消息都向客户端发送 "resume" 应答干扰正常流式展示
 func (s *StreamSession) Attach(conn chunkSender) error {
 	s.mu.Lock()
 	if _, ok := s.consumers[conn]; ok {
@@ -178,15 +180,17 @@ func (s *StreamSession) Attach(conn chunkSender) error {
 	finished := s.finished
 	s.mu.Unlock()
 
-	// 先发送快照（保证 wire 顺序：快照 → 实时增量）
-	if err := conn.Send(dto.WsMessageResponse{
-		Type:             MsgTypeResume,
-		Active:           !finished,
-		Content:          content,
-		ReasoningContent: reasoning,
-		ConversationId:   s.convId,
-	}); err != nil {
-		return err
+	if content != "" || reasoning != "" || finished {
+		// 先发送快照（保证 wire 顺序：快照 → 实时增量）
+		if err := conn.Send(dto.WsMessageResponse{
+			Type:             MsgTypeResume,
+			Active:           !finished,
+			Content:          content,
+			ReasoningContent: reasoning,
+			ConversationId:   s.convId,
+		}); err != nil {
+			return err
+		}
 	}
 
 	if finished {
@@ -311,10 +315,16 @@ func (c *streamConsumer) writeLoop(s *StreamSession) {
 						ConversationId: s.convId,
 					})
 				} else {
-					_ = c.conn.Send(dto.WsMessageResponse{
+					resp := dto.WsMessageResponse{
 						End:            true,
 						ConversationId: s.convId,
-					})
+					}
+					// 空响应（正文与思考过程均为空）回退默认提示，避免前端空气泡
+					content, reasoning := s.Content()
+					if content == "" && reasoning == "" {
+						resp.Content = defaultRespMessage
+					}
+					_ = c.conn.Send(resp)
 				}
 				return
 			}

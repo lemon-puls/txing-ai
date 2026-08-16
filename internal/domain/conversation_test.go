@@ -1,11 +1,26 @@
 package domain
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"txing-ai/internal/global"
+	"txing-ai/internal/global/logging"
 )
+
+// TestMain 初始化日志，避免测试中调用 log.Error 时全局 Logger 为 nil 导致 panic
+func TestMain(m *testing.M) {
+	logging.InitLogger(&global.LogConfig{
+		Level:      "error",
+		FileName:   filepath.Join(os.TempDir(), "txing-ai-domain-test.log"),
+		MaxSize:    1,
+		MaxBackups: 1,
+		MaxAge:     1,
+	}, "test")
+	os.Exit(m.Run())
+}
 
 // 构造 4 轮 user 消息（每轮都带一张图），中间穿插 assistant 回复
 func conversationWithImageRounds() *Conversation {
@@ -146,5 +161,45 @@ func TestStripOldImagesFillsEmptyContent(t *testing.T) {
 
 	if msgs[0].Content != "（此消息原有 2 张图片，因对话较长已省略）" {
 		t.Errorf("placeholder should become the content, got %q", msgs[0].Content)
+	}
+}
+
+// 只有思考过程（reasoning 非空、content 为空）的响应也必须保存，
+// 否则推理模型只输出思考时整条消息会被丢弃
+func TestAddMessageFromAssistantKeepsReasoningOnly(t *testing.T) {
+	c := &Conversation{}
+	c.AddMessageFromAssistant("", "我先分析一下归并排序的思路")
+
+	msgs := c.FormattedMessage
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if msgs[0].Role != global.Assistant {
+		t.Fatalf("unexpected role: %v", msgs[0].Role)
+	}
+	if msgs[0].Content != "" || msgs[0].ReasoningContent != "我先分析一下归并排序的思路" {
+		t.Fatalf("unexpected message: %+v", msgs[0])
+	}
+}
+
+// 正文与思考过程都为空时才跳过
+func TestAddMessageFromAssistantSkipsBothEmpty(t *testing.T) {
+	c := &Conversation{}
+	c.AddMessageFromAssistant("", "")
+	if len(c.FormattedMessage) != 0 {
+		t.Fatalf("expected no message saved, got %d", len(c.FormattedMessage))
+	}
+}
+
+// 正常响应不受影响
+func TestAddMessageFromAssistantNormal(t *testing.T) {
+	c := &Conversation{}
+	c.AddMessageFromAssistant("归并排序是一种分治算法", "先分解再合并")
+	if len(c.FormattedMessage) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(c.FormattedMessage))
+	}
+	m := c.FormattedMessage[0]
+	if m.Content != "归并排序是一种分治算法" || m.ReasoningContent != "先分解再合并" {
+		t.Fatalf("unexpected message: %+v", m)
 	}
 }

@@ -121,6 +121,33 @@ func TestFriendlyChatErrorMessage(t *testing.T) {
 	}
 }
 
+// TestSessionAttachEmptyBufferNoSnapshot 验证全新空会话 attach 时：
+// 不发送 resume 快照（避免普通消息触发前端续流逻辑），
+// 消费者直接建立，后续增量正常送达
+func TestSessionAttachEmptyBufferNoSnapshot(t *testing.T) {
+	s := newTestSession()
+
+	fake := &fakeSender{}
+	if err := s.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+	defer s.Detach(fake)
+
+	// 空会话不应发送任何快照消息
+	if msgs := fake.messages(); len(msgs) != 0 {
+		t.Fatalf("expected no snapshot for empty session, got %d messages: %+v", len(msgs), msgs)
+	}
+
+	// 消费者应已建立，后续增量正常送达
+	s.broadcast(partialChunk{Chunk: &global.Chunk{Content: "归并"}, End: false})
+	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) == 1 }) {
+		t.Fatalf("expected 1 chunk message, got %d", len(fake.messages()))
+	}
+	if got := fake.messages()[0]; got.Content != "归并" || got.End {
+		t.Fatalf("unexpected chunk message: %+v", got)
+	}
+}
+
 // TestSessionAttachSnapshotActive 验证进行中的流 attach 时：
 // 先收到包含累积内容的 resume 快照（active=true），再持续接收增量
 func TestSessionAttachSnapshotActive(t *testing.T) {
@@ -172,7 +199,7 @@ func TestSessionAttachFinished(t *testing.T) {
 }
 
 // TestSessionBroadcastAndEnd 验证广播增量与结束标志：
-// 快照之后收到增量 chunk，流结束时收到 End 消息
+// 空会话 attach 不发送快照，直接收到增量 chunk，流结束时收到 End 消息
 func TestSessionBroadcastAndEnd(t *testing.T) {
 	s := newTestSession()
 	fake := &fakeSender{}
@@ -185,17 +212,17 @@ func TestSessionBroadcastAndEnd(t *testing.T) {
 	s.broadcast(partialChunk{Chunk: &global.Chunk{Content: "好"}, End: false})
 	s.finish(nil)
 
-	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) >= 4 }) {
-		t.Fatalf("expected snapshot + 2 chunks + end, got %d messages: %+v", len(fake.messages()), fake.messages())
+	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) >= 3 }) {
+		t.Fatalf("expected 2 chunks + end, got %d messages: %+v", len(fake.messages()), fake.messages())
 	}
 
 	msgs := fake.messages()
-	// msgs[0]=快照, msgs[1]=你, msgs[2]=好, msgs[3]=End
-	if msgs[1].Content != "你" || msgs[2].Content != "好" {
+	// msgs[0]=你, msgs[1]=好, msgs[2]=End
+	if msgs[0].Content != "你" || msgs[1].Content != "好" {
 		t.Fatalf("unexpected chunk messages: %+v", msgs)
 	}
-	if !msgs[3].End {
-		t.Fatalf("expected last message End=true, got %+v", msgs[3])
+	if !msgs[2].End {
+		t.Fatalf("expected last message End=true, got %+v", msgs[2])
 	}
 	if !s.Finished() {
 		t.Fatal("expected session finished after finish")

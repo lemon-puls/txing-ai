@@ -441,21 +441,29 @@
     <el-dialog
       v-model="showSettings"
       title="高级参数设置"
-      width="500px"
+      width="560px"
       destroy-on-close
       class="settings-dialog"
     >
       <div class="settings-content">
+        <div class="settings-tip">
+          <el-icon class="settings-tip-icon"><InfoFilled /></el-icon>
+          <span>参数仅对当前会话生效，发送消息时生效。不同模型/渠道对参数的支持程度不同，部分参数可能被渠道忽略。</span>
+        </div>
         <el-form label-position="top">
           <el-form-item label="最大Token数">
-            <el-input-number
-              v-model="currentChat.maxTokens"
-              :min="1"
-              :max="4096"
-              class="w-full"
-            />
+            <div class="token-input-row">
+              <el-input-number
+                v-model="currentChat.maxTokens"
+                :min="1"
+                :max="65536"
+                class="w-full"
+              />
+              <span class="token-k-badge">{{ formatTokensK(currentChat.maxTokens) }}</span>
+            </div>
+            <div class="param-desc">本次回答最多生成的 token 数（含思考过程）。推理模型（如 DeepSeek-R1）会把大量配额消耗在「思考」上，配额不足会导致回答被截断甚至没有正文。默认 8192（8K）已适配 DeepSeek 官方上限；Claude 4 / Gemini 2.5 等支持最高 65536（64K）。若回答中途被截断，请调大此值。</div>
           </el-form-item>
-          <el-form-item label="温度">
+          <el-form-item label="温度 (Temperature)">
             <el-slider
               v-model="currentChat.temperature"
               :min="0"
@@ -464,8 +472,9 @@
               :default-value="0"
               show-input
             />
+            <div class="param-desc">控制输出的随机性与创造性：值越低回答越确定、严谨，越高越发散、有创意。代码/数学等精确任务建议 0.2~0.7，创意写作建议 0.8~1.5。</div>
           </el-form-item>
-          <el-form-item label="Top-P采样">
+          <el-form-item label="Top-P 采样 (top_p)">
             <el-slider
               v-model="currentChat.topP"
               :min="0"
@@ -473,16 +482,18 @@
               :step="0.05"
               show-input
             />
+            <div class="param-desc">核采样：仅从累计概率达到该值的 token 中采样。与温度共同控制多样性，建议两者只调其一，避免效果互相抵消。</div>
           </el-form-item>
-          <el-form-item label="Top-K采样">
+          <el-form-item label="Top-K 采样 (top_k)">
             <el-input-number
               v-model="currentChat.topK"
               :min="1"
               :max="100"
               class="w-full"
             />
+            <div class="param-desc">仅从概率最高的 K 个 token 中采样（部分模型忽略此参数）。设为 1 时完全确定（贪婪解码）。</div>
           </el-form-item>
-          <el-form-item label="存在惩罚">
+          <el-form-item label="存在惩罚 (presence_penalty)">
             <el-slider
               v-model="currentChat.presencePenalty"
               :min="-2"
@@ -490,8 +501,9 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">对已出现过的 token 施加惩罚，鼓励模型谈论新内容、减少重复。正值提高话题多样性，负值使输出更稳定。</div>
           </el-form-item>
-          <el-form-item label="频率惩罚">
+          <el-form-item label="频率惩罚 (frequency_penalty)">
             <el-slider
               v-model="currentChat.frequencyPenalty"
               :min="-2"
@@ -499,8 +511,9 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">按 token 出现频率成比例惩罚，抑制逐字重复。正值抑制重复，负值允许更多重复。</div>
           </el-form-item>
-          <el-form-item label="重复惩罚">
+          <el-form-item label="重复惩罚 (repetition_penalty)">
             <el-slider
               v-model="currentChat.repetitionPenalty"
               :min="1"
@@ -508,10 +521,15 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">对重复内容进行整体惩罚（部分渠道专属参数，如字节豆包/Volcengine）。1.0 表示不惩罚，值越高越不易重复。</div>
           </el-form-item>
         </el-form>
       </div>
       <template #footer>
+        <el-button @click="resetSettings">
+          <el-icon><RefreshLeft /></el-icon>
+          <span>恢复默认</span>
+        </el-button>
         <el-button @click="showSettings = false">取消</el-button>
         <el-button type="primary" @click="saveSettings">确认</el-button>
       </template>
@@ -580,10 +598,12 @@ import {
   Document,
   Download,
   HomeFilled,
+  InfoFilled,
   Paperclip,
   Picture,
   Plus,
   Position,
+  RefreshLeft,
   RefreshRight,
   Setting,
   More,
@@ -672,8 +692,19 @@ marked.setOptions({
   mangle: false
 })
 
-// 渲染消息内容
+// 渲染消息内容（带内容缓存）：
+// 流式更新时消息内容变化频繁，仅内容真正变化时才重新解析 markdown，
+// 避免每条消息在每次重渲染时都全量解析导致抖动
+const renderedContentCache = new Map()
+const RENDER_CACHE_MAX = 200
 const renderMessage = (content) => {
+  const key = String(content || '')
+  const cached = renderedContentCache.get(key)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  let result
   try {
     // 自定义代码块渲染
     const renderer = new marked.Renderer();
@@ -726,12 +757,19 @@ const renderMessage = (content) => {
     };
 
     marked.use({renderer});
-    const rendered = marked(String(content || ''));
-    return `<div class="markdown-body">${rendered}</div>`;
+    const rendered = marked(key);
+    result = `<div class="markdown-body">${rendered}</div>`;
   } catch (err) {
     console.error('Markdown rendering error:', err);
-    return String(content || '');
+    result = key;
   }
+
+  // 缓存渲染结果；超过上限时清空，防止内存膨胀
+  renderedContentCache.set(key, result)
+  if (renderedContentCache.size > RENDER_CACHE_MAX) {
+    renderedContentCache.clear()
+  }
+  return result
 }
 
 // 使用主题 store
@@ -1333,6 +1371,79 @@ const sendMessage = async () => {
   }
 }
 
+// ---- 流式更新节流 ----
+// LLM 分块到达极快（每秒数十个），若每个 chunk 都直接更新 message.content，
+// 会触发整条消息 markdown 全量重渲染并强制滚动，导致严重抖动、内容看不清。
+// 这里合并高频更新，按固定间隔刷新（约 15fps），兼顾流畅与可读
+const STREAM_FLUSH_INTERVAL = 66 // ms
+let streamFlushTimer = null
+let pendingStreamState = null
+
+// 清空待刷新的流式更新（流结束/出错时调用，避免迟到刷新覆盖最终内容）
+const clearPendingStreamUpdate = () => {
+  if (streamFlushTimer != null) {
+    clearTimeout(streamFlushTimer)
+    streamFlushTimer = null
+  }
+  pendingStreamState = null
+}
+
+// 应用合并后的最新流式状态
+const applyStreamState = () => {
+  streamFlushTimer = null
+  if (!pendingStreamState) return
+  const { msg, content, reasoning, workflow, artifacts, chatId } = pendingStreamState
+  pendingStreamState = null
+
+  msg.content = content
+  msg.reasoningContent = reasoning
+  if (workflow) msg.workflow = workflow
+  if (artifacts) msg.artifacts = artifacts
+
+  // 同步更新 lastMessageMap 中的消息（仅限登录用户）
+  const userStore = useUserStore()
+  if (userStore.isLoggedIn) {
+    const lastMessage = conversationStore.lastMessageMap[chatId]
+    if (lastMessage) {
+      lastMessage.content = content
+      lastMessage.reasoningContent = reasoning
+      if (workflow) lastMessage.workflow = workflow
+      if (artifacts) lastMessage.artifacts = artifacts
+    }
+  }
+
+  // 更新思考时间
+  if (reasoning) {
+    const currentTime = Date.now()
+    const startTime = messageThoughtTimes.value.get(msg.id)?.startTime || currentTime
+    messageThoughtTimes.value.set(msg.id, {
+      startTime,
+      endTime: currentTime,
+      duration: Math.floor((currentTime - startTime) / 1000)
+    })
+  }
+
+  // 仅当用户接近底部时才自动滚动，避免打断阅读
+  if (currentChat.value && currentChat.value.id === chatId) {
+    scrollToBottom(false)
+  }
+}
+
+// 调度一次流式内容刷新（合并高频 chunk，只保留最新状态）
+const scheduleStreamUpdate = (chatId, msg, data) => {
+  pendingStreamState = {
+    msg,
+    content: data.partialContent,
+    reasoning: data.partialReasoning,
+    workflow: data.workflow,
+    artifacts: data.artifacts,
+    chatId
+  }
+  if (streamFlushTimer == null) {
+    streamFlushTimer = setTimeout(applyStreamState, STREAM_FLUSH_INTERVAL)
+  }
+}
+
 // 处理 WebSocket 消息
 const handleWebSocketMessage = (chatId, data) => {
   // 关闭 loading 动画
@@ -1341,6 +1452,9 @@ const handleWebSocketMessage = (chatId, data) => {
   if (data.type === 'chat') {
     // 完整的消息响应
     conversationStore.setTypingStatus(chatId, false)
+
+    // 流已结束：清空待刷新的流式状态，避免迟到刷新覆盖最终内容
+    clearPendingStreamUpdate()
 
     // 如果存在流式消息，则更新它而不是创建新消息
     const currentStreamingMessage = conversationStore.getStreamingMessage(chatId)
@@ -1428,45 +1542,8 @@ const handleWebSocketMessage = (chatId, data) => {
       }
     }
 
-    // 更新流式消息内容
-    currentStreamingMessage.content = data.data.partialContent
-    currentStreamingMessage.reasoningContent = data.data.partialReasoning
-
-    // 更新工作流状态
-    if (data.data.workflow) {
-      currentStreamingMessage.workflow = data.data.workflow
-    }
-    if (data.data.artifacts) {
-      currentStreamingMessage.artifacts = data.data.artifacts
-    }
-
-    // 同步更新 lastMessageMap 中的消息（仅限登录用户）
-    const userStore = useUserStore()
-    if (userStore.isLoggedIn) {
-      const lastMessage = conversationStore.lastMessageMap[chatId]
-      if (lastMessage) {
-        lastMessage.content = data.data.partialContent
-        lastMessage.reasoningContent = data.data.partialReasoning
-        if (data.data.workflow) lastMessage.workflow = data.data.workflow
-        if (data.data.artifacts) lastMessage.artifacts = data.data.artifacts
-      }
-    }
-
-    // 更新当前思考时间
-    if (data.data.reasoningContent) {
-      const currentTime = Date.now()
-      const startTime = messageThoughtTimes.value.get(currentStreamingMessage.id)?.startTime || currentTime
-      messageThoughtTimes.value.set(currentStreamingMessage.id, {
-        startTime,
-        endTime: currentTime,
-        duration: Math.floor((currentTime - startTime) / 1000)
-      })
-    }
-
-    // 如果是当前会话则滚动到底部
-    if (currentChat.value && currentChat.value.id === chatId) {
-      scrollToBottom()
-    }
+    // 节流更新流式消息内容：合并高频 chunk，避免整条消息 markdown 全量重渲染导致抖动
+    scheduleStreamUpdate(chatId, currentStreamingMessage, data.data)
   } else if (data.type === 'resume') {
     // 续流应答：复用历史最后一条助手消息作为续流消息
     const rd = data.data
@@ -1518,6 +1595,9 @@ const handleWebSocketMessage = (chatId, data) => {
     ElMessage.error(data.data?.message || '接收消息出错')
     conversationStore.setTypingStatus(chatId, false)
     conversationStore.setStreamingMessage(chatId, null)
+
+    // 出错时清空待刷新的流式状态
+    clearPendingStreamUpdate()
 
     // 出错时也需要从 lastMessageMap 中删除
     conversationStore.removeLastMessage(chatId)
@@ -1666,7 +1746,7 @@ const createNewChat = async (assistantId) => {
     model: defaultModel?.name || 'gpt-3.5-turbo',
     presetId: preset.id,
     webSearch: false,
-    maxTokens: 2048,
+    maxTokens: 8192,
     temperature: 1,
     topP: 0.7,
     topK: 50,
@@ -1821,16 +1901,43 @@ const regenerateMessage = () => {
   }, 2000)
 }
 
-const scrollToBottom = async () => {
+// 滚动到底部。
+// force=false 时仅当用户接近底部才跟随滚动，避免流式更新把阅读位置拽回底部
+const scrollToBottom = async (force = true) => {
   await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  const el = messagesContainer.value
+  if (!el) return
+  if (!force) {
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distance > 80) return
   }
+  el.scrollTop = el.scrollHeight
 }
 
 const saveSettings = () => {
   showSettings.value = false
   ElMessage.success('设置已保存')
+}
+
+// 将 token 数格式化为 K 单位（如 8192 → 8K、32768 → 32K、20000 → 19.5K）
+const formatTokensK = (tokens) => {
+  if (!tokens || tokens <= 0) return '—'
+  const k = tokens / 1024
+  const rounded = k >= 100 ? Math.round(k) : Math.round(k * 10) / 10
+  return `${rounded}K`
+}
+
+// 恢复默认高级参数
+const resetSettings = () => {
+  if (!currentChat.value) return
+  currentChat.value.maxTokens = 8192
+  currentChat.value.temperature = 1.0
+  currentChat.value.topP = 0.7
+  currentChat.value.topK = 50
+  currentChat.value.presencePenalty = 0
+  currentChat.value.frequencyPenalty = 0
+  currentChat.value.repetitionPenalty = 1.0
+  ElMessage.success('已恢复默认参数')
 }
 
 // 选择模型
@@ -3839,5 +3946,53 @@ const batchDelete = async () => {
 // 移除顶部批量操作栏样式
 .batch-actions {
   display: none;
+}
+
+// ---- 高级参数设置面板 ----
+.settings-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+
+  .settings-tip-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.param-desc {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+}
+
+// 最大Token数输入行：输入框 + K 单位徽标
+.token-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.token-k-badge {
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 999px;
 }
 </style>
