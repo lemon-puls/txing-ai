@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"errors"
 	"strconv"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -324,6 +325,88 @@ func GetConversationDetail(c *gin.Context) {
 	}
 
 	utils.OkWithData(c, result)
+}
+
+// @Summary 更新会话高级参数
+// @Description 更新指定会话的模型参数（max_tokens、温度、采样参数等），不发送消息也可持久化，刷新页面后不丢失
+// @Tags 聊天
+// @Accept json
+// @Produce json
+// @Param id path int true "会话ID"
+// @Param data body dto.UpdateConversationParamsReq true "要更新的参数（仅更新非空字段）"
+// @Success 200 {object} utils.Response "成功"
+// @Failure 400 {object} utils.Response "请求参数错误"
+// @Failure 401 {object} utils.Response "未授权"
+// @Failure 403 {object} utils.Response "无权限"
+// @Router /api/chat/conversations/{id}/params [put]
+func UpdateConversationParams(c *gin.Context) {
+	userId := utils.GetUIDFromContext(c)
+
+	conversationId, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
+		return
+	}
+
+	var req dto.UpdateConversationParamsReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorWithCode(c, global.CodeInvalidParams, err)
+		return
+	}
+
+	db := utils.GetDBFromContext[*gorm.DB](c)
+
+	// 查询会话并校验归属
+	var entity domain.Conversation
+	if err := db.First(&entity, conversationId).Error; err != nil {
+		log.Error("query conversation failed", zap.Error(err))
+		utils.ErrorWithCode(c, global.CodeNotPermission, errors.New("conversation not found"))
+		return
+	}
+	if entity.UserID != userId {
+		utils.ErrorWithCode(c, global.CodeNotPermission, errors.New("no permission"))
+		return
+	}
+
+	// 仅更新非空字段（GORM 列名与字段名蛇形对应）
+	updates := map[string]interface{}{}
+	if req.MaxTokens != nil {
+		updates["max_tokens"] = *req.MaxTokens
+	}
+	if req.Temperature != nil {
+		updates["temperature"] = *req.Temperature
+	}
+	if req.TopP != nil {
+		updates["top_p"] = *req.TopP
+	}
+	if req.TopK != nil {
+		updates["top_k"] = *req.TopK
+	}
+	if req.PresencePenalty != nil {
+		updates["presence_penalty"] = *req.PresencePenalty
+	}
+	if req.FrequencyPenalty != nil {
+		updates["frequency_penalty"] = *req.FrequencyPenalty
+	}
+	if req.RepetitionPenalty != nil {
+		updates["repetition_penalty"] = *req.RepetitionPenalty
+	}
+	if req.EnableWeb != nil {
+		updates["enable_web"] = *req.EnableWeb
+	}
+
+	if len(updates) == 0 {
+		utils.Ok(c)
+		return
+	}
+
+	if err := db.Model(&entity).Updates(updates).Error; err != nil {
+		log.Error("update conversation params failed", zap.Error(err))
+		utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+		return
+	}
+
+	utils.Ok(c)
 }
 
 // @Summary 批量删除会话

@@ -448,7 +448,7 @@
       <div class="settings-content">
         <div class="settings-tip">
           <el-icon class="settings-tip-icon"><InfoFilled /></el-icon>
-          <span>参数仅对当前会话生效，发送消息时生效。不同模型/渠道对参数的支持程度不同，部分参数可能被渠道忽略。</span>
+          <span>参数仅对当前会话生效，点击「确认」后立即生效并持久化，刷新页面不丢失。不同模型/渠道对参数的支持程度不同，部分参数可能被渠道忽略。</span>
         </div>
         <el-form label-position="top">
           <el-form-item label="最大Token数">
@@ -1914,9 +1914,53 @@ const scrollToBottom = async (force = true) => {
   el.scrollTop = el.scrollHeight
 }
 
-const saveSettings = () => {
+// 持久化会话高级参数：登录用户写入后端，游客写入本地存储，刷新页面后不丢失
+const persistChatParams = async (chat) => {
+  if (!chat) return
+  const userStore = useUserStore()
+
+  // 同步本地状态（游客写入 localStorage，同时保持列表响应式）
+  conversationStore.updateConversation({
+    id: chat.id,
+    model: chat.model,
+    maxTokens: chat.maxTokens,
+    temperature: chat.temperature,
+    topP: chat.topP,
+    topK: chat.topK,
+    presencePenalty: chat.presencePenalty,
+    frequencyPenalty: chat.frequencyPenalty,
+    repetitionPenalty: chat.repetitionPenalty,
+    webSearch: chat.webSearch
+  })
+
+  // 登录用户写入后端（仅真实会话 id；tmp- 新会话首条消息发送后才落库）
+  if (userStore.isLoggedIn && /^\d+$/.test(String(chat.id))) {
+    const res = await defaultApi.apiChatConversationsIdParamsPut(chat.id, {
+      max_tokens: chat.maxTokens,
+      temperature: chat.temperature,
+      top_p: chat.topP,
+      top_k: chat.topK,
+      presence_penalty: chat.presencePenalty,
+      frequency_penalty: chat.frequencyPenalty,
+      repetition_penalty: chat.repetitionPenalty,
+      enableWeb: chat.webSearch
+    })
+    // 后端错误以 HTTP 200 + code 字段返回，需显式检查
+    if (!res || res.code !== 0) {
+      throw new Error((res && res.msg) || '保存失败')
+    }
+  }
+}
+
+const saveSettings = async () => {
   showSettings.value = false
-  ElMessage.success('设置已保存')
+  try {
+    await persistChatParams(currentChat.value)
+    ElMessage.success('设置已保存')
+  } catch (error) {
+    console.error('Failed to save chat params:', error)
+    ElMessage.error('参数保存失败，请重试')
+  }
 }
 
 // 将 token 数格式化为 K 单位（如 8192 → 8K、32768 → 32K、20000 → 19.5K）
@@ -1967,9 +2011,13 @@ const selectModel = (model) => {
   conversationStore.saveToLocalStorage();
 }
 
-// 切换联网搜索
+// 切换联网搜索（同步持久化，刷新后保留）
 const toggleWebSearch = () => {
+  if (!currentChat.value) return
   currentChat.value.webSearch = !currentChat.value.webSearch
+  persistChatParams(currentChat.value).catch((error) => {
+    console.error('Failed to save web search setting:', error)
+  })
 }
 
 // 切换思考过程的显示/隐藏

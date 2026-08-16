@@ -50,6 +50,7 @@ Method | HTTP request | Description
 [**apiChatConversationListPost**](DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 [**apiChatConversationsDeletebatchPost**](DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
 [**apiChatConversationsIdGet**](DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
+[**apiChatConversationsIdParamsPut**](DefaultApi.md#apiChatConversationsIdParamsPut) | **PUT** /api/chat/conversations/{id}/params | 更新会话高级参数
 [**apiChatWsGet**](DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 [**apiCosPresignedUrlPost**](DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 [**apiFileDownloadGet**](DefaultApi.md#apiFileDownloadGet) | **GET** /api/file/download | 下载文件
@@ -2149,6 +2150,52 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiChatConversationsIdParamsPut
+
+> UtilsResponse apiChatConversationsIdParamsPut(id, data)
+
+更新会话高级参数
+
+更新指定会话的模型参数（max_tokens、温度、采样参数等），不发送消息也可持久化，刷新页面后不丢失
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+let data = new TxingAiApi.DtoUpdateConversationParamsReq(); // DtoUpdateConversationParamsReq | 要更新的参数（仅更新非空字段）
+apiInstance.apiChatConversationsIdParamsPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+ **data** | [**DtoUpdateConversationParamsReq**](DtoUpdateConversationParamsReq.md)| 要更新的参数（仅更新非空字段） | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
 - **Accept**: application/json
 
 

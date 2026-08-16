@@ -83,3 +83,15 @@ type ArtifactInfo struct {
 type BatchDeleteRequest struct {
 	Ids []int64 `json:"ids" binding:"required"` // 会话ID列表
 }
+
+// UpdateConversationParamsReq 更新会话高级参数请求（指针字段：仅更新非空字段）
+type UpdateConversationParamsReq struct {
+	MaxTokens         *int     `json:"max_tokens,omitempty"`
+	Temperature       *float32 `json:"temperature,omitempty"`
+	TopP              *float32 `json:"top_p,omitempty"`
+	TopK              *int     `json:"top_k,omitempty"`
+	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
+	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
+	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	EnableWeb         *bool    `json:"enableWeb,omitempty"`
+}

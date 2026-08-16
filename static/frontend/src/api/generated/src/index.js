@@ -73,6 +73,7 @@ import DtoUpdateAboutMeSkillReq from './model/DtoUpdateAboutMeSkillReq';
 import DtoUpdateAboutMeTimelineReq from './model/DtoUpdateAboutMeTimelineReq';
 import DtoUpdateAgentFlowReq from './model/DtoUpdateAgentFlowReq';
 import DtoUpdateChannelReq from './model/DtoUpdateChannelReq';
+import DtoUpdateConversationParamsReq from './model/DtoUpdateConversationParamsReq';
 import DtoUpdateModelReq from './model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from './model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from './model/DtoUpdatePresetReq';
@@ -516,6 +517,12 @@ export {
      * @property {module:model/DtoUpdateChannelReq}
      */
     DtoUpdateChannelReq,
+
+    /**
+     * The DtoUpdateConversationParamsReq model constructor.
+     * @property {module:model/DtoUpdateConversationParamsReq}
+     */
+    DtoUpdateConversationParamsReq,
 
     /**
      * The DtoUpdateModelReq model constructor.

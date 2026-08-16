@@ -165,6 +165,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 *TxingAiApi.DefaultApi* | [**apiChatConversationsDeletebatchPost**](docs/DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
 *TxingAiApi.DefaultApi* | [**apiChatConversationsIdGet**](docs/DefaultApi.md#apiChatConversationsIdGet) | **GET** /api/chat/conversations/{id} | 获取会话详情
+*TxingAiApi.DefaultApi* | [**apiChatConversationsIdParamsPut**](docs/DefaultApi.md#apiChatConversationsIdParamsPut) | **PUT** /api/chat/conversations/{id}/params | 更新会话高级参数
 *TxingAiApi.DefaultApi* | [**apiChatWsGet**](docs/DefaultApi.md#apiChatWsGet) | **GET** /api/chat/ws | 建立聊天 WebSocket 连接
 *TxingAiApi.DefaultApi* | [**apiCosPresignedUrlPost**](docs/DefaultApi.md#apiCosPresignedUrlPost) | **POST** /api/cos/presigned-url | 获取预签名URL
 *TxingAiApi.DefaultApi* | [**apiFileDownloadGet**](docs/DefaultApi.md#apiFileDownloadGet) | **GET** /api/file/download | 下载文件
@@ -272,6 +273,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdateAboutMeTimelineReq](docs/DtoUpdateAboutMeTimelineReq.md)
  - [TxingAiApi.DtoUpdateAgentFlowReq](docs/DtoUpdateAgentFlowReq.md)
  - [TxingAiApi.DtoUpdateChannelReq](docs/DtoUpdateChannelReq.md)
+ - [TxingAiApi.DtoUpdateConversationParamsReq](docs/DtoUpdateConversationParamsReq.md)
  - [TxingAiApi.DtoUpdateModelReq](docs/DtoUpdateModelReq.md)
  - [TxingAiApi.DtoUpdatePasswordReq](docs/DtoUpdatePasswordReq.md)
  - [TxingAiApi.DtoUpdatePresetReq](docs/DtoUpdatePresetReq.md)
