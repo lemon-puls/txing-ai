@@ -802,6 +802,15 @@ const loadingModels = ref(false)
 // 当前选中模型
 const currentModel = ref(null)
 
+// 切换/删除会话后同步头部模型显示（只更新展示 ref，不修改会话的 model 字段）
+watch(
+  () => currentChat.value?.id,
+  () => {
+    if (!currentChat.value) return
+    currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || null
+  }
+)
+
 // 加载模型列表
 const loadModels = async () => {
   try {

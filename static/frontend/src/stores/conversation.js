@@ -105,7 +105,20 @@ export const useConversationStore = defineStore('conversation', {
 
       // 如果当前会话被删除，切换到第一个会话
       if (this.currentConversation && ids.includes(this.currentConversation.id)) {
-        this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
+        if (this.conversations.length > 0) {
+          const next = this.conversations[0]
+          this.currentConversation = next
+          // 登录用户的列表项（ConversationSimpleVO）不含消息，
+          // 需加载会话详情，否则切换后聊天记录为空
+          try {
+            await this.loadConversationDetail(next.id)
+          } catch (error) {
+            // 详情加载失败不阻断删除流程，仅记录日志
+            console.error('Failed to load next conversation detail:', error)
+          }
+        } else {
+          this.currentConversation = null
+        }
       }
 
       ElMessage.success('删除成功')
