@@ -43,6 +43,10 @@ type Attachment struct {
 
 type WsMessageResponse struct {
 	ConversationId int64  `json:"conversationId"`
+	// 消息类型：空表示普通流式内容；"resume" 表示续流应答
+	Type string `json:"type,omitempty"`
+	// 续流应答：当前是否还有进行中的流（true 表示已续上，后续仍有增量推送）
+	Active bool `json:"active,omitempty"`
 	Content        string `json:"content"`
 	// 思考过程消息
 	ReasoningContent string `json:"reasoning_content"`

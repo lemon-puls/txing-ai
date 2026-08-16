@@ -1467,6 +1467,52 @@ const handleWebSocketMessage = (chatId, data) => {
     if (currentChat.value && currentChat.value.id === chatId) {
       scrollToBottom()
     }
+  } else if (data.type === 'resume') {
+    // 续流应答：复用历史最后一条助手消息作为续流消息
+    const rd = data.data
+    let chat = currentChat.value && currentChat.value.id === chatId ? currentChat.value : null
+    if (!chat) chat = chatList.value.find(c => c.id === chatId)
+    if (!chat || !chat.messages) return
+
+    // 流已结束：用最终内容更新最后一条助手消息（内容可能比数据库更新）
+    if (!rd.active) {
+      if (rd.content || rd.reasoningContent) {
+        const last = chat.messages[chat.messages.length - 1]
+        if (last && last.role === 'assistant' && (rd.content || '').startsWith(last.content || '')) {
+          last.content = rd.content
+          last.reasoningContent = rd.reasoningContent
+        }
+      }
+      return
+    }
+
+    // 流仍在进行：复用或创建流式消息
+    const msgs = chat.messages
+    const last = msgs[msgs.length - 1]
+    let msg = null
+    if (last && last.role === 'assistant' && (rd.content || '').startsWith(last.content || '')) {
+      // 历史中的局部内容正是续流快照的前缀，直接复用该消息
+      msg = last
+    } else {
+      msg = {
+        id: Date.now(),
+        role: 'assistant',
+        content: '',
+        reasoningContent: '',
+        showThought: true,
+        workflow: null,
+        artifacts: null
+      }
+      msgs.push(msg)
+    }
+    msg.content = rd.content
+    msg.reasoningContent = rd.reasoningContent
+    conversationStore.setStreamingMessage(chatId, msg)
+    conversationStore.setTypingStatus(chatId, true)
+
+    if (currentChat.value && currentChat.value.id === chatId) {
+      scrollToBottom()
+    }
   } else if (data.type === 'error') {
     // 错误消息
     ElMessage.error(data.data?.message || '接收消息出错')
@@ -1506,6 +1552,23 @@ const goToHome = () => {
   router.push('/')
 }
 
+// 尝试恢复进行中的流式输出（客户端刷新页面重连后调用）。
+// 服务端无进行中的流时返回 active=false，前端无需处理
+async function tryResumeChat(chat) {
+  if (!chat) return
+  if (chat.id && chat.id.toString().startsWith('tmp-')) return
+  try {
+    await NewChatConnectionIfNeed(chat, userStore.userId, chat.presetId || '')
+    wsManager.sendMessage(chat.id.toString(), { type: 'resume' })
+  } catch (error) {
+    console.error('Failed to resume chat stream:', error)
+  }
+}
+
+// 已注册 WS 消息处理器的会话 id 集合：
+// 连接可能因数量上限被淘汰后重建，避免重复注册处理器导致消息被处理两次
+const registeredWsHandlerChats = new Set()
+
 // 若没有连接，则创建连接
 async function NewChatConnectionIfNeed(newChat, userId, presetId) {
 
@@ -1532,6 +1595,12 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
     return;
   }
 
+  // 连接可能被淘汰后重建：处理器已注册过则跳过，避免重复注册
+  if (registeredWsHandlerChats.has(newChat.id)) {
+    return;
+  }
+  registeredWsHandlerChats.add(newChat.id)
+
   // 添加消息处理器
   wsManager.on(newChat.id, 'message', (data) => {
 
@@ -1545,6 +1614,10 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
         let oldId = newChat.id
         newChat.id = parseInt(actualChatId)
         newChat.realId = true
+
+        // 同步处理器注册记录（旧 id 已不存在）
+        registeredWsHandlerChats.delete(oldId)
+        registeredWsHandlerChats.add(newChat.id)
 
         // 更新会话ID
         conversationStore.updateConversationId(oldId, newChat.id)
@@ -1710,6 +1783,9 @@ const switchChat = async (chat) => {
     // 建立 WebSocket 连接
     // await NewChatConnectionIfNeed(chat, userStore.userId || '0', "")
     await scrollToBottom()
+
+    // 切换到其他会话时，尝试恢复该会话可能进行中的流式输出
+    tryResumeChat(chat)
   } catch (error) {
     console.error('Failed to switch chat:', error)
     ElMessage.error('切换会话失败')
@@ -1831,6 +1907,9 @@ onMounted(async () => {
       router.replace({ query: {} })
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
+
+      // 刷新页面后尝试恢复可能进行中的流式输出
+      tryResumeChat(chatList.value[0])
 
       // await NewChatConnectionIfNeed(chatList.value[0], userStore.userId, "");
     }
