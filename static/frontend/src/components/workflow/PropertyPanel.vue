@@ -45,7 +45,7 @@
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
           </el-form-item>
           <el-form-item label="最大Token数">
-            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="65536" :step="100" style="width: 100%" />
           </el-form-item>
           <el-form-item label="启用上下文记忆">
             <el-switch v-model="localData.modelConfig.contextEnabled" />
@@ -232,7 +232,7 @@
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
           </el-form-item>
           <el-form-item label="最大Token数">
-            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="65536" :step="100" style="width: 100%" />
             <div class="form-tip">单次生成的输出上限；长文输出（如攻略、报告）建议调大，撞顶时后端会自动续写</div>
           </el-form-item>
           <el-form-item label="绑定工具">
