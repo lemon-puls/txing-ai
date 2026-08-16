@@ -162,83 +162,83 @@
                   {{ message.role === 'user' ? 'U' : (currentChat.preset?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
-              <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
-                <!-- 应用标签 -->
-                <div v-if="message.appName" class="message-app-tag">
-                  <el-icon><Share /></el-icon>
-                  <span>{{ message.appName }}</span>
-                </div>
-                <!-- 多模态图片显示 -->
-                <div v-if="message.images && message.images.length > 0" class="message-images">
-                  <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(message.images, idx)">
-                    <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
-                    <div class="image-overlay">
-                      <el-icon><ZoomIn /></el-icon>
+              <div class="message-main" :class="{ 'has-workflow': getMessageWorkflow(message) }">
+                <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
+                  <!-- 应用标签 -->
+                  <div v-if="message.appName" class="message-app-tag">
+                    <el-icon><Share /></el-icon>
+                    <span>{{ message.appName }}</span>
+                  </div>
+                  <!-- 多模态图片显示 -->
+                  <div v-if="message.images && message.images.length > 0" class="message-images">
+                    <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(message.images, idx)">
+                      <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
+                      <div class="image-overlay">
+                        <el-icon><ZoomIn /></el-icon>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <!-- 多模态附件显示 -->
-                <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
-                  <div v-for="(att, idx) in message.attachments" :key="idx" class="attachment-item" @click="downloadAttachment(att)">
-                    <div class="attachment-icon" :class="getAttachmentClass(att.fileType)">
+                  <!-- 多模态附件显示 -->
+                  <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
+                    <div v-for="(att, idx) in message.attachments" :key="idx" class="attachment-item" @click="downloadAttachment(att)">
+                      <div class="attachment-icon" :class="getAttachmentClass(att.fileType)">
+                        <el-icon><Document /></el-icon>
+                      </div>
+                      <div class="attachment-info">
+                        <div class="attachment-name">{{ att.fileName }}</div>
+                        <div class="attachment-size">{{ formatFileSize(att.fileSize) }}</div>
+                      </div>
+                      <el-icon class="download-icon"><Download /></el-icon>
+                    </div>
+                  </div>
+                  <!-- 文件附件 -->
+                  <div v-if="message.files && message.files.length > 0" class="message-files">
+                    <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
                       <el-icon><Document /></el-icon>
+                      <span>{{ fileName }}</span>
                     </div>
-                    <div class="attachment-info">
-                      <div class="attachment-name">{{ att.fileName }}</div>
-                      <div class="attachment-size">{{ formatFileSize(att.fileSize) }}</div>
+                  </div>
+                  <!-- 添加思考过程组件 -->
+                  <div v-if="message.reasoningContent" class="thought-process">
+                    <div class="thought-header" @click="toggleThought(message)">
+                      <el-icon :class="{ 'is-fold': !message.showThought }">
+                        <ArrowRight/>
+                      </el-icon>
+                      <span>已深度思考 {{
+                          isCurrentStreamingMessage(message) ?
+                            `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
+                            messageThoughtTimes.has(message.id) ?
+                              `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
+                              ''
+                        }}</span>
                     </div>
-                    <el-icon class="download-icon"><Download /></el-icon>
+                    <div v-show="message.showThought" class="thought-content">
+                      {{ message.reasoningContent }}
+                    </div>
                   </div>
+                  <WorkflowMessage
+                    v-if="getMessageWorkflow(message)"
+                    :app-name="message.appName || ''"
+                    :workflow="getMessageWorkflow(message)"
+                    :artifacts="parseJsonField(message.artifacts)"
+                    :node-logs="parseJsonField(message.executionLogs)"
+                  />
+                  <div class="message-text" v-html="renderMessage(message.content)"></div>
                 </div>
-                <!-- 文件附件 -->
-                <div v-if="message.files && message.files.length > 0" class="message-files">
-                  <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
-                    <el-icon><Document /></el-icon>
-                    <span>{{ fileName }}</span>
-                  </div>
-                </div>
-                <!-- 添加思考过程组件 -->
-                <div v-if="message.reasoningContent" class="thought-process">
-                  <div class="thought-header" @click="toggleThought(message)">
-                    <el-icon :class="{ 'is-fold': !message.showThought }">
-                      <ArrowRight/>
-                    </el-icon>
-                    <span>已深度思考 {{
-                        isCurrentStreamingMessage(message) ?
-                          `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
-                          messageThoughtTimes.has(message.id) ?
-                            `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
-                            ''
-                      }}</span>
-                  </div>
-                  <div v-show="message.showThought" class="thought-content">
-                    {{ message.reasoningContent }}
-                  </div>
-                </div>
-                <WorkflowMessage
-                  v-if="getMessageWorkflow(message)"
-                  :app-name="message.appName || ''"
-                  :workflow="getMessageWorkflow(message)"
-                  :artifacts="parseJsonField(message.artifacts)"
-                  :node-logs="parseJsonField(message.executionLogs)"
-                />
-                <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
-                  <el-button-group>
-                    <el-button text size="small" @click="copyMessage(message)">
-                      <template #icon>
-                        <CopyDocument/>
-                      </template>
-                      复制
-                    </el-button>
-                    <el-button text size="small" @click="regenerateMessage(message)"
-                               v-if="message.role === 'assistant'">
-                      <template #icon>
-                        <RefreshRight/>
-                      </template>
-                      重新生成
-                    </el-button>
-                  </el-button-group>
+                  <el-button text size="small" @click="copyMessage(message)">
+                    <template #icon>
+                      <CopyDocument/>
+                    </template>
+                    复制
+                  </el-button>
+                  <el-button text size="small" @click="regenerateMessage(message)"
+                             v-if="message.role === 'assistant'">
+                    <template #icon>
+                      <RefreshRight/>
+                    </template>
+                    重新生成
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -2755,6 +2755,7 @@ const batchDelete = async () => {
 
 .message-item {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
   opacity: 0;
@@ -2766,19 +2767,37 @@ const batchDelete = async () => {
 
     .message-content {
       background: var(--message-bg-user);
-      border-radius: 12px 2px 12px 12px;
+      border-radius: 14px 4px 14px 14px;
       color: var(--text-primary);
+      border: 1px solid rgba(64, 158, 255, 0.15);
+      box-shadow: 0 1px 3px rgba(64, 158, 255, 0.08);
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(64, 158, 255, 0.16);
+      }
     }
 
     .message-actions {
-      justify-content: flex-start;
+      align-self: flex-start;
     }
   }
 
   &.assistant {
     .message-content {
       background: var(--message-bg-assistant);
-      border-radius: 2px 12px 12px 12px;
+      border-radius: 4px 14px 14px 14px;
+      border: 1px solid var(--el-border-color-lighter);
+      box-shadow: 0 1px 3px var(--shadow-color);
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 16px var(--shadow-color);
+      }
+    }
+
+    .message-actions {
+      align-self: flex-end;
     }
 
     .message-avatar {
@@ -2794,6 +2813,8 @@ const batchDelete = async () => {
   }
 
   .message-avatar {
+    flex-shrink: 0;
+
     .el-avatar {
       box-shadow: none;
       transition: transform 0.3s ease;
@@ -2803,26 +2824,79 @@ const batchDelete = async () => {
       }
     }
   }
+
+  // 消息主体：气泡 + 下方操作按钮（复制/重新生成）
+  .message-main {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    min-width: 0;
+
+    @media screen and (min-width: 1200px) {
+      max-width: 900px;
+    }
+
+    @media screen and (min-width: 1600px) {
+      max-width: 1000px;
+    }
+
+    @media screen and (max-width: 768px) {
+      max-width: 90%;
+    }
+
+    // 包含 WorkflowMessage 时撑满最大宽度（置于媒体查询之后，确保优先）
+    &.has-workflow {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    // 操作按钮不放进气泡内部，悬停消息时在气泡下方展开
+    .message-actions {
+      margin-top: 0;
+      display: inline-flex;
+      gap: 2px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-4px);
+      transition: max-height 0.25s ease, opacity 0.2s ease,
+                  transform 0.25s ease, margin-top 0.25s ease;
+
+      .el-button {
+        padding: 3px 10px;
+        height: 26px;
+        font-size: 12px;
+        border-radius: 6px;
+        color: var(--el-text-color-secondary);
+        --el-button-hover-bg-color: var(--el-fill-color-light);
+        --el-button-hover-text-color: var(--el-color-primary);
+
+        .el-icon {
+          margin-right: 2px;
+          font-size: 13px;
+        }
+      }
+    }
+
+    &:hover .message-actions {
+      max-height: 38px;
+      margin-top: 6px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 .message-content {
-  max-width: 85%;
-  padding: 16px;
-  box-shadow: 0 1px 2px var(--shadow-color);
-  transition: transform 0.3s ease;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media screen and (min-width: 1200px) {
-    max-width: 900px;
-  }
-
-  @media screen and (min-width: 1600px) {
-    max-width: 1000px;
-  }
+  word-break: break-word;
 
   // 包含 WorkflowMessage 时撑满最大宽度
   &.has-workflow {
@@ -3167,32 +3241,6 @@ const batchDelete = async () => {
         }
       }
     }
-  }
-
-  .message-actions {
-    margin-top: 4px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-
-    .el-button {
-      padding: 2px 6px;
-      font-size: 12px;
-      height: 24px;
-      --el-button-hover-bg-color: var(--el-color-primary-light-8);
-      --el-button-hover-text-color: var(--el-color-primary);
-
-      .el-icon {
-        margin-right: 2px;
-        font-size: 12px;
-      }
-    }
-  }
-
-  &:hover .message-actions {
-    opacity: 1;
   }
 }
 
@@ -3749,9 +3797,15 @@ const batchDelete = async () => {
   .chat-main {
     width: 100%;
   }
+}
 
-  .message-content {
-    max-width: 90%;
+// 触屏设备（无 hover 能力）：操作按钮常显，保证复制/重新生成可用
+@media (hover: none) {
+  .message-item .message-actions {
+    max-height: 38px;
+    margin-top: 6px;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
