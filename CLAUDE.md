@@ -160,6 +160,7 @@ Located in `internal/agent/`, organized into subpackages:
 
 **Workflow Engine** (`internal/agent/workflow/`):
 - `engine.go` - Core workflow orchestration engine
+- `llm_exec.go` - Shared LLM execution core (LLM/Agent nodes & parallel branches)
 - `node_exec.go` - Node execution logic
 - `condition_exec.go` - Condition branch evaluation
 - `retry.go` - Retry logic for failed nodes
