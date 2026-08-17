@@ -67,8 +67,8 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { Share, ArrowDown, Check, Close, Loading, Document, Download, WarningFilled } from '@element-plus/icons-vue'
-import { getAuthHeaders } from '@/api/auth'
 import ToolCallItem from './ToolCallItem.vue'
+import { downloadFileWithAuth } from '@/utils/download'
 
 const props = defineProps({
   appName: { type: String, default: '' },
@@ -197,21 +197,8 @@ watch(() => props.workflow, (w) => {
 }, { deep: true })
 
 const downloadFile = async (url, name) => {
-  try {
-    const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) return
-    const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(blobUrl)
-  } catch (e) {
-    console.error('下载失败:', e)
-  }
+  // token 过期时由共享助手自动刷新并重试，避免点击无反应
+  await downloadFileWithAuth(url, name)
 }
 </script>
 

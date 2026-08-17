@@ -390,7 +390,7 @@ import {
 import { marked } from 'marked'
 import fetchSSEWithAuth from '@/api/sseRequest.js'
 import { defaultApi } from '@/api'
-import { getAuthHeaders } from '@/api/auth'
+import { downloadFileWithAuth } from '@/utils/download'
 
 defineOptions({ name: 'WorkflowExecute' })
 
@@ -831,15 +831,8 @@ const resetForm = () => {
 const goBack = () => { router.push('/workflow') }
 
 const downloadFile = async (url, name) => {
-  try {
-    const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) { ElMessage.error('下载失败'); return }
-    const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = blobUrl; a.download = name
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
-    URL.revokeObjectURL(blobUrl)
-  } catch { ElMessage.error('下载文件失败') }
+  // token 过期时由共享助手自动刷新并重试，避免点击无反应
+  await downloadFileWithAuth(url, name)
 }
 
 onMounted(() => { loadWorkflowInfo() })
