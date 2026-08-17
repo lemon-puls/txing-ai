@@ -366,6 +366,10 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	// 13. 处理执行结果
 	output := outputBuilder.String()
 
+	// 只保留最终交付产物：本次执行已生成 PDF 时，剔除中间过程的 Markdown 分片文件
+	// （如 zhanjiang_1day_part1.md 等），避免把过程文件当产物展示给用户
+	artifacts = filterFinalArtifacts(artifacts)
+
 	if execErr != nil {
 		log.Error("工作流执行失败", zap.Error(execErr))
 		// 用户看到的是提取根因后的友好提示，原始错误链放入 Workflow.Error 供"查看详情"
@@ -613,6 +617,33 @@ func extractArtifactFromChunk(chunk *global.Chunk) *dto.ArtifactInfo {
 		URL:      fmt.Sprintf("/api/file/download?filePath=%s", fileName),
 		Category: fileGenToolCategories[chunk.ToolName],
 	}
+}
+
+// filterFinalArtifacts 只保留最终交付产物。
+// 常见产文件流程是 Agent 先用 markdown_save_tool 分片保存中间 Markdown
+// （输出过长时按部分落盘），再用 markdown_to_pdf_file_tool 合并生成最终 PDF；
+// 此时 Markdown 分片只是过程文件，不应作为"生成的文件产物"展示给用户。
+// 规则：本次执行已生成 PDF 时，剔除 markdown 类产物；未生成 PDF 则全部保留
+// （纯 Markdown 交付类应用不受影响）。
+func filterFinalArtifacts(artifacts []dto.ArtifactInfo) []dto.ArtifactInfo {
+	hasPDF := false
+	for _, a := range artifacts {
+		if a.Category == "pdf" {
+			hasPDF = true
+			break
+		}
+	}
+	if !hasPDF {
+		return artifacts
+	}
+
+	filtered := make([]dto.ArtifactInfo, 0, len(artifacts))
+	for _, a := range artifacts {
+		if a.Category != "markdown" {
+			filtered = append(filtered, a)
+		}
+	}
+	return filtered
 }
 
 // saveExecution 保存工作流执行记录

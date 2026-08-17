@@ -52,8 +52,8 @@
         </div>
       </transition>
     </div>
-    <div v-if="artifacts && artifacts.length > 0" class="artifacts">
-      <div v-for="(file, idx) in artifacts" :key="idx" class="artifact-item" @click="downloadFile(file.url, file.name)">
+    <div v-if="displayArtifacts.length > 0" class="artifacts">
+      <div v-for="(file, idx) in displayArtifacts" :key="idx" class="artifact-item" @click="downloadFile(file.url, file.name)">
         <div class="artifact-icon" :class="file.category">
           <el-icon :size="14"><Document /></el-icon>
         </div>
@@ -81,6 +81,16 @@ const expanded = ref(true)
 const showErrorDetail = ref(false)
 const nodeLogsData = ref([])
 const nodeMap = ref(new Map())
+
+// 只展示最终交付产物：已生成 PDF 时隐藏中间过程的 Markdown 分片文件
+// （后端新数据已过滤，此处兼容旧持久化数据）
+const displayArtifacts = computed(() => {
+  const list = props.artifacts || []
+  if (list.some(a => a.category === 'pdf')) {
+    return list.filter(a => a.category !== 'markdown')
+  }
+  return list
+})
 
 onMounted(() => {
   if (props.nodeLogs && props.nodeLogs.length > 0) {

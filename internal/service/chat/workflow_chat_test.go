@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"txing-ai/internal/dto"
+
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 )
 
@@ -22,6 +24,80 @@ func (e *einoNodeError) Error() string {
 }
 
 func (e *einoNodeError) Unwrap() error { return e.orig }
+
+// TestFilterFinalArtifacts 验证产物过滤：生成 PDF 后剔除中间 Markdown 分片，
+// 未生成 PDF 时保留全部产物（纯 Markdown 交付场景不受影响）
+func TestFilterFinalArtifacts(t *testing.T) {
+	md := func(name string) dto.ArtifactInfo {
+		return dto.ArtifactInfo{Name: name, URL: "/api/file/download?filePath=" + name, Category: "markdown"}
+	}
+	pdf := func(name string) dto.ArtifactInfo {
+		return dto.ArtifactInfo{Name: name, URL: "/api/file/download?filePath=" + name, Category: "pdf"}
+	}
+	img := func(name string) dto.ArtifactInfo {
+		return dto.ArtifactInfo{Name: name, URL: "/api/file/download?filePath=" + name, Category: "image"}
+	}
+
+	tests := []struct {
+		name      string
+		artifacts []dto.ArtifactInfo
+		wantLen   int
+		wantPDF   bool
+	}{
+		{
+			name: "有 PDF 时剔除 Markdown 分片",
+			artifacts: []dto.ArtifactInfo{
+				md("guide_part1.md"), md("guide_part2.md"), md("guide_part3.md"),
+				pdf("guide.pdf"),
+			},
+			wantLen: 1,
+			wantPDF: true,
+		},
+		{
+			name: "有 PDF 时保留图片产物",
+			artifacts: []dto.ArtifactInfo{
+				md("guide_part1.md"), pdf("guide.pdf"), img("photo1.jpg"),
+			},
+			wantLen: 2,
+			wantPDF: true,
+		},
+		{
+			name: "无 PDF 时全部保留（纯 Markdown 交付）",
+			artifacts: []dto.ArtifactInfo{
+				md("guide.md"),
+			},
+			wantLen: 1,
+		},
+		{
+			name:      "空产物保持为空",
+			artifacts: nil,
+			wantLen:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterFinalArtifacts(tt.artifacts)
+			if len(got) != tt.wantLen {
+				t.Fatalf("expected %d artifacts, got %d: %+v", tt.wantLen, len(got), got)
+			}
+			if tt.wantPDF {
+				found := false
+				for _, a := range got {
+					if a.Category == "pdf" {
+						found = true
+					}
+					if a.Category == "markdown" {
+						t.Fatalf("markdown artifact should be filtered out when pdf exists: %+v", a)
+					}
+				}
+				if !found {
+					t.Fatal("expected pdf artifact to remain")
+				}
+			}
+		})
+	}
+}
 
 // TestFriendlyWorkflowErrorMessage 验证工作流执行失败时，
 // 用户看到的是提取根因后的友好提示（含原因与操作指引），
