@@ -1,0 +1,124 @@
+package chat
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+	"testing"
+
+	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
+)
+
+// einoNodeError 模拟 eino compose.internalError 的包装结构：
+// Error() 带 node path 尾巴，Unwrap() 返回原始错误（与真实错误链一致）
+type einoNodeError struct {
+	orig error
+	path string
+}
+
+func (e *einoNodeError) Error() string {
+	return fmt.Sprintf("[NodeRunError] %s\n------------------------\nnode path: [%s]", e.orig.Error(), e.path)
+}
+
+func (e *einoNodeError) Unwrap() error { return e.orig }
+
+// TestFriendlyWorkflowErrorMessage 验证工作流执行失败时，
+// 用户看到的是提取根因后的友好提示（含原因与操作指引），
+// 而不是 [NodeRunError]/node path 等内部包装噪音
+func TestFriendlyWorkflowErrorMessage(t *testing.T) {
+	// wrapLLM 模拟 llm_exec + retry 的逐层包装
+	wrapLLM := func(err error) error {
+		return fmt.Errorf("LLM 调用失败: %w", fmt.Errorf("执行失败（已重试 0 次）: %w", err))
+	}
+	// wrapEino 模拟 eino 节点错误包装（带 node path 尾巴）
+	wrapEino := func(err error) error {
+		return &einoNodeError{orig: err, path: "agent_travel"}
+	}
+
+	tests := []struct {
+		name string
+		err  error
+		want string // 期望消息包含的子串
+	}{
+		{
+			name: "401 invalid api key 给出配置指引",
+			err: wrapEino(wrapLLM(&einoopenai.APIError{
+				Message:        "Invalid API Key",
+				HTTPStatus:     "401 Unauthorized",
+				HTTPStatusCode: 401,
+			})),
+			want: "API Key 无效或已过期",
+		},
+		{
+			name: "429 限流给出重试指引",
+			err: wrapEino(wrapLLM(&einoopenai.APIError{
+				Message:        "Rate limit reached",
+				HTTPStatus:     "429 Too Many Requests",
+				HTTPStatusCode: 429,
+			})),
+			want: "请求过于频繁",
+		},
+		{
+			name: "404 模型不存在给出配置指引",
+			err: wrapEino(wrapLLM(&einoopenai.APIError{
+				Message:        "Model Not Found",
+				HTTPStatus:     "404 Not Found",
+				HTTPStatusCode: 404,
+			})),
+			want: "模型不存在",
+		},
+		{
+			name: "5xx 服务不可用",
+			err: wrapEino(wrapLLM(&einoopenai.APIError{
+				Message:        "Internal Server Error",
+				HTTPStatus:     "500 Internal Server Error",
+				HTTPStatusCode: 500,
+			})),
+			want: "暂时不可用",
+		},
+		{
+			name: "其他 4xx 保留根因消息与错误码",
+			err: wrapEino(wrapLLM(&einoopenai.APIError{
+				Message:        "context length exceeded",
+				HTTPStatus:     "400 Bad Request",
+				HTTPStatusCode: 400,
+			})),
+			want: "context length exceeded",
+		},
+		{
+			name: "超时给出重试指引",
+			err:  wrapEino(wrapLLM(context.DeadlineExceeded)),
+			want: "响应超时",
+		},
+		{
+			name: "网络错误给出检查指引",
+			err:  wrapEino(wrapLLM(errors.New("dial tcp: connection refused"))),
+			want: "无法连接模型服务",
+		},
+		{
+			name: "未知错误剥离内部噪音提取根因",
+			err: wrapEino(fmt.Errorf("LLM 调用失败: %w",
+				fmt.Errorf("执行失败（已重试 2 次）: %w", errors.New("工具执行异常: boom")))),
+			want: "工具执行异常: boom",
+		},
+		{
+			name: "nil 错误返回通用提示且不 panic",
+			err:  nil,
+			want: "未知错误",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := friendlyWorkflowErrorMessage(tt.err)
+			if !strings.Contains(msg, tt.want) {
+				t.Fatalf("expected message to contain %q, got: %q", tt.want, msg)
+			}
+			// 友好提示不应泄漏内部包装噪音
+			if strings.Contains(msg, "[NodeRunError]") || strings.Contains(msg, "node path") {
+				t.Fatalf("friendly message should not contain internal noise, got: %q", msg)
+			}
+		})
+	}
+}

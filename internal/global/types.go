@@ -11,6 +11,7 @@ type Message struct {
 	Name             *string `json:"name,omitempty"`
 	// 工作流相关字段（用于持久化工作流执行结果）
 	WorkflowStatus string   `json:"workflow_status,omitempty"` // completed/failed
+	WorkflowError  string   `json:"workflow_error,omitempty"`  // 执行失败详情（原始错误，前端"查看详情"用）
 	Artifacts      string   `json:"artifacts,omitempty"`       // 产物 JSON
 	AppName        string   `json:"app_name,omitempty"`        // 应用名称
 	Files          []string `json:"files,omitempty"`           // 用户上传的文件名列表

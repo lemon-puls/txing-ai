@@ -303,6 +303,7 @@ func GetConversationDetail(c *gin.Context) {
 			ReasoningContent: item.ReasoningContent,
 			Name:             item.Name,
 			WorkflowStatus:   item.WorkflowStatus,
+			WorkflowError:    item.WorkflowError,
 			Artifacts:        item.Artifacts,
 			AppName:          item.AppName,
 			Files:            item.Files,

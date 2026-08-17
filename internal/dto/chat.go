@@ -42,12 +42,12 @@ type Attachment struct {
 }
 
 type WsMessageResponse struct {
-	ConversationId int64  `json:"conversationId"`
+	ConversationId int64 `json:"conversationId"`
 	// 消息类型：空表示普通流式内容；"resume" 表示续流应答
 	Type string `json:"type,omitempty"`
 	// 续流应答：当前是否还有进行中的流（true 表示已续上，后续仍有增量推送）
-	Active bool `json:"active,omitempty"`
-	Content        string `json:"content"`
+	Active  bool   `json:"active,omitempty"`
+	Content string `json:"content"`
 	// 思考过程消息
 	ReasoningContent string `json:"reasoning_content"`
 	End              bool   `json:"end"`
@@ -70,6 +70,7 @@ type WorkflowProgress struct {
 	ToolArgs   string `json:"toolArgs,omitempty"`   // 工具调用参数（截断后，仅用于展示）
 	ToolStatus string `json:"toolStatus,omitempty"` // 工具调用状态 running/completed/failed
 	ToolResult string `json:"toolResult,omitempty"` // 工具结果（截断后，仅用于展示）
+	Error      string `json:"error,omitempty"`      // 执行失败时的原始错误详情（前端"查看详情"用）
 }
 
 // ArtifactInfo 文件产物信息

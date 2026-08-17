@@ -5896,6 +5896,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "assistant"
                 },
+                "workflowError": {
+                    "description": "执行失败详情（原始错误，前端\"查看详情\"用）",
+                    "type": "string"
+                },
                 "workflowStatus": {
                     "description": "工作流相关字段",
                     "type": "string",

@@ -1805,10 +1805,10 @@ const getInputPlaceholder = () => {
   return '输入消息，支持拖拽/粘贴文件，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
 }
 
-// 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
+// 获取消息的工作流状态对象（兼容原始 API 格式和已持久化格式）
 const getMessageWorkflow = (message) => {
   if (message.workflow) return message.workflow
-  if (message.workflowStatus) return { status: message.workflowStatus }
+  if (message.workflowStatus) return { status: message.workflowStatus, error: message.workflowError || '' }
   return null
 }
 

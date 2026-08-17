@@ -14,6 +14,15 @@
           <ArrowDown />
         </el-icon>
       </div>
+      <!-- 执行失败详情：默认收起，点击展开查看原始错误链（便于排查） -->
+      <div v-if="workflow?.status === 'failed' && workflow?.error" class="workflow-error">
+        <div class="error-toggle" @click="showErrorDetail = !showErrorDetail">
+          <el-icon :size="13" class="error-toggle-icon"><WarningFilled /></el-icon>
+          <span class="error-toggle-label">查看失败详情</span>
+          <el-icon class="expand-arrow" :class="{ expanded: showErrorDetail }"><ArrowDown /></el-icon>
+        </div>
+        <div v-show="showErrorDetail" class="error-detail">{{ workflow.error }}</div>
+      </div>
       <transition name="slide">
         <div v-show="expanded && nodeLogsData.length > 0" class="workflow-nodes">
           <div
@@ -57,7 +66,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Share, ArrowDown, Check, Close, Loading, Document, Download } from '@element-plus/icons-vue'
+import { Share, ArrowDown, Check, Close, Loading, Document, Download, WarningFilled } from '@element-plus/icons-vue'
 import { getAuthHeaders } from '@/api/auth'
 import ToolCallItem from './ToolCallItem.vue'
 
@@ -69,6 +78,7 @@ const props = defineProps({
 })
 
 const expanded = ref(true)
+const showErrorDetail = ref(false)
 const nodeLogsData = ref([])
 const nodeMap = ref(new Map())
 
@@ -311,6 +321,53 @@ $info: #94a3b8;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+// 执行失败详情区（卡片内、头部下方）
+.workflow-error {
+  border-top: 1px solid var(--el-border-color-extra-light);
+  background: rgba($danger, 0.04);
+
+  .error-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    color: $danger;
+    user-select: none;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba($danger, 0.08);
+    }
+
+    .error-toggle-icon {
+      flex-shrink: 0;
+    }
+
+    .error-toggle-label {
+      flex: 1;
+    }
+
+    .expand-arrow {
+      color: $danger;
+      font-size: 12px;
+    }
+  }
+
+  .error-detail {
+    padding: 0 16px 12px 35px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--el-text-color-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 220px;
+    overflow-y: auto;
+  }
 }
 
 .node-item {

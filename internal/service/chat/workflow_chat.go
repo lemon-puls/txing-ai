@@ -3,9 +3,12 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"txing-ai/internal/agent/workflow"
 	"txing-ai/internal/agent/workflow/resolver"
@@ -20,6 +23,7 @@ import (
 	"txing-ai/internal/tool"
 	"txing-ai/internal/utils"
 
+	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -35,7 +39,7 @@ type NodeLog struct {
 
 // ToolCall 工具调用记录
 type ToolCall struct {
-	ID     string `json:"id,omitempty"`     // 工具调用 ID
+	ID     string `json:"id,omitempty"` // 工具调用 ID
 	Name   string `json:"name"`
 	Status string `json:"status"`
 	Args   string `json:"args,omitempty"`   // 调用参数（截断后，仅用于展示）
@@ -55,6 +59,89 @@ func truncateForDisplay(s string, max int) string {
 		return s
 	}
 	return string(rs[:max]) + "\n…(内容过长已截断)"
+}
+
+// workflowErrNoisePrefix 匹配错误链中逐层包装的内部前缀（eino 节点错误、LLM 调用、重试），
+// 用于兜底分支从完整错误串中剥离噪音、提取根因
+var workflowErrNoisePrefix = regexp.MustCompile(`^(?:\[(?:NodeRun|GraphRun)Error\] |LLM 调用失败: |执行失败（已重试 \d+ 次）: |执行失败: )`)
+
+// friendlyWorkflowErrorMessage 将工作流底层错误转换为用户可理解的提示信息：
+// 提取根因（API Key 无效、限流、超时、网络异常等）并给出操作指引，
+// 不再把内部包装错误链（[NodeRunError] / node path 等）直接展示给用户
+func friendlyWorkflowErrorMessage(err error) string {
+	if err == nil {
+		return "应用执行失败：执行过程中出现未知错误，请稍后重试。"
+	}
+
+	// 1. OpenAI 兼容 API 错误：按状态码给出明确原因与操作指引
+	var apiErr *einoopenai.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.HTTPStatusCode {
+		case http.StatusUnauthorized:
+			return "应用执行失败：模型服务的 API Key 无效或已过期，请在「渠道管理」中检查并更新对应渠道的 API Key 后重试。"
+		case http.StatusForbidden:
+			return "应用执行失败：当前账号没有访问该模型的权限，请检查渠道的模型映射与账号权限。"
+		case http.StatusTooManyRequests:
+			return "应用执行失败：请求过于频繁（已触发限流），请稍后重试。"
+		case http.StatusNotFound:
+			return "应用执行失败：请求的模型不存在或服务地址有误，请检查渠道的模型配置。"
+		}
+		if apiErr.HTTPStatusCode >= 500 {
+			return "应用执行失败：模型服务暂时不可用，请稍后重试。"
+		}
+		if msg := strings.TrimSpace(apiErr.Message); msg != "" {
+			if apiErr.HTTPStatusCode > 0 {
+				return fmt.Sprintf("应用执行失败：%s（错误码 %d）。请检查模型或渠道配置后重试。",
+					truncateForDisplay(msg, 120), apiErr.HTTPStatusCode)
+			}
+			return fmt.Sprintf("应用执行失败：%s。请检查模型或渠道配置后重试。", truncateForDisplay(msg, 120))
+		}
+		return "应用执行失败：模型服务返回错误，请稍后重试。"
+	}
+
+	// 2. 超时
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "应用执行失败：模型响应超时，请稍后重试或更换其他模型。"
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "Client.Timeout") {
+		return "应用执行失败：模型响应超时，请稍后重试或更换其他模型。"
+	}
+
+	// 3. 网络类错误
+	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") ||
+		strings.Contains(msg, "connection reset") || strings.Contains(msg, "TLS handshake") {
+		return "应用执行失败：无法连接模型服务，请检查网络或渠道的服务地址配置。"
+	}
+
+	// 4. 兜底：剥离内部包装噪音，取最内层可读的错误消息
+	if root := rootWorkflowError(err); root != "" {
+		return fmt.Sprintf("应用执行失败：%s", root)
+	}
+	return "应用执行失败：执行过程中出现未知错误，请稍后重试。"
+}
+
+// rootWorkflowError 剥离 eino 节点错误包装（node path 尾巴）与逐层前缀，
+// 提取最内层可读的错误消息，避免内部噪音直接暴露给用户
+func rootWorkflowError(err error) string {
+	s := err.Error()
+	// 去掉 eino 的 node path 尾巴
+	if idx := strings.Index(s, "\n------------------------\n"); idx >= 0 {
+		s = s[:idx]
+	}
+	// 反复剥离内部包装前缀
+	for {
+		loc := workflowErrNoisePrefix.FindString(s)
+		if loc == "" {
+			break
+		}
+		s = strings.TrimPrefix(s, loc)
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	return truncateForDisplay(s, 200)
 }
 
 // HandleWorkflowChat 处理 AI 对话中的工作流执行
@@ -147,6 +234,7 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	var artifacts []dto.ArtifactInfo
 	var nodeLogs []NodeLog
 	nodeLogMap := make(map[string]int) // nodeId -> index in nodeLogs
+	var workflowErrMsg string          // 执行失败时的原始错误详情（持久化后供前端"查看详情"）
 
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -280,15 +368,19 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 
 	if execErr != nil {
 		log.Error("工作流执行失败", zap.Error(execErr))
+		// 用户看到的是提取根因后的友好提示，原始错误链放入 Workflow.Error 供"查看详情"
+		friendlyErr := friendlyWorkflowErrorMessage(execErr)
 		conn.Send(dto.WsMessageResponse{
-			Content:        fmt.Sprintf("应用执行失败：%s", execErr.Error()),
+			Content:        friendlyErr,
 			End:            true,
 			ConversationId: conversation.Id,
 			Workflow: &dto.WorkflowProgress{
 				Status: "failed",
+				Error:  execErr.Error(),
 			},
 		})
-		output = fmt.Sprintf("执行失败：%s", execErr.Error())
+		output = friendlyErr
+		workflowErrMsg = execErr.Error()
 	} else {
 		// 发送完成状态（包含格式化的结果文本和产物信息）
 		conn.Send(dto.WsMessageResponse{
@@ -305,13 +397,13 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	// 14. 保存执行记录
 	saveExecution(db, conversation.Id, workflowID, msg, fileRefs, output, artifacts, execErr == nil)
 
-	// 15. 保存 AI 响应到会话（包含工作流状态、产物信息和节点日志）
+	// 15. 保存 AI 响应到会话（包含工作流状态、原始错误、产物信息和节点日志）
 	if output != "" {
 		workflowStatus := "completed"
 		if execErr != nil {
 			workflowStatus = "failed"
 		}
-		saveWorkflowResponse(db, conversation, output, workflowStatus, artifacts, flow.Name, nodeLogs)
+		saveWorkflowResponse(db, conversation, output, workflowStatus, artifacts, flow.Name, nodeLogs, workflowErrMsg)
 	}
 }
 
@@ -549,17 +641,18 @@ func saveExecution(db *gorm.DB, conversationID, workflowID int64, msg *dto.WsMes
 	}
 }
 
-// saveWorkflowResponse 保存工作流响应到会话消息（包含工作流状态、产物信息和节点日志）
-func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string, workflowStatus string, artifacts []dto.ArtifactInfo, appName string, nodeLogs []NodeLog) {
+// saveWorkflowResponse 保存工作流响应到会话消息（包含工作流状态、原始错误、产物信息和节点日志）
+func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string, workflowStatus string, artifacts []dto.ArtifactInfo, appName string, nodeLogs []NodeLog, workflowError string) {
 	artifactsJSON, _ := json.Marshal(artifacts)
 	executionLogsJSON, _ := json.Marshal(nodeLogs)
 	assistantMsg := global.Message{
-		Role:            global.Assistant,
-		Content:         content,
-		WorkflowStatus:  workflowStatus,
-		Artifacts:       string(artifactsJSON),
-		AppName:         appName,
-		ExecutionLogs:   string(executionLogsJSON),
+		Role:           global.Assistant,
+		Content:        content,
+		WorkflowStatus: workflowStatus,
+		WorkflowError:  workflowError,
+		Artifacts:      string(artifactsJSON),
+		AppName:        appName,
+		ExecutionLogs:  string(executionLogsJSON),
 	}
 	conversation.FormattedMessage = append(conversation.FormattedMessage, assistantMsg)
 
