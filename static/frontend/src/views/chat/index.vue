@@ -1401,12 +1401,11 @@ const clearPendingStreamUpdate = () => {
 const applyStreamState = () => {
   streamFlushTimer = null
   if (!pendingStreamState) return
-  const { msg, content, reasoning, workflow, artifacts, chatId } = pendingStreamState
+  const { msg, content, reasoning, artifacts, chatId } = pendingStreamState
   pendingStreamState = null
 
   msg.content = content
   msg.reasoningContent = reasoning
-  if (workflow) msg.workflow = workflow
   if (artifacts) msg.artifacts = artifacts
 
   // 同步更新 lastMessageMap 中的消息（仅限登录用户）
@@ -1416,7 +1415,6 @@ const applyStreamState = () => {
     if (lastMessage) {
       lastMessage.content = content
       lastMessage.reasoningContent = reasoning
-      if (workflow) lastMessage.workflow = workflow
       if (artifacts) lastMessage.artifacts = artifacts
     }
   }
@@ -1438,13 +1436,14 @@ const applyStreamState = () => {
   }
 }
 
-// 调度一次流式内容刷新（合并高频 chunk，只保留最新状态）
+// 调度一次流式内容刷新（合并高频 chunk，只保留最新状态）。
+// 注意：工作流进度（节点/工具状态）不走此节流，在 handleWebSocketMessage 中立即落地，
+// 否则工具完成/失败状态在窗口内会被紧随其后的 chunk（如"继续思考"标记）覆盖丢失
 const scheduleStreamUpdate = (chatId, msg, data) => {
   pendingStreamState = {
     msg,
     content: data.partialContent,
     reasoning: data.partialReasoning,
-    workflow: data.workflow,
     artifacts: data.artifacts,
     chatId
   }
@@ -1552,6 +1551,13 @@ const handleWebSocketMessage = (chatId, data) => {
       if (userStore.isLoggedIn) {
         conversationStore.setLastMessage(chatId, currentStreamingMessage)
       }
+    }
+
+    // 工作流进度（节点/工具状态）立即落地，不参与内容节流：
+    // 工具完成/失败状态若延迟合并，会被紧随其后的"继续思考"等标记 chunk 覆盖，
+    // 导致工具行一直显示执行中；状态更新本身很小且低频，直接替换对象即可
+    if (data.data.workflow) {
+      currentStreamingMessage.workflow = data.data.workflow
     }
 
     // 节流更新流式消息内容：合并高频 chunk，避免整条消息 markdown 全量重渲染导致抖动
