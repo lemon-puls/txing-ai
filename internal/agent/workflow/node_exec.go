@@ -59,7 +59,19 @@ func (e *WorkflowAgent) ExecuteLLMNodeInParallel(ctx context.Context, node *type
 		EmitFinalContent: false,
 	}
 
-	return ExecuteLLM(ctx, cfg, input, callback)
+	// 包装 callback 注入节点信息，使并行分支内 LLM 节点的工具调用
+	// 可被前端与持久化日志正确跟踪（与主流程 LLM/Agent 节点一致）
+	llmCallback := callback
+	if callback != nil {
+		llmCallback = func(chunk *global.Chunk) error {
+			chunk.NodeId = node.Id
+			chunk.NodeType = "llm"
+			chunk.NodeLabel = node.Data.Label
+			return callback(chunk)
+		}
+	}
+
+	return ExecuteLLM(ctx, cfg, input, llmCallback)
 }
 
 /* [TOOL-NODE-DISABLED] 工具节点已停用（实现 parallel.NodeExecutor 接口）。

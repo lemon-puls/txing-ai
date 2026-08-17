@@ -114,7 +114,20 @@ const statusLabel = computed(() => {
 })
 
 watch(() => props.workflow, (w) => {
-  if (!w || !w.nodeId) return
+  if (!w) return
+  // 工作流整体进入终态（completed/failed）时兜底收尾：
+  // 任何仍处于 running 的工具调用按最终结果标记完成/失败，
+  // 避免节流合并或状态 chunk 丢失导致工具一直转圈
+  if (w.status === 'completed' || w.status === 'failed') {
+    nodeLogsData.value.forEach(log => {
+      log.toolCalls.forEach(tc => {
+        if (tc.status === 'running') {
+          tc.status = w.status
+        }
+      })
+    })
+  }
+  if (!w.nodeId) return
   const existing = nodeMap.value.get(w.nodeId)
   if (existing) {
     existing.status = w.nodeStatus || existing.status

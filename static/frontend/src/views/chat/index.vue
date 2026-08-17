@@ -1462,7 +1462,10 @@ const handleWebSocketMessage = (chatId, data) => {
     // 完整的消息响应
     conversationStore.setTypingStatus(chatId, false)
 
-    // 流已结束：清空待刷新的流式状态，避免迟到刷新覆盖最终内容
+    // 流已结束：先冲刷待刷新的流式状态，再清空。
+    // 节点/工具的最终状态 chunk 与结束消息几乎同时到达，若仍停留在节流窗口内
+    // 会被清空丢弃，导致工具调用一直显示转圈；先 applyStreamState 让其落地
+    applyStreamState()
     clearPendingStreamUpdate()
 
     // 如果存在流式消息，则更新它而不是创建新消息

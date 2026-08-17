@@ -311,7 +311,18 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 				// 委托共享执行核心（模型解析/工具绑定/多轮工具循环均在 ExecuteLLM 内完成）
 				// Delegate to the shared execution core.
-				result, execErr := ExecuteLLM(ctx, llmNodeCfg, inputContent, callback)
+				// 包装 callback，为工具调用等 chunk 注入节点信息（与 Agent 节点一致），
+				// 否则 LLM 节点的工具调用无法被前端与持久化日志正确跟踪
+				llmNodeCallback := callback
+				if callback != nil {
+					llmNodeCallback = func(chunk *global.Chunk) error {
+						chunk.NodeId = nodeId
+						chunk.NodeType = "llm"
+						chunk.NodeLabel = node.Data.Label
+						return callback(chunk)
+					}
+				}
+				result, execErr := ExecuteLLM(ctx, llmNodeCfg, inputContent, llmNodeCallback)
 				if execErr != nil {
 					execLog.Status = "failed"
 					execLog.Error = execErr.Error()
