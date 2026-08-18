@@ -52,24 +52,7 @@ const (
 // 处理消息
 func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
 	// 如果是该会话的第一条用户发的消息，则更新会话名称
-	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
-		return m.Role == global.User
-	})
-
-	if count == 0 {
-		// 更新会话名称 最多 35 个字符 超出就截断
-		if utf8.RuneCountInString(msg.Content) > 35 {
-			// 找到第 35 个字符的位置
-			pos := 0
-			for i := 0; i < 35; i++ {
-				_, size := utf8.DecodeRuneInString(msg.Content[pos:])
-				pos += size
-			}
-			c.Name = msg.Content[:pos]
-		} else {
-			c.Name = msg.Content
-		}
-	}
+	c.setNameFromFirstUserMessage(msg.Content)
 	// 添加消息到会话消息记录中，并应用调用参数
 	if err := c.addMessageFromWsMessageRequest(msg); err != nil {
 		return err
@@ -80,6 +63,29 @@ func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) err
 		return err
 	}
 	return nil
+}
+
+// setNameFromFirstUserMessage 若会话中还没有任何用户消息，则将会话名称设置为消息内容
+// （最多 35 个字符，超出按 rune 截断，避免截断多字节字符）
+func (c *Conversation) setNameFromFirstUserMessage(content string) {
+	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
+		return m.Role == global.User
+	})
+	if count > 0 {
+		return
+	}
+
+	if utf8.RuneCountInString(content) > 35 {
+		// 找到第 35 个字符的位置
+		pos := 0
+		for i := 0; i < 35; i++ {
+			_, size := utf8.DecodeRuneInString(content[pos:])
+			pos += size
+		}
+		c.Name = content[:pos]
+	} else {
+		c.Name = content
+	}
 }
 
 // 将 WsMessageRequest 消息添加到会话消息记录中
@@ -125,6 +131,10 @@ func (c *Conversation) HandleWorkflowMessage(msg *dto.WsMessageRequest, appName 
 	if len(msg.Content) == 0 {
 		return errors.New("message content is empty")
 	}
+
+	// 如果是该会话的第一条用户发的消息，则更新会话名称
+	// （前端发送时已剥离 @应用名 前缀，此处直接用消息内容作为名称）
+	c.setNameFromFirstUserMessage(msg.Content)
 
 	// 提取文件名列表
 	var fileNames []string

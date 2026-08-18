@@ -1230,6 +1230,9 @@ const sendMessage = async () => {
   }
   if (displayMessage.trim()) {
     conversationStore.updateCurrentChatName(displayMessage)
+  } else if (selectedApp.value) {
+    // 首条消息只有 @应用名（如仅上传文件的应用）：用应用名作为会话名称
+    conversationStore.updateCurrentChatName(`与 ${selectedApp.value.name} 对话`)
   }
 
   // 上传多模态文件（如果有）

@@ -203,3 +203,44 @@ func TestAddMessageFromAssistantNormal(t *testing.T) {
 		t.Fatalf("unexpected message: %+v", m)
 	}
 }
+
+// 首条用户消息生成会话名称：普通聊天与 @应用（工作流）共用该逻辑，
+// 仅首条消息设置、已有用户消息不覆盖、超长按 rune 截断
+func TestSetNameFromFirstUserMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		messages []global.Message
+		content  string
+		want     string
+	}{
+		{
+			name:    "首条消息设置名称",
+			content: "湛江一日游攻略",
+			want:    "湛江一日游攻略",
+		},
+		{
+			name:     "已有用户消息不覆盖",
+			messages: []global.Message{{Role: global.User, Content: "之前的问题"}},
+			content:  "新的问题",
+			want:     "原有名称",
+		},
+		{
+			name:    "超长内容按 rune 截断到 35 字符",
+			content: strings.Repeat("湛", 40),
+			want:    strings.Repeat("湛", 35),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Conversation{
+				Name:             "原有名称",
+				FormattedMessage: append([]global.Message(nil), tt.messages...),
+			}
+			c.setNameFromFirstUserMessage(tt.content)
+			if c.Name != tt.want {
+				t.Fatalf("expected name %q, got %q", tt.want, c.Name)
+			}
+		})
+	}
+}
