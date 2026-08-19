@@ -514,10 +514,14 @@ func validateToolCallArgs(toolCalls []schema.ToolCall) ([]*schema.Message, bool)
 				tc.Function.Name, tc.ID, err)
 			// 大段正文塞进工具调用参数时，模型生成的 JSON 容易被截断/转义错误；
 			// 给出明确的修复指引，避免同一失败反复重试
-			if tc.Function.Name == "markdown_to_pdf_file_tool" {
+			switch tc.Function.Name {
+			case "markdown_to_pdf_file_tool":
 				errorMsg += "。若内容过长导致 JSON 被截断，请先用 markdown_save_tool 保存 Markdown 文件，" +
 					"再调用本工具并传入 filePath 参数（不要再把整段正文放进 content）"
-			} else {
+			case "markdown_save_tool":
+				errorMsg += "。若内容过长导致 JSON 被截断，请将内容拆分为多段分多次保存到同一文件：" +
+					"第一次调用传 is_append=false，后续调用传 is_append=true 追加（每次只传一小段，避免参数超长被截断）"
+			default:
 				errorMsg += "。请重新生成，确保参数是完整合法的 JSON（注意双引号、换行需正确转义）"
 			}
 			log.Error(errorMsg)

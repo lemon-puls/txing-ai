@@ -59,6 +59,14 @@ func TestValidateToolCallArgs(t *testing.T) {
 			wantHint:    "filePath",
 		},
 		{
+			name: "Markdown 保存工具截断 JSON 提示分段追加",
+			toolCalls: []schema.ToolCall{
+				{ID: "c5", Function: schema.FunctionCall{Name: "markdown_save_tool", Arguments: `{"content": "超长内容未闭合`}},
+			},
+			wantInvalid: true,
+			wantHint:    "is_append",
+		},
+		{
 			name: "其他工具截断 JSON 提示重新生成",
 			toolCalls: []schema.ToolCall{
 				{ID: "c4", Function: schema.FunctionCall{Name: "web_search_tool", Arguments: `{"q": `}},

@@ -44,7 +44,7 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 		data, readErr := os.ReadFile(absPath)
 		if readErr != nil {
 			log.Error("读取Markdown文件失败", zap.String("path", absPath), zap.Error(readErr))
-			return fmt.Sprintf("读取Markdown文件失败: %v", readErr), nil
+			return fmt.Sprintf("读取Markdown文件失败: %v（请确认文件已用 markdown_save_tool 保存）", readErr), nil
 		}
 		content = string(data)
 	}
@@ -52,8 +52,8 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 		return "转换内容为空，请提供 content 或有效的 filePath", nil
 	}
 
-	// 处理Markdown中的图片
-	content, imagePaths, err := processMarkdownImages(params.Content, savePath)
+	// 处理Markdown中的图片（基于实际转换内容，而非可能为空的 content 参数）
+	content, imagePaths, err := processMarkdownImages(content, savePath)
 	if err != nil {
 		log.Error("处理Markdown图片失败", zap.Error(err))
 		return fmt.Sprintf("处理Markdown图片失败: %v", err), nil
@@ -61,7 +61,13 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	defer cleanupTempImages(imagePaths)
 
 	// 确保文件名有.pdf扩展名
-	filename := params.Filename
+	filename := strings.TrimSpace(params.Filename)
+	if filename == "" {
+		return "转换失败：输出文件名为空，请提供 filename（不含扩展名）", nil
+	}
+	if strings.ContainsAny(filename, `/\`) || strings.Contains(filename, "..") {
+		return fmt.Sprintf("转换失败：文件名不合法: %q，请只提供文件名（不含扩展名），不要包含路径", params.Filename), nil
+	}
 	// 文件名加上时间戳
 	unixNano := time.Now().UnixNano()
 	filename = fmt.Sprintf("%s_%d", filename, unixNano)
