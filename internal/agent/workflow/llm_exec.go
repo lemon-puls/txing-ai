@@ -337,6 +337,14 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 		if response == nil || response.ResponseMeta == nil || response.ResponseMeta.FinishReason != "length" {
 			break
 		}
+		// 响应为空但 finish_reason=length（如推理模型的思考过程耗尽 token 配额、
+		// 未产出正文）：无可续写内容；且把空 assistant 消息追加进上下文会被渠道拒绝
+		// （400 Invalid assistant message: content or tool_calls must be set），直接跳过续写
+		if response.Content == "" {
+			log.Warn("LLM 输出为空且 finish_reason=length，无可续写内容",
+				zap.String("nodeId", cfg.NodeID))
+			break
+		}
 		log.Warn("LLM 输出撞 token 上限被截断，尝试续写",
 			zap.String("nodeId", cfg.NodeID),
 			zap.Int("continuation", cont+1),
@@ -359,7 +367,7 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 
 	// 最终兜底：仍未产出内容时给出提示，避免返回空字符串
 	if result == "" && cfg.EmitFinalContent {
-		result = "执行未能完成，可能因工具调用轮次达到上限，请稍后重试。"
+		result = "执行未能完成，可能因输出超出长度限制或工具调用轮次达到上限，请稍后重试或调整生成参数。"
 	}
 
 	// 推送最终内容 / Emit final content
