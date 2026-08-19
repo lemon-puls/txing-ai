@@ -61,6 +61,24 @@ func truncateForDisplay(s string, max int) string {
 	return string(rs[:max]) + "\n…(内容过长已截断)"
 }
 
+// progressFromChunk 将执行 chunk 转换为前端工作流进度消息。
+// 回调累积与写协程下发共用同一构建逻辑，保证 resume 回放与实时增量格式一致。
+func progressFromChunk(chunk *global.Chunk) *dto.WorkflowProgress {
+	return &dto.WorkflowProgress{
+		Status:     "running",
+		NodeID:     chunk.NodeId,
+		NodeType:   chunk.NodeType,
+		NodeLabel:  chunk.NodeLabel,
+		NodeStatus: chunk.NodeStatus,
+		ShowMsg:    chunk.ShowMsg,
+		ToolName:   chunk.ToolName,
+		ToolCallId: chunk.ToolCallId,
+		ToolArgs:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+		ToolStatus: chunk.ToolStatus,
+		ToolResult: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
+	}
+}
+
 // workflowErrNoisePrefix 匹配错误链中逐层包装的内部前缀（eino 节点错误、LLM 调用、重试），
 // 用于兜底分支从完整错误串中剥离噪音、提取根因
 var workflowErrNoisePrefix = regexp.MustCompile(`^(?:\[(?:NodeRun|GraphRun)Error\] |LLM 调用失败: |执行失败（已重试 \d+ 次）: |执行失败: )`)
@@ -219,15 +237,11 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		return
 	}
 
-	// 10. 发送执行开始状态
-	conn.Send(dto.WsMessageResponse{
-		Content:        "",
-		End:            false,
-		ConversationId: conversation.Id,
-		Workflow: &dto.WorkflowProgress{
-			Status: "running",
-		},
-	})
+	// 10. 启动工作流会话（与 WS 连接解耦：客户端断开后工作流继续执行，支持刷新后 resume）
+	ws, wctx := workflowStreamManager.Start(conversation.Id)
+	if err := ws.Attach(conn); err != nil {
+		log.Error("attach workflow stream consumer failed", zap.Error(err))
+	}
 
 	// 11. 收集输出、产物和节点日志
 	var outputBuilder strings.Builder
@@ -236,30 +250,26 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 	nodeLogMap := make(map[string]int) // nodeId -> index in nodeLogs
 	var workflowErrMsg string          // 执行失败时的原始错误详情（持久化后供前端"查看详情"）
 
-	ctxWithCancel, cancel := context.WithCancel(ctx)
-	defer cancel()
+	// 工作流异常结束时兜底收尾会话，避免残留"执行中"状态
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("workflow chat panic", zap.Any("err", r))
+			ws.finish(fmt.Errorf("workflow chat panic: %v", r), "", artifacts, fmt.Sprint(r))
+		}
+	}()
 
 	// 12. 执行工作流
 	callback := func(chunk *global.Chunk) error {
-		// 构建工作流进度消息
-		progress := &dto.WorkflowProgress{
-			Status:     "running",
-			NodeID:     chunk.NodeId,
-			NodeType:   chunk.NodeType,
-			NodeLabel:  chunk.NodeLabel,
-			NodeStatus: chunk.NodeStatus,
-			ShowMsg:    chunk.ShowMsg,
-			ToolName:   chunk.ToolName,
-			ToolCallId: chunk.ToolCallId,
-			ToolArgs:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
-			ToolStatus: chunk.ToolStatus,
-			ToolResult: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
-		}
+		// 构建工作流进度消息（与写协程共用同一构建逻辑）
+		progress := progressFromChunk(chunk)
 
-		// 收集输出内容
+		// 收集输出内容（resume 快照与最终正文）
 		if chunk.Content != "" {
 			outputBuilder.WriteString(chunk.Content)
+			ws.appendContent(chunk.Content)
 		}
+		// 累积进度（resume 时回放给前端重建节点/工具展示）
+		ws.appendProgress(*progress)
 
 		// 收集产物
 		if chunk.ToolResult != "" && chunk.ToolName != "" {
@@ -351,17 +361,14 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 			}
 		}
 
-		// 发送进度到客户端（进度信息放在 Workflow 字段，不发送 Content 避免前端显示为纯文本）
-		resp := dto.WsMessageResponse{
-			End:            false,
-			ConversationId: conversation.Id,
-			Workflow:       progress,
-		}
-
-		return conn.Send(resp)
+		// 广播增量给所有在线消费者（由写协程下发，保证同一连接单写者；
+		// 进度信息放在 Workflow 字段，不发送 Content 避免前端显示为纯文本）
+		ws.broadcast(partialChunk{Chunk: chunk, End: false})
+		return nil
 	}
 
-	_, execErr := workflowAgent.ExecuteStream(ctxWithCancel, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, "", callback)
+	// 12. 执行工作流（使用解耦上下文：连接断开不影响执行，直到完成或被取消）
+	_, execErr := workflowAgent.ExecuteStream(wctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, "", callback)
 
 	// 13. 处理执行结果
 	output := outputBuilder.String()
@@ -372,31 +379,18 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 
 	if execErr != nil {
 		log.Error("工作流执行失败", zap.Error(execErr))
+		if errors.Is(execErr, context.Canceled) {
+			// 用户点击停止生成：结束会话（消费者已摘除，不再下发消息），不保存失败记录
+			ws.finish(execErr, "", artifacts, "")
+			return
+		}
 		// 用户看到的是提取根因后的友好提示，原始错误链放入 Workflow.Error 供"查看详情"
-		friendlyErr := friendlyWorkflowErrorMessage(execErr)
-		conn.Send(dto.WsMessageResponse{
-			Content:        friendlyErr,
-			End:            true,
-			ConversationId: conversation.Id,
-			Workflow: &dto.WorkflowProgress{
-				Status: "failed",
-				Error:  execErr.Error(),
-			},
-		})
-		output = friendlyErr
+		output = friendlyWorkflowErrorMessage(execErr)
 		workflowErrMsg = execErr.Error()
-	} else {
-		// 发送完成状态（包含格式化的结果文本和产物信息）
-		conn.Send(dto.WsMessageResponse{
-			Content:        output,
-			End:            true,
-			ConversationId: conversation.Id,
-			Workflow: &dto.WorkflowProgress{
-				Status: "completed",
-			},
-			Artifacts: artifacts,
-		})
 	}
+
+	// 通知消费者发送最终状态（Content/Workflow/Artifacts，由各连接写协程下发）
+	ws.finish(execErr, output, artifacts, workflowErrMsg)
 
 	// 14. 保存执行记录
 	saveExecution(db, conversation.Id, workflowID, msg, fileRefs, output, artifacts, execErr == nil)

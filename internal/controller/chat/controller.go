@@ -109,20 +109,22 @@ func Chat(c *gin.Context, resProvider iface.ResourceProvider) {
 			}
 
 		case global.MessageTypeResume:
-			// 恢复进行中的流式输出（客户端刷新页面重连后触发）
+			// 恢复进行中的流式输出（客户端刷新页面重连后触发）；
+			// 优先恢复工作流（应用调用）会话，否则回退普通聊天会话
 			go func() {
 				defer func() {
 					if err := recover(); err != nil {
 						log.Error("resume chat panic", zap.Any("err", err))
 					}
 				}()
-				chat.HandleResume(buf, conversation)
+				chat.HandleResumeOrWorkflow(buf, conversation)
 			}()
 
 		case global.MessageTypeStop:
 			buf.Cancel()
 			// 取消会话的流式生成（流已与连接解耦，需显式取消）
 			chat.CancelStream(conversation.Id)
+			chat.CancelWorkflowStream(conversation.Id)
 		}
 		return nil
 	})

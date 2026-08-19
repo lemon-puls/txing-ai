@@ -1473,7 +1473,9 @@ const handleWebSocketMessage = (chatId, data) => {
     // 如果存在流式消息，则更新它而不是创建新消息
     const currentStreamingMessage = conversationStore.getStreamingMessage(chatId)
     if (currentStreamingMessage) {
-      currentStreamingMessage.content = data.data.partialContent
+      // 工作流消息的最终正文以终态消息的 content 为准（正文可能经 resume
+      // 快照/实时增量分片到达，累积拼接会重复）；普通消息用累积内容
+      currentStreamingMessage.content = data.data.workflow ? data.data.content : data.data.partialContent
       currentStreamingMessage.reasoningContent = data.data.partialReasoning
       // 更新工作流最终状态和产物
       if (data.data.workflow) {
