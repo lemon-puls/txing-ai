@@ -150,6 +150,48 @@ func TestWorkflowSessionFinishBroadcastsFinal(t *testing.T) {
 	}
 }
 
+// TestWorkflowSessionAttachResync 验证已附加连接再次 Attach（切换会话切回后 resume）：
+// 通过写协程重发 resume 快照 + 进度回放，让前端重建展示，且不重复注册消费者
+func TestWorkflowSessionAttachResync(t *testing.T) {
+	ws := &WorkflowSession{
+		convId:    1,
+		consumers: make(map[chunkSender]*streamConsumer),
+		done:      make(chan struct{}),
+		status:    "running",
+	}
+	fake := &fakeSender{}
+	if err := ws.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Detach(fake)
+
+	// 执行一段时间后累积了内容与进度
+	ws.appendContent("部分内容")
+	ws.appendProgress(dto.WorkflowProgress{Status: "running", NodeID: "start_1", NodeStatus: "running"})
+
+	// 同一连接再次 Attach：应重发快照 + 回放
+	if err := ws.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+
+	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) >= 2 }) {
+		t.Fatalf("expected resync snapshot + replay, got %d: %+v", len(fake.messages()), fake.messages())
+	}
+	msgs := fake.messages()
+	if msgs[0].Type != "resume" || !msgs[0].Active || msgs[0].Content != "部分内容" {
+		t.Fatalf("expected resume snapshot with content, got %+v", msgs[0])
+	}
+	if msgs[1].Workflow == nil || msgs[1].Workflow.NodeID != "start_1" {
+		t.Fatalf("expected progress replay, got %+v", msgs[1])
+	}
+
+	// 重同步后实时增量仍正常送达
+	ws.broadcast(partialChunk{Chunk: &global.Chunk{NodeId: "agent_travel", ToolName: "web_search_tool", ToolStatus: "completed"}})
+	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) >= 3 }) {
+		t.Fatal("expected live chunk after resync")
+	}
+}
+
 // TestWorkflowStreamManagerCancel 验证取消会结束执行上下文并摘除消费者
 func TestWorkflowStreamManagerCancel(t *testing.T) {
 	ws, ctx := workflowStreamManager.Start(999001)

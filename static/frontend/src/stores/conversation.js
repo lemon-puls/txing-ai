@@ -222,13 +222,23 @@ export const useConversationStore = defineStore('conversation', {
           if (response.code === 0 && response.data) {
             this.currentConversation = response.data
 
-            // 使用对象的属性访问，不需要检查类型
+            // 确保 messages 数组已初始化
+            if (!this.currentConversation.messages) {
+              this.currentConversation.messages = []
+            }
+
+            // 恢复进行中的流式消息：切换会话期间后端详情不含未完成的流式消息，
+            // 切回时把仍在执行的消息对象挂回消息列表，流式更新会继续落到该对象。
+            // streamingMessageMap 对所有用户都维护（lastMessageMap 仅登录用户），
+            // 二者可能指向同一对象，按 id 去重
+            const existingIds = new Set(this.currentConversation.messages.map(m => m.id))
+            const streaming = this.streamingMessageMap[id]
+            if (streaming && !existingIds.has(streaming.id)) {
+              this.currentConversation.messages.push(streaming)
+              existingIds.add(streaming.id)
+            }
             const lastMessage = this.lastMessageMap[id]
-            if (lastMessage) {
-              // 确保 messages 数组已初始化
-              if (!this.currentConversation.messages) {
-                this.currentConversation.messages = []
-              }
+            if (lastMessage && !existingIds.has(lastMessage.id)) {
               this.currentConversation.messages.push(lastMessage)
             }
 

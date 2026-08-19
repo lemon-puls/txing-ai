@@ -1589,9 +1589,11 @@ const handleWebSocketMessage = (chatId, data) => {
     // 流仍在进行：复用或创建流式消息
     const msgs = chat.messages
     const last = msgs[msgs.length - 1]
+    const currentStreaming = conversationStore.getStreamingMessage(chatId)
     let msg = null
-    if (last && last.role === 'assistant' && (rd.content || '').startsWith(last.content || '')) {
-      // 历史中的局部内容正是续流快照的前缀，直接复用该消息
+    if (last && last.role === 'assistant' &&
+        ((currentStreaming && currentStreaming.id === last.id) || (rd.content || '').startsWith(last.content || ''))) {
+      // 最后一条正是进行中的流式消息（切换会话切回后恢复的那条），直接复用
       msg = last
     } else {
       msg = {

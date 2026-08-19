@@ -42,6 +42,15 @@ type partialChunk struct {
 	Chunk *global.Chunk
 	End   bool
 	Err   error
+	// 工作流 resume 重同步：连接已附加时再次请求快照+进度回放
+	// （切换会话切回场景，由写协程在单写者约束下重发）
+	resync *workflowResyncPayload
+}
+
+// workflowResyncPayload resume 重同步载荷：累积内容快照 + 按序进度回放
+type workflowResyncPayload struct {
+	content  string
+	progress []dto.WorkflowProgress
 }
 
 // 处理聊天（调用大模型发送消息，并且响应结果）

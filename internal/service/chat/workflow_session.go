@@ -139,8 +139,18 @@ func (s *WorkflowSession) appendProgress(p dto.WorkflowProgress) {
 // 全新空会话不发送快照，直接建立消费者；重复 Attach 同一连接幂等返回。
 func (s *WorkflowSession) Attach(conn chunkSender) error {
 	s.mu.Lock()
-	if _, ok := s.consumers[conn]; ok {
+	if c, ok := s.consumers[conn]; ok {
+		// 连接已附加（如切换会话切回后同一连接再次 resume）：
+		// 通过写协程重发 快照+进度回放，让前端重建展示；不重复注册消费者
+		content := s.currentContent
+		progress := append([]dto.WorkflowProgress(nil), s.progress...)
 		s.mu.Unlock()
+		select {
+		case c.ch <- partialChunk{resync: &workflowResyncPayload{content: content, progress: progress}}:
+		default:
+			log.Warn("workflow resync backlog, skip",
+				zap.Int64("conversationId", s.convId))
+		}
 		return nil
 	}
 	content := s.currentContent
@@ -271,6 +281,29 @@ func (c *streamConsumer) workflowWriteLoop(s *WorkflowSession) {
 	for {
 		select {
 		case p := <-c.ch:
+			if p.resync != nil {
+				// resume 重同步：快照 + 进度回放（切换会话切回场景）。
+				// 在写协程内发送，保持同一连接单写者，保证 快照→回放→后续增量 顺序
+				resumeResp := dto.WsMessageResponse{
+					Type:           MsgTypeResume,
+					Active:         true,
+					Content:        p.resync.content,
+					ConversationId: s.convId,
+				}
+				if err := c.conn.Send(resumeResp); err != nil {
+					return
+				}
+				for i := range p.resync.progress {
+					if err := c.conn.Send(dto.WsMessageResponse{
+						End:            false,
+						ConversationId: s.convId,
+						Workflow:       &p.resync.progress[i],
+					}); err != nil {
+						return
+					}
+				}
+				continue
+			}
 			if p.End {
 				s.mu.Lock()
 				content := s.content
