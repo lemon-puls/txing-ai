@@ -139,7 +139,9 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		markdownToPDFTool, err := utils.InferTool(
 			"markdown_to_pdf_file_tool",
 			"Convert markdown content to PDF, and save it to local file. Note: use \\n\\n for line breaks; single \\n will not render as a line break in the PDF."+
-				"fileName will be automatically appended with timestamp",
+				"fileName will be automatically appended with timestamp. "+
+				"If the markdown content is very long, first save it to a file with markdown_save_tool, "+
+				"then call this tool with the filePath parameter instead of passing the whole content as content parameter",
 			saveMarkdownToPDF)
 		if err != nil {
 			panic(err)

@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -35,4 +36,29 @@ func buildSaveDir(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return savePath, nil
+}
+
+// resolveSavedFile 解析工具保存的文件路径为绝对路径：
+// 兼容 markdown_save_tool 返回的 "./xxx.md" 相对路径（相对当前用户的保存目录）
+// 与绝对路径；限制在保存目录内，避免任意路径读取
+func resolveSavedFile(ctx context.Context, filePath string) (string, error) {
+	if filePath == "" {
+		return "", fmt.Errorf("filePath 为空")
+	}
+	if filepath.IsAbs(filePath) {
+		return filePath, nil
+	}
+	savePath, err := buildSaveDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	rel := strings.TrimPrefix(filePath, "./")
+	rel = strings.TrimPrefix(rel, `.\\`)
+	abs := filepath.Join(savePath, filepath.Clean(rel))
+	// 防目录穿越：解析后的路径必须仍在保存目录内
+	if !strings.HasPrefix(abs, filepath.Clean(savePath)+string(filepath.Separator)) &&
+		abs != filepath.Clean(savePath) {
+		return "", fmt.Errorf("非法文件路径: %s", filePath)
+	}
+	return abs, nil
 }

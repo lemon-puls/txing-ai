@@ -163,6 +163,11 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 
 	// 多轮工具调用循环 / Multi-round tool-calling loop
 	if llmToolNode != nil {
+		// 同一工具连续生成非法参数（如大段正文 JSON 被截断）时，错误回喂很难让
+		// 模型自愈，继续循环只会空转消耗轮次；达到上限后中止并做收尾生成
+		const maxConsecutiveInvalidToolCalls = 3
+		consecutiveInvalid := 0
+
 		for round := 0; round < maxToolRounds; round++ {
 			if response == nil || len(response.ToolCalls) == 0 {
 				break
@@ -201,6 +206,7 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 			// Validate tool arguments: invalid JSON arguments are not executed;
 			// an error message is fed back so the model can self-repair.
 			if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
+				consecutiveInvalid++
 				// 参数非法的工具不会执行，逐个推送 failed，避免前端工具行一直转圈、
 				// 节点收尾时被误标为成功
 				if callback != nil {
@@ -218,7 +224,15 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 					}
 				}
 				messages = append(messages, errMsgs...)
+
+				if consecutiveInvalid >= maxConsecutiveInvalidToolCalls {
+					log.Warn("工具调用参数连续非法，中止工具循环",
+						zap.String("nodeId", cfg.NodeID),
+						zap.Int("consecutiveInvalid", consecutiveInvalid))
+					break
+				}
 			} else {
+				consecutiveInvalid = 0
 				// 执行工具调用 / Invoke tools
 				toolResults, toolErr := llmToolNode.Invoke(ctx, response)
 				if toolErr != nil {
@@ -467,18 +481,37 @@ func truncateRunes(s string, max int) string {
 // validateToolCallArgs 校验工具调用参数是否为合法 JSON
 // validateToolCallArgs checks whether tool-call arguments are valid JSON.
 // 返回非法参数对应的错误消息（ToolMessage）列表，以及是否存在非法参数。
+// 错误信息附带可操作指引：内容过长导致 JSON 被截断时，建议先落盘再传文件路径，
+// 避免模型反复生成同样被截断的参数空转多轮。
 // It returns error messages (as ToolMessages) for the invalid calls and
 // whether any invalid argument was found.
 func validateToolCallArgs(toolCalls []schema.ToolCall) ([]*schema.Message, bool) {
 	var errMsgs []*schema.Message
 	for _, tc := range toolCalls {
 		if tc.Function.Arguments == "" {
+			// 空参数同样回喂错误，避免模型以为调用已成功
+			errorMsg := fmt.Sprintf("工具调用参数为空: %s, ToolCallID: %s。请提供完整合法的 JSON 参数", tc.Function.Name, tc.ID)
+			log.Warn(errorMsg)
+			errMsgs = append(errMsgs, &schema.Message{
+				Role:       schema.Tool,
+				Content:    errorMsg,
+				ToolName:   tc.Function.Name,
+				ToolCallID: tc.ID,
+			})
 			continue
 		}
 		var jsonObj map[string]interface{}
 		if err := json.Unmarshal([]byte(tc.Function.Arguments), &jsonObj); err != nil {
 			errorMsg := fmt.Sprintf("工具调用参数不是合法的 JSON: %s, ToolCallID: %s, 错误: %v",
 				tc.Function.Name, tc.ID, err)
+			// 大段正文塞进工具调用参数时，模型生成的 JSON 容易被截断/转义错误；
+			// 给出明确的修复指引，避免同一失败反复重试
+			if tc.Function.Name == "markdown_to_pdf_file_tool" {
+				errorMsg += "。若内容过长导致 JSON 被截断，请先用 markdown_save_tool 保存 Markdown 文件，" +
+					"再调用本工具并传入 filePath 参数（不要再把整段正文放进 content）"
+			} else {
+				errorMsg += "。请重新生成，确保参数是完整合法的 JSON（注意双引号、换行需正确转义）"
+			}
 			log.Error(errorMsg)
 			errMsgs = append(errMsgs, &schema.Message{
 				Role:       schema.Tool,
