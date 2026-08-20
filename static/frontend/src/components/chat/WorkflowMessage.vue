@@ -123,6 +123,9 @@ const statusLabel = computed(() => {
   return '等待中'
 })
 
+// 监听工作流进度：实时增量 + 挂载时立即处理已恢复的进度快照。
+// immediate 保证切换会话切回后组件重建时，先渲染恢复消息上的最新 chunk
+// （节点/工具行），再叠加后端 resume 回放的完整进度；避免列表空白
 watch(() => props.workflow, (w) => {
   if (!w) return
   // 工作流整体进入终态（completed/failed）时兜底收尾：
@@ -194,7 +197,7 @@ watch(() => props.workflow, (w) => {
     nodeMap.value.set(w.nodeId, log)
     nodeLogsData.value.push(log)
   }
-}, { deep: true })
+}, { deep: true, immediate: true })
 
 const downloadFile = async (url, name) => {
   // token 过期时由共享助手自动刷新并重试，避免点击无反应

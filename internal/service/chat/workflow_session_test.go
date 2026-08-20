@@ -192,6 +192,50 @@ func TestWorkflowSessionAttachResync(t *testing.T) {
 	}
 }
 
+// TestWorkflowSessionAttachResyncNotDropped 验证消费者通道已满时再次 Attach：
+// 重同步必须阻塞等待写协程腾出空间并最终送达，而不是被静默丢弃。
+// 回归场景：应用执行中切走会话再切回，通道里堆满实时增量时 resume 的
+// 快照+进度回放一旦丢失，前端节点/工具调用列表将无法重建
+func TestWorkflowSessionAttachResyncNotDropped(t *testing.T) {
+	ws := &WorkflowSession{
+		convId:    1,
+		consumers: make(map[chunkSender]*streamConsumer),
+		done:      make(chan struct{}),
+		status:    "running",
+	}
+	fake := &fakeSender{}
+	if err := ws.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+	defer ws.Detach(fake)
+
+	// 填满消费者通道，模拟流式执行中增量堆积（写协程尚未消费）
+	c := ws.consumers[fake]
+	ws.appendContent("部分内容")
+	ws.appendProgress(dto.WorkflowProgress{Status: "running", NodeID: "start_1", NodeStatus: "running"})
+	for i := 0; i < streamConsumerBuffer; i++ {
+		c.ch <- partialChunk{Chunk: &global.Chunk{NodeId: "n", NodeStatus: "running"}}
+	}
+
+	// 同一连接再次 Attach：即使通道已满，阻塞发送也必须在写协程
+	// 消费掉若干增量后把重同步送达，而不是走 default 分支静默丢弃
+	if err := ws.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+
+	// 等待重同步送达（快照 + 回放）
+	if !waitUntil(3*time.Second, func() bool {
+		for _, m := range fake.messages() {
+			if m.Type == "resume" && m.Content == "部分内容" {
+				return true
+			}
+		}
+		return false
+	}) {
+		t.Fatalf("expected resync to be delivered despite full channel, got %d messages", len(fake.messages()))
+	}
+}
+
 // TestWorkflowStreamManagerCancel 验证取消会结束执行上下文并摘除消费者
 func TestWorkflowStreamManagerCancel(t *testing.T) {
 	ws, ctx := workflowStreamManager.Start(999001)

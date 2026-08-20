@@ -141,15 +141,17 @@ func (s *WorkflowSession) Attach(conn chunkSender) error {
 	s.mu.Lock()
 	if c, ok := s.consumers[conn]; ok {
 		// 连接已附加（如切换会话切回后同一连接再次 resume）：
-		// 通过写协程重发 快照+进度回放，让前端重建展示；不重复注册消费者
+		// 通过写协程重发 快照+进度回放，让前端重建展示；不重复注册消费者。
+		// 必须阻塞发送（带退出保护）：消费者通道在流式执行期间可能被增量占满，
+		// 若用非阻塞 select-default，重同步会被静默丢弃，前端将永远收不到
+		// 进度回放，导致切回会话后节点/工具调用列表无法重建
 		content := s.currentContent
 		progress := append([]dto.WorkflowProgress(nil), s.progress...)
 		s.mu.Unlock()
 		select {
 		case c.ch <- partialChunk{resync: &workflowResyncPayload{content: content, progress: progress}}:
-		default:
-			log.Warn("workflow resync backlog, skip",
-				zap.Int64("conversationId", s.convId))
+		case <-c.quit:
+			// 消费者已摘除（连接断开），无需再发送
 		}
 		return nil
 	}
