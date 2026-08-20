@@ -38,6 +38,17 @@ func buildSaveDir(ctx context.Context) (string, error) {
 	return savePath, nil
 }
 
+// SaveDirRelPath 返回当前保存目录相对上传根目录的路径（如 "2/2026-08-20" 或 "2026-08-20"）。
+// 供产物 URL 携带实际保存位置，下载端按此路径解析，避免仅凭文件名跨天猜日期目录失败
+func SaveDirRelPath(ctx context.Context) string {
+	userId, exist := utils.GetUIDFromContextAllowEmpty(ctx)
+	currentDate := time.Now().Format("2006-01-02")
+	if exist {
+		return fmt.Sprintf("%d/%s", userId, currentDate)
+	}
+	return currentDate
+}
+
 // saveDirQuiet 获取当前保存目录；配置不可用（如单元测试环境没有 runtime/config.yaml）时
 // 返回空串而不是 panic，避免 isPathAllowed 等路径校验在测试中崩溃
 func saveDirQuiet(ctx context.Context) (dir string) {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -273,9 +274,10 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		// 累积进度（resume 时回放给前端重建节点/工具展示）
 		ws.appendProgress(*progress)
 
-		// 收集产物
+		// 收集产物（URL 携带实际保存目录相对路径，如 2/2026-08-20/xxx.pdf，
+		// 下载端按此定位，避免跨天后按"今天"猜目录 404）
 		if chunk.ToolResult != "" && chunk.ToolName != "" {
-			if artifact := extractArtifactFromChunk(chunk); artifact != nil {
+			if artifact := extractArtifactFromChunk(chunk, tool.SaveDirRelPath(wctx)); artifact != nil {
 				artifacts = append(artifacts, *artifact)
 			}
 		}
@@ -569,8 +571,11 @@ func buildFileRefs(msg *dto.WsMessageRequest, lastExecution *domain.WorkflowExec
 	return refs
 }
 
-// extractArtifactFromChunk 从 chunk 中提取产物信息
-func extractArtifactFromChunk(chunk *global.Chunk) *dto.ArtifactInfo {
+// extractArtifactFromChunk 从 chunk 中提取产物信息。
+// relPath 是工具实际保存目录相对上传根目录的路径（如 "2/2026-08-20" 或 "2026-08-20"），
+// 拼进下载 URL 后，下载端可按此路径精确定位文件，避免仅凭文件名 + "今天" 猜日期目录
+// 导致跨天后下载 404（文件保存在执行当天目录，下载可能在次日发生）
+func extractArtifactFromChunk(chunk *global.Chunk, relPath string) *dto.ArtifactInfo {
 	fileGenToolPrefixes := map[string]string{
 		"markdown_save_tool":        "Markdown文件已成功保存到: ./",
 		"markdown_to_pdf_file_tool": "PDF已成功保存: ./",
@@ -608,9 +613,16 @@ func extractArtifactFromChunk(chunk *global.Chunk) *dto.ArtifactInfo {
 		return nil
 	}
 
+	// 下载 URL 携带相对目录（如 2/2026-08-20/xxx.pdf），
+	// 下载端按此路径解析，不依赖"今天"猜测
+	fileRelPath := fileName
+	if relPath != "" {
+		fileRelPath = filepath.ToSlash(filepath.Join(relPath, fileName))
+	}
+
 	return &dto.ArtifactInfo{
 		Name:     fileName,
-		URL:      fmt.Sprintf("/api/file/download?filePath=%s", fileName),
+		URL:      fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileRelPath)),
 		Category: fileGenToolCategories[chunk.ToolName],
 	}
 }

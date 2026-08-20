@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"txing-ai/internal/dto"
+	"txing-ai/internal/global"
 
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 )
@@ -196,5 +197,33 @@ func TestFriendlyWorkflowErrorMessage(t *testing.T) {
 				t.Fatalf("friendly message should not contain internal noise, got: %q", msg)
 			}
 		})
+	}
+}
+
+// TestExtractArtifactFromChunkWithRelPath 验证产物 URL 携带实际保存目录相对路径：
+// 下载端按 2/2026-08-20/xxx.pdf 定位文件，避免仅凭文件名跨天猜日期目录 404
+func TestExtractArtifactFromChunkWithRelPath(t *testing.T) {
+	chunk := &global.Chunk{
+		NodeId:     "agent_travel",
+		ToolName:   "markdown_to_pdf_file_tool",
+		ToolResult: "PDF已成功保存: ./广西北海一日游攻略.pdf",
+	}
+	a := extractArtifactFromChunk(chunk, "2/2026-08-20")
+	if a == nil {
+		t.Fatal("expected artifact")
+	}
+	if a.Name != "广西北海一日游攻略.pdf" {
+		t.Fatalf("unexpected name: %q", a.Name)
+	}
+	// URL 应携带 相对目录/文件名 且经 URL 编码（文件名含中文）
+	if !strings.Contains(a.URL, "filePath=2%2F2026-08-20%2F") &&
+		!strings.Contains(a.URL, "filePath=2/2026-08-20/") {
+		t.Fatalf("expected URL to carry rel path dir, got: %q", a.URL)
+	}
+
+	// 无相对目录（旧路径）：URL 退化为仅文件名
+	b := extractArtifactFromChunk(chunk, "")
+	if b == nil || b.URL != "/api/file/download?filePath=%E5%B9%BF%E8%A5%BF%E5%8C%97%E6%B5%B7%E4%B8%80%E6%97%A5%E6%B8%B8%E6%94%BB%E7%95%A5.pdf" {
+		t.Fatalf("unexpected bare URL: %+v", b)
 	}
 }

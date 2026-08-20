@@ -152,9 +152,10 @@ func Download(c *gin.Context) {
 	}
 
 	// 解析候选绝对路径：
-	// 1. filePath 已带 用户ID/日期/文件名 前缀（工具返回的完整相对路径）→ 直接拼接
+	// 1. filePath 已带目录前缀（如 2/2026-08-20/xxx.pdf 或 2026-08-20/xxx.pdf）→ 直接拼接
 	// 2. 仅文件名 → 按当前用户 用户ID/日期 前缀拼接（工作流工具保存路径）
-	// 3. 兼容历史数据：无用户目录的 日期/文件名（早期工作流 ctx 未注入 uid）
+	// 3. 兜底：文件名无日期信息（历史数据）时，扫描最近若干天的 用户ID/日期 与 日期 目录，
+	//    兼容跨天下载（文件保存在执行当天目录，下载可能在次日发生）
 	userId := utils.GetUIDFromContext(c)
 	currentDate := time.Now().Format("2006-01-02")
 
@@ -168,6 +169,16 @@ func Download(c *gin.Context) {
 			filepath.Join(currentDir, config.Dir, strconv.FormatInt(userId, 10), currentDate, filePath),
 			filepath.Join(currentDir, config.Dir, currentDate, filePath),
 		)
+		// 跨天兜底：最近 7 天内的 用户目录/日期 与 日期 目录都尝试一遍
+		rootDir := filepath.Join(currentDir, config.Dir)
+		uidDir := filepath.Join(rootDir, strconv.FormatInt(userId, 10))
+		for i := 0; i < 7; i++ {
+			day := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
+			candidates = append(candidates,
+				filepath.Join(uidDir, day, filePath),
+				filepath.Join(rootDir, day, filePath),
+			)
+		}
 	}
 
 	var absFilePath string
