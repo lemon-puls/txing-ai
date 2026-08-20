@@ -123,9 +123,11 @@ const statusLabel = computed(() => {
   return '等待中'
 })
 
-// 监听工作流进度：实时增量 + 挂载时立即处理已恢复的进度快照。
-// immediate 保证切换会话切回后组件重建时，先渲染恢复消息上的最新 chunk
-// （节点/工具行），再叠加后端 resume 回放的完整进度；避免列表空白
+// 监听工作流进度：按后端回放/实时增量的到达顺序构建节点列表。
+// 注意：不能加 immediate——组件因切会话重建时，恢复消息上的 workflow 只是
+// 执行到中途的"最新单 chunk"（如 agent_travel），若挂载时立即追加到列表头部，
+// 会先于回放的 start_1 等历史节点，导致节点显示顺序错乱（开始跑到后面）。
+// 顺序必须完全由 resume 回放（或已落库的 executionLogs）按序重建
 watch(() => props.workflow, (w) => {
   if (!w) return
   // 工作流整体进入终态（completed/failed）时兜底收尾：
@@ -197,7 +199,7 @@ watch(() => props.workflow, (w) => {
     nodeMap.value.set(w.nodeId, log)
     nodeLogsData.value.push(log)
   }
-}, { deep: true, immediate: true })
+}, { deep: true })
 
 const downloadFile = async (url, name) => {
   // token 过期时由共享助手自动刷新并重试，避免点击无反应
