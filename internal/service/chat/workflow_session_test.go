@@ -6,6 +6,7 @@ import (
 
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
+	"txing-ai/internal/utils"
 )
 
 // TestProgressFromChunk 验证执行 chunk 与前端工作流进度消息的转换
@@ -238,7 +239,7 @@ func TestWorkflowSessionAttachResyncNotDropped(t *testing.T) {
 
 // TestWorkflowStreamManagerCancel 验证取消会结束执行上下文并摘除消费者
 func TestWorkflowStreamManagerCancel(t *testing.T) {
-	ws, ctx := workflowStreamManager.Start(999001)
+	ws, ctx := workflowStreamManager.Start(999001, 0)
 	fake := &fakeSender{}
 	if err := ws.Attach(fake); err != nil {
 		t.Fatal(err)
@@ -257,5 +258,18 @@ func TestWorkflowStreamManagerCancel(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	if len(fake.messages()) != 0 {
 		t.Fatalf("expected no messages after cancel, got %d", len(fake.messages()))
+	}
+}
+
+// TestWorkflowStreamManagerStartCarriesUID 验证 Start 把 userId 注入执行上下文：
+// 工具保存文件时 buildSaveDir 会按 用户ID/日期 目录落盘，与下载接口
+// /api/file/download?filePath=xxx 的路径解析一致，避免产物下载 404
+func TestWorkflowStreamManagerStartCarriesUID(t *testing.T) {
+	_, ctx := workflowStreamManager.Start(999002, 42)
+	defer workflowStreamManager.Cancel(999002)
+
+	uid, ok := utils.GetUIDFromContextAllowEmpty(ctx)
+	if !ok || uid != 42 {
+		t.Fatalf("expected userId 42 in workflow ctx, got %d (ok=%v)", uid, ok)
 	}
 }

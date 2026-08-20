@@ -3,10 +3,12 @@ package file
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -127,11 +129,9 @@ func Upload(c *gin.Context) {
 // @Description 从服务器下载文件
 // @Tags 文件
 // @Produce octet-stream
-// @Param filePath query string true "文件相对路径"
+// @Param filePath query string true "文件相对路径（文件名或 用户ID/日期/文件名）"
 // @Success 200 {file} binary "文件内容"
-// @Failure 400 {object} utils.Response "请求错误"
 // @Failure 404 {object} utils.Response "文件不存在"
-// @Failure 500 {object} utils.Response "服务器内部错误"
 // @Router /api/file/download [get]
 func Download(c *gin.Context) {
 	// 获取文件名
@@ -151,23 +151,46 @@ func Download(c *gin.Context) {
 		return
 	}
 
+	// 解析候选绝对路径：
+	// 1. filePath 已带 用户ID/日期/文件名 前缀（工具返回的完整相对路径）→ 直接拼接
+	// 2. 仅文件名 → 按当前用户 用户ID/日期 前缀拼接（工作流工具保存路径）
+	// 3. 兼容历史数据：无用户目录的 日期/文件名（早期工作流 ctx 未注入 uid）
 	userId := utils.GetUIDFromContext(c)
-	// 获取当前日期作为目录名
 	currentDate := time.Now().Format("2006-01-02")
-	filePath = filepath.Join(strconv.FormatInt(userId, 10), currentDate, filePath)
 
-	// 构建文件路径
-	absFilePath := filepath.Join(currentDir, config.Dir, filePath)
+	var candidates []string
+	if strings.Contains(filePath, "/") || strings.Contains(filePath, `\`) {
+		// 已带目录前缀：原样使用（含 用户ID/日期/文件名 或 日期/文件名）
+		candidates = append(candidates, filepath.Join(currentDir, config.Dir, filepath.FromSlash(filePath)))
+	} else {
+		// 仅文件名：优先当前用户目录，其次无用户目录（历史数据兼容）
+		candidates = append(candidates,
+			filepath.Join(currentDir, config.Dir, strconv.FormatInt(userId, 10), currentDate, filePath),
+			filepath.Join(currentDir, config.Dir, currentDate, filePath),
+		)
+	}
 
-	// 检查文件是否存在
-	if _, err := os.Stat(absFilePath); os.IsNotExist(err) {
-		log.Error("File does not exist", zap.String("path", absFilePath))
-		utils.ErrorWithMsg(c, "文件不存在", err)
+	var absFilePath string
+	found := false
+	for _, cand := range candidates {
+		if _, err := os.Stat(cand); err == nil {
+			absFilePath = cand
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		log.Error("File does not exist", zap.String("path", filePath))
+		c.AbortWithStatusJSON(http.StatusNotFound, utils.Response{
+			Code: int(global.CodeServerInternalError),
+			Msg:  "文件不存在",
+		})
 		return
 	}
 
 	// 获取原始文件名
-	originalFileName := filepath.Base(filePath)
+	originalFileName := filepath.Base(absFilePath)
 
 	// URL编码文件名，确保特殊字符正确处理
 	encodedFileName := url.QueryEscape(originalFileName)

@@ -24,6 +24,15 @@ export async function downloadFileWithAuth(url, filename) {
       return false
     }
 
+    // 后端错误可能仍以 200 返回（utils.ErrorWithMsg 固定 200 + JSON 包装），
+    // 检查响应类型：application/json 说明是错误信息而非文件，不应保存成 1KB 假文件
+    const contentType = response.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const errBody = await response.json().catch(() => null)
+      ElMessage.error(errBody?.msg || '文件下载失败')
+      return false
+    }
+
     const blob = await response.blob()
     const blobUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')

@@ -237,8 +237,10 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		return
 	}
 
-	// 10. 启动工作流会话（与 WS 连接解耦：客户端断开后工作流继续执行，支持刷新后 resume）
-	ws, wctx := workflowStreamManager.Start(conversation.Id)
+	// 10. 启动工作流会话（与 WS 连接解耦：客户端断开后工作流继续执行，支持刷新后 resume）。
+	// 传入 userId：工具保存文件时按用户目录落盘，与下载接口路径一致
+	uid, _ := utils.GetUIDFromContextAllowEmpty(ctx)
+	ws, wctx := workflowStreamManager.Start(conversation.Id, uid)
 	if err := ws.Attach(conn); err != nil {
 		log.Error("attach workflow stream consumer failed", zap.Error(err))
 	}

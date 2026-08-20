@@ -57,10 +57,17 @@ func init() {
 // Start 注册（或替换）会话的工作流执行任务；返回会话与解耦后的执行上下文。
 // 若该会话已有进行中的工作流，会先取消旧流（同一会话不允许并行执行）。
 // 执行上下文的生命周期不依赖 WS 连接：连接断开后工作流继续，直到完成或被取消。
-func (m *WorkflowStreamManager) Start(convId int64) (*WorkflowSession, context.Context) {
+// uid 注入执行上下文：工具保存文件时 buildSaveDir 按用户隔离目录落盘
+// （runtime/temp_files/<uid>/<日期>/），与下载接口按 userId 拼路径保持一致，
+// 否则产物下载会因目录不一致而找不到文件
+func (m *WorkflowStreamManager) Start(convId, uid int64) (*WorkflowSession, context.Context) {
 	m.Cancel(convId)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	baseCtx := context.Background()
+	if uid > 0 {
+		baseCtx = context.WithValue(baseCtx, "userId", uid)
+	}
+	ctx, cancel := context.WithCancel(baseCtx)
 	ws := &WorkflowSession{
 		convId:    convId,
 		consumers: make(map[chunkSender]*streamConsumer),

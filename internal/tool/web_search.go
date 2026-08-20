@@ -41,6 +41,13 @@ func searchWeb(ctx context.Context, params *webSearchParams) (string, error) {
 	err := httpClient.GetJSON(ctx, config.SearchAPIConfig.Endpoint, values, nil, &searchResponse)
 	if err != nil {
 		log.Error("Web搜索请求失败", zap.Error(err))
+		// 限流（429）等状态错误：明确告知模型不要继续重试搜索，
+		// 避免连续多轮空转（每轮都拿同一 429 再搜一次）
+		if strings.Contains(err.Error(), "429") ||
+			strings.Contains(err.Error(), "Too Many Requests") ||
+			strings.Contains(err.Error(), "rate limit") {
+			return "Web搜索请求被限流（429），本次不再重试。请直接基于已获取的信息与图片继续完成内容，不要再调用 web_search_tool。", nil
+		}
 		return fmt.Sprintf("Web搜索请求失败: %v", err), nil
 	}
 
