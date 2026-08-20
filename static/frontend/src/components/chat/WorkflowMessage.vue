@@ -36,6 +36,7 @@
               <el-icon v-if="log.status === 'completed'" :size="12"><Check /></el-icon>
               <el-icon v-else-if="log.status === 'running'" :size="12" class="spin"><Loading /></el-icon>
               <el-icon v-else-if="log.status === 'failed'" :size="12"><Close /></el-icon>
+              <el-icon v-else-if="log.status === 'interrupted'" :size="12"><Minus /></el-icon>
               <span v-else class="dot-indicator"></span>
             </div>
             <div class="node-body">
@@ -66,7 +67,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Share, ArrowDown, Check, Close, Loading, Document, Download, WarningFilled } from '@element-plus/icons-vue'
+import { Share, ArrowDown, Check, Close, Loading, Minus, Document, Download, WarningFilled } from '@element-plus/icons-vue'
 import ToolCallItem from './ToolCallItem.vue'
 import { downloadFileWithAuth } from '@/utils/download'
 
@@ -92,6 +93,23 @@ const displayArtifacts = computed(() => {
   return list
 })
 
+// 工作流整体进入终态（completed/failed/interrupted）时兜底收尾：
+// 任何仍处于 running 的节点/工具调用按最终状态标记，避免一直转圈。
+// 中断场景下后端不会为未完成节点补发终态 chunk，必须在此统一收尾
+const settleTerminal = (status) => {
+  if (status !== 'completed' && status !== 'failed' && status !== 'interrupted') return
+  nodeLogsData.value.forEach(log => {
+    log.toolCalls.forEach(tc => {
+      if (tc.status === 'running') {
+        tc.status = status
+      }
+    })
+    if (log.status === 'running') {
+      log.status = status
+    }
+  })
+}
+
 onMounted(() => {
   if (props.nodeLogs && props.nodeLogs.length > 0) {
     props.nodeLogs.forEach(log => {
@@ -113,6 +131,9 @@ onMounted(() => {
       nodeLogsData.value.push(entry)
     })
   }
+  // 已落库的终态消息（如刷新后加载到"已中断"的消息）：挂载时没有 watcher 触发，
+  // 直接按终态收尾，避免持久化数据中残留的 running 节点/工具一直转圈
+  settleTerminal(props.workflow?.status)
 })
 
 const statusLabel = computed(() => {
@@ -120,6 +141,7 @@ const statusLabel = computed(() => {
   if (s === 'completed') return '已完成'
   if (s === 'failed') return '失败'
   if (s === 'running') return '执行中'
+  if (s === 'interrupted') return '已中断'
   return '等待中'
 })
 
@@ -130,17 +152,13 @@ const statusLabel = computed(() => {
 // 顺序必须完全由 resume 回放（或已落库的 executionLogs）按序重建
 watch(() => props.workflow, (w) => {
   if (!w) return
-  // 工作流整体进入终态（completed/failed）时兜底收尾：
-  // 任何仍处于 running 的工具调用按最终结果标记完成/失败，
-  // 避免节流合并或状态 chunk 丢失导致工具一直转圈
-  if (w.status === 'completed' || w.status === 'failed') {
-    nodeLogsData.value.forEach(log => {
-      log.toolCalls.forEach(tc => {
-        if (tc.status === 'running') {
-          tc.status = w.status
-        }
-      })
-    })
+  // 工作流整体进入终态（completed/failed/interrupted）时兜底收尾：
+  // 任何仍处于 running 的节点/工具调用按最终结果标记完成/失败/已中断，
+  // 避免节流合并或状态 chunk 丢失导致一直转圈。
+  // 终态进度消息不带 nodeId（仅整体状态），直接收尾返回
+  if (w.status === 'completed' || w.status === 'failed' || w.status === 'interrupted') {
+    settleTerminal(w.status)
+    return
   }
   if (!w.nodeId) return
   const existing = nodeMap.value.get(w.nodeId)
@@ -243,6 +261,7 @@ $info: #94a3b8;
 
   &.completed { background: $success; }
   &.failed { background: $danger; }
+  &.interrupted { background: $warning; }
   &.running {
     background: $primary;
     animation: status-blink 1.5s ease-in-out infinite;
@@ -302,6 +321,7 @@ $info: #94a3b8;
 
   &.completed { color: $success; }
   &.failed { color: $danger; }
+  &.interrupted { color: $warning; }
   &.running {
     color: $primary;
     animation: text-pulse 1.5s ease-in-out infinite;
@@ -447,6 +467,10 @@ $info: #94a3b8;
 
   &.failed {
     background: $danger;
+  }
+
+  &.interrupted {
+    background: $warning;
   }
 }
 

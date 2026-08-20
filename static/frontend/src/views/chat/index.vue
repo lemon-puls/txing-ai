@@ -1576,6 +1576,18 @@ const handleWebSocketMessage = (chatId, data) => {
 
     // 流已结束：用最终内容更新最后一条助手消息（内容可能比数据库更新）
     if (!rd.active) {
+      // 若仍残留流式消息（如终态消息因网络等原因未送达），用服务端快照收尾，
+      // 避免界面停留在"生成中"；同时清空打字状态
+      const streamingMsg = conversationStore.getStreamingMessage(chatId)
+      if (streamingMsg) {
+        if (rd.content && (rd.content.length > (streamingMsg.content || '').length)) {
+          streamingMsg.content = rd.content
+          streamingMsg.reasoningContent = rd.reasoningContent || streamingMsg.reasoningContent
+        }
+        conversationStore.setStreamingMessage(chatId, null)
+        conversationStore.removeLastMessage(chatId)
+      }
+      conversationStore.setTypingStatus(chatId, false)
       if (rd.content || rd.reasoningContent) {
         const last = chat.messages[chat.messages.length - 1]
         if (last && last.role === 'assistant' && (rd.content || '').startsWith(last.content || '')) {
@@ -1631,12 +1643,21 @@ const handleWebSocketMessage = (chatId, data) => {
 
 // 停止生成
 const stopGeneration = () => {
-  if (currentChat.value) {
-    wsManager.sendMessage(
-      currentChat.value.id.toString(),
-      createStopMessage()
-    )
-    conversationStore.setTypingStatus(currentChat.value.id, false)
+  if (!currentChat.value) return
+  const chatId = currentChat.value.id
+  wsManager.sendMessage(
+    chatId.toString(),
+    createStopMessage()
+  )
+  conversationStore.setTypingStatus(chatId, false)
+  messageLoadingMap.value.set(chatId, false)
+
+  // 立即把应用执行的流式消息标记为"已中断"（节点/工具停止转圈），
+  // 不等后端终态消息，界面即时反馈；后端随后下发的终态消息会同步权威内容。
+  // 普通聊天消息无 workflow，保持原行为（由终态消息用已生成内容收尾）
+  const streamingMsg = conversationStore.getStreamingMessage(chatId)
+  if (streamingMsg && streamingMsg.workflow) {
+    streamingMsg.workflow = { status: 'interrupted' }
   }
 }
 

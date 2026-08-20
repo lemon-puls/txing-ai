@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -237,13 +238,18 @@ func TestWorkflowSessionAttachResyncNotDropped(t *testing.T) {
 	}
 }
 
-// TestWorkflowStreamManagerCancel 验证取消会结束执行上下文并摘除消费者
+// TestWorkflowStreamManagerCancel 验证用户停止生成：
+// 取消执行上下文，但保留消费者——工作流收尾时终态 End 消息（已中断）
+// 必须送达前端，让界面收尾，而不是被提前摘除导致前端永远停留在"执行中"
 func TestWorkflowStreamManagerCancel(t *testing.T) {
 	ws, ctx := workflowStreamManager.Start(999001, 0)
+	defer workflowStreamManager.Cancel(999001)
+
 	fake := &fakeSender{}
 	if err := ws.Attach(fake); err != nil {
 		t.Fatal(err)
 	}
+	defer ws.Detach(fake)
 
 	workflowStreamManager.Cancel(999001)
 
@@ -253,11 +259,56 @@ func TestWorkflowStreamManagerCancel(t *testing.T) {
 		t.Fatal("expected context cancelled")
 	}
 
-	// 消费者已摘除：后续广播不应再送达
-	ws.broadcast(partialChunk{Chunk: &global.Chunk{NodeId: "start_1"}})
+	// 消费者仍应保留：模拟工作流协程收到取消后收尾，
+	// 终态 End 消息必须送达前端
+	ws.finish(context.Canceled, "已生成的部分攻略", nil, "")
+
+	<-ws.Done()
+
+	if !waitUntil(2*time.Second, func() bool { return len(fake.messages()) >= 1 }) {
+		t.Fatalf("expected terminal message after cancel, got %d", len(fake.messages()))
+	}
+	msgs := fake.messages()
+	last := msgs[len(msgs)-1]
+	if !last.End {
+		t.Fatalf("expected end message, got %+v", last)
+	}
+	if last.Content != "已生成的部分攻略" {
+		t.Fatalf("expected partial content, got %q", last.Content)
+	}
+	if last.Workflow == nil || last.Workflow.Status != "interrupted" {
+		t.Fatalf("expected interrupted workflow status, got %+v", last.Workflow)
+	}
+	if ws.status != "interrupted" {
+		t.Fatalf("expected session status interrupted, got %q", ws.status)
+	}
+}
+
+// TestWorkflowStreamManagerStartReplacesDetachesOldConsumer 验证 Start 替换旧工作流时
+// 会摘除旧消费者（旧写协程退出），避免新旧两个写协程并发写同一连接
+func TestWorkflowStreamManagerStartReplacesDetachesOldConsumer(t *testing.T) {
+	oldWs, oldCtx := workflowStreamManager.Start(999003, 0)
+	oldFake := &fakeSender{}
+	if err := oldWs.Attach(oldFake); err != nil {
+		t.Fatal(err)
+	}
+
+	// 同一会话发起新工作流：旧流被取消且旧消费者被摘除
+	_, _ = workflowStreamManager.Start(999003, 0)
+	defer workflowStreamManager.Cancel(999003)
+
+	select {
+	case <-oldCtx.Done():
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected old context cancelled")
+	}
+
+	// 旧会话收尾广播不应再到达旧消费者（已被摘除）
+	oldWs.finish(context.Canceled, "旧内容", nil, "")
+	<-oldWs.Done()
 	time.Sleep(50 * time.Millisecond)
-	if len(fake.messages()) != 0 {
-		t.Fatalf("expected no messages after cancel, got %d", len(fake.messages()))
+	if len(oldFake.messages()) != 0 {
+		t.Fatalf("expected old consumer detached, got %d messages", len(oldFake.messages()))
 	}
 }
 

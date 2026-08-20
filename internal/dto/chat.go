@@ -59,7 +59,7 @@ type WsMessageResponse struct {
 
 // WorkflowProgress 工作流执行进度
 type WorkflowProgress struct {
-	Status     string `json:"status"`               // running/completed/failed
+	Status     string `json:"status"`               // running/completed/failed/interrupted
 	NodeID     string `json:"nodeId,omitempty"`     // 当前节点 ID
 	NodeType   string `json:"nodeType,omitempty"`   // 节点类型
 	NodeLabel  string `json:"nodeLabel,omitempty"`  // 节点标签

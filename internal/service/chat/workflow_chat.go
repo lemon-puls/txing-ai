@@ -51,7 +51,24 @@ type ToolCall struct {
 const (
 	toolArgsMaxLen   = 1024
 	toolResultMaxLen = 4096
+
+	// workflowStatusInterrupted 用户停止生成时的工作流终态
+	// （与 completed/failed 并列，前端据此显示"已中断"）
+	workflowStatusInterrupted = "interrupted"
 )
+
+// isWorkflowCanceled 判断工作流执行错误是否由用户停止生成触发。
+// 底层（eino/模型适配层）对 context 取消的包装方式不一，除 errors.Is 外
+// 再兜底匹配错误文本，避免把"用户主动停止"误判为执行失败
+func isWorkflowCanceled(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "context canceled")
+}
 
 // truncateForDisplay 按 rune 截断超长文本，避免截断多字节字符
 func truncateForDisplay(s string, max int) string {
@@ -383,9 +400,14 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 
 	if execErr != nil {
 		log.Error("工作流执行失败", zap.Error(execErr))
-		if errors.Is(execErr, context.Canceled) {
-			// 用户点击停止生成：结束会话（消费者已摘除，不再下发消息），不保存失败记录
-			ws.finish(execErr, "", artifacts, "")
+		if isWorkflowCanceled(execErr) {
+			// 用户点击停止生成：把已生成的部分内容 + "已中断"终态下发给前端，
+			// 并保存到会话消息（刷新后仍可见），界面不再停留在"执行中"
+			if output == "" {
+				output = "已中断生成"
+			}
+			ws.finish(execErr, output, artifacts, "")
+			saveWorkflowResponse(db, conversation, output, workflowStatusInterrupted, artifacts, flow.Name, nodeLogs, "")
 			return
 		}
 		// 用户看到的是提取根因后的友好提示，原始错误链放入 Workflow.Error 供"查看详情"

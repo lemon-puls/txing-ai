@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -30,6 +31,10 @@ const (
 
 	// sessionCleanupInterval 清理协程的执行间隔
 	sessionCleanupInterval = 30 * time.Second
+
+	// endDeliveryTimeout 终态消息（End）下发的最长等待时间：
+	// 正常情况下写协程即时消费、立即送达；仅当消费者写协程异常卡住时触发超时
+	endDeliveryTimeout = 3 * time.Second
 )
 
 // chunkSender 流消息发送接口，便于测试解耦；*utils.Connection 天然满足
@@ -80,11 +85,12 @@ func init() {
 }
 
 // Start 启动（或替换）会话的流式生成任务。
-// 若该会话已有进行中的流，会先取消旧流（同一会话不允许并行生成）。
+// 若该会话已有进行中的流，会先取消旧流并摘除旧消费者（同一会话不允许并行生成；
+// 新流将绑定同一连接，旧写协程必须先退出，避免并发写同一 WebSocket）。
 // 流的生命周期不依赖 WS 连接：连接断开后生成继续，直到完成或被取消
 func (m *StreamManager) Start(db *gorm.DB, conversation *domain.Conversation, config *adaptercommon.ChatConfig) *StreamSession {
 	// 取消并摘除旧会话
-	m.Cancel(conversation.Id)
+	m.cancelForReplace(conversation.Id)
 
 	streamCtx, cancel := context.WithCancel(context.Background())
 	s := &StreamSession{
@@ -114,8 +120,23 @@ func (m *StreamManager) Get(convId int64) *StreamSession {
 	return m.sessions[convId]
 }
 
-// Cancel 取消会话的流式生成（用户点击停止生成）
+// Cancel 取消会话的流式生成（用户点击停止生成）。
+// 只取消生成上下文、不摘除消费者：生产协程收尾时 finish 会把 End 消息
+// 可靠下发给前端收尾（展示已生成的部分内容）；若这里提前摘除消费者，
+// 前端流式消息将永远停留在"生成中"状态
 func (m *StreamManager) Cancel(convId int64) {
+	m.mu.Lock()
+	s := m.sessions[convId]
+	m.mu.Unlock()
+	if s != nil {
+		s.cancel()
+	}
+}
+
+// cancelForReplace 供 Start 替换旧流时使用：取消旧流并摘除旧消费者。
+// 与 Cancel 不同，替换场景下新流会立即绑定同一连接，旧写协程必须先行退出，
+// 避免新旧两个写协程并发写同一 WebSocket
+func (m *StreamManager) cancelForReplace(convId int64) {
 	m.mu.Lock()
 	s := m.sessions[convId]
 	m.mu.Unlock()
@@ -303,7 +324,7 @@ func (c *streamConsumer) writeLoop(s *StreamSession) {
 		select {
 		case p := <-c.ch:
 			if p.End {
-				if p.Err != nil {
+				if p.Err != nil && !errors.Is(p.Err, context.Canceled) {
 					// 流中途出错：发送友好提示（不含模型名时回退通用提示）
 					model := ""
 					if s.conversation != nil {
@@ -319,10 +340,15 @@ func (c *streamConsumer) writeLoop(s *StreamSession) {
 						End:            true,
 						ConversationId: s.convId,
 					}
-					// 空响应（正文与思考过程均为空）回退默认提示，避免前端空气泡
+					// 空响应（正文与思考过程均为空）回退默认提示，避免前端空气泡；
+					// 用户停止生成时则提示"已停止生成"（前端以累积的已生成内容为准）
 					content, reasoning := s.Content()
 					if content == "" && reasoning == "" {
-						resp.Content = defaultRespMessage
+						if p.Err != nil {
+							resp.Content = "已停止生成"
+						} else {
+							resp.Content = defaultRespMessage
+						}
 					}
 					_ = c.conn.Send(resp)
 				}

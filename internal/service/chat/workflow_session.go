@@ -55,13 +55,14 @@ func init() {
 }
 
 // Start 注册（或替换）会话的工作流执行任务；返回会话与解耦后的执行上下文。
-// 若该会话已有进行中的工作流，会先取消旧流（同一会话不允许并行执行）。
+// 若该会话已有进行中的工作流，会先取消旧流并摘除旧消费者（同一会话不允许并行执行；
+// 新流将绑定同一连接，旧写协程必须先退出，避免并发写同一 WebSocket）。
 // 执行上下文的生命周期不依赖 WS 连接：连接断开后工作流继续，直到完成或被取消。
 // uid 注入执行上下文：工具保存文件时 buildSaveDir 按用户隔离目录落盘
 // （runtime/temp_files/<uid>/<日期>/），与下载接口按 userId 拼路径保持一致，
 // 否则产物下载会因目录不一致而找不到文件
 func (m *WorkflowStreamManager) Start(convId, uid int64) (*WorkflowSession, context.Context) {
-	m.Cancel(convId)
+	m.cancelForReplace(convId)
 
 	baseCtx := context.Background()
 	if uid > 0 {
@@ -90,8 +91,24 @@ func (m *WorkflowStreamManager) Get(convId int64) *WorkflowSession {
 	return m.sessions[convId]
 }
 
-// Cancel 取消会话的工作流执行（用户点击停止生成）
+// Cancel 取消会话的工作流执行（用户点击停止生成）。
+// 只取消执行上下文、不摘除消费者：工作流收尾时 finish 会把
+// 携带"已中断"终态的 End 消息可靠下发给前端，让界面立即收尾
+// （节点停止转圈、状态显示"已中断"）；若这里提前摘除消费者，
+// 前端将永远收不到终态消息，流式消息一直停留在"执行中"状态
 func (m *WorkflowStreamManager) Cancel(convId int64) {
+	m.mu.Lock()
+	ws := m.sessions[convId]
+	m.mu.Unlock()
+	if ws != nil {
+		ws.cancel()
+	}
+}
+
+// cancelForReplace 供 Start 替换旧工作流时使用：取消旧流并摘除旧消费者。
+// 与 Cancel 不同，替换场景下新流会立即绑定同一连接，旧写协程必须先行退出，
+// 避免新旧两个写协程并发写同一 WebSocket
+func (m *WorkflowStreamManager) cancelForReplace(convId int64) {
 	m.mu.Lock()
 	ws := m.sessions[convId]
 	m.mu.Unlock()
@@ -262,18 +279,44 @@ func (s *WorkflowSession) finish(execErr error, content string, artifacts []dto.
 		s.content = content
 		s.artifacts = artifacts
 		s.rawErr = rawErr
-		if execErr != nil {
+		switch {
+		case isWorkflowCanceled(execErr):
+			// 用户点击停止生成：标记"已中断"，前端据此显示"已中断"而非"失败"
+			s.status = "interrupted"
+		case execErr != nil:
 			s.status = "failed"
-		} else {
+		default:
 			s.status = "completed"
 		}
 		s.finished = true
 		s.finishedAt = time.Now()
 		s.mu.Unlock()
 
-		s.broadcast(partialChunk{End: true, Err: execErr})
+		s.broadcastEnd(execErr)
 		close(s.done)
 	})
+}
+
+// broadcastEnd 向所有消费者可靠下发终态消息。
+// 与实时增量不同，终态 End 一旦丢失，前端将永远停留在"执行中"状态
+// （节点持续转圈、消息无法收尾），因此这里采用阻塞发送（带退出/超时保护）：
+// 写协程持续消费通道，正常情况下立即送达；消费者已摘除或通道长期不消费时
+// 最多等待 endDeliveryTimeout 后放弃，避免收尾协程被永久卡住
+func (s *WorkflowSession) broadcastEnd(err error) {
+	s.mu.Lock()
+	consumers := make([]*streamConsumer, 0, len(s.consumers))
+	for _, c := range s.consumers {
+		consumers = append(consumers, c)
+	}
+	s.mu.Unlock()
+
+	for _, c := range consumers {
+		select {
+		case c.ch <- partialChunk{End: true, Err: err}:
+		case <-c.quit:
+		case <-time.After(endDeliveryTimeout):
+		}
+	}
 }
 
 // workflowWriteLoop 消费者写入协程：把工作流进度增量/最终状态转发给客户端。
@@ -326,9 +369,14 @@ func (c *streamConsumer) workflowWriteLoop(s *WorkflowSession) {
 					End:            true,
 					ConversationId: s.convId,
 				}
-				if status == "failed" {
+				switch status {
+				case "failed":
 					resp.Workflow = &dto.WorkflowProgress{Status: "failed", Error: rawErr}
-				} else {
+				case "interrupted":
+					// 用户停止生成：终态为"已中断"，前端据此把仍在执行中的
+					// 节点/工具标记为已中断并停止转圈
+					resp.Workflow = &dto.WorkflowProgress{Status: "interrupted"}
+				default:
 					resp.Workflow = &dto.WorkflowProgress{Status: "completed"}
 				}
 				if len(artifacts) > 0 {

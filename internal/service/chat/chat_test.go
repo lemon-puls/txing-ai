@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -315,6 +316,39 @@ func TestStreamManagerGetAndCancel(t *testing.T) {
 	m.Cancel(1)
 	if !cancelled {
 		t.Fatal("Cancel did not call session cancel")
+	}
+}
+
+// TestStreamManagerCancelDeliversEnd 验证用户停止生成（普通聊天）时：
+// 消费者不被提前摘除，生产协程收尾（finish）后 End 消息送达前端收尾，
+// 前端据此用已累积的部分内容收尾，而不是永远停留在"生成中"
+func TestStreamManagerCancelDeliversEnd(t *testing.T) {
+	s := newTestSession()
+	// 累积部分内容，模拟停止前已生成的内容
+	s.buffer.Write("已生成的部分回答")
+	fake := &fakeSender{}
+	if err := s.Attach(fake); err != nil {
+		t.Fatal(err)
+	}
+	defer s.Detach(fake)
+
+	m := &StreamManager{sessions: map[int64]*StreamSession{1: s}}
+	m.Cancel(1)
+
+	s.finish(context.Canceled)
+
+	<-s.Done()
+
+	// 第一条是 Attach 发送的 resume 快照，随后应收到 End 终态消息
+	if !waitUntil(2*time.Second, func() bool {
+		for _, msg := range fake.messages() {
+			if msg.End {
+				return true
+			}
+		}
+		return false
+	}) {
+		t.Fatalf("expected end message after cancel, got %d messages", len(fake.messages()))
 	}
 }
 

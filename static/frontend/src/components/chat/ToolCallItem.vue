@@ -12,6 +12,7 @@
         <el-icon v-if="toolCall.status === 'running'" :size="12" class="spin"><Loading /></el-icon>
         <el-icon v-else-if="toolCall.status === 'completed'" :size="12"><Check /></el-icon>
         <el-icon v-else-if="toolCall.status === 'failed'" :size="12"><Close /></el-icon>
+        <el-icon v-else-if="toolCall.status === 'interrupted'" :size="12"><Minus /></el-icon>
         <el-icon v-else :size="12"><Tools /></el-icon>
       </span>
       <span class="tool-name">{{ toolCall.name }}</span>
@@ -28,7 +29,7 @@
       <div class="detail-section">
         <div class="detail-title">执行结果</div>
         <pre v-if="formattedResult" class="detail-pre">{{ formattedResult }}</pre>
-        <div v-else class="detail-empty">{{ toolCall.status === 'running' ? '执行中…' : '暂无结果数据' }}</div>
+        <div v-else class="detail-empty">{{ toolCall.status === 'running' ? '执行中…' : (toolCall.status === 'interrupted' ? '已中断' : '暂无结果数据') }}</div>
       </div>
     </div>
   </div>
@@ -36,7 +37,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ArrowDown, Check, Close, Loading, Tools } from '@element-plus/icons-vue'
+import { ArrowDown, Check, Close, Loading, Minus, Tools } from '@element-plus/icons-vue'
 
 const props = defineProps({
   // 归一化结构：{ id, name, status, args, result }
@@ -118,6 +119,11 @@ $info: #94a3b8;
   &.failed {
     background: $danger;
     border-color: $danger;
+  }
+
+  &.interrupted {
+    background: $warning;
+    border-color: $warning;
   }
 }
 
