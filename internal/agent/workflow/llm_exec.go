@@ -173,6 +173,12 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 				break
 			}
 
+			// 用户停止生成（上下文已取消）后不再继续调用工具：
+			// 避免出现"工具执行失败: context canceled"之类的噪声展示
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return "", fmt.Errorf("LLM 节点执行被中断: %w", ctxErr)
+			}
+
 			// 兜底补齐工具调用 ID：部分 provider/中转不返回 ID，缺失会导致
 			// 前后端按 ID 精确匹配失效、同名多次调用被合并成一条
 			ensureToolCallIDs(response.ToolCalls, cfg.NodeID, round)
@@ -238,8 +244,16 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 				if toolErr != nil {
 					log.Error("LLM 节点工具执行失败",
 						zap.String("nodeId", cfg.NodeID), zap.Error(toolErr))
+					// 用户停止生成导致的工具中断：标记为"已中断"而非"失败"，
+					// 避免前端工具行显示红色失败误导用户
+					toolStatus := "failed"
+					toolResultMsg := "工具执行失败: " + toolErr.Error()
+					if ctx.Err() != nil {
+						toolStatus = "interrupted"
+						toolResultMsg = "工具执行已被中断"
+					}
 					if callback != nil {
-						// 逐个工具推送 failed（带身份与错误原因），让前端对应行能翻成失败并展示详情
+						// 逐个工具推送状态（带身份与原因），让前端对应行能翻成对应状态并展示详情
 						for _, tc := range response.ToolCalls {
 							callback(&global.Chunk{
 								NodeId:     cfg.NodeID,
@@ -247,9 +261,9 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 								NodeLabel:  cfg.NodeLabel,
 								ToolCallId: tc.ID,
 								ToolName:   tc.Function.Name,
-								ToolResult: "工具执行失败: " + toolErr.Error(),
-								ToolStatus: "failed",
-								ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行失败: %s", cfg.NodeLabel, tc.Function.Name, toolErr.Error()),
+								ToolResult: toolResultMsg,
+								ToolStatus: toolStatus,
+								ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行被中断", cfg.NodeLabel, tc.Function.Name),
 							})
 						}
 					}
@@ -297,6 +311,14 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 				break
 			}
 		}
+	}
+
+	// 用户主动停止生成（或执行超时）：工具循环因上下文取消而中断时，
+	// 立即把取消错误向上传播，不再执行收尾工具/续写/兜底文案。
+	// 否则响应为空时兜底文案（"执行未能完成，可能因输出超出长度限制…"）
+	// 会被当成正常输出展示，误导用户以为执行真的失败了
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return "", fmt.Errorf("LLM 节点执行被中断: %w", ctxErr)
 	}
 
 	// [TOOL-ROUND-LIMIT] 轮次耗尽但模型仍在请求工具调用：
@@ -363,6 +385,19 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 		if response != nil {
 			result += response.Content
 		}
+	}
+
+	// 用户主动停止生成（或执行超时）：不产出兜底文案，取消错误向上传播，
+	// 由上层识别为"已中断"（interrupted）。若已累积部分内容（如截断续写被打断），
+	// 先推送出去，中断消息仍能展示已生成的部分
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		if result != "" && cfg.EmitFinalContent && callback != nil {
+			callback(&global.Chunk{
+				Content: result,
+				ShowMsg: fmt.Sprintf("[%s] 思考中...", cfg.NodeLabel),
+			})
+		}
+		return result, fmt.Errorf("LLM 节点执行被中断: %w", ctxErr)
 	}
 
 	// 最终兜底：仍未产出内容时给出提示，避免返回空字符串

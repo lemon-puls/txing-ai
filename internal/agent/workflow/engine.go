@@ -324,12 +324,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				}
 				result, execErr := ExecuteLLM(ctx, llmNodeCfg, inputContent, llmNodeCallback)
 				if execErr != nil {
-					execLog.Status = "failed"
+					// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+					nodeStatus := nodeStatusForError(execErr)
+					execLog.Status = nodeStatus
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					types.SendExecutionLog(callback, execLog)
-					statusCbLLM("failed")
+					statusCbLLM(nodeStatus)
 					return nil, execErr
 				}
 
@@ -473,12 +475,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 
 				if execErr != nil {
 					log.Error("工具直接执行失败", zap.String("nodeId", nodeId), zap.String("toolName", boundToolName), zap.Error(execErr))
-					execLog.Status = "failed"
+					// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+					nodeStatus := nodeStatusForError(execErr)
+					execLog.Status = nodeStatus
 					execLog.Error = execErr.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					types.SendExecutionLog(callback, execLog)
-					statusCbTool("failed")
+					statusCbTool(nodeStatus)
 					return nil, execErr
 				}
 
@@ -823,12 +827,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				response, err := ExecuteLLM(ctx, agentNodeCfg, inputContent, agentNodeCallback)
 				if err != nil {
 					log.Error("Agent node execution failed", zap.Error(err))
-					execLog.Status = "failed"
+					// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+					nodeStatus := nodeStatusForError(err)
+					execLog.Status = nodeStatus
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					types.SendExecutionLog(callback, execLog)
-					statusCbAgent("failed")
+					statusCbAgent(nodeStatus)
 					return nil, err
 				}
 
@@ -876,12 +882,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				parallelGroups, err := parallelExecutor.IdentifyParallelGroups(&topo)
 				if err != nil {
 					log.Error("识别并行组失败", zap.String("nodeId", nodeId), zap.Error(err))
-					execLog.Status = "failed"
+					// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+					nodeStatus := nodeStatusForError(err)
+					execLog.Status = nodeStatus
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					types.SendExecutionLog(callback, execLog)
-					statusCbParallel("failed")
+					statusCbParallel(nodeStatus)
 					return nil, err
 				}
 
@@ -908,12 +916,14 @@ func (a *WorkflowAgent) BuildGraph(ctx context.Context, endpoint, apiKey, model 
 				results, err := parallelExecutor.ExecuteParallelGroup(ctx, currentGroup, inputContent, callback)
 				if err != nil {
 					log.Error("并行组执行失败", zap.String("nodeId", nodeId), zap.Error(err))
-					execLog.Status = "failed"
+					// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+					nodeStatus := nodeStatusForError(err)
+					execLog.Status = nodeStatus
 					execLog.Error = err.Error()
 					execLog.EndTime = time.Now().UnixMilli()
 					execLog.Duration = execLog.EndTime - execLog.StartTime
 					types.SendExecutionLog(callback, execLog)
-					statusCbParallel("failed")
+					statusCbParallel(nodeStatus)
 					return nil, err
 				}
 

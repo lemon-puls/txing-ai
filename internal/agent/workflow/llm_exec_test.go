@@ -1,6 +1,8 @@
 package workflow
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 
+	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging"
 )
@@ -95,5 +98,35 @@ func TestValidateToolCallArgs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestExecuteWithRetryBailsOnCanceledCtx 验证上下文取消/超时后重试立即返回：
+// 不再按重试策略 sleep 空转，让取消信号尽快传播到上层
+// （用户点击停止生成时的响应速度，避免停止后仍在等待重试）
+func TestExecuteWithRetryBailsOnCanceledCtx(t *testing.T) {
+	calls := 0
+	err := executeWithRetry(&types.RetryConfig{MaxRetries: 3, RetryDelay: 100}, func() error {
+		calls++
+		return context.Canceled
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected exactly 1 call (bail on cancel), got %d", calls)
+	}
+
+	// 超时同样立即返回
+	calls = 0
+	err = executeWithRetry(&types.RetryConfig{MaxRetries: 3, RetryDelay: 100}, func() error {
+		calls++
+		return context.DeadlineExceeded
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected exactly 1 call (bail on deadline), got %d", calls)
 	}
 }

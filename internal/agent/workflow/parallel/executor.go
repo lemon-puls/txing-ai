@@ -3,6 +3,7 @@ package parallel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -231,8 +232,14 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *types.TopoNode
 		finalShowMsg := fmt.Sprintf("[%s] 执行完成", node.Data.Label)
 		var errMsg string
 		if err != nil {
-			finalStatus = "failed"
-			finalShowMsg = fmt.Sprintf("[%s] 执行失败: %v", node.Data.Label, err)
+			// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+			if errors.Is(err, context.Canceled) {
+				finalStatus = "interrupted"
+				finalShowMsg = fmt.Sprintf("[%s] 执行已中断", node.Data.Label)
+			} else {
+				finalStatus = "failed"
+				finalShowMsg = fmt.Sprintf("[%s] 执行失败: %v", node.Data.Label, err)
+			}
 			errMsg = err.Error()
 		}
 		callback(&global.Chunk{
