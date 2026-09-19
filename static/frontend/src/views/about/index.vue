@@ -6,6 +6,9 @@
 
     <!-- Hero Section -->
     <section class="hero-section">
+      <!-- 云海天幕：Hero 顶部天空，向下渐隐过渡到星空（滚动即"穿云入星空"） -->
+      <!-- Cloud-sky dome: hero sky fading down into the starfield ("through the clouds into space" on scroll) -->
+      <CloudSky class="hero-sky" />
       <div class="hero-content animate-on-scroll">
         <div class="avatar-wrapper">
           <div class="main-avatar">
@@ -286,6 +289,7 @@ import {
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
 import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamera, Points, PointsMaterial, SRGBColorSpace, Scene, WebGLRenderer } from 'three'
+import CloudSky from '@/components/CloudSky.vue'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -934,6 +938,14 @@ const scrollToContact = () => {
   padding: 80px 24px;
   overflow: hidden;
 
+  // 云海天幕：垫在光斑与内容之下，底部渐隐露出星空，避免与星空生硬切换
+  // Cloud-sky dome: beneath blobs and content, fading down into the starfield for a seamless handoff
+  .hero-sky {
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 97%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 97%);
+  }
+
   .hero-content {
     position: relative;
     z-index: 2;
@@ -1141,6 +1153,12 @@ const scrollToContact = () => {
       opacity: 0.5;
       border-radius: 50%;
       animation: float-blob 15s infinite alternate ease-in-out;
+
+      // 暗色下云海已撑起天幕，彩斑调暗以免与夜空云层打架
+      // Dark theme: the cloud dome already fills the sky; dim the blobs to avoid clutter
+      html.dark & {
+        opacity: 0.22;
+      }
     }
 
     .blob-1 {
