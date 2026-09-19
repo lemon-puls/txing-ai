@@ -3,35 +3,39 @@ package parallel
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/cloudwego/eino/schema"
-	"go.uber.org/zap"
 	"txing-ai/internal/agent/workflow/condition"
-	nodeexec "txing-ai/internal/agent/workflow/node"
+	// [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 节点停用后以下导入暂无使用，重新启用时恢复
+	// nodeexec "txing-ai/internal/agent/workflow/node"
 	"txing-ai/internal/agent/workflow/types"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+
+	// "github.com/cloudwego/eino/schema"
+	"go.uber.org/zap"
 )
 
 // NodeExecutor 由 workflow 核心实现，供并行分支回调执行 LLM/Tool 节点
 // NodeExecutor is implemented by the workflow core to execute LLM/Tool nodes within parallel branches
 type NodeExecutor interface {
 	ExecuteLLMNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
-	ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
+	// [TOOL-NODE-DISABLED] 工具节点已停用，重新启用时恢复本方法
+	// ExecuteToolNodeInParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error)
 }
 
 // ParallelGroup 并行组结构
 // ParallelGroup represents a parallel execution group with its branches and join node
 type ParallelGroup struct {
-	ParallelNode *types.TopoNode      // 并行入口节点 / Parallel entry node
-	Branches     [][]*types.TopoNode  // 每个分支的节点列表 / Node list for each branch
-	JoinNode     *types.TopoNode      // 汇聚节点 / Join node
-	ParallelID   string               // 并行组ID / Parallel group ID
+	ParallelNode *types.TopoNode       // 并行入口节点 / Parallel entry node
+	Branches     [][]*types.TopoNode   // 每个分支的节点列表 / Node list for each branch
+	JoinNode     *types.TopoNode       // 汇聚节点 / Join node
+	ParallelID   string                // 并行组ID / Parallel group ID
 	Config       *types.ParallelConfig // 并行配置 / Parallel configuration
 }
 
@@ -59,6 +63,7 @@ func NewParallelExecutor(executor NodeExecutor, maxWorkers int, endpoint, apiKey
 		model:      model,
 	}
 }
+
 // ExecuteBranch 执行单个分支
 // ExecuteBranch executes a single branch of the parallel group
 func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, branchNodes []*types.TopoNode,
@@ -88,7 +93,7 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 	var branchErr error
 
 	// 按顺序执行分支内的节点 / Execute nodes in branch sequentially
-	for i, node := range branchNodes {
+	for _, node := range branchNodes {
 		select {
 		case <-branchCtx.Done():
 			branchErr = branchCtx.Err()
@@ -122,8 +127,6 @@ func (e *ParallelExecutor) ExecuteBranch(ctx context.Context, branchIndex int, b
 			})
 		}
 
-		// 避免最后一个节点重复发送消息 / Avoid duplicate message on last node
-		_ = i
 	}
 
 	endTime := time.Now().UnixMilli()
@@ -202,14 +205,17 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *types.TopoNode
 	switch nodeType {
 	case "llm":
 		output, err = e.executeLLMNode(ctx, node, input, callback)
-	case "tool":
-		output, err = e.executeToolNode(ctx, node, input, callback)
+	// [TOOL-NODE-DISABLED] 工具节点已停用，落入 default 分支透传输入
+	// case "tool":
+	// 	output, err = e.executeToolNode(ctx, node, input, callback)
 	case "condition":
 		output, err = e.executeConditionNode(ctx, node, input, callback)
-	case "code":
-		output, err = e.executeCodeNodeParallel(ctx, node, input, callback)
-	case "http":
-		output, err = e.executeHTTPNodeParallel(ctx, node, input, callback)
+	// [CODE-NODE-DISABLED] 代码节点已停用，落入 default 分支透传输入
+	// case "code":
+	// 	output, err = e.executeCodeNodeParallel(ctx, node, input, callback)
+	// [HTTP-NODE-DISABLED] HTTP 节点已停用，落入 default 分支透传输入
+	// case "http":
+	// 	output, err = e.executeHTTPNodeParallel(ctx, node, input, callback)
 	case "start", "end":
 		output, err = input, nil
 	default:
@@ -226,8 +232,14 @@ func (e *ParallelExecutor) executeNode(ctx context.Context, node *types.TopoNode
 		finalShowMsg := fmt.Sprintf("[%s] 执行完成", node.Data.Label)
 		var errMsg string
 		if err != nil {
-			finalStatus = "failed"
-			finalShowMsg = fmt.Sprintf("[%s] 执行失败: %v", node.Data.Label, err)
+			// 用户停止生成（上下文取消）导致的中断显示为 interrupted，而非 failed
+			if errors.Is(err, context.Canceled) {
+				finalStatus = "interrupted"
+				finalShowMsg = fmt.Sprintf("[%s] 执行已中断", node.Data.Label)
+			} else {
+				finalStatus = "failed"
+				finalShowMsg = fmt.Sprintf("[%s] 执行失败: %v", node.Data.Label, err)
+			}
 			errMsg = err.Error()
 		}
 		callback(&global.Chunk{
@@ -293,6 +305,10 @@ func (e *ParallelExecutor) executeLLMNode(ctx context.Context, node *types.TopoN
 	return output, nil
 }
 
+/* [TOOL-NODE-DISABLED] 工具节点已停用：并行分支中的 tool 节点现由 executeNode 的
+   default 分支透传输入。重新启用时取消本块注释，并恢复 NodeExecutor 接口中的
+   ExecuteToolNodeInParallel 方法与 executeNode 中的 case "tool"。
+   Original implementation of parallel tool-node execution. Uncomment to re-enable.
 // executeToolNode 并行执行工具节点
 // executeToolNode executes a tool node in parallel context
 func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
@@ -320,6 +336,7 @@ func (e *ParallelExecutor) executeToolNode(ctx context.Context, node *types.Topo
 	// 降级返回输入
 	return input, nil
 }
+*/
 
 // executeConditionNodeParallel 并行执行条件节点
 // executeConditionNodeParallel executes a condition node in parallel context
@@ -347,6 +364,10 @@ func (e *ParallelExecutor) executeConditionNode(ctx context.Context, node *types
 	}
 }
 
+/* [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码节点与 HTTP 节点已停用：
+   并行分支中的 code/http 节点现由 executeNode 的 default 分支透传输入。
+   重新启用时取消本块注释，并恢复 executeNode 中的 case "code" / case "http"。
+   Original implementations of parallel code/http node execution. Uncomment to re-enable.
 // executeCodeNodeParallel 在并行上下文中执行代码节点
 // executeCodeNodeParallel executes a code node in parallel context
 func (e *ParallelExecutor) executeCodeNodeParallel(ctx context.Context, node *types.TopoNode, input string, callback func(chunk *global.Chunk) error) (string, error) {
@@ -421,6 +442,7 @@ func (e *ParallelExecutor) executeHTTPNodeParallel(ctx context.Context, node *ty
 	}
 	return input, nil
 }
+*/
 
 // ExecuteParallelGroup 使用 goroutine pool 并行执行所有分支
 // ExecuteParallelGroup executes all branches in parallel using goroutine pool
@@ -468,44 +490,44 @@ func (e *ParallelExecutor) ExecuteParallelGroup(ctx context.Context, group *Para
 
 	// 并行启动所有分支 / Start all branches in parallel
 	for i, branch := range group.Branches {
+		// 诊断日志 / Diagnostic logs
+		ctxErrStr := "nil"
+		if ctx.Err() != nil {
+			ctxErrStr = ctx.Err().Error()
+		}
+		log.Info("准备启动分支 goroutine",
+			zap.String("parallelId", group.ParallelID),
+			zap.Int("branchIndex", i),
+			zap.String("ctx.Err()", ctxErrStr),
+			zap.Int("branchCount", len(group.Branches)))
+
+		go func(branchIndex int, branchNodes []*types.TopoNode) {
+			defer wg.Done()
+
 			// 诊断日志 / Diagnostic logs
 			ctxErrStr := "nil"
 			if ctx.Err() != nil {
 				ctxErrStr = ctx.Err().Error()
 			}
-			log.Info("准备启动分支 goroutine",
+			log.Info("分支 goroutine 启动",
 				zap.String("parallelId", group.ParallelID),
-				zap.Int("branchIndex", i),
-				zap.String("ctx.Err()", ctxErrStr),
-				zap.Int("branchCount", len(group.Branches)))
+				zap.Int("branchIndex", branchIndex),
+				zap.String("ctx.Err()", ctxErrStr))
 
-			go func(branchIndex int, branchNodes []*types.TopoNode) {
-				defer wg.Done()
+			// 获取信号量 / Acquire semaphore
+			if sem != nil {
+				sem <- struct{}{}
+				defer func() { <-sem }()
+			}
 
-				// 诊断日志 / Diagnostic logs
-				ctxErrStr := "nil"
-				if ctx.Err() != nil {
-					ctxErrStr = ctx.Err().Error()
-				}
-				log.Info("分支 goroutine 启动",
-					zap.String("parallelId", group.ParallelID),
+			// 执行分支 / Execute branch
+			err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
+			if err != nil {
+				log.Warn("分支执行出错（不影响其他分支）",
 					zap.Int("branchIndex", branchIndex),
-					zap.String("ctx.Err()", ctxErrStr))
-
-				// 获取信号量 / Acquire semaphore
-				if sem != nil {
-					sem <- struct{}{}
-					defer func() { <-sem }()
-				}
-
-				// 执行分支 / Execute branch
-				err := e.ExecuteBranch(ctx, branchIndex, branchNodes, initialInput, pCtx, callback)
-				if err != nil {
-					log.Warn("分支执行出错（不影响其他分支）",
-						zap.Int("branchIndex", branchIndex),
-						zap.Error(err))
-				}
-			}(i, branch)
+					zap.Error(err))
+			}
+		}(i, branch)
 	}
 
 	// 等待所有分支完成 / Wait for all branches to complete
@@ -621,13 +643,14 @@ func (e *ParallelExecutor) buildJoinResult(completedBranches map[string]*types.P
 
 	return &types.JoinResult{
 		CompletedBranches: completedBranches,
-		AllResultsMerged: mergedOutput.String(),
-		CompletedCount:   len(completedBranches),
-		TotalCount:       totalCount,
-		Strategy:         strategy,
-		TimedOut:         timedOut,
+		AllResultsMerged:  mergedOutput.String(),
+		CompletedCount:    len(completedBranches),
+		TotalCount:        totalCount,
+		Strategy:          strategy,
+		TimedOut:          timedOut,
 	}
 }
+
 // ReplaceNestedVars 替换 {{input.xxx}} 和 {{output.xxx}} 格式的嵌套变量
 // ReplaceNestedVars replaces nested variables like {{input.xxx}} and {{output.xxx}}
 // 支持 JSON 字段访问：如果 input/output 是 JSON 字符串，会解析并提取对应字段
@@ -675,4 +698,3 @@ func ReplaceNestedVars(s, input, output string) string {
 		return source
 	})
 }
-

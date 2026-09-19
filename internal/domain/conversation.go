@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
@@ -42,29 +43,16 @@ type Conversation struct {
 
 const (
 	defaultContextLength = 8
+	// imageKeepRounds 发送给 LLM 时保留原图的最大用户轮数（从最新消息往前数）。
+	// 更早轮次 user 消息中的图片会被剥离并替换为文本占位，控制视觉 token 随对话累积；
+	// 只影响发送副本，持久化的 FormattedMessage 与前端历史回显不受影响。
+	imageKeepRounds = 2
 )
 
 // 处理消息
 func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) error {
 	// 如果是该会话的第一条用户发的消息，则更新会话名称
-	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
-		return m.Role == global.User
-	})
-
-	if count == 0 {
-		// 更新会话名称 最多 35 个字符 超出就截断
-		if utf8.RuneCountInString(msg.Content) > 35 {
-			// 找到第 35 个字符的位置
-			pos := 0
-			for i := 0; i < 35; i++ {
-				_, size := utf8.DecodeRuneInString(msg.Content[pos:])
-				pos += size
-			}
-			c.Name = msg.Content[:pos]
-		} else {
-			c.Name = msg.Content
-		}
-	}
+	c.setNameFromFirstUserMessage(msg.Content)
 	// 添加消息到会话消息记录中，并应用调用参数
 	if err := c.addMessageFromWsMessageRequest(msg); err != nil {
 		return err
@@ -75,6 +63,29 @@ func (c *Conversation) HandleMessage(msg *dto.WsMessageRequest, db *gorm.DB) err
 		return err
 	}
 	return nil
+}
+
+// setNameFromFirstUserMessage 若会话中还没有任何用户消息，则将会话名称设置为消息内容
+// （最多 35 个字符，超出按 rune 截断，避免截断多字节字符）
+func (c *Conversation) setNameFromFirstUserMessage(content string) {
+	count := lo.CountBy(c.FormattedMessage, func(m global.Message) bool {
+		return m.Role == global.User
+	})
+	if count > 0 {
+		return
+	}
+
+	if utf8.RuneCountInString(content) > 35 {
+		// 找到第 35 个字符的位置
+		pos := 0
+		for i := 0; i < 35; i++ {
+			_, size := utf8.DecodeRuneInString(content[pos:])
+			pos += size
+		}
+		c.Name = content[:pos]
+	} else {
+		c.Name = content
+	}
 }
 
 // 将 WsMessageRequest 消息添加到会话消息记录中
@@ -120,6 +131,10 @@ func (c *Conversation) HandleWorkflowMessage(msg *dto.WsMessageRequest, appName 
 	if len(msg.Content) == 0 {
 		return errors.New("message content is empty")
 	}
+
+	// 如果是该会话的第一条用户发的消息，则更新会话名称
+	// （前端发送时已剥离 @应用名 前缀，此处直接用消息内容作为名称）
+	c.setNameFromFirstUserMessage(msg.Content)
 
 	// 提取文件名列表
 	var fileNames []string
@@ -204,27 +219,92 @@ func (c *Conversation) updateOrCreate(db *gorm.DB) error {
 }
 
 // 获取到用于发送给大模型的消息切片（context 的长度）
+// 返回的是副本：下游会剥离旧轮次图片，绝不能改动持久化的 FormattedMessage
+// （前端历史回显依赖它保留完整图片）。
 func (c *Conversation) GetChatMessages() []global.Message {
-	//// 深复制消息
-	//var cp []global.Message
-	//err := copier.Copy(&cp, &c.FormattedMessage)
-	//if err != nil {
-	//	log.Error("copier.Copy failed", zap.Error(err))
-	//	panic(err)
-	//}
-
 	length := c.getContextLength()
 
-	if len(c.FormattedMessage) < length {
-		return c.FormattedMessage
+	start := 0
+	if len(c.FormattedMessage) > length {
+		start = len(c.FormattedMessage) - length
+	}
+	window := c.FormattedMessage[start:]
+
+	messages := make([]global.Message, len(window))
+	copy(messages, window)
+
+	stripOldImages(messages)
+	return messages
+}
+
+// stripOldImages 剥离早于最近 imageKeepRounds 轮的 user 消息中的图片（含图片类附件），
+// 替换为文本占位提示。图片是高成本的视觉 token，旧轮次的图片通常不再是追问焦点，
+// 剥离后可显著降低请求体积与费用。
+// 原地修改入参，调用方必须传入副本（见 GetChatMessages）。
+func stripOldImages(messages []global.Message) {
+	// 从后往前定位第 imageKeepRounds 条 user 消息，只剥离它之前的 user 消息
+	keepFrom := -1
+	userSeen := 0
+	for i := len(messages) - 1; i >= 0; i-- {
+		if messages[i].Role != global.User {
+			continue
+		}
+		userSeen++
+		if userSeen == imageKeepRounds {
+			keepFrom = i
+			break
+		}
+	}
+	// 窗口内 user 消息不足 imageKeepRounds 条，或第 K 条就是首条：无可剥离
+	if keepFrom <= 0 {
+		return
 	}
 
-	return c.FormattedMessage[len(c.FormattedMessage)-length:]
+	for i := 0; i < keepFrom; i++ {
+		msg := &messages[i]
+		if msg.Role != global.User {
+			continue
+		}
+
+		imageCount := len(msg.Images)
+		var keptAttachments []global.Attachment
+		for _, att := range msg.Attachments {
+			if isImageFileType(att.FileType) {
+				imageCount++
+			} else {
+				keptAttachments = append(keptAttachments, att)
+			}
+		}
+		if imageCount == 0 {
+			continue
+		}
+
+		// 只改副本字段，不 mutate 底层切片数据
+		hint := fmt.Sprintf("（此消息原有 %d 张图片，因对话较长已省略）", imageCount)
+		if msg.Content != "" {
+			msg.Content += "\n" + hint
+		} else {
+			msg.Content = hint
+		}
+		msg.Images = nil
+		msg.Attachments = keptAttachments
+	}
+}
+
+// isImageFileType 判断文件类型是否为图片（与 adapter 层 isImageType 保持一致）
+func isImageFileType(fileType string) bool {
+	switch fileType {
+	case "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml":
+		return true
+	}
+	return false
 }
 
 func (c *Conversation) AddMessageFromAssistant(content, reasoningContent string) {
-	// 如果消息内容为空，则不添加到消息记录中
-	if len(content) == 0 {
+	// 如果内容与思考过程都为空，则不添加到消息记录中。
+	// 注意：只产出思考过程（reasoning 非空、content 为空）时也必须保存，
+	// 否则推理模型的思考内容会被整个丢弃
+	if len(content) == 0 && len(reasoningContent) == 0 {
 		log.Error("response is empty, skip AddMessageFromAssistant")
 		return
 	}

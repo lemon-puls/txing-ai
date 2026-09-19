@@ -18,6 +18,9 @@ func Register(router gin.IRouter, resProvider iface.ResourceProvider) {
 	// 获取会话详情
 	router.GET("/conversations/:id", middleware.AuthMiddleware(), GetConversationDetail)
 
+	// 更新会话高级参数（不发送消息也可持久化）
+	router.PUT("/conversations/:id/params", middleware.AuthMiddleware(), UpdateConversationParams)
+
 	// 批量删除会话
 	router.POST("/conversations/deletebatch", middleware.AuthMiddleware(), BatchDeleteConversations)
 }

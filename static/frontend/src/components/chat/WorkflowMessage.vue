@@ -14,6 +14,15 @@
           <ArrowDown />
         </el-icon>
       </div>
+      <!-- 执行失败详情：默认收起，点击展开查看原始错误链（便于排查） -->
+      <div v-if="workflow?.status === 'failed' && workflow?.error" class="workflow-error">
+        <div class="error-toggle" @click="showErrorDetail = !showErrorDetail">
+          <el-icon :size="13" class="error-toggle-icon"><WarningFilled /></el-icon>
+          <span class="error-toggle-label">查看失败详情</span>
+          <el-icon class="expand-arrow" :class="{ expanded: showErrorDetail }"><ArrowDown /></el-icon>
+        </div>
+        <div v-show="showErrorDetail" class="error-detail">{{ workflow.error }}</div>
+      </div>
       <transition name="slide">
         <div v-show="expanded && nodeLogsData.length > 0" class="workflow-nodes">
           <div
@@ -27,28 +36,25 @@
               <el-icon v-if="log.status === 'completed'" :size="12"><Check /></el-icon>
               <el-icon v-else-if="log.status === 'running'" :size="12" class="spin"><Loading /></el-icon>
               <el-icon v-else-if="log.status === 'failed'" :size="12"><Close /></el-icon>
+              <el-icon v-else-if="log.status === 'interrupted'" :size="12"><Minus /></el-icon>
               <span v-else class="dot-indicator"></span>
             </div>
             <div class="node-body">
               <span class="node-label">{{ log.label || log.type }}</span>
-              <div v-if="log.toolCalls && log.toolCalls.length > 0" class="tool-calls">
-                <div
+              <div v-if="log.toolCalls && log.toolCalls.length > 0" class="tool-call-list">
+                <ToolCallItem
                   v-for="(tc, tcIdx) in log.toolCalls"
-                  :key="tcIdx"
-                  class="tool-chip"
-                  :class="tc.status"
-                >
-                  <el-icon :size="10"><Tools /></el-icon>
-                  <span>{{ tc.name }}</span>
-                </div>
+                  :key="tc.id || log.nodeId + '-' + tcIdx"
+                  :tool-call="tc"
+                />
               </div>
             </div>
           </div>
         </div>
       </transition>
     </div>
-    <div v-if="artifacts && artifacts.length > 0" class="artifacts">
-      <div v-for="(file, idx) in artifacts" :key="idx" class="artifact-item" @click="downloadFile(file.url, file.name)">
+    <div v-if="displayArtifacts.length > 0" class="artifacts">
+      <div v-for="(file, idx) in displayArtifacts" :key="idx" class="artifact-item" @click="downloadFile(file.url, file.name)">
         <div class="artifact-icon" :class="file.category">
           <el-icon :size="14"><Document /></el-icon>
         </div>
@@ -61,8 +67,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Share, ArrowDown, Check, Close, Loading, Document, Tools, Download } from '@element-plus/icons-vue'
-import { getAuthHeaders } from '@/api/auth'
+import { Share, ArrowDown, Check, Close, Loading, Minus, Document, Download, WarningFilled } from '@element-plus/icons-vue'
+import ToolCallItem from './ToolCallItem.vue'
+import { downloadFileWithAuth } from '@/utils/download'
 
 const props = defineProps({
   appName: { type: String, default: '' },
@@ -72,8 +79,36 @@ const props = defineProps({
 })
 
 const expanded = ref(true)
+const showErrorDetail = ref(false)
 const nodeLogsData = ref([])
 const nodeMap = ref(new Map())
+
+// 只展示最终交付产物：已生成 PDF 时隐藏中间过程的 Markdown 分片文件
+// （后端新数据已过滤，此处兼容旧持久化数据）
+const displayArtifacts = computed(() => {
+  const list = props.artifacts || []
+  if (list.some(a => a.category === 'pdf')) {
+    return list.filter(a => a.category !== 'markdown')
+  }
+  return list
+})
+
+// 工作流整体进入终态（completed/failed/interrupted）时兜底收尾：
+// 任何仍处于 running 的节点/工具调用按最终状态标记，避免一直转圈。
+// 中断场景下后端不会为未完成节点补发终态 chunk，必须在此统一收尾
+const settleTerminal = (status) => {
+  if (status !== 'completed' && status !== 'failed' && status !== 'interrupted') return
+  nodeLogsData.value.forEach(log => {
+    log.toolCalls.forEach(tc => {
+      if (tc.status === 'running') {
+        tc.status = status
+      }
+    })
+    if (log.status === 'running') {
+      log.status = status
+    }
+  })
+}
 
 onMounted(() => {
   if (props.nodeLogs && props.nodeLogs.length > 0) {
@@ -83,12 +118,22 @@ onMounted(() => {
         type: log.type,
         label: log.label,
         status: log.status,
-        toolCalls: log.toolCalls || []
+        // 归一化字段（旧持久化数据可能缺 id/args/result），保证行与详情正常降级
+        toolCalls: (log.toolCalls || []).map(tc => ({
+          id: tc.id || '',
+          name: tc.name,
+          status: tc.status,
+          args: tc.args || '',
+          result: tc.result || ''
+        }))
       }
       nodeMap.value.set(log.nodeId, entry)
       nodeLogsData.value.push(entry)
     })
   }
+  // 已落库的终态消息（如刷新后加载到"已中断"的消息）：挂载时没有 watcher 触发，
+  // 直接按终态收尾，避免持久化数据中残留的 running 节点/工具一直转圈
+  settleTerminal(props.workflow?.status)
 })
 
 const statusLabel = computed(() => {
@@ -96,20 +141,56 @@ const statusLabel = computed(() => {
   if (s === 'completed') return '已完成'
   if (s === 'failed') return '失败'
   if (s === 'running') return '执行中'
+  if (s === 'interrupted') return '已中断'
   return '等待中'
 })
 
+// 监听工作流进度：按后端回放/实时增量的到达顺序构建节点列表。
+// 注意：不能加 immediate——组件因切会话重建时，恢复消息上的 workflow 只是
+// 执行到中途的"最新单 chunk"（如 agent_travel），若挂载时立即追加到列表头部，
+// 会先于回放的 start_1 等历史节点，导致节点显示顺序错乱（开始跑到后面）。
+// 顺序必须完全由 resume 回放（或已落库的 executionLogs）按序重建
 watch(() => props.workflow, (w) => {
-  if (!w || !w.nodeId) return
+  if (!w) return
+  // 工作流整体进入终态（completed/failed/interrupted）时兜底收尾：
+  // 任何仍处于 running 的节点/工具调用按最终结果标记完成/失败/已中断，
+  // 避免节流合并或状态 chunk 丢失导致一直转圈。
+  // 终态进度消息不带 nodeId（仅整体状态），直接收尾返回
+  if (w.status === 'completed' || w.status === 'failed' || w.status === 'interrupted') {
+    settleTerminal(w.status)
+    return
+  }
+  if (!w.nodeId) return
   const existing = nodeMap.value.get(w.nodeId)
   if (existing) {
     existing.status = w.nodeStatus || existing.status
     if (w.toolName) {
-      const lastTc = existing.toolCalls[existing.toolCalls.length - 1]
-      if (lastTc && lastTc.name === w.toolName) {
-        lastTc.status = w.toolStatus || lastTc.status
+      // 优先按 toolCallId 精确匹配
+      let target = w.toolCallId
+        ? existing.toolCalls.find(tc => tc.id === w.toolCallId)
+        : null
+      // 无 id 兜底（兼容旧后端）：结果类数据回填最近一条"同名且仍在执行中"的行；
+      // running 视为新调用起点，直接追加新行，避免同名多次调用被合并
+      if (!target && !w.toolCallId && w.toolStatus && w.toolStatus !== 'running') {
+        for (let i = existing.toolCalls.length - 1; i >= 0; i--) {
+          if (existing.toolCalls[i].name === w.toolName && existing.toolCalls[i].status === 'running') {
+            target = existing.toolCalls[i]
+            break
+          }
+        }
+      }
+      if (target) {
+        if (w.toolStatus) target.status = w.toolStatus
+        if (w.toolArgs) target.args = w.toolArgs
+        if (w.toolResult) target.result = w.toolResult
       } else {
-        existing.toolCalls.push({ name: w.toolName, status: w.toolStatus || 'running' })
+        existing.toolCalls.push({
+          id: w.toolCallId || '',
+          name: w.toolName,
+          status: w.toolStatus || 'running',
+          args: w.toolArgs || '',
+          result: w.toolResult || ''
+        })
       }
     }
     if (w.nodeStatus === 'completed' || w.nodeStatus === 'failed') {
@@ -125,7 +206,13 @@ watch(() => props.workflow, (w) => {
       type: w.nodeType,
       label: w.nodeLabel,
       status: w.nodeStatus || 'running',
-      toolCalls: w.toolName ? [{ name: w.toolName, status: w.toolStatus || 'running' }] : []
+      toolCalls: w.toolName ? [{
+        id: w.toolCallId || '',
+        name: w.toolName,
+        status: w.toolStatus || 'running',
+        args: w.toolArgs || '',
+        result: w.toolResult || ''
+      }] : []
     }
     nodeMap.value.set(w.nodeId, log)
     nodeLogsData.value.push(log)
@@ -133,21 +220,8 @@ watch(() => props.workflow, (w) => {
 }, { deep: true })
 
 const downloadFile = async (url, name) => {
-  try {
-    const response = await fetch(url, { headers: getAuthHeaders() })
-    if (!response.ok) return
-    const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = blobUrl
-    a.download = name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(blobUrl)
-  } catch (e) {
-    console.error('下载失败:', e)
-  }
+  // token 过期时由共享助手自动刷新并重试，避免点击无反应
+  await downloadFileWithAuth(url, name)
 }
 </script>
 
@@ -187,6 +261,7 @@ $info: #94a3b8;
 
   &.completed { background: $success; }
   &.failed { background: $danger; }
+  &.interrupted { background: $warning; }
   &.running {
     background: $primary;
     animation: status-blink 1.5s ease-in-out infinite;
@@ -246,6 +321,7 @@ $info: #94a3b8;
 
   &.completed { color: $success; }
   &.failed { color: $danger; }
+  &.interrupted { color: $warning; }
   &.running {
     color: $primary;
     animation: text-pulse 1.5s ease-in-out infinite;
@@ -280,6 +356,53 @@ $info: #94a3b8;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+// 执行失败详情区（卡片内、头部下方）
+.workflow-error {
+  border-top: 1px solid var(--el-border-color-extra-light);
+  background: rgba($danger, 0.04);
+
+  .error-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 12px;
+    color: $danger;
+    user-select: none;
+    transition: background 0.15s;
+
+    &:hover {
+      background: rgba($danger, 0.08);
+    }
+
+    .error-toggle-icon {
+      flex-shrink: 0;
+    }
+
+    .error-toggle-label {
+      flex: 1;
+    }
+
+    .expand-arrow {
+      color: $danger;
+      font-size: 12px;
+    }
+  }
+
+  .error-detail {
+    padding: 0 16px 12px 35px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--el-text-color-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 220px;
+    overflow-y: auto;
+  }
 }
 
 .node-item {
@@ -345,6 +468,10 @@ $info: #94a3b8;
   &.failed {
     background: $danger;
   }
+
+  &.interrupted {
+    background: $warning;
+  }
 }
 
 @keyframes indicator-pulse {
@@ -370,50 +497,14 @@ $info: #94a3b8;
   line-height: 1.4;
 }
 
-.tool-calls {
+.tool-call-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.tool-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  border: 1px solid var(--el-border-color-lighter);
-  transition: all 0.2s;
-
-  .el-icon {
-    opacity: 0.7;
-  }
-
-  &.running {
-    background: rgba($warning, 0.1);
-    color: $warning;
-    border-color: rgba($warning, 0.2);
-
-    .el-icon {
-      animation: spin 1s linear infinite;
-      opacity: 1;
-    }
-  }
-
-  &.completed {
-    background: rgba($success, 0.08);
-    color: $success;
-    border-color: rgba($success, 0.15);
-  }
-
-  &.failed {
-    background: rgba($danger, 0.08);
-    color: $danger;
-    border-color: rgba($danger, 0.15);
-  }
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

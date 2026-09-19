@@ -140,6 +140,8 @@
             </div>
             <span>大模型节点</span>
           </div>
+          <!-- [TOOL-NODE-DISABLED] 工具节点已停用：工具调用改由 LLM 节点绑定工具提供。
+               重新启用时取消下方注释，并恢复后端 [TOOL-NODE-DISABLED] 标记的代码。
           <div
             class="node-item tool"
             draggable="true"
@@ -150,6 +152,8 @@
             </div>
             <span>工具节点</span>
           </div>
+          -->
+
           <div
             class="node-item agent"
             draggable="true"
@@ -200,7 +204,8 @@
         </div>
       </div>
 
-      <!-- 集成节点 -->
+      <!-- [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码/HTTP 节点已停用（功能尚不完善，先行隐藏）。
+           整个"集成"分类一并注释。重新启用时取消下方注释，并恢复后端 [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 标记的接线。
       <div class="category">
         <div class="category-title">集成</div>
         <div class="category-items">
@@ -226,6 +231,8 @@
           </div>
         </div>
       </div>
+      -->
+
     </div>
 
     <div class="sidebar-footer">

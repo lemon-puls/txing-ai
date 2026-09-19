@@ -42,8 +42,12 @@ type Attachment struct {
 }
 
 type WsMessageResponse struct {
-	ConversationId int64  `json:"conversationId"`
-	Content        string `json:"content"`
+	ConversationId int64 `json:"conversationId"`
+	// 消息类型：空表示普通流式内容；"resume" 表示续流应答
+	Type string `json:"type,omitempty"`
+	// 续流应答：当前是否还有进行中的流（true 表示已续上，后续仍有增量推送）
+	Active  bool   `json:"active,omitempty"`
+	Content string `json:"content"`
 	// 思考过程消息
 	ReasoningContent string `json:"reasoning_content"`
 	End              bool   `json:"end"`
@@ -55,15 +59,18 @@ type WsMessageResponse struct {
 
 // WorkflowProgress 工作流执行进度
 type WorkflowProgress struct {
-	Status     string `json:"status"`               // running/completed/failed
+	Status     string `json:"status"`               // running/completed/failed/interrupted
 	NodeID     string `json:"nodeId,omitempty"`     // 当前节点 ID
 	NodeType   string `json:"nodeType,omitempty"`   // 节点类型
 	NodeLabel  string `json:"nodeLabel,omitempty"`  // 节点标签
 	NodeStatus string `json:"nodeStatus,omitempty"` // 节点状态
 	ShowMsg    string `json:"showMsg,omitempty"`    // 显示消息
 	ToolName   string `json:"toolName,omitempty"`   // 工具名称
+	ToolCallId string `json:"toolCallId,omitempty"` // 工具调用 ID（用于精确匹配同轮多次调用）
+	ToolArgs   string `json:"toolArgs,omitempty"`   // 工具调用参数（截断后，仅用于展示）
 	ToolStatus string `json:"toolStatus,omitempty"` // 工具调用状态 running/completed/failed
-	ToolResult string `json:"toolResult,omitempty"` // 工具结果
+	ToolResult string `json:"toolResult,omitempty"` // 工具结果（截断后，仅用于展示）
+	Error      string `json:"error,omitempty"`      // 执行失败时的原始错误详情（前端"查看详情"用）
 }
 
 // ArtifactInfo 文件产物信息
@@ -76,4 +83,16 @@ type ArtifactInfo struct {
 // BatchDeleteRequest 批量删除请求
 type BatchDeleteRequest struct {
 	Ids []int64 `json:"ids" binding:"required"` // 会话ID列表
+}
+
+// UpdateConversationParamsReq 更新会话高级参数请求（指针字段：仅更新非空字段）
+type UpdateConversationParamsReq struct {
+	MaxTokens         *int     `json:"max_tokens,omitempty"`
+	Temperature       *float32 `json:"temperature,omitempty"`
+	TopP              *float32 `json:"top_p,omitempty"`
+	TopK              *int     `json:"top_k,omitempty"`
+	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
+	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
+	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	EnableWeb         *bool    `json:"enableWeb,omitempty"`
 }

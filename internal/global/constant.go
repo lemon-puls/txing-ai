@@ -23,8 +23,9 @@ const (
 
 // 消息类型
 const (
-	MessageTypeChat = "chat"
-	MessageTypeStop = "stop"
+	MessageTypeChat   = "chat"
+	MessageTypeStop   = "stop"
+	MessageTypeResume = "resume" // 恢复进行中的流式输出（客户端刷新后重连）
 )
 
 // 目标模型类型（用于模型映射条件）

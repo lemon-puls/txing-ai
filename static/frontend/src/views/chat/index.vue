@@ -162,83 +162,83 @@
                   {{ message.role === 'user' ? 'U' : (currentChat.preset?.name?.charAt(0) || 'AI') }}
                 </el-avatar>
               </div>
-              <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
-                <!-- 应用标签 -->
-                <div v-if="message.appName" class="message-app-tag">
-                  <el-icon><Share /></el-icon>
-                  <span>{{ message.appName }}</span>
-                </div>
-                <!-- 多模态图片显示 -->
-                <div v-if="message.images && message.images.length > 0" class="message-images">
-                  <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(imgUrl)">
-                    <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
-                    <div class="image-overlay">
-                      <el-icon><ZoomIn /></el-icon>
+              <div class="message-main" :class="{ 'has-workflow': getMessageWorkflow(message) }">
+                <div class="message-content" :class="{ 'has-workflow': getMessageWorkflow(message) }">
+                  <!-- 应用标签 -->
+                  <div v-if="message.appName" class="message-app-tag">
+                    <el-icon><Share /></el-icon>
+                    <span>{{ message.appName }}</span>
+                  </div>
+                  <!-- 多模态图片显示 -->
+                  <div v-if="message.images && message.images.length > 0" class="message-images">
+                    <div v-for="(imgUrl, idx) in message.images" :key="idx" class="image-item" @click="previewMessageImage(message.images, idx)">
+                      <img :src="imgUrl" :alt="`图片 ${idx + 1}`" />
+                      <div class="image-overlay">
+                        <el-icon><ZoomIn /></el-icon>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <!-- 多模态附件显示 -->
-                <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
-                  <div v-for="(att, idx) in message.attachments" :key="idx" class="attachment-item" @click="downloadAttachment(att)">
-                    <div class="attachment-icon" :class="getAttachmentClass(att.fileType)">
+                  <!-- 多模态附件显示 -->
+                  <div v-if="message.attachments && message.attachments.length > 0" class="message-attachments">
+                    <div v-for="(att, idx) in message.attachments" :key="idx" class="attachment-item" @click="downloadAttachment(att)">
+                      <div class="attachment-icon" :class="getAttachmentClass(att.fileType)">
+                        <el-icon><Document /></el-icon>
+                      </div>
+                      <div class="attachment-info">
+                        <div class="attachment-name">{{ att.fileName }}</div>
+                        <div class="attachment-size">{{ formatFileSize(att.fileSize) }}</div>
+                      </div>
+                      <el-icon class="download-icon"><Download /></el-icon>
+                    </div>
+                  </div>
+                  <!-- 文件附件 -->
+                  <div v-if="message.files && message.files.length > 0" class="message-files">
+                    <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
                       <el-icon><Document /></el-icon>
+                      <span>{{ fileName }}</span>
                     </div>
-                    <div class="attachment-info">
-                      <div class="attachment-name">{{ att.fileName }}</div>
-                      <div class="attachment-size">{{ formatFileSize(att.fileSize) }}</div>
+                  </div>
+                  <!-- 添加思考过程组件 -->
+                  <div v-if="message.reasoningContent" class="thought-process">
+                    <div class="thought-header" @click="toggleThought(message)">
+                      <el-icon :class="{ 'is-fold': !message.showThought }">
+                        <ArrowRight/>
+                      </el-icon>
+                      <span>已深度思考 {{
+                          isCurrentStreamingMessage(message) ?
+                            `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
+                            messageThoughtTimes.has(message.id) ?
+                              `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
+                              ''
+                        }}</span>
                     </div>
-                    <el-icon class="download-icon"><Download /></el-icon>
+                    <div v-show="message.showThought" class="thought-content">
+                      {{ message.reasoningContent }}
+                    </div>
                   </div>
+                  <WorkflowMessage
+                    v-if="getMessageWorkflow(message)"
+                    :app-name="message.appName || ''"
+                    :workflow="getMessageWorkflow(message)"
+                    :artifacts="parseJsonField(message.artifacts)"
+                    :node-logs="parseJsonField(message.executionLogs)"
+                  />
+                  <div class="message-text" v-html="renderMessage(message.content)"></div>
                 </div>
-                <!-- 文件附件 -->
-                <div v-if="message.files && message.files.length > 0" class="message-files">
-                  <div v-for="(fileName, idx) in message.files" :key="idx" class="file-chip">
-                    <el-icon><Document /></el-icon>
-                    <span>{{ fileName }}</span>
-                  </div>
-                </div>
-                <!-- 添加思考过程组件 -->
-                <div v-if="message.reasoningContent" class="thought-process">
-                  <div class="thought-header" @click="toggleThought(message)">
-                    <el-icon :class="{ 'is-fold': !message.showThought }">
-                      <ArrowRight/>
-                    </el-icon>
-                    <span>已深度思考 {{
-                        isCurrentStreamingMessage(message) ?
-                          `(用时${messageThoughtTimes.get(message.id)?.duration || 0}秒)` :
-                          messageThoughtTimes.has(message.id) ?
-                            `(用时${messageThoughtTimes.get(message.id).duration}秒)` :
-                            ''
-                      }}</span>
-                  </div>
-                  <div v-show="message.showThought" class="thought-content">
-                    {{ message.reasoningContent }}
-                  </div>
-                </div>
-                <WorkflowMessage
-                  v-if="getMessageWorkflow(message)"
-                  :app-name="message.appName || ''"
-                  :workflow="getMessageWorkflow(message)"
-                  :artifacts="parseJsonField(message.artifacts)"
-                  :node-logs="parseJsonField(message.executionLogs)"
-                />
-                <div class="message-text" v-html="renderMessage(message.content)"></div>
                 <div class="message-actions">
-                  <el-button-group>
-                    <el-button text size="small" @click="copyMessage(message)">
-                      <template #icon>
-                        <CopyDocument/>
-                      </template>
-                      复制
-                    </el-button>
-                    <el-button text size="small" @click="regenerateMessage(message)"
-                               v-if="message.role === 'assistant'">
-                      <template #icon>
-                        <RefreshRight/>
-                      </template>
-                      重新生成
-                    </el-button>
-                  </el-button-group>
+                  <el-button text size="small" @click="copyMessage(message)">
+                    <template #icon>
+                      <CopyDocument/>
+                    </template>
+                    复制
+                  </el-button>
+                  <el-button text size="small" @click="regenerateMessage(message)"
+                             v-if="message.role === 'assistant'">
+                    <template #icon>
+                      <RefreshRight/>
+                    </template>
+                    重新生成
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -441,21 +441,29 @@
     <el-dialog
       v-model="showSettings"
       title="高级参数设置"
-      width="500px"
+      width="560px"
       destroy-on-close
       class="settings-dialog"
     >
       <div class="settings-content">
+        <div class="settings-tip">
+          <el-icon class="settings-tip-icon"><InfoFilled /></el-icon>
+          <span>参数仅对当前会话生效，点击「确认」后立即生效并持久化，刷新页面不丢失。不同模型/渠道对参数的支持程度不同，部分参数可能被渠道忽略。</span>
+        </div>
         <el-form label-position="top">
           <el-form-item label="最大Token数">
-            <el-input-number
-              v-model="currentChat.maxTokens"
-              :min="1"
-              :max="4096"
-              class="w-full"
-            />
+            <div class="token-input-row">
+              <el-input-number
+                v-model="currentChat.maxTokens"
+                :min="1"
+                :max="65536"
+                class="w-full"
+              />
+              <span class="token-k-badge">{{ formatTokensK(currentChat.maxTokens) }}</span>
+            </div>
+            <div class="param-desc">本次回答最多生成的 token 数（含思考过程）。推理模型（如 DeepSeek-R1）会把大量配额消耗在「思考」上，配额不足会导致回答被截断甚至没有正文。默认 8192（8K）已适配 DeepSeek 官方上限；Claude 4 / Gemini 2.5 等支持最高 65536（64K）。若回答中途被截断，请调大此值。</div>
           </el-form-item>
-          <el-form-item label="温度">
+          <el-form-item label="温度 (Temperature)">
             <el-slider
               v-model="currentChat.temperature"
               :min="0"
@@ -464,8 +472,9 @@
               :default-value="0"
               show-input
             />
+            <div class="param-desc">控制输出的随机性与创造性：值越低回答越确定、严谨，越高越发散、有创意。代码/数学等精确任务建议 0.2~0.7，创意写作建议 0.8~1.5。</div>
           </el-form-item>
-          <el-form-item label="Top-P采样">
+          <el-form-item label="Top-P 采样 (top_p)">
             <el-slider
               v-model="currentChat.topP"
               :min="0"
@@ -473,16 +482,18 @@
               :step="0.05"
               show-input
             />
+            <div class="param-desc">核采样：仅从累计概率达到该值的 token 中采样。与温度共同控制多样性，建议两者只调其一，避免效果互相抵消。</div>
           </el-form-item>
-          <el-form-item label="Top-K采样">
+          <el-form-item label="Top-K 采样 (top_k)">
             <el-input-number
               v-model="currentChat.topK"
               :min="1"
               :max="100"
               class="w-full"
             />
+            <div class="param-desc">仅从概率最高的 K 个 token 中采样（部分模型忽略此参数）。设为 1 时完全确定（贪婪解码）。</div>
           </el-form-item>
-          <el-form-item label="存在惩罚">
+          <el-form-item label="存在惩罚 (presence_penalty)">
             <el-slider
               v-model="currentChat.presencePenalty"
               :min="-2"
@@ -490,8 +501,9 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">对已出现过的 token 施加惩罚，鼓励模型谈论新内容、减少重复。正值提高话题多样性，负值使输出更稳定。</div>
           </el-form-item>
-          <el-form-item label="频率惩罚">
+          <el-form-item label="频率惩罚 (frequency_penalty)">
             <el-slider
               v-model="currentChat.frequencyPenalty"
               :min="-2"
@@ -499,8 +511,9 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">按 token 出现频率成比例惩罚，抑制逐字重复。正值抑制重复，负值允许更多重复。</div>
           </el-form-item>
-          <el-form-item label="重复惩罚">
+          <el-form-item label="重复惩罚 (repetition_penalty)">
             <el-slider
               v-model="currentChat.repetitionPenalty"
               :min="1"
@@ -508,10 +521,15 @@
               :step="0.1"
               show-input
             />
+            <div class="param-desc">对重复内容进行整体惩罚（部分渠道专属参数，如字节豆包/Volcengine）。1.0 表示不惩罚，值越高越不易重复。</div>
           </el-form-item>
         </el-form>
       </div>
       <template #footer>
+        <el-button @click="resetSettings">
+          <el-icon><RefreshLeft /></el-icon>
+          <span>恢复默认</span>
+        </el-button>
         <el-button @click="showSettings = false">取消</el-button>
         <el-button type="primary" @click="saveSettings">确认</el-button>
       </template>
@@ -552,6 +570,14 @@
     <ThemeDrawer
       v-model="showThemeDrawer"
     />
+
+    <!-- 聊天图片预览器 -->
+    <el-image-viewer
+      v-if="imagePreviewVisible"
+      :url-list="imagePreviewList"
+      :initial-index="imagePreviewIndex"
+      @close="imagePreviewVisible = false"
+    />
   </div>
 </template>
 
@@ -572,10 +598,12 @@ import {
   Document,
   Download,
   HomeFilled,
+  InfoFilled,
   Paperclip,
   Picture,
   Plus,
   Position,
+  RefreshLeft,
   RefreshRight,
   Setting,
   More,
@@ -664,8 +692,19 @@ marked.setOptions({
   mangle: false
 })
 
-// 渲染消息内容
+// 渲染消息内容（带内容缓存）：
+// 流式更新时消息内容变化频繁，仅内容真正变化时才重新解析 markdown，
+// 避免每条消息在每次重渲染时都全量解析导致抖动
+const renderedContentCache = new Map()
+const RENDER_CACHE_MAX = 200
 const renderMessage = (content) => {
+  const key = String(content || '')
+  const cached = renderedContentCache.get(key)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  let result
   try {
     // 自定义代码块渲染
     const renderer = new marked.Renderer();
@@ -718,12 +757,19 @@ const renderMessage = (content) => {
     };
 
     marked.use({renderer});
-    const rendered = marked(String(content || ''));
-    return `<div class="markdown-body">${rendered}</div>`;
+    const rendered = marked(key);
+    result = `<div class="markdown-body">${rendered}</div>`;
   } catch (err) {
     console.error('Markdown rendering error:', err);
-    return String(content || '');
+    result = key;
   }
+
+  // 缓存渲染结果；超过上限时清空，防止内存膨胀
+  renderedContentCache.set(key, result)
+  if (renderedContentCache.size > RENDER_CACHE_MAX) {
+    renderedContentCache.clear()
+  }
+  return result
 }
 
 // 使用主题 store
@@ -755,6 +801,15 @@ const availableModels = ref([])
 const loadingModels = ref(false)
 // 当前选中模型
 const currentModel = ref(null)
+
+// 切换/删除会话后同步头部模型显示（只更新展示 ref，不修改会话的 model 字段）
+watch(
+  () => currentChat.value?.id,
+  () => {
+    if (!currentChat.value) return
+    currentModel.value = availableModels.value.find(m => m.name === currentChat.value.model) || null
+  }
+)
 
 // 加载模型列表
 const loadModels = async () => {
@@ -998,13 +1053,10 @@ const processFiles = (files) => {
       url: null
     }
 
-    // 为图片生成预览
+    // 为图片生成预览（同步创建 blob URL，确保首帧渲染即回显；
+    // 原 FileReader 异步回写普通对象不触发响应式更新，导致破图）
     if (fileObj.category === 'image') {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        fileObj.preview = e.target.result
-      }
-      reader.readAsDataURL(file)
+      fileObj.preview = URL.createObjectURL(file)
     }
 
     chatFiles.value.push(fileObj)
@@ -1013,7 +1065,15 @@ const processFiles = (files) => {
 
 // 移除文件
 const removeChatFile = (index) => {
+  revokeFilePreview(chatFiles.value[index])
   chatFiles.value.splice(index, 1)
+}
+
+// 释放图片预览的 blob URL，避免内存泄漏
+const revokeFilePreview = (fileObj) => {
+  if (fileObj?.preview?.startsWith('blob:')) {
+    URL.revokeObjectURL(fileObj.preview)
+  }
 }
 
 // 触发文件选择
@@ -1170,6 +1230,9 @@ const sendMessage = async () => {
   }
   if (displayMessage.trim()) {
     conversationStore.updateCurrentChatName(displayMessage)
+  } else if (selectedApp.value) {
+    // 首条消息只有 @应用名（如仅上传文件的应用）：用应用名作为会话名称
+    conversationStore.updateCurrentChatName(`与 ${selectedApp.value.name} 对话`)
   }
 
   // 上传多模态文件（如果有）
@@ -1255,6 +1318,7 @@ const sendMessage = async () => {
     editorEl.innerText = ''
     editorEl.style.height = 'auto'
   }
+  chatFiles.value.forEach(revokeFilePreview)
   chatFiles.value = [] // 清空文件列表
   showAppMention.value = false
   await scrollToBottom()
@@ -1319,6 +1383,78 @@ const sendMessage = async () => {
   }
 }
 
+// ---- 流式更新节流 ----
+// LLM 分块到达极快（每秒数十个），若每个 chunk 都直接更新 message.content，
+// 会触发整条消息 markdown 全量重渲染并强制滚动，导致严重抖动、内容看不清。
+// 这里合并高频更新，按固定间隔刷新（约 15fps），兼顾流畅与可读
+const STREAM_FLUSH_INTERVAL = 66 // ms
+let streamFlushTimer = null
+let pendingStreamState = null
+
+// 清空待刷新的流式更新（流结束/出错时调用，避免迟到刷新覆盖最终内容）
+const clearPendingStreamUpdate = () => {
+  if (streamFlushTimer != null) {
+    clearTimeout(streamFlushTimer)
+    streamFlushTimer = null
+  }
+  pendingStreamState = null
+}
+
+// 应用合并后的最新流式状态
+const applyStreamState = () => {
+  streamFlushTimer = null
+  if (!pendingStreamState) return
+  const { msg, content, reasoning, artifacts, chatId } = pendingStreamState
+  pendingStreamState = null
+
+  msg.content = content
+  msg.reasoningContent = reasoning
+  if (artifacts) msg.artifacts = artifacts
+
+  // 同步更新 lastMessageMap 中的消息（仅限登录用户）
+  const userStore = useUserStore()
+  if (userStore.isLoggedIn) {
+    const lastMessage = conversationStore.lastMessageMap[chatId]
+    if (lastMessage) {
+      lastMessage.content = content
+      lastMessage.reasoningContent = reasoning
+      if (artifacts) lastMessage.artifacts = artifacts
+    }
+  }
+
+  // 更新思考时间
+  if (reasoning) {
+    const currentTime = Date.now()
+    const startTime = messageThoughtTimes.value.get(msg.id)?.startTime || currentTime
+    messageThoughtTimes.value.set(msg.id, {
+      startTime,
+      endTime: currentTime,
+      duration: Math.floor((currentTime - startTime) / 1000)
+    })
+  }
+
+  // 仅当用户接近底部时才自动滚动，避免打断阅读
+  if (currentChat.value && currentChat.value.id === chatId) {
+    scrollToBottom(false)
+  }
+}
+
+// 调度一次流式内容刷新（合并高频 chunk，只保留最新状态）。
+// 注意：工作流进度（节点/工具状态）不走此节流，在 handleWebSocketMessage 中立即落地，
+// 否则工具完成/失败状态在窗口内会被紧随其后的 chunk（如"继续思考"标记）覆盖丢失
+const scheduleStreamUpdate = (chatId, msg, data) => {
+  pendingStreamState = {
+    msg,
+    content: data.partialContent,
+    reasoning: data.partialReasoning,
+    artifacts: data.artifacts,
+    chatId
+  }
+  if (streamFlushTimer == null) {
+    streamFlushTimer = setTimeout(applyStreamState, STREAM_FLUSH_INTERVAL)
+  }
+}
+
 // 处理 WebSocket 消息
 const handleWebSocketMessage = (chatId, data) => {
   // 关闭 loading 动画
@@ -1328,10 +1464,18 @@ const handleWebSocketMessage = (chatId, data) => {
     // 完整的消息响应
     conversationStore.setTypingStatus(chatId, false)
 
+    // 流已结束：先冲刷待刷新的流式状态，再清空。
+    // 节点/工具的最终状态 chunk 与结束消息几乎同时到达，若仍停留在节流窗口内
+    // 会被清空丢弃，导致工具调用一直显示转圈；先 applyStreamState 让其落地
+    applyStreamState()
+    clearPendingStreamUpdate()
+
     // 如果存在流式消息，则更新它而不是创建新消息
     const currentStreamingMessage = conversationStore.getStreamingMessage(chatId)
     if (currentStreamingMessage) {
-      currentStreamingMessage.content = data.data.partialContent
+      // 工作流消息的最终正文以终态消息的 content 为准（正文可能经 resume
+      // 快照/实时增量分片到达，累积拼接会重复）；普通消息用累积内容
+      currentStreamingMessage.content = data.data.workflow ? data.data.content : data.data.partialContent
       currentStreamingMessage.reasoningContent = data.data.partialReasoning
       // 更新工作流最终状态和产物
       if (data.data.workflow) {
@@ -1414,42 +1558,72 @@ const handleWebSocketMessage = (chatId, data) => {
       }
     }
 
-    // 更新流式消息内容
-    currentStreamingMessage.content = data.data.partialContent
-    currentStreamingMessage.reasoningContent = data.data.partialReasoning
-
-    // 更新工作流状态
+    // 工作流进度（节点/工具状态）立即落地，不参与内容节流：
+    // 工具完成/失败状态若延迟合并，会被紧随其后的"继续思考"等标记 chunk 覆盖，
+    // 导致工具行一直显示执行中；状态更新本身很小且低频，直接替换对象即可
     if (data.data.workflow) {
       currentStreamingMessage.workflow = data.data.workflow
     }
-    if (data.data.artifacts) {
-      currentStreamingMessage.artifacts = data.data.artifacts
-    }
 
-    // 同步更新 lastMessageMap 中的消息（仅限登录用户）
-    const userStore = useUserStore()
-    if (userStore.isLoggedIn) {
-      const lastMessage = conversationStore.lastMessageMap[chatId]
-      if (lastMessage) {
-        lastMessage.content = data.data.partialContent
-        lastMessage.reasoningContent = data.data.partialReasoning
-        if (data.data.workflow) lastMessage.workflow = data.data.workflow
-        if (data.data.artifacts) lastMessage.artifacts = data.data.artifacts
+    // 节流更新流式消息内容：合并高频 chunk，避免整条消息 markdown 全量重渲染导致抖动
+    scheduleStreamUpdate(chatId, currentStreamingMessage, data.data)
+  } else if (data.type === 'resume') {
+    // 续流应答：复用历史最后一条助手消息作为续流消息
+    const rd = data.data
+    let chat = currentChat.value && currentChat.value.id === chatId ? currentChat.value : null
+    if (!chat) chat = chatList.value.find(c => c.id === chatId)
+    if (!chat || !chat.messages) return
+
+    // 流已结束：用最终内容更新最后一条助手消息（内容可能比数据库更新）
+    if (!rd.active) {
+      // 若仍残留流式消息（如终态消息因网络等原因未送达），用服务端快照收尾，
+      // 避免界面停留在"生成中"；同时清空打字状态
+      const streamingMsg = conversationStore.getStreamingMessage(chatId)
+      if (streamingMsg) {
+        if (rd.content && (rd.content.length > (streamingMsg.content || '').length)) {
+          streamingMsg.content = rd.content
+          streamingMsg.reasoningContent = rd.reasoningContent || streamingMsg.reasoningContent
+        }
+        conversationStore.setStreamingMessage(chatId, null)
+        conversationStore.removeLastMessage(chatId)
       }
+      conversationStore.setTypingStatus(chatId, false)
+      if (rd.content || rd.reasoningContent) {
+        const last = chat.messages[chat.messages.length - 1]
+        if (last && last.role === 'assistant' && (rd.content || '').startsWith(last.content || '')) {
+          last.content = rd.content
+          last.reasoningContent = rd.reasoningContent
+        }
+      }
+      return
     }
 
-    // 更新当前思考时间
-    if (data.data.reasoningContent) {
-      const currentTime = Date.now()
-      const startTime = messageThoughtTimes.value.get(currentStreamingMessage.id)?.startTime || currentTime
-      messageThoughtTimes.value.set(currentStreamingMessage.id, {
-        startTime,
-        endTime: currentTime,
-        duration: Math.floor((currentTime - startTime) / 1000)
-      })
+    // 流仍在进行：复用或创建流式消息
+    const msgs = chat.messages
+    const last = msgs[msgs.length - 1]
+    const currentStreaming = conversationStore.getStreamingMessage(chatId)
+    let msg = null
+    if (last && last.role === 'assistant' &&
+        ((currentStreaming && currentStreaming.id === last.id) || (rd.content || '').startsWith(last.content || ''))) {
+      // 最后一条正是进行中的流式消息（切换会话切回后恢复的那条），直接复用
+      msg = last
+    } else {
+      msg = {
+        id: Date.now(),
+        role: 'assistant',
+        content: '',
+        reasoningContent: '',
+        showThought: true,
+        workflow: null,
+        artifacts: null
+      }
+      msgs.push(msg)
     }
+    msg.content = rd.content
+    msg.reasoningContent = rd.reasoningContent
+    conversationStore.setStreamingMessage(chatId, msg)
+    conversationStore.setTypingStatus(chatId, true)
 
-    // 如果是当前会话则滚动到底部
     if (currentChat.value && currentChat.value.id === chatId) {
       scrollToBottom()
     }
@@ -1459,6 +1633,9 @@ const handleWebSocketMessage = (chatId, data) => {
     conversationStore.setTypingStatus(chatId, false)
     conversationStore.setStreamingMessage(chatId, null)
 
+    // 出错时清空待刷新的流式状态
+    clearPendingStreamUpdate()
+
     // 出错时也需要从 lastMessageMap 中删除
     conversationStore.removeLastMessage(chatId)
   }
@@ -1466,12 +1643,21 @@ const handleWebSocketMessage = (chatId, data) => {
 
 // 停止生成
 const stopGeneration = () => {
-  if (currentChat.value) {
-    wsManager.sendMessage(
-      currentChat.value.id.toString(),
-      createStopMessage()
-    )
-    conversationStore.setTypingStatus(currentChat.value.id, false)
+  if (!currentChat.value) return
+  const chatId = currentChat.value.id
+  wsManager.sendMessage(
+    chatId.toString(),
+    createStopMessage()
+  )
+  conversationStore.setTypingStatus(chatId, false)
+  messageLoadingMap.value.set(chatId, false)
+
+  // 立即把应用执行的流式消息标记为"已中断"（节点/工具停止转圈），
+  // 不等后端终态消息，界面即时反馈；后端随后下发的终态消息会同步权威内容。
+  // 普通聊天消息无 workflow，保持原行为（由终态消息用已生成内容收尾）
+  const streamingMsg = conversationStore.getStreamingMessage(chatId)
+  if (streamingMsg && streamingMsg.workflow) {
+    streamingMsg.workflow = { status: 'interrupted' }
   }
 }
 
@@ -1491,6 +1677,23 @@ const route = useRoute()
 const goToHome = () => {
   router.push('/')
 }
+
+// 尝试恢复进行中的流式输出（客户端刷新页面重连后调用）。
+// 服务端无进行中的流时返回 active=false，前端无需处理
+async function tryResumeChat(chat) {
+  if (!chat) return
+  if (chat.id && chat.id.toString().startsWith('tmp-')) return
+  try {
+    await NewChatConnectionIfNeed(chat, userStore.userId, chat.presetId || '')
+    wsManager.sendMessage(chat.id.toString(), { type: 'resume' })
+  } catch (error) {
+    console.error('Failed to resume chat stream:', error)
+  }
+}
+
+// 已注册 WS 消息处理器的会话 id 集合：
+// 连接可能因数量上限被淘汰后重建，避免重复注册处理器导致消息被处理两次
+const registeredWsHandlerChats = new Set()
 
 // 若没有连接，则创建连接
 async function NewChatConnectionIfNeed(newChat, userId, presetId) {
@@ -1518,6 +1721,12 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
     return;
   }
 
+  // 连接可能被淘汰后重建：处理器已注册过则跳过，避免重复注册
+  if (registeredWsHandlerChats.has(newChat.id)) {
+    return;
+  }
+  registeredWsHandlerChats.add(newChat.id)
+
   // 添加消息处理器
   wsManager.on(newChat.id, 'message', (data) => {
 
@@ -1531,6 +1740,10 @@ async function NewChatConnectionIfNeed(newChat, userId, presetId) {
         let oldId = newChat.id
         newChat.id = parseInt(actualChatId)
         newChat.realId = true
+
+        // 同步处理器注册记录（旧 id 已不存在）
+        registeredWsHandlerChats.delete(oldId)
+        registeredWsHandlerChats.add(newChat.id)
 
         // 更新会话ID
         conversationStore.updateConversationId(oldId, newChat.id)
@@ -1579,7 +1792,7 @@ const createNewChat = async (assistantId) => {
     model: defaultModel?.name || 'gpt-3.5-turbo',
     presetId: preset.id,
     webSearch: false,
-    maxTokens: 2048,
+    maxTokens: 8192,
     temperature: 1,
     topP: 0.7,
     topK: 50,
@@ -1629,16 +1842,21 @@ const getInputPlaceholder = () => {
   return '输入消息，支持拖拽/粘贴文件，Enter 发送，Shift + Enter 换行  输入 @ 可引用应用'
 }
 
-// 获取消息的工作流状态对象（兼容原始 API 格式和已处理格式）
+// 获取消息的工作流状态对象（兼容原始 API 格式和已持久化格式）
 const getMessageWorkflow = (message) => {
   if (message.workflow) return message.workflow
-  if (message.workflowStatus) return { status: message.workflowStatus }
+  if (message.workflowStatus) return { status: message.workflowStatus, error: message.workflowError || '' }
   return null
 }
 
-// 预览消息中的图片
-const previewMessageImage = (url) => {
-  window.open(url, '_blank')
+// 预览消息中的图片（页内查看器，支持左右切换，不打开新标签页）
+const imagePreviewVisible = ref(false)
+const imagePreviewList = ref([])
+const imagePreviewIndex = ref(0)
+const previewMessageImage = (images, index) => {
+  imagePreviewList.value = images
+  imagePreviewIndex.value = index
+  imagePreviewVisible.value = true
 }
 
 // 下载附件
@@ -1691,6 +1909,9 @@ const switchChat = async (chat) => {
     // 建立 WebSocket 连接
     // await NewChatConnectionIfNeed(chat, userStore.userId || '0', "")
     await scrollToBottom()
+
+    // 切换到其他会话时，尝试恢复该会话可能进行中的流式输出
+    tryResumeChat(chat)
   } catch (error) {
     console.error('Failed to switch chat:', error)
     ElMessage.error('切换会话失败')
@@ -1726,16 +1947,87 @@ const regenerateMessage = () => {
   }, 2000)
 }
 
-const scrollToBottom = async () => {
+// 滚动到底部。
+// force=false 时仅当用户接近底部才跟随滚动，避免流式更新把阅读位置拽回底部
+const scrollToBottom = async (force = true) => {
   await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  const el = messagesContainer.value
+  if (!el) return
+  if (!force) {
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distance > 80) return
+  }
+  el.scrollTop = el.scrollHeight
+}
+
+// 持久化会话高级参数：登录用户写入后端，游客写入本地存储，刷新页面后不丢失
+const persistChatParams = async (chat) => {
+  if (!chat) return
+  const userStore = useUserStore()
+
+  // 同步本地状态（游客写入 localStorage，同时保持列表响应式）
+  conversationStore.updateConversation({
+    id: chat.id,
+    model: chat.model,
+    maxTokens: chat.maxTokens,
+    temperature: chat.temperature,
+    topP: chat.topP,
+    topK: chat.topK,
+    presencePenalty: chat.presencePenalty,
+    frequencyPenalty: chat.frequencyPenalty,
+    repetitionPenalty: chat.repetitionPenalty,
+    webSearch: chat.webSearch
+  })
+
+  // 登录用户写入后端（仅真实会话 id；tmp- 新会话首条消息发送后才落库）
+  if (userStore.isLoggedIn && /^\d+$/.test(String(chat.id))) {
+    const res = await defaultApi.apiChatConversationsIdParamsPut(chat.id, {
+      max_tokens: chat.maxTokens,
+      temperature: chat.temperature,
+      top_p: chat.topP,
+      top_k: chat.topK,
+      presence_penalty: chat.presencePenalty,
+      frequency_penalty: chat.frequencyPenalty,
+      repetition_penalty: chat.repetitionPenalty,
+      enableWeb: chat.webSearch
+    })
+    // 后端错误以 HTTP 200 + code 字段返回，需显式检查
+    if (!res || res.code !== 0) {
+      throw new Error((res && res.msg) || '保存失败')
+    }
   }
 }
 
-const saveSettings = () => {
+const saveSettings = async () => {
   showSettings.value = false
-  ElMessage.success('设置已保存')
+  try {
+    await persistChatParams(currentChat.value)
+    ElMessage.success('设置已保存')
+  } catch (error) {
+    console.error('Failed to save chat params:', error)
+    ElMessage.error('参数保存失败，请重试')
+  }
+}
+
+// 将 token 数格式化为 K 单位（如 8192 → 8K、32768 → 32K、20000 → 19.5K）
+const formatTokensK = (tokens) => {
+  if (!tokens || tokens <= 0) return '—'
+  const k = tokens / 1024
+  const rounded = k >= 100 ? Math.round(k) : Math.round(k * 10) / 10
+  return `${rounded}K`
+}
+
+// 恢复默认高级参数
+const resetSettings = () => {
+  if (!currentChat.value) return
+  currentChat.value.maxTokens = 8192
+  currentChat.value.temperature = 1.0
+  currentChat.value.topP = 0.7
+  currentChat.value.topK = 50
+  currentChat.value.presencePenalty = 0
+  currentChat.value.frequencyPenalty = 0
+  currentChat.value.repetitionPenalty = 1.0
+  ElMessage.success('已恢复默认参数')
 }
 
 // 选择模型
@@ -1765,9 +2057,13 @@ const selectModel = (model) => {
   conversationStore.saveToLocalStorage();
 }
 
-// 切换联网搜索
+// 切换联网搜索（同步持久化，刷新后保留）
 const toggleWebSearch = () => {
+  if (!currentChat.value) return
   currentChat.value.webSearch = !currentChat.value.webSearch
+  persistChatParams(currentChat.value).catch((error) => {
+    console.error('Failed to save web search setting:', error)
+  })
 }
 
 // 切换思考过程的显示/隐藏
@@ -1812,6 +2108,9 @@ onMounted(async () => {
       router.replace({ query: {} })
     } else if (chatList.value.length > 0) {
       await conversationStore.loadConversationDetail(chatList.value[0].id)
+
+      // 刷新页面后尝试恢复可能进行中的流式输出
+      tryResumeChat(chatList.value[0])
 
       // await NewChatConnectionIfNeed(chatList.value[0], userStore.userId, "");
     }
@@ -2489,28 +2788,11 @@ const batchDelete = async () => {
     padding: 16px;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-      rgba(var(--divider-rgb), 0) 0%,
-      rgba(var(--divider-rgb), 0.1) 15%,
-      rgba(var(--divider-rgb), 0.2) 30%,
-      rgba(var(--divider-rgb), 0.3) 50%,
-      rgba(var(--divider-rgb), 0.2) 70%,
-      rgba(var(--divider-rgb), 0.1) 85%,
-      rgba(var(--divider-rgb), 0) 100%
-    );
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
 }
 
 .message-item {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
   opacity: 0;
@@ -2522,19 +2804,37 @@ const batchDelete = async () => {
 
     .message-content {
       background: var(--message-bg-user);
-      border-radius: 12px 2px 12px 12px;
+      border-radius: 14px 4px 14px 14px;
       color: var(--text-primary);
+      border: 1px solid rgba(64, 158, 255, 0.15);
+      box-shadow: 0 1px 3px rgba(64, 158, 255, 0.08);
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(64, 158, 255, 0.16);
+      }
     }
 
     .message-actions {
-      justify-content: flex-start;
+      align-self: flex-start;
     }
   }
 
   &.assistant {
     .message-content {
       background: var(--message-bg-assistant);
-      border-radius: 2px 12px 12px 12px;
+      border-radius: 4px 14px 14px 14px;
+      border: 1px solid var(--el-border-color-lighter);
+      box-shadow: 0 1px 3px var(--shadow-color);
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 16px var(--shadow-color);
+      }
+    }
+
+    .message-actions {
+      align-self: flex-end;
     }
 
     .message-avatar {
@@ -2550,6 +2850,8 @@ const batchDelete = async () => {
   }
 
   .message-avatar {
+    flex-shrink: 0;
+
     .el-avatar {
       box-shadow: none;
       transition: transform 0.3s ease;
@@ -2559,26 +2861,79 @@ const batchDelete = async () => {
       }
     }
   }
+
+  // 消息主体：气泡 + 下方操作按钮（复制/重新生成）
+  .message-main {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    min-width: 0;
+
+    @media screen and (min-width: 1200px) {
+      max-width: 900px;
+    }
+
+    @media screen and (min-width: 1600px) {
+      max-width: 1000px;
+    }
+
+    @media screen and (max-width: 768px) {
+      max-width: 90%;
+    }
+
+    // 包含 WorkflowMessage 时撑满最大宽度（置于媒体查询之后，确保优先）
+    &.has-workflow {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    // 操作按钮不放进气泡内部，悬停消息时在气泡下方展开
+    .message-actions {
+      margin-top: 0;
+      display: inline-flex;
+      gap: 2px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-4px);
+      transition: max-height 0.25s ease, opacity 0.2s ease,
+                  transform 0.25s ease, margin-top 0.25s ease;
+
+      .el-button {
+        padding: 3px 10px;
+        height: 26px;
+        font-size: 12px;
+        border-radius: 6px;
+        color: var(--el-text-color-secondary);
+        --el-button-hover-bg-color: var(--el-fill-color-light);
+        --el-button-hover-text-color: var(--el-color-primary);
+
+        .el-icon {
+          margin-right: 2px;
+          font-size: 13px;
+        }
+      }
+    }
+
+    &:hover .message-actions {
+      max-height: 38px;
+      margin-top: 6px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 .message-content {
-  max-width: 85%;
-  padding: 16px;
-  box-shadow: 0 1px 2px var(--shadow-color);
-  transition: transform 0.3s ease;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px;
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media screen and (min-width: 1200px) {
-    max-width: 900px;
-  }
-
-  @media screen and (min-width: 1600px) {
-    max-width: 1000px;
-  }
+  word-break: break-word;
 
   // 包含 WorkflowMessage 时撑满最大宽度
   &.has-workflow {
@@ -2923,32 +3278,6 @@ const batchDelete = async () => {
         }
       }
     }
-  }
-
-  .message-actions {
-    margin-top: 4px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-
-    .el-button {
-      padding: 2px 6px;
-      font-size: 12px;
-      height: 24px;
-      --el-button-hover-bg-color: var(--el-color-primary-light-8);
-      --el-button-hover-text-color: var(--el-color-primary);
-
-      .el-icon {
-        margin-right: 2px;
-        font-size: 12px;
-      }
-    }
-  }
-
-  &:hover .message-actions {
-    opacity: 1;
   }
 }
 
@@ -3505,9 +3834,15 @@ const batchDelete = async () => {
   .chat-main {
     width: 100%;
   }
+}
 
-  .message-content {
-    max-width: 90%;
+// 触屏设备（无 hover 能力）：操作按钮常显，保证复制/重新生成可用
+@media (hover: none) {
+  .message-item .message-actions {
+    max-height: 38px;
+    margin-top: 6px;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -3759,5 +4094,53 @@ const batchDelete = async () => {
 // 移除顶部批量操作栏样式
 .batch-actions {
   display: none;
+}
+
+// ---- 高级参数设置面板 ----
+.settings-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 8px;
+
+  .settings-tip-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.param-desc {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-color-secondary);
+}
+
+// 最大Token数输入行：输入框 + K 单位徽标
+.token-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.token-k-badge {
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  border-radius: 999px;
 }
 </style>

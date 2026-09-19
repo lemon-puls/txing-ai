@@ -3,9 +3,13 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"txing-ai/internal/agent/workflow"
 	"txing-ai/internal/agent/workflow/resolver"
@@ -20,6 +24,7 @@ import (
 	"txing-ai/internal/tool"
 	"txing-ai/internal/utils"
 
+	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -35,8 +40,144 @@ type NodeLog struct {
 
 // ToolCall 工具调用记录
 type ToolCall struct {
+	ID     string `json:"id,omitempty"` // 工具调用 ID
 	Name   string `json:"name"`
 	Status string `json:"status"`
+	Args   string `json:"args,omitempty"`   // 调用参数（截断后，仅用于展示）
+	Result string `json:"result,omitempty"` // 执行结果（截断后，仅用于展示）
+}
+
+// 展示用截断阈值（args/result 可能很大，且 nodeLogs 会持久化进会话消息）
+const (
+	toolArgsMaxLen   = 1024
+	toolResultMaxLen = 4096
+
+	// workflowStatusInterrupted 用户停止生成时的工作流终态
+	// （与 completed/failed 并列，前端据此显示"已中断"）
+	workflowStatusInterrupted = "interrupted"
+)
+
+// isWorkflowCanceled 判断工作流执行错误是否由用户停止生成触发。
+// 底层（eino/模型适配层）对 context 取消的包装方式不一，除 errors.Is 外
+// 再兜底匹配错误文本，避免把"用户主动停止"误判为执行失败
+func isWorkflowCanceled(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "context canceled")
+}
+
+// truncateForDisplay 按 rune 截断超长文本，避免截断多字节字符
+func truncateForDisplay(s string, max int) string {
+	rs := []rune(s)
+	if len(rs) <= max {
+		return s
+	}
+	return string(rs[:max]) + "\n…(内容过长已截断)"
+}
+
+// progressFromChunk 将执行 chunk 转换为前端工作流进度消息。
+// 回调累积与写协程下发共用同一构建逻辑，保证 resume 回放与实时增量格式一致。
+func progressFromChunk(chunk *global.Chunk) *dto.WorkflowProgress {
+	return &dto.WorkflowProgress{
+		Status:     "running",
+		NodeID:     chunk.NodeId,
+		NodeType:   chunk.NodeType,
+		NodeLabel:  chunk.NodeLabel,
+		NodeStatus: chunk.NodeStatus,
+		ShowMsg:    chunk.ShowMsg,
+		ToolName:   chunk.ToolName,
+		ToolCallId: chunk.ToolCallId,
+		ToolArgs:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+		ToolStatus: chunk.ToolStatus,
+		ToolResult: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
+	}
+}
+
+// workflowErrNoisePrefix 匹配错误链中逐层包装的内部前缀（eino 节点错误、LLM 调用、重试），
+// 用于兜底分支从完整错误串中剥离噪音、提取根因
+var workflowErrNoisePrefix = regexp.MustCompile(`^(?:\[(?:NodeRun|GraphRun)Error\] |LLM 调用失败: |执行失败（已重试 \d+ 次）: |执行失败: )`)
+
+// friendlyWorkflowErrorMessage 将工作流底层错误转换为用户可理解的提示信息：
+// 提取根因（API Key 无效、限流、超时、网络异常等）并给出操作指引，
+// 不再把内部包装错误链（[NodeRunError] / node path 等）直接展示给用户
+func friendlyWorkflowErrorMessage(err error) string {
+	if err == nil {
+		return "应用执行失败：执行过程中出现未知错误，请稍后重试。"
+	}
+
+	// 1. OpenAI 兼容 API 错误：按状态码给出明确原因与操作指引
+	var apiErr *einoopenai.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.HTTPStatusCode {
+		case http.StatusUnauthorized:
+			return "应用执行失败：模型服务的 API Key 无效或已过期，请在「渠道管理」中检查并更新对应渠道的 API Key 后重试。"
+		case http.StatusForbidden:
+			return "应用执行失败：当前账号没有访问该模型的权限，请检查渠道的模型映射与账号权限。"
+		case http.StatusTooManyRequests:
+			return "应用执行失败：请求过于频繁（已触发限流），请稍后重试。"
+		case http.StatusNotFound:
+			return "应用执行失败：请求的模型不存在或服务地址有误，请检查渠道的模型配置。"
+		}
+		if apiErr.HTTPStatusCode >= 500 {
+			return "应用执行失败：模型服务暂时不可用，请稍后重试。"
+		}
+		if msg := strings.TrimSpace(apiErr.Message); msg != "" {
+			if apiErr.HTTPStatusCode > 0 {
+				return fmt.Sprintf("应用执行失败：%s（错误码 %d）。请检查模型或渠道配置后重试。",
+					truncateForDisplay(msg, 120), apiErr.HTTPStatusCode)
+			}
+			return fmt.Sprintf("应用执行失败：%s。请检查模型或渠道配置后重试。", truncateForDisplay(msg, 120))
+		}
+		return "应用执行失败：模型服务返回错误，请稍后重试。"
+	}
+
+	// 2. 超时
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "应用执行失败：模型响应超时，请稍后重试或更换其他模型。"
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "context deadline exceeded") || strings.Contains(msg, "Client.Timeout") {
+		return "应用执行失败：模型响应超时，请稍后重试或更换其他模型。"
+	}
+
+	// 3. 网络类错误
+	if strings.Contains(msg, "connection refused") || strings.Contains(msg, "no such host") ||
+		strings.Contains(msg, "connection reset") || strings.Contains(msg, "TLS handshake") {
+		return "应用执行失败：无法连接模型服务，请检查网络或渠道的服务地址配置。"
+	}
+
+	// 4. 兜底：剥离内部包装噪音，取最内层可读的错误消息
+	if root := rootWorkflowError(err); root != "" {
+		return fmt.Sprintf("应用执行失败：%s", root)
+	}
+	return "应用执行失败：执行过程中出现未知错误，请稍后重试。"
+}
+
+// rootWorkflowError 剥离 eino 节点错误包装（node path 尾巴）与逐层前缀，
+// 提取最内层可读的错误消息，避免内部噪音直接暴露给用户
+func rootWorkflowError(err error) string {
+	s := err.Error()
+	// 去掉 eino 的 node path 尾巴
+	if idx := strings.Index(s, "\n------------------------\n"); idx >= 0 {
+		s = s[:idx]
+	}
+	// 反复剥离内部包装前缀
+	for {
+		loc := workflowErrNoisePrefix.FindString(s)
+		if loc == "" {
+			break
+		}
+		s = strings.TrimPrefix(s, loc)
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	return truncateForDisplay(s, 200)
 }
 
 // HandleWorkflowChat 处理 AI 对话中的工作流执行
@@ -114,48 +255,46 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 		return
 	}
 
-	// 10. 发送执行开始状态
-	conn.Send(dto.WsMessageResponse{
-		Content:        "",
-		End:            false,
-		ConversationId: conversation.Id,
-		Workflow: &dto.WorkflowProgress{
-			Status: "running",
-		},
-	})
+	// 10. 启动工作流会话（与 WS 连接解耦：客户端断开后工作流继续执行，支持刷新后 resume）。
+	// 传入 userId：工具保存文件时按用户目录落盘，与下载接口路径一致
+	uid, _ := utils.GetUIDFromContextAllowEmpty(ctx)
+	ws, wctx := workflowStreamManager.Start(conversation.Id, uid)
+	if err := ws.Attach(conn); err != nil {
+		log.Error("attach workflow stream consumer failed", zap.Error(err))
+	}
 
 	// 11. 收集输出、产物和节点日志
 	var outputBuilder strings.Builder
 	var artifacts []dto.ArtifactInfo
 	var nodeLogs []NodeLog
 	nodeLogMap := make(map[string]int) // nodeId -> index in nodeLogs
+	var workflowErrMsg string          // 执行失败时的原始错误详情（持久化后供前端"查看详情"）
 
-	ctxWithCancel, cancel := context.WithCancel(ctx)
-	defer cancel()
+	// 工作流异常结束时兜底收尾会话，避免残留"执行中"状态
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("workflow chat panic", zap.Any("err", r))
+			ws.finish(fmt.Errorf("workflow chat panic: %v", r), "", artifacts, fmt.Sprint(r))
+		}
+	}()
 
 	// 12. 执行工作流
 	callback := func(chunk *global.Chunk) error {
-		// 构建工作流进度消息
-		progress := &dto.WorkflowProgress{
-			Status:     "running",
-			NodeID:     chunk.NodeId,
-			NodeType:   chunk.NodeType,
-			NodeLabel:  chunk.NodeLabel,
-			NodeStatus: chunk.NodeStatus,
-			ShowMsg:    chunk.ShowMsg,
-			ToolName:   chunk.ToolName,
-			ToolStatus: chunk.ToolStatus,
-			ToolResult: chunk.ToolResult,
-		}
+		// 构建工作流进度消息（与写协程共用同一构建逻辑）
+		progress := progressFromChunk(chunk)
 
-		// 收集输出内容
+		// 收集输出内容（resume 快照与最终正文）
 		if chunk.Content != "" {
 			outputBuilder.WriteString(chunk.Content)
+			ws.appendContent(chunk.Content)
 		}
+		// 累积进度（resume 时回放给前端重建节点/工具展示）
+		ws.appendProgress(*progress)
 
-		// 收集产物
+		// 收集产物（URL 携带实际保存目录相对路径，如 2/2026-08-20/xxx.pdf，
+		// 下载端按此定位，避免跨天后按"今天"猜目录 404）
 		if chunk.ToolResult != "" && chunk.ToolName != "" {
-			if artifact := extractArtifactFromChunk(chunk); artifact != nil {
+			if artifact := extractArtifactFromChunk(chunk, tool.SaveDirRelPath(wctx)); artifact != nil {
 				artifacts = append(artifacts, *artifact)
 			}
 		}
@@ -169,17 +308,46 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 					existing.Status = chunk.NodeStatus
 				}
 				if chunk.ToolName != "" {
-					lastIdx := len(existing.ToolCalls) - 1
-					if lastIdx >= 0 && existing.ToolCalls[lastIdx].Name == chunk.ToolName {
-						// 同名工具：更新状态
+					// 优先按 ToolCallId 精确匹配（同轮同名多次调用不互相覆盖）
+					matched := -1
+					if chunk.ToolCallId != "" {
+						for i := range existing.ToolCalls {
+							if existing.ToolCalls[i].ID == chunk.ToolCallId {
+								matched = i
+								break
+							}
+						}
+					} else if chunk.ToolStatus != "running" {
+						// 无 ToolCallId 兜底：结果类 chunk 回填最近一条"同名且仍在执行中"的记录；
+						// running 视为新调用起点，直接追加新记录，避免同名多次调用被合并
+						for i := len(existing.ToolCalls) - 1; i >= 0; i-- {
+							if existing.ToolCalls[i].Name == chunk.ToolName &&
+								existing.ToolCalls[i].Status == "running" {
+								matched = i
+								break
+							}
+						}
+					}
+
+					if matched >= 0 {
+						tc := &existing.ToolCalls[matched]
 						if chunk.ToolStatus != "" {
-							existing.ToolCalls[lastIdx].Status = chunk.ToolStatus
+							tc.Status = chunk.ToolStatus
+						}
+						if chunk.ToolParams != "" {
+							tc.Args = truncateForDisplay(chunk.ToolParams, toolArgsMaxLen)
+						}
+						if chunk.ToolResult != "" {
+							tc.Result = truncateForDisplay(chunk.ToolResult, toolResultMaxLen)
 						}
 					} else {
-						// 不同工具：追加
+						// 新工具调用：追加
 						existing.ToolCalls = append(existing.ToolCalls, ToolCall{
+							ID:     chunk.ToolCallId,
 							Name:   chunk.ToolName,
 							Status: chunk.ToolStatus,
+							Args:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+							Result: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
 						})
 					}
 				}
@@ -196,8 +364,11 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 				var toolCalls []ToolCall
 				if chunk.ToolName != "" {
 					toolCalls = append(toolCalls, ToolCall{
+						ID:     chunk.ToolCallId,
 						Name:   chunk.ToolName,
 						Status: chunk.ToolStatus,
+						Args:   truncateForDisplay(chunk.ToolParams, toolArgsMaxLen),
+						Result: truncateForDisplay(chunk.ToolResult, toolResultMaxLen),
 					})
 				}
 				nodeLogMap[chunk.NodeId] = len(nodeLogs)
@@ -211,55 +382,52 @@ func HandleWorkflowChat(ctx context.Context, conn *utils.Connection, conversatio
 			}
 		}
 
-		// 发送进度到客户端（进度信息放在 Workflow 字段，不发送 Content 避免前端显示为纯文本）
-		resp := dto.WsMessageResponse{
-			End:            false,
-			ConversationId: conversation.Id,
-			Workflow:       progress,
-		}
-
-		return conn.Send(resp)
+		// 广播增量给所有在线消费者（由写协程下发，保证同一连接单写者；
+		// 进度信息放在 Workflow 字段，不发送 Content 避免前端显示为纯文本）
+		ws.broadcast(partialChunk{Chunk: chunk, End: false})
+		return nil
 	}
 
-	_, execErr := workflowAgent.ExecuteStream(ctxWithCancel, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, "", callback)
+	// 12. 执行工作流（使用解耦上下文：连接断开不影响执行，直到完成或被取消）
+	_, execErr := workflowAgent.ExecuteStream(wctx, channel.GetEndpoint(), channel.GetRandomSecret(), mappingModel, content, "", callback)
 
 	// 13. 处理执行结果
 	output := outputBuilder.String()
 
+	// 只保留最终交付产物：本次执行已生成 PDF 时，剔除中间过程的 Markdown 分片文件
+	// （如 zhanjiang_1day_part1.md 等），避免把过程文件当产物展示给用户
+	artifacts = filterFinalArtifacts(artifacts)
+
 	if execErr != nil {
 		log.Error("工作流执行失败", zap.Error(execErr))
-		conn.Send(dto.WsMessageResponse{
-			Content:        fmt.Sprintf("应用执行失败：%s", execErr.Error()),
-			End:            true,
-			ConversationId: conversation.Id,
-			Workflow: &dto.WorkflowProgress{
-				Status: "failed",
-			},
-		})
-		output = fmt.Sprintf("执行失败：%s", execErr.Error())
-	} else {
-		// 发送完成状态（包含格式化的结果文本和产物信息）
-		conn.Send(dto.WsMessageResponse{
-			Content:        output,
-			End:            true,
-			ConversationId: conversation.Id,
-			Workflow: &dto.WorkflowProgress{
-				Status: "completed",
-			},
-			Artifacts: artifacts,
-		})
+		if isWorkflowCanceled(execErr) {
+			// 用户点击停止生成：把已生成的部分内容 + "已中断"终态下发给前端，
+			// 并保存到会话消息（刷新后仍可见），界面不再停留在"执行中"
+			if output == "" {
+				output = "已中断生成"
+			}
+			ws.finish(execErr, output, artifacts, "")
+			saveWorkflowResponse(db, conversation, output, workflowStatusInterrupted, artifacts, flow.Name, nodeLogs, "")
+			return
+		}
+		// 用户看到的是提取根因后的友好提示，原始错误链放入 Workflow.Error 供"查看详情"
+		output = friendlyWorkflowErrorMessage(execErr)
+		workflowErrMsg = execErr.Error()
 	}
+
+	// 通知消费者发送最终状态（Content/Workflow/Artifacts，由各连接写协程下发）
+	ws.finish(execErr, output, artifacts, workflowErrMsg)
 
 	// 14. 保存执行记录
 	saveExecution(db, conversation.Id, workflowID, msg, fileRefs, output, artifacts, execErr == nil)
 
-	// 15. 保存 AI 响应到会话（包含工作流状态、产物信息和节点日志）
+	// 15. 保存 AI 响应到会话（包含工作流状态、原始错误、产物信息和节点日志）
 	if output != "" {
 		workflowStatus := "completed"
 		if execErr != nil {
 			workflowStatus = "failed"
 		}
-		saveWorkflowResponse(db, conversation, output, workflowStatus, artifacts, flow.Name, nodeLogs)
+		saveWorkflowResponse(db, conversation, output, workflowStatus, artifacts, flow.Name, nodeLogs, workflowErrMsg)
 	}
 }
 
@@ -425,8 +593,11 @@ func buildFileRefs(msg *dto.WsMessageRequest, lastExecution *domain.WorkflowExec
 	return refs
 }
 
-// extractArtifactFromChunk 从 chunk 中提取产物信息
-func extractArtifactFromChunk(chunk *global.Chunk) *dto.ArtifactInfo {
+// extractArtifactFromChunk 从 chunk 中提取产物信息。
+// relPath 是工具实际保存目录相对上传根目录的路径（如 "2/2026-08-20" 或 "2026-08-20"），
+// 拼进下载 URL 后，下载端可按此路径精确定位文件，避免仅凭文件名 + "今天" 猜日期目录
+// 导致跨天后下载 404（文件保存在执行当天目录，下载可能在次日发生）
+func extractArtifactFromChunk(chunk *global.Chunk, relPath string) *dto.ArtifactInfo {
 	fileGenToolPrefixes := map[string]string{
 		"markdown_save_tool":        "Markdown文件已成功保存到: ./",
 		"markdown_to_pdf_file_tool": "PDF已成功保存: ./",
@@ -464,11 +635,45 @@ func extractArtifactFromChunk(chunk *global.Chunk) *dto.ArtifactInfo {
 		return nil
 	}
 
+	// 下载 URL 携带相对目录（如 2/2026-08-20/xxx.pdf），
+	// 下载端按此路径解析，不依赖"今天"猜测
+	fileRelPath := fileName
+	if relPath != "" {
+		fileRelPath = filepath.ToSlash(filepath.Join(relPath, fileName))
+	}
+
 	return &dto.ArtifactInfo{
 		Name:     fileName,
-		URL:      fmt.Sprintf("/api/file/download?filePath=%s", fileName),
+		URL:      fmt.Sprintf("/api/file/download?filePath=%s", url.QueryEscape(fileRelPath)),
 		Category: fileGenToolCategories[chunk.ToolName],
 	}
+}
+
+// filterFinalArtifacts 只保留最终交付产物。
+// 常见产文件流程是 Agent 先用 markdown_save_tool 分片保存中间 Markdown
+// （输出过长时按部分落盘），再用 markdown_to_pdf_file_tool 合并生成最终 PDF；
+// 此时 Markdown 分片只是过程文件，不应作为"生成的文件产物"展示给用户。
+// 规则：本次执行已生成 PDF 时，剔除 markdown 类产物；未生成 PDF 则全部保留
+// （纯 Markdown 交付类应用不受影响）。
+func filterFinalArtifacts(artifacts []dto.ArtifactInfo) []dto.ArtifactInfo {
+	hasPDF := false
+	for _, a := range artifacts {
+		if a.Category == "pdf" {
+			hasPDF = true
+			break
+		}
+	}
+	if !hasPDF {
+		return artifacts
+	}
+
+	filtered := make([]dto.ArtifactInfo, 0, len(artifacts))
+	for _, a := range artifacts {
+		if a.Category != "markdown" {
+			filtered = append(filtered, a)
+		}
+	}
+	return filtered
 }
 
 // saveExecution 保存工作流执行记录
@@ -497,17 +702,18 @@ func saveExecution(db *gorm.DB, conversationID, workflowID int64, msg *dto.WsMes
 	}
 }
 
-// saveWorkflowResponse 保存工作流响应到会话消息（包含工作流状态、产物信息和节点日志）
-func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string, workflowStatus string, artifacts []dto.ArtifactInfo, appName string, nodeLogs []NodeLog) {
+// saveWorkflowResponse 保存工作流响应到会话消息（包含工作流状态、原始错误、产物信息和节点日志）
+func saveWorkflowResponse(db *gorm.DB, conversation *domain.Conversation, content string, workflowStatus string, artifacts []dto.ArtifactInfo, appName string, nodeLogs []NodeLog, workflowError string) {
 	artifactsJSON, _ := json.Marshal(artifacts)
 	executionLogsJSON, _ := json.Marshal(nodeLogs)
 	assistantMsg := global.Message{
-		Role:            global.Assistant,
-		Content:         content,
-		WorkflowStatus:  workflowStatus,
-		Artifacts:       string(artifactsJSON),
-		AppName:         appName,
-		ExecutionLogs:   string(executionLogsJSON),
+		Role:           global.Assistant,
+		Content:        content,
+		WorkflowStatus: workflowStatus,
+		WorkflowError:  workflowError,
+		Artifacts:      string(artifactsJSON),
+		AppName:        appName,
+		ExecutionLogs:  string(executionLogsJSON),
 	}
 	conversation.FormattedMessage = append(conversation.FormattedMessage, assistantMsg)
 

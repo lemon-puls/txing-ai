@@ -41,6 +41,7 @@ const (
 	CodeLLMNodeNoModel            = "LLM_NODE_NO_MODEL"
 	CodeLLMNodeEmptyPrompt        = "LLM_NODE_EMPTY_PROMPT"
 	CodeToolNodeNoTools           = "TOOL_NODE_NO_TOOLS"
+	CodeToolNodeDisabled          = "TOOL_NODE_DISABLED" // [TOOL-NODE-DISABLED] 工具节点停用提示码
 	CodeConditionNoExpression     = "CONDITION_NODE_NO_EXPRESSION"
 	CodeConditionMissingTrue      = "CONDITION_MISSING_TRUE_BRANCH"
 	CodeConditionMissingFalse     = "CONDITION_MISSING_FALSE_BRANCH"
@@ -209,7 +210,15 @@ func ValidateTopology(topologyJSON string) *ValidationResult {
 		case "llm":
 			validateLLMNode(&node, result)
 		case "tool":
-			validateToolNode(&node, result)
+			// [TOOL-NODE-DISABLED] 工具节点已停用：不再校验工具配置，
+			// 改为提示用户迁移到 LLM 节点 + 工具绑定。
+			// validateToolNode(&node, result)
+			result.Warnings = append(result.Warnings, ValidationError{
+				Level:   LevelWarning,
+				NodeID:  node.Id,
+				Code:    CodeToolNodeDisabled,
+				Message: fmt.Sprintf("工具节点「%s」已停用，运行时将直接透传输入；建议改用 LLM 节点并为其绑定工具", node.Data.Label),
+			})
 		case "condition":
 			validateConditionNode(&node, outEdges[node.Id], result)
 		}
@@ -239,6 +248,8 @@ func validateLLMNode(node *types.TopoNode, result *ValidationResult) {
 	}
 }
 
+/* [TOOL-NODE-DISABLED] 工具节点已停用，校验逻辑暂停使用（存量 tool 节点改为给出
+   CodeToolNodeDisabled 警告）。重新启用时取消本块注释。
 // validateToolNode 校验工具节点配置
 func validateToolNode(node *types.TopoNode, result *ValidationResult) {
 	if node.Data.ToolConfig == nil {
@@ -262,6 +273,7 @@ func validateToolNode(node *types.TopoNode, result *ValidationResult) {
 		result.Valid = false
 	}
 }
+*/
 
 // validateConditionNode 校验条件节点配置
 func validateConditionNode(node *types.TopoNode, nodeOutEdges []types.TopoEdge, result *ValidationResult) {

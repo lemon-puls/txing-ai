@@ -45,7 +45,7 @@
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
           </el-form-item>
           <el-form-item label="最大Token数">
-            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="32000" :step="100" style="width: 100%" />
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="65536" :step="100" style="width: 100%" />
           </el-form-item>
           <el-form-item label="启用上下文记忆">
             <el-switch v-model="localData.modelConfig.contextEnabled" />
@@ -61,7 +61,9 @@
         </el-form>
       </div>
 
-      <!-- 工具节点配置 -->
+      <!-- [TOOL-NODE-DISABLED] 工具节点已停用：配置区不再展示。
+           脚本中的 toolConfig 默认值与 toolParamsStr/parseToolParams 暂保留，
+           用于兼容存量 tool 节点数据加载；重新启用时取消下方注释即可。
       <div class="config-section" v-if="nodeType === 'tool'">
         <div class="section-title">工具配置</div>
         <el-form label-position="top" size="small">
@@ -84,6 +86,8 @@
           </el-form-item>
         </el-form>
       </div>
+      -->
+
 
       <!-- 条件节点配置 -->
       <div class="config-section" v-if="nodeType === 'condition'">
@@ -138,7 +142,9 @@
         </el-form>
       </div>
 
-      <!-- 代码节点配置 -->
+      <!-- [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 代码/HTTP 节点已停用，配置区不再展示。
+           脚本中的 codeConfig/httpConfig 默认值与 httpHeadersStr/parseHttpHeaders 暂保留，
+           用于兼容存量节点数据加载；重新启用时取消下方注释即可。
       <div class="config-section" v-if="nodeType === 'code'">
         <div class="section-title">代码配置</div>
         <el-form label-position="top" size="small">
@@ -164,7 +170,6 @@
         </el-form>
       </div>
 
-      <!-- HTTP 节点配置 -->
       <div class="config-section" v-if="nodeType === 'http'">
         <div class="section-title">HTTP 配置</div>
         <el-form label-position="top" size="small">
@@ -202,6 +207,8 @@
           </el-form-item>
         </el-form>
       </div>
+      -->
+
 
       <!-- Agent 节点配置 -->
       <div class="config-section" v-if="nodeType === 'agent'">
@@ -224,6 +231,10 @@
           <el-form-item label="温度 (Temperature)">
             <el-slider v-model="localData.modelConfig.temperature" :min="0" :max="2" :step="0.1" show-input />
           </el-form-item>
+          <el-form-item label="最大Token数">
+            <el-input-number v-model="localData.modelConfig.maxTokens" :min="100" :max="65536" :step="100" style="width: 100%" />
+            <div class="form-tip">单次生成的输出上限；长文输出（如攻略、报告）建议调大，撞顶时后端会自动续写</div>
+          </el-form-item>
           <el-form-item label="绑定工具">
             <el-checkbox-group v-model="localData.modelConfig.tools">
               <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
@@ -232,25 +243,8 @@
             </el-checkbox-group>
           </el-form-item>
 
-          <div class="divider"></div>
-          <div class="sub-section-title">Agent 行为</div>
-          <el-form-item label="系统提示词 (Agent 兜底)">
-            <el-input
-              v-model="localData.agentConfig.systemPrompt"
-              type="textarea"
-              :rows="4"
-              placeholder="当上方模型配置的系统提示词为空时使用"
-            />
-          </el-form-item>
-          <el-form-item label="选择工具 (Agent 兜底)">
-            <el-checkbox-group v-model="localData.agentConfig.tools">
-              <el-checkbox v-for="tool in toolList" :key="tool.name" :label="tool.name">
-                {{ tool.displayName }}
-              </el-checkbox>
-            </el-checkbox-group>
-          </el-form-item>
           <el-form-item label="最大执行步数">
-            <el-input-number v-model="localData.agentConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
+            <el-input-number v-model="localData.modelConfig.maxRunSteps" :min="1" :max="200" :step="1" style="width: 100%" />
           </el-form-item>
         </el-form>
       </div>
@@ -337,10 +331,11 @@ const localData = ref({
     model: '',
     systemPrompt: '',
     temperature: 0.7,
-    maxTokens: 4096,
+    maxTokens: 8192,
     contextEnabled: true,
     tools: [],
-    maxToolRounds: 5
+    maxToolRounds: 5,
+    maxRunSteps: 30
   },
   toolConfig: {
     toolName: '',
@@ -369,11 +364,6 @@ const localData = ref({
     body: '',
     timeout: 30
   },
-  agentConfig: {
-    systemPrompt: '',
-    tools: [],
-    maxRunSteps: 30
-  },
   parallelConfig: {
     maxConcurrency: 3,
     waitStrategy: 'all',
@@ -393,12 +383,11 @@ watch(() => props.selectedNode, (newNode) => {
     localData.value = {
       label: newNode.data?.label || '',
       description: newNode.data?.description || '',
-      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 4096, contextEnabled: true, tools: [], maxToolRounds: 5 },
+      modelConfig: newNode.data?.modelConfig || { model: '', systemPrompt: '', temperature: 0.7, maxTokens: 8192, contextEnabled: true, tools: [], maxToolRounds: 5, maxRunSteps: 30 },
       toolConfig: newNode.data?.toolConfig || { toolName: '', params: {}, tools: [] },
       conditionConfig: newNode.data?.conditionConfig || { type: 'expression', expression: '', llmPrompt: '', toolName: '', toolResultKey: '', expectedValue: '', failureAction: 'default_false', failureBranch: 'false' },
       codeConfig: newNode.data?.codeConfig || { language: 'javascript', code: '', timeout: 30 },
       httpConfig: newNode.data?.httpConfig || { method: 'GET', url: '', headers: {}, body: '', timeout: 30 },
-      agentConfig: newNode.data?.agentConfig || { systemPrompt: '', tools: [], maxRunSteps: 30 },
       parallelConfig: newNode.data?.parallelConfig || { maxConcurrency: 3, waitStrategy: 'all', timeout: 60 },
       joinConfig: newNode.data?.joinConfig || { strategy: 'all', timeout: 60 }
     }

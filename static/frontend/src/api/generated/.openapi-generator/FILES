@@ -64,6 +64,7 @@ docs/DtoUpdateAboutMeSkillReq.md
 docs/DtoUpdateAboutMeTimelineReq.md
 docs/DtoUpdateAgentFlowReq.md
 docs/DtoUpdateChannelReq.md
+docs/DtoUpdateConversationParamsReq.md
 docs/DtoUpdateModelReq.md
 docs/DtoUpdatePasswordReq.md
 docs/DtoUpdatePresetReq.md
@@ -173,6 +174,7 @@ src/model/DtoUpdateAboutMeSkillReq.js
 src/model/DtoUpdateAboutMeTimelineReq.js
 src/model/DtoUpdateAgentFlowReq.js
 src/model/DtoUpdateChannelReq.js
+src/model/DtoUpdateConversationParamsReq.js
 src/model/DtoUpdateModelReq.js
 src/model/DtoUpdatePasswordReq.js
 src/model/DtoUpdatePresetReq.js
@@ -215,3 +217,4 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
+test/model/DtoUpdateConversationParamsReq.spec.js

@@ -67,6 +67,7 @@ import DtoUpdateAboutMeSkillReq from '../model/DtoUpdateAboutMeSkillReq';
 import DtoUpdateAboutMeTimelineReq from '../model/DtoUpdateAboutMeTimelineReq';
 import DtoUpdateAgentFlowReq from '../model/DtoUpdateAgentFlowReq';
 import DtoUpdateChannelReq from '../model/DtoUpdateChannelReq';
+import DtoUpdateConversationParamsReq from '../model/DtoUpdateConversationParamsReq';
 import DtoUpdateModelReq from '../model/DtoUpdateModelReq';
 import DtoUpdatePasswordReq from '../model/DtoUpdatePasswordReq';
 import DtoUpdatePresetReq from '../model/DtoUpdatePresetReq';
@@ -2385,6 +2386,60 @@ export default class DefaultApi {
      */
     apiChatConversationsIdGet(id) {
       return this.apiChatConversationsIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 更新会话高级参数
+     * 更新指定会话的模型参数（max_tokens、温度、采样参数等），不发送消息也可持久化，刷新页面后不丢失
+     * @param {Number} id 会话ID
+     * @param {module:model/DtoUpdateConversationParamsReq} data 要更新的参数（仅更新非空字段）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiChatConversationsIdParamsPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiChatConversationsIdParamsPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiChatConversationsIdParamsPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/chat/conversations/{id}/params', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 更新会话高级参数
+     * 更新指定会话的模型参数（max_tokens、温度、采样参数等），不发送消息也可持久化，刷新页面后不丢失
+     * @param {Number} id 会话ID
+     * @param {module:model/DtoUpdateConversationParamsReq} data 要更新的参数（仅更新非空字段）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiChatConversationsIdParamsPut(id, data) {
+      return this.apiChatConversationsIdParamsPutWithHttpInfo(id, data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

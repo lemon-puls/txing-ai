@@ -19,8 +19,9 @@ import (
 
 // markdownToPDFParams 转换Markdown到PDF的参数
 type markdownToPDFParams struct {
-	Content  string `json:"content" jsonschema:"description=要转换的Markdown内容"`
-	Filename string `json:"filename" jsonschema:"description=文件名(不含扩展名)"`
+	Content  string `json:"content" jsonschema:"description=要转换的Markdown内容（传了 filePath 时忽略）"`
+	Filename string `json:"filename" jsonschema:"description=输出PDF文件名(不含扩展名)，自动追加时间戳"`
+	FilePath string `json:"filePath,omitempty" jsonschema:"description=已保存的Markdown文件路径（可选）。内容很长时建议先用 markdown_save_tool 保存为文件，再传 filePath 转换，避免把大段正文塞进工具调用参数导致 JSON 被截断"`
 }
 
 // saveMarkdownToPDF 将Markdown内容转换为PDF并保存到本地文件
@@ -31,8 +32,28 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 		return fmt.Sprintf("构建保存目录失败: %v", err), nil
 	}
 
-	// 处理Markdown中的图片
-	content, imagePaths, err := processMarkdownImages(params.Content, savePath)
+	// 内容来源：优先从已保存的 Markdown 文件读取（filePath），否则使用 content 参数。
+	// 大段正文经工具调用参数传递时，模型生成的 JSON 容易被截断导致参数非法，
+	// 走文件路径可彻底避免该问题
+	content := params.Content
+	if params.FilePath != "" {
+		absPath, resolveErr := resolveSavedFile(ctx, params.FilePath)
+		if resolveErr != nil {
+			return fmt.Sprintf("解析Markdown文件路径失败: %v", resolveErr), nil
+		}
+		data, readErr := os.ReadFile(absPath)
+		if readErr != nil {
+			log.Error("读取Markdown文件失败", zap.String("path", absPath), zap.Error(readErr))
+			return fmt.Sprintf("读取Markdown文件失败: %v（请确认文件已用 markdown_save_tool 保存）", readErr), nil
+		}
+		content = string(data)
+	}
+	if strings.TrimSpace(content) == "" {
+		return "转换内容为空，请提供 content 或有效的 filePath", nil
+	}
+
+	// 处理Markdown中的图片（基于实际转换内容，而非可能为空的 content 参数）
+	content, imagePaths, err := processMarkdownImages(content, savePath)
 	if err != nil {
 		log.Error("处理Markdown图片失败", zap.Error(err))
 		return fmt.Sprintf("处理Markdown图片失败: %v", err), nil
@@ -40,7 +61,13 @@ func saveMarkdownToPDF(ctx context.Context, params *markdownToPDFParams) (string
 	defer cleanupTempImages(imagePaths)
 
 	// 确保文件名有.pdf扩展名
-	filename := params.Filename
+	filename := strings.TrimSpace(params.Filename)
+	if filename == "" {
+		return "转换失败：输出文件名为空，请提供 filename（不含扩展名）", nil
+	}
+	if strings.ContainsAny(filename, `/\`) || strings.Contains(filename, "..") {
+		return fmt.Sprintf("转换失败：文件名不合法: %q，请只提供文件名（不含扩展名），不要包含路径", params.Filename), nil
+	}
 	// 文件名加上时间戳
 	unixNano := time.Now().UnixNano()
 	filename = fmt.Sprintf("%s_%d", filename, unixNano)

@@ -425,6 +425,8 @@ const validationDialogVisible = ref(false)
 const validationForSave = ref(false) // 是否是保存前触发的校验
 
 // 注册自定义节点类型
+// [TOOL-NODE-DISABLED] tool 节点已停用添加与执行，但保留渲染注册以兼容存量工作流画布
+// [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] code/http 节点已停用，同样保留渲染注册
 const nodeTypes = {
   start: markRaw(StartNode),
   end: markRaw(EndNode),
@@ -542,19 +544,20 @@ const onDrop = (event) => {
           model: '',
           systemPrompt: '',
           temperature: 0.7,
-          maxTokens: 4096,
+          maxTokens: 8192,
           contextEnabled: true,
           tools: [],
           maxToolRounds: 5
         }
       } : {}),
-      ...(type === 'tool' ? {
-        toolConfig: {
-          toolName: '',
-          params: {},
-          tools: []
-        }
-      } : {}),
+      // [TOOL-NODE-DISABLED] 工具节点已停用，不再在添加节点时创建 toolConfig
+      // ...(type === 'tool' ? {
+      //   toolConfig: {
+      //     toolName: '',
+      //     params: {},
+      //     tools: []
+      //   }
+      // } : {}),
       ...(type === 'condition' ? {
         conditionConfig: {
           type: 'expression',
@@ -567,36 +570,33 @@ const onDrop = (event) => {
           failureBranch: 'false'
         }
       } : {}),
-      ...(type === 'code' ? {
-        codeConfig: {
-          language: 'javascript',
-          code: '// 在此编写代码\n// 输入变量: input\n// 输出: return 结果\nreturn input;',
-          timeout: 30
-        }
-      } : {}),
-      ...(type === 'http' ? {
-        httpConfig: {
-          method: 'GET',
-          url: '',
-          headers: {},
-          body: '',
-          timeout: 30
-        }
-      } : {}),
+      // [CODE-NODE-DISABLED] / [HTTP-NODE-DISABLED] 节点已停用，不再在添加节点时创建默认配置
+      // ...(type === 'code' ? {
+      //   codeConfig: {
+      //     language: 'javascript',
+      //     code: '// 在此编写代码\n// 输入变量: input\n// 输出: return 结果\nreturn input;',
+      //     timeout: 30
+      //   }
+      // } : {}),
+      // ...(type === 'http' ? {
+      //   httpConfig: {
+      //     method: 'GET',
+      //     url: '',
+      //     headers: {},
+      //     body: '',
+      //     timeout: 30
+      //   }
+      // } : {}),
       ...(type === 'agent' ? {
-        agentConfig: {
-          systemPrompt: '',
-          tools: [],
-          maxRunSteps: 30
-        },
         modelConfig: {
           model: '',
           systemPrompt: '',
           temperature: 0.7,
-          maxTokens: 4096,
+          maxTokens: 8192,
           contextEnabled: true,
           tools: [],
-          maxToolRounds: 5
+          maxToolRounds: 5,
+          maxRunSteps: 30
         }
       } : {}),
       ...(type === 'parallel' ? {
@@ -1282,13 +1282,9 @@ $text-muted: #94a3b8;
 .workflow-editor-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 100px);
-  background: linear-gradient(180deg, $bg-light 0%, $bg-card 100%);
-  border-radius: 16px;
+  height: 100vh;
+  background: $bg-light;
   overflow: hidden;
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.06),
-    0 1px 3px rgba(0, 0, 0, 0.04);
 
   .header {
     display: flex;

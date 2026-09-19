@@ -47,7 +47,10 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		// 注册Markdown保存工具
 		markdownSaveTool, err := utils.InferTool(
 			"markdown_save_tool",
-			"Save markdown content to a local file",
+			"Save markdown content to a local file. filename must not be empty (no extension needed). "+
+				"If the content is very long and the tool call JSON gets truncated, split it into parts: "+
+				"call once with is_append=false, then call again with is_append=true to append the remaining parts to the same file. "+
+				"The returned path (like ./xxx.md) can be passed as filePath to markdown_to_pdf_file_tool",
 			saveMarkdown)
 		if err != nil {
 			panic(err)
@@ -139,7 +142,9 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		markdownToPDFTool, err := utils.InferTool(
 			"markdown_to_pdf_file_tool",
 			"Convert markdown content to PDF, and save it to local file. Note: use \\n\\n for line breaks; single \\n will not render as a line break in the PDF."+
-				"fileName will be automatically appended with timestamp",
+				"fileName will be automatically appended with timestamp. "+
+				"If the markdown content is very long, first save it to a file with markdown_save_tool, "+
+				"then call this tool with the filePath parameter instead of passing the whole content as content parameter",
 			saveMarkdownToPDF)
 		if err != nil {
 			panic(err)
@@ -149,7 +154,8 @@ func ProvideTools(res iface.ResourceProvider) []tool.BaseTool {
 		//注册PDF文本提取工具
 		pdfReadTool, err := utils.InferTool(
 			"pdf_read_tool",
-			"Extract text content from a PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/folder/file.pdf)",
+			"Extract text content from a PDF file (only files in runtime directory are allowed, e.g. runtime/test.pdf, runtime/temp_files/xxx.pdf; "+
+				"relative paths like ./xxx.pdf or runtime/temp_files/2026-08-20/xxx.pdf are supported)",
 			ReadPdfText)
 		if err != nil {
 			panic(err)

@@ -124,6 +124,34 @@ async function createConnection(chatId, userId, token, presetId, wsUrl) {
       try {
         const data = JSON.parse(event.data);
 
+        // 续流应答：仅当流仍进行中时，以服务端快照为累积基准，
+        // 后续增量在此基础上累加；已结束的流不设置基准，避免污染下一条消息
+        if (data.type === 'resume') {
+          const conn = connections.get(chatId.toString());
+          if (conn) {
+            if (data.active) {
+              conn.partialMessage = {
+                content: data.content || '',
+                reasoningContent: data.reasoning_content || ''
+              };
+            }
+            self.postMessage({
+              type: 'message',
+              chatId: chatId,
+              data: {
+                type: 'resume',
+                data: {
+                  active: !!data.active,
+                  content: data.content || '',
+                  reasoningContent: data.reasoning_content || '',
+                  conversationId: data.conversationId
+                }
+              }
+            });
+          }
+          return;
+        }
+
         // 处理流式响应
         if (data.conversationId) {
           const conn = connections.get(chatId.toString());

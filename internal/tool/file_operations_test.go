@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +50,7 @@ func Test_isPathAllowed(t *testing.T) {
 		t.Fatalf("获取当前工作目录失败: %v", err)
 	}
 
+	ctx := context.Background()
 	tests := []struct {
 		name string
 		path string
@@ -60,14 +62,19 @@ func Test_isPathAllowed(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "允许访问data目录",
-			path: filepath.Join(currentDir, "data", "test.txt"),
+			name: "允许访问runtime/temp_files目录",
+			path: filepath.Join(currentDir, "runtime", "temp_files", "2026-08-20", "test.pdf"),
 			want: true,
 		},
 		{
-			name: "允许访问temp目录",
+			name: "不允许访问data目录",
+			path: filepath.Join(currentDir, "data", "test.txt"),
+			want: false,
+		},
+		{
+			name: "不允许访问temp目录",
 			path: filepath.Join(currentDir, "temp", "test.txt"),
-			want: true,
+			want: false,
 		},
 		{
 			name: "不允许访问根目录",
@@ -88,7 +95,7 @@ func Test_isPathAllowed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isPathAllowed(tt.path); got != tt.want {
+			if got := isPathAllowed(ctx, tt.path); got != tt.want {
 				t.Errorf("isPathAllowed() = %v, want %v", got, tt.want)
 			}
 		})
@@ -392,26 +399,36 @@ func Test_deleteFile(t *testing.T) {
 }
 
 func Test_listFiles(t *testing.T) {
+	// 自建临时目录与文件，避免依赖其他测试的执行顺序
+	listDir := filepath.Join("runtime", "list_test")
+	if err := os.MkdirAll(listDir, 0755); err != nil {
+		t.Fatalf("创建测试目录失败: %v", err)
+	}
+	defer os.RemoveAll(listDir)
+	if err := os.WriteFile(filepath.Join(listDir, "a.txt"), []byte("a"), 0644); err != nil {
+		t.Fatalf("创建测试文件失败: %v", err)
+	}
+
 	type args struct {
 		ctx    context.Context
 		params *fileListParams
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
+		name        string
+		args        args
+		wantContain string
+		wantErr     bool
 	}{
 		{
 			name: "列出目录中的文件",
 			args: args{
 				ctx: context.Background(),
 				params: &fileListParams{
-					DirPath: "runtime",
+					DirPath: listDir,
 				},
 			},
-			want:    "runtime/test.txt",
-			wantErr: false,
+			wantContain: "a.txt",
+			wantErr:     false,
 		},
 	}
 	for _, tt := range tests {
@@ -421,8 +438,8 @@ func Test_listFiles(t *testing.T) {
 				t.Errorf("listFiles() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("listFiles() got = %v, want %v", got, tt.want)
+			if tt.wantContain != "" && !strings.Contains(got, tt.wantContain) {
+				t.Errorf("listFiles() = %v, want contain %v", got, tt.wantContain)
 			}
 		})
 	}

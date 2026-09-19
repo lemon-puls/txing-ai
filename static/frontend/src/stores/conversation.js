@@ -105,7 +105,20 @@ export const useConversationStore = defineStore('conversation', {
 
       // 如果当前会话被删除，切换到第一个会话
       if (this.currentConversation && ids.includes(this.currentConversation.id)) {
-        this.currentConversation = this.conversations.length > 0 ? this.conversations[0] : null
+        if (this.conversations.length > 0) {
+          const next = this.conversations[0]
+          this.currentConversation = next
+          // 登录用户的列表项（ConversationSimpleVO）不含消息，
+          // 需加载会话详情，否则切换后聊天记录为空
+          try {
+            await this.loadConversationDetail(next.id)
+          } catch (error) {
+            // 详情加载失败不阻断删除流程，仅记录日志
+            console.error('Failed to load next conversation detail:', error)
+          }
+        } else {
+          this.currentConversation = null
+        }
       }
 
       ElMessage.success('删除成功')
@@ -209,13 +222,23 @@ export const useConversationStore = defineStore('conversation', {
           if (response.code === 0 && response.data) {
             this.currentConversation = response.data
 
-            // 使用对象的属性访问，不需要检查类型
+            // 确保 messages 数组已初始化
+            if (!this.currentConversation.messages) {
+              this.currentConversation.messages = []
+            }
+
+            // 恢复进行中的流式消息：切换会话期间后端详情不含未完成的流式消息，
+            // 切回时把仍在执行的消息对象挂回消息列表，流式更新会继续落到该对象。
+            // streamingMessageMap 对所有用户都维护（lastMessageMap 仅登录用户），
+            // 二者可能指向同一对象，按 id 去重
+            const existingIds = new Set(this.currentConversation.messages.map(m => m.id))
+            const streaming = this.streamingMessageMap[id]
+            if (streaming && !existingIds.has(streaming.id)) {
+              this.currentConversation.messages.push(streaming)
+              existingIds.add(streaming.id)
+            }
             const lastMessage = this.lastMessageMap[id]
-            if (lastMessage) {
-              // 确保 messages 数组已初始化
-              if (!this.currentConversation.messages) {
-                this.currentConversation.messages = []
-              }
+            if (lastMessage && !existingIds.has(lastMessage.id)) {
               this.currentConversation.messages.push(lastMessage)
             }
 
@@ -245,7 +268,7 @@ export const useConversationStore = defineStore('conversation', {
         updateTime: new Date(),
         enableWeb: false,
         context: 10,
-        maxTokens: 2048,
+        maxTokens: 8192,
         temperature: 1.0,
         topP: 0.7,
         topK: 50,

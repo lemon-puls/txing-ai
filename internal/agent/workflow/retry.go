@@ -1,6 +1,8 @@
 package workflow
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -58,12 +60,28 @@ func executeWithRetry(retryConfig *types.RetryConfig, fn func() error) error {
 			return nil
 		}
 
+		// 上下文已取消/超时（用户停止生成、执行超时）：重试无意义，
+		// 立即返回，让取消信号尽快传播到上层，避免停止后仍在空转等待重试
+		if errors.Is(lastErr, context.Canceled) || errors.Is(lastErr, context.DeadlineExceeded) {
+			return lastErr
+		}
+
 		log.Warn("执行失败",
 			zap.Int("attempt", attempt+1),
 			zap.Error(lastErr))
 	}
 
 	return fmt.Errorf("执行失败（已重试 %d 次）: %w", maxRetries, lastErr)
+}
+
+// nodeStatusForError 节点执行出错时的展示状态：
+// 用户停止生成（上下文取消）导致的中断标记为 interrupted（"已中断"），
+// 而不是 failed（红色"失败"），避免主动中断被误展示为执行失败
+func nodeStatusForError(err error) string {
+	if errors.Is(err, context.Canceled) {
+		return "interrupted"
+	}
+	return "failed"
 }
 
 // nodeStatusCallback 创建节点状态回调，包装原始 callback 发送 running/completed/failed 状态

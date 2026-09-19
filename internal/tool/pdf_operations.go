@@ -18,28 +18,29 @@ type PdfReadParams struct {
 
 // 读取PDF文件内容
 func ReadPdfText(ctx context.Context, params *PdfReadParams) (string, error) {
-	// 检查路径是否允许
-	if !isPathAllowed(params.FilePath) {
-		log.Error("不允许访问该路径", zap.String("path", params.FilePath))
-		return "没有权限访问该路径", nil
+	// 先解析为绝对路径（兼容 ./xxx.pdf 相对保存目录 / runtime/xxx.pdf 相对工作目录）
+	absPath, resolveErr := resolveSavedFile(ctx, params.FilePath)
+	if resolveErr != nil {
+		log.Error("解析PDF路径失败", zap.String("path", params.FilePath), zap.Error(resolveErr))
+		return fmt.Sprintf("无法解析PDF路径: %s（%v）。仅允许访问 runtime 目录下的文件", params.FilePath, resolveErr), nil
 	}
 
 	// 检查文件是否存在
-	if _, err := os.Stat(params.FilePath); os.IsNotExist(err) {
-		log.Error("文件不存在", zap.String("path", params.FilePath))
-		return fmt.Sprintf("文件不存在: %s", params.FilePath), nil
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		log.Error("文件不存在", zap.String("path", absPath))
+		return fmt.Sprintf("文件不存在: %s。若 PDF 尚未生成，请先调用 markdown_to_pdf_file_tool 将 Markdown 转换为 PDF，再读取其返回的路径", params.FilePath), nil
 	}
 
 	// 检查文件扩展名
-	if !strings.HasSuffix(strings.ToLower(params.FilePath), ".pdf") {
-		log.Error("文件不是PDF格式", zap.String("path", params.FilePath))
+	if !strings.HasSuffix(strings.ToLower(absPath), ".pdf") {
+		log.Error("文件不是PDF格式", zap.String("path", absPath))
 		return fmt.Sprintf("文件不是PDF格式: %s", params.FilePath), nil
 	}
 
 	// 打开PDF文件
-	f, r, err := pdf.Open(params.FilePath)
+	f, r, err := pdf.Open(absPath)
 	if err != nil {
-		log.Error("打开PDF文件失败", zap.String("path", params.FilePath), zap.Error(err))
+		log.Error("打开PDF文件失败", zap.String("path", absPath), zap.Error(err))
 		return fmt.Sprintf("打开PDF文件失败: %v", err), nil
 	}
 	defer f.Close()
@@ -78,25 +79,25 @@ type pdfValidateParams struct {
 
 // 验证PDF文件
 func validatePdf(ctx context.Context, params *pdfValidateParams) (string, error) {
-	// 检查路径是否允许
-	if !isPathAllowed(params.FilePath) {
-		return "", fmt.Errorf("不允许访问该路径: %s", params.FilePath)
+	absPath, resolveErr := resolveSavedFile(ctx, params.FilePath)
+	if resolveErr != nil {
+		return "", fmt.Errorf("无法解析PDF路径: %s（%v）", params.FilePath, resolveErr)
 	}
 
 	// 检查文件是否存在
-	if _, err := os.Stat(params.FilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("文件不存在: %s", params.FilePath)
 	}
 
 	// 检查文件扩展名
-	if !strings.HasSuffix(strings.ToLower(params.FilePath), ".pdf") {
+	if !strings.HasSuffix(strings.ToLower(absPath), ".pdf") {
 		return "", fmt.Errorf("文件不是PDF格式: %s", params.FilePath)
 	}
 
 	// 尝试打开PDF文件
-	f, r, err := pdf.Open(params.FilePath)
+	f, r, err := pdf.Open(absPath)
 	if err != nil {
-		log.Error("PDF文件验证失败", zap.String("path", params.FilePath), zap.Error(err))
+		log.Error("PDF文件验证失败", zap.String("path", absPath), zap.Error(err))
 		return "", fmt.Errorf("无效的PDF文件: %v", err)
 	}
 	defer f.Close()

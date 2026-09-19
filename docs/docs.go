@@ -2073,6 +2073,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/chat/conversations/{id}/params": {
+            "put": {
+                "description": "更新指定会话的模型参数（max_tokens、温度、采样参数等），不发送消息也可持久化，刷新页面后不丢失",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "聊天"
+                ],
+                "summary": "更新会话高级参数",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "要更新的参数（仅更新非空字段）",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateConversationParamsReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/chat/ws": {
             "get": {
                 "description": "建立用于实时聊天的 WebSocket 连接，支持发送聊天消息和停止生成。连接建立后，客户端可以发送聊天消息和停止指令，服务器会以流式响应的方式返回 AI 回复",
@@ -2136,7 +2195,7 @@ const docTemplate = `{
                     "context": 1,
                     "enableWeb": false,
                     "frequency_penalty": 0,
-                    "max_tokens": 2048,
+                    "max_tokens": 8192,
                     "model": "模型标识",
                     "presence_penalty": 0,
                     "repetition_penalty": 1,
@@ -2150,6 +2209,16 @@ const docTemplate = `{
                     "conversationId": 123,
                     "end": false,
                     "reasoning_content": "思考过程"
+                },
+                "x-message-resume": {
+                    "type": "resume"
+                },
+                "x-message-resume-response": {
+                    "active": true,
+                    "content": "已生成内容快照",
+                    "conversationId": 123,
+                    "reasoning_content": "已生成思考过程",
+                    "type": "resume"
                 },
                 "x-message-stop": {
                     "type": "stop"
@@ -4864,6 +4933,35 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UpdateConversationParamsReq": {
+            "type": "object",
+            "properties": {
+                "enableWeb": {
+                    "type": "boolean"
+                },
+                "frequency_penalty": {
+                    "type": "number"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "presence_penalty": {
+                    "type": "number"
+                },
+                "repetition_penalty": {
+                    "type": "number"
+                },
+                "temperature": {
+                    "type": "number"
+                },
+                "top_k": {
+                    "type": "integer"
+                },
+                "top_p": {
+                    "type": "number"
+                }
+            }
+        },
         "dto.UpdateModelReq": {
             "type": "object",
             "properties": {
@@ -5797,6 +5895,10 @@ const docTemplate = `{
                     "description": "消息角色",
                     "type": "string",
                     "example": "assistant"
+                },
+                "workflowError": {
+                    "description": "执行失败详情（原始错误，前端\"查看详情\"用）",
+                    "type": "string"
                 },
                 "workflowStatus": {
                     "description": "工作流相关字段",

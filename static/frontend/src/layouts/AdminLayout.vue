@@ -1,7 +1,7 @@
 <template>
   <el-container class="layout-container">
-    <!-- 侧边栏 -->
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="aside">
+    <!-- 侧边栏（沉浸式页面隐藏） -->
+    <el-aside v-if="!isImmersive" :width="isCollapse ? '64px' : '220px'" class="aside">
       <!-- Logo -->
       <div class="logo" :class="{ 'is-collapse': isCollapse }">
         <div class="logo-content">
@@ -85,8 +85,8 @@
 
     <!-- 主体区域 -->
     <el-container class="main-container">
-      <!-- 顶部导航 -->
-      <el-header height="60px" class="header">
+      <!-- 顶部导航（沉浸式页面隐藏） -->
+      <el-header v-if="!isImmersive" height="60px" class="header">
         <div class="header-left">
           <el-icon
             class="toggle-sidebar"
@@ -158,7 +158,7 @@
       </el-header>
 
       <!-- 内容区域 -->
-      <el-main class="main">
+      <el-main class="main" :class="{ 'main--immersive': isImmersive }">
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
             <component :is="Component" />
@@ -197,6 +197,8 @@ import {
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()
 const router = useRouter()
+// 沉浸式页面（meta.fullscreen=true）：隐藏侧边栏/顶栏，内容区铺满
+const isImmersive = computed(() => route.meta.fullscreen === true)
 const themeStore = useThemeStore()
 const isCollapse = ref(false)
 const searchKeyword = ref('')
@@ -520,6 +522,13 @@ const goToHome = () => {
   &::-webkit-scrollbar-thumb {
     background: var(--el-scrollbar-bg-color);
     border-radius: 3px;
+  }
+
+  // 沉浸式页面：无 padding、铺满视口
+  &.main--immersive {
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
   }
 }
 
