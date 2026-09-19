@@ -1,9 +1,8 @@
 <template>
   <div class="about-container">
-    <!-- Particle Background -->
-    <div class="particle-bg" ref="particleBg">
-      <div v-for="i in 50" :key="i" class="particle" :style="getParticleStyle(i)"></div>
-    </div>
+    <!-- 3D 星云星空背景（Three.js 粒子云） -->
+    <!-- 3D nebula starfield background (Three.js particle cloud) -->
+    <div ref="starfieldRef" class="starfield-bg"></div>
 
     <!-- Hero Section -->
     <section class="hero-section">
@@ -286,6 +285,7 @@ import {
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
+import { BufferAttribute, BufferGeometry, PerspectiveCamera, Points, PointsMaterial, Scene, WebGLRenderer } from 'three'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -347,6 +347,8 @@ const startTyping = () => {
 }
 
 onMounted(async () => {
+  // 初始化 3D 星空背景
+  initStarfield()
   // 先加载后台配置
   await loadAboutSnapshot()
   // 同步 typing 字符串
@@ -363,6 +365,7 @@ onUnmounted(() => {
   if (typingInterval.value) clearInterval(typingInterval.value)
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
   if (observer.value) observer.value.disconnect()
+  disposeStarfield()
 })
 
 const observer = ref(null)
@@ -519,17 +522,96 @@ const openMediaPreview = (media) => {
   mediaPreviewVisible.value = true
 }
 
-// Particle styles
-const getParticleStyle = (index) => {
-  const size = Math.random() * 6 + 2
-  return {
-    width: `${size}px`,
-    height: `${size}px`,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    animationDelay: `${Math.random() * 10}s`,
-    animationDuration: `${Math.random() * 20 + 10}s`
+// ===== 3D 星云星空背景（Three.js） =====
+// ===== 3D nebula starfield background (Three.js) =====
+const STAR_COUNT = 6000 // 粒子数量 / particle count
+const STAR_SIZE = 1.4 // 粒子尺寸 / particle size
+const CUBE_SIZE = 1000 // 立方体空间边长 / cube space edge length
+
+const starfieldRef = ref(null)
+let starAnimationId = null
+let starRenderer = null
+let starScene = null
+let starCamera = null
+let starPoints = null
+
+// 初始化星空：在立方体空间内随机分布半透明蓝色粒子，相机置于 z=220
+// Init starfield: scatter translucent blue particles in a cube space, camera at z=220
+const initStarfield = () => {
+  const container = starfieldRef.value
+  if (!container || starRenderer) return
+
+  starScene = new Scene()
+  starCamera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
+  starCamera.position.z = 220
+
+  const geometry = new BufferGeometry()
+  const positions = new Float32Array(STAR_COUNT * 3)
+  for (let i = 0; i < positions.length; i++) {
+    positions[i] = (Math.random() - 0.5) * CUBE_SIZE
   }
+  geometry.setAttribute('position', new BufferAttribute(positions, 3))
+
+  const material = new PointsMaterial({
+    color: 0x4e8cff,
+    size: STAR_SIZE,
+    transparent: true,
+    opacity: 0.7,
+    sizeAttenuation: true,
+    depthWrite: false
+  })
+
+  starPoints = new Points(geometry, material)
+  starScene.add(starPoints)
+
+  starRenderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+  starRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  starRenderer.setSize(window.innerWidth, window.innerHeight)
+  // 透明清屏色，露出容器的 CSS 渐变深空底色
+  // Transparent clear color to reveal the container's CSS deep-space gradient
+  starRenderer.setClearColor(0x000000, 0)
+  container.appendChild(starRenderer.domElement)
+  window.addEventListener('resize', handleStarfieldResize)
+
+  animateStarfield()
+}
+
+// 每帧绕 Y 轴与 X 轴极缓慢旋转整团粒子云，形成沉浸式星空
+// Rotate the whole particle cloud very slowly around Y/X axes every frame
+const animateStarfield = () => {
+  starAnimationId = requestAnimationFrame(animateStarfield)
+  starPoints.rotation.y += 0.0012
+  starPoints.rotation.x += 0.0004
+  starRenderer.render(starScene, starCamera)
+}
+
+// 窗口 resize 自适应，画布保持全屏
+// Adapt to window resize, keep the canvas fullscreen
+const handleStarfieldResize = () => {
+  if (!starRenderer || !starCamera) return
+  starCamera.aspect = window.innerWidth / window.innerHeight
+  starCamera.updateProjectionMatrix()
+  starRenderer.setSize(window.innerWidth, window.innerHeight)
+}
+
+// 离开页面时释放 WebGL 资源，避免上下文泄漏
+// Dispose WebGL resources on leave to avoid context leaks
+const disposeStarfield = () => {
+  cancelAnimationFrame(starAnimationId)
+  window.removeEventListener('resize', handleStarfieldResize)
+  if (starPoints) {
+    starPoints.geometry.dispose()
+    starPoints.material.dispose()
+    starPoints = null
+  }
+  if (starRenderer) {
+    starRenderer.dispose()
+    starRenderer.forceContextLoss?.()
+    starRenderer.domElement.remove()
+    starRenderer = null
+  }
+  starScene = null
+  starCamera = null
 }
 
 const getContactParticleStyle = (index) => {
@@ -556,30 +638,31 @@ const scrollToContact = () => {
 .about-container {
   position: relative;
   width: 100%;
-  background-color: var(--el-bg-color-page, #f8fafc);
   color: var(--el-text-color-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
 }
 
-// Particle Background
-.particle-bg {
+// 3D 星空背景容器：CSS 渐变作深空底色，WebGL 画布透明叠加
+// Starfield container: CSS gradient as the deep-space base, WebGL canvas overlaid transparently
+.starfield-bg {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
   overflow: hidden;
-}
+  pointer-events: none;
+  background: linear-gradient(180deg, #eaf1ff 0%, #f6f9ff 45%, #edf2fc 100%);
 
-.particle {
-  position: absolute;
-  background: var(--el-color-primary-light-5);
-  border-radius: 50%;
-  opacity: 0.3;
-  animation: float-particle linear infinite;
+  html.dark & {
+    background: linear-gradient(180deg, #04070f 0%, #0a1024 45%, #101a38 100%);
+  }
+
+  canvas {
+    display: block;
+  }
 }
 
 @keyframes float-particle {
@@ -1101,7 +1184,7 @@ const scrollToContact = () => {
 
 /* Skills Section */
 .skills-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .skills-grid {
@@ -1213,7 +1296,7 @@ const scrollToContact = () => {
 
 /* Projects Section */
 .projects-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .projects-grid {
@@ -1627,7 +1710,7 @@ const scrollToContact = () => {
 
 /* Timeline Section */
 .timeline-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .timeline {
