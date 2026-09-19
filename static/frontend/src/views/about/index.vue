@@ -22,8 +22,20 @@
           </div>
         </div>
         <h1 class="hero-title">
-          你好，我是 <span class="highlight typing-text">{{ displayedName }}</span>
-          <span class="cursor">|</span>
+          你好，我是
+          <!-- FlickerText 名字特效：入场霓虹灯管点亮，悬停再闪三下 -->
+          <!-- FlickerText name effect: neon-tube warm-up on enter, three blinks on hover -->
+          <FlickerText
+            :text="heroData.name"
+            tag="span"
+            class="flicker-name"
+            color-mode="gradient"
+            gradient-start="var(--el-color-primary)"
+            gradient-end="#a855f7"
+            :gradient-angle="45"
+            :flicker="nameEnterFlicker"
+            :flicker-hover="nameHoverFlicker"
+          />
         </h1>
         <p class="hero-subtitle animate-on-scroll delay-1">
           {{ displayedSubtitle }}
@@ -290,6 +302,7 @@ import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
 import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamera, Points, PointsMaterial, SRGBColorSpace, Scene, WebGLRenderer } from 'three'
 import CloudSky from '@/components/CloudSky.vue'
+import FlickerText from '@/components/FlickerText.vue'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -305,49 +318,65 @@ const heroData = ref({
   subtitle: '全栈开发工程师 / AI 架构爱好者 / 产品极客'
 })
 
-// Typing effect（基于 heroData）
-// 用 watch 把 heroData 同步到本地字符串，便于在 setInterval 中通过下标访问
-let fullText = ''
+// Typing effect（仅副标题；主标题名字改由 FlickerText 呈现）
+// Typing effect (subtitle only; the hero name is now rendered by FlickerText)
 let fullSubtitle = ''
-const displayedName = ref('')
-const nameIndex = ref(0)
 const displayedSubtitle = ref('')
 const subtitleIndex = ref(0)
 
-const typingInterval = ref(null)
 const subtitleInterval = ref(null)
+let subtitleDelayTimer = null
 
 const startTyping = () => {
-  if (!fullText) return
+  if (!fullSubtitle) return
   // 重置
-  displayedName.value = ''
   displayedSubtitle.value = ''
-  nameIndex.value = 0
   subtitleIndex.value = 0
 
-  if (typingInterval.value) clearInterval(typingInterval.value)
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
+  if (subtitleDelayTimer) clearTimeout(subtitleDelayTimer)
 
-  // Start typing name
-  typingInterval.value = setInterval(() => {
-    if (nameIndex.value < fullText.length) {
-      displayedName.value += fullText[nameIndex.value]
-      nameIndex.value++
-    } else {
-      clearInterval(typingInterval.value)
-      // Start typing subtitle after name is done
-      setTimeout(() => {
-        subtitleInterval.value = setInterval(() => {
-          if (subtitleIndex.value < fullSubtitle.length) {
-            displayedSubtitle.value += fullSubtitle[subtitleIndex.value]
-            subtitleIndex.value++
-          } else {
-            clearInterval(subtitleInterval.value)
-          }
-        }, 50)
-      }, 300)
-    }
-  }, 150)
+  // 保留原节奏：延迟 300ms 后开始打副标题
+  // Keep the original rhythm: subtitle typing starts after a 300ms delay
+  subtitleDelayTimer = setTimeout(() => {
+    subtitleInterval.value = setInterval(() => {
+      if (subtitleIndex.value < fullSubtitle.length) {
+        displayedSubtitle.value += fullSubtitle[subtitleIndex.value]
+        subtitleIndex.value++
+      } else {
+        clearInterval(subtitleInterval.value)
+      }
+    }, 50)
+  }, 300)
+}
+
+// FlickerText 名字闪烁配置
+// FlickerText name flicker configs
+// 入场：霓虹灯管点亮式——描边与实填交替亮起。注意：逐字母透明度闪烁对
+// background-clip:text 渐变文字不可见（背景画在父层），故只用整词相位闪烁
+// Enter: neon-tube warm-up alternating outline/filled. Letter-opacity flicker is
+// invisible on background-clip:text gradients (background paints on the parent),
+// so only whole-word phase flicker is used here
+const nameEnterFlicker = {
+  replay: 'yes',
+  ease: { duration: 2.2, ease: 'easeInOut' },
+  flickerCount: 9,
+  showStroke: true,
+  strokePosition: 'start',
+  strokeCount: 2,
+  strokeColor: 'var(--el-color-primary)',
+  strokeWidth: 1.5,
+  wordFlickerEnabled: true,
+  letterFlickerEnabled: false
+}
+// 悬停：整词快速闪 3 下
+// Hover: three quick whole-word blinks
+const nameHoverFlicker = {
+  ease: { duration: 1.5, ease: 'easeInOut' },
+  flickerCount: 3,
+  showStroke: false,
+  wordFlickerEnabled: true,
+  letterFlickerEnabled: false
 }
 
 onMounted(async () => {
@@ -357,8 +386,7 @@ onMounted(async () => {
   initField()
   // 先加载后台配置
   await loadAboutSnapshot()
-  // 同步 typing 字符串
-  fullText = heroData.value.name || ''
+  // 同步 typing 字符串（名字由 FlickerText 直接响应 heroData，无需同步）
   fullSubtitle = heroData.value.subtitle || ''
   // 启动打字机
   startTyping()
@@ -368,7 +396,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (typingInterval.value) clearInterval(typingInterval.value)
+  if (subtitleDelayTimer) clearTimeout(subtitleDelayTimer)
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
   if (observer.value) observer.value.disconnect()
   disposeStarfield()
@@ -1027,19 +1055,11 @@ const scrollToContact = () => {
     color: var(--el-text-color-primary, #0f172a);
     letter-spacing: -1px;
 
-    .highlight {
-      background: linear-gradient(45deg, var(--el-color-primary), #6366f1, #a855f7);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    // FlickerText 名字特效：在组件内联渐变之上补回原 .highlight 的流动渐变
+    // FlickerText name effect: layers the original flowing gradient over the component's inline gradient
+    .flicker-name {
+      background-size: 200% 200% !important;
       animation: gradient-shift 3s ease infinite;
-    }
-
-    .cursor {
-      display: inline-block;
-      -webkit-text-fill-color: var(--el-color-primary);
-      animation: blink 1s step-end infinite;
     }
   }
 
@@ -2143,11 +2163,6 @@ const scrollToContact = () => {
 @keyframes rotate-gradient {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
 }
 
 @keyframes gradient-shift {
