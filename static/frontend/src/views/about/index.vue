@@ -285,7 +285,7 @@ import {
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
-import { BufferAttribute, BufferGeometry, PerspectiveCamera, Points, PointsMaterial, Scene, WebGLRenderer } from 'three'
+import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamera, Points, PointsMaterial, SRGBColorSpace, Scene, WebGLRenderer } from 'three'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -349,6 +349,8 @@ const startTyping = () => {
 onMounted(async () => {
   // 初始化 3D 星空背景
   initStarfield()
+  // 初始化元素按压动效
+  initField()
   // 先加载后台配置
   await loadAboutSnapshot()
   // 同步 typing 字符串
@@ -366,6 +368,7 @@ onUnmounted(() => {
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
   if (observer.value) observer.value.disconnect()
   disposeStarfield()
+  disposeField()
 })
 
 const observer = ref(null)
@@ -524,16 +527,44 @@ const openMediaPreview = (media) => {
 
 // ===== 3D 星云星空背景（Three.js） =====
 // ===== 3D nebula starfield background (Three.js) =====
-const STAR_COUNT = 6000 // 粒子数量 / particle count
-const STAR_SIZE = 1.4 // 粒子尺寸 / particle size
 const CUBE_SIZE = 1000 // 立方体空间边长 / cube space edge length
+const STAR_TWINKLE = 0.35 // 闪烁速度系数 / twinkle speed factor
+// 三层星等：共 6000 颗，大小/亮度/色温分层营造纵深（贴图为圆形柔光，避免方块颗粒）
+// Three magnitude layers: 6000 stars total, sized/tinted for depth (round soft sprite, no square dots)
+const STAR_LAYERS = [
+  { count: 4000, size: 1.2, color: 0xaac8ff, opacity: 0.55 },
+  { count: 1600, size: 2.2, color: 0x6ea8ff, opacity: 0.7 },
+  { count: 400, size: 3.6, color: 0x4e8cff, opacity: 0.85 }
+]
 
 const starfieldRef = ref(null)
 let starAnimationId = null
 let starRenderer = null
 let starScene = null
 let starCamera = null
-let starPoints = null
+let starGroup = null
+let starLayers = []
+let starTexture = null
+
+// 生成圆形柔光星点贴图：中心亮核 + 柔和光晕
+// Generate the round soft-glow star sprite: bright core + gentle halo
+const createStarTexture = () => {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')
+  gradient.addColorStop(0.3, 'rgba(232, 240, 255, 0.85)')
+  gradient.addColorStop(0.6, 'rgba(160, 200, 255, 0.22)')
+  gradient.addColorStop(1, 'rgba(160, 200, 255, 0)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, size, size)
+  const texture = new CanvasTexture(canvas)
+  texture.colorSpace = SRGBColorSpace
+  return texture
+}
 
 // 初始化星空：在立方体空间内随机分布半透明蓝色粒子，相机置于 z=220
 // Init starfield: scatter translucent blue particles in a cube space, camera at z=220
@@ -545,24 +576,29 @@ const initStarfield = () => {
   starCamera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
   starCamera.position.z = 220
 
-  const geometry = new BufferGeometry()
-  const positions = new Float32Array(STAR_COUNT * 3)
-  for (let i = 0; i < positions.length; i++) {
-    positions[i] = (Math.random() - 0.5) * CUBE_SIZE
-  }
-  geometry.setAttribute('position', new BufferAttribute(positions, 3))
-
-  const material = new PointsMaterial({
-    color: 0x4e8cff,
-    size: STAR_SIZE,
-    transparent: true,
-    opacity: 0.7,
-    sizeAttenuation: true,
-    depthWrite: false
+  starTexture = createStarTexture()
+  starGroup = new Group()
+  starLayers = STAR_LAYERS.map((layer) => {
+    const geometry = new BufferGeometry()
+    const positions = new Float32Array(layer.count * 3)
+    for (let i = 0; i < positions.length; i++) {
+      positions[i] = (Math.random() - 0.5) * CUBE_SIZE
+    }
+    geometry.setAttribute('position', new BufferAttribute(positions, 3))
+    const material = new PointsMaterial({
+      color: layer.color,
+      size: layer.size,
+      map: starTexture,
+      transparent: true,
+      opacity: layer.opacity,
+      sizeAttenuation: true,
+      depthWrite: false
+    })
+    const points = new Points(geometry, material)
+    starGroup.add(points)
+    return { points, material, baseOpacity: layer.opacity, phase: Math.random() * Math.PI * 2 }
   })
-
-  starPoints = new Points(geometry, material)
-  starScene.add(starPoints)
+  starScene.add(starGroup)
 
   starRenderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
   starRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -576,12 +612,16 @@ const initStarfield = () => {
   animateStarfield()
 }
 
-// 每帧绕 Y 轴与 X 轴极缓慢旋转整团粒子云，形成沉浸式星空
-// Rotate the whole particle cloud very slowly around Y/X axes every frame
+// 每帧绕 Y 轴与 X 轴极缓慢旋转整团粒子云，各层相位错开轻微闪烁
+// Rotate the whole cloud very slowly around Y/X axes; layers twinkle out of phase
 const animateStarfield = () => {
   starAnimationId = requestAnimationFrame(animateStarfield)
-  starPoints.rotation.y += 0.0012
-  starPoints.rotation.x += 0.0004
+  starGroup.rotation.y += 0.0012
+  starGroup.rotation.x += 0.0004
+  const t = performance.now() * 0.001 * STAR_TWINKLE
+  for (const layer of starLayers) {
+    layer.material.opacity = layer.baseOpacity * (0.82 + 0.18 * Math.sin(t + layer.phase))
+  }
   starRenderer.render(starScene, starCamera)
 }
 
@@ -599,10 +639,14 @@ const handleStarfieldResize = () => {
 const disposeStarfield = () => {
   cancelAnimationFrame(starAnimationId)
   window.removeEventListener('resize', handleStarfieldResize)
-  if (starPoints) {
-    starPoints.geometry.dispose()
-    starPoints.material.dispose()
-    starPoints = null
+  for (const layer of starLayers) {
+    layer.points.geometry.dispose()
+    layer.material.dispose()
+  }
+  starLayers = []
+  if (starTexture) {
+    starTexture.dispose()
+    starTexture = null
   }
   if (starRenderer) {
     starRenderer.dispose()
@@ -612,6 +656,132 @@ const disposeStarfield = () => {
   }
   starScene = null
   starCamera = null
+  starGroup = null
+}
+
+// ===== 鼠标交互元素动效（磁性按压 + 弹性回弹） =====
+// ===== Mouse-interactive element motion (magnetic press + elastic rebound) =====
+const FIELD_RADIUS = 240 // 交互影响半径 px / influence radius
+const FIELD_STRENGTH = 12 // 最大推离位移 px / max push displacement
+const FIELD_STIFFNESS = 0.1 // 弹簧刚度 / spring stiffness
+const FIELD_DAMPING = 0.75 // 弹簧阻尼（带轻微过冲的弹性感）/ spring damping (subtle overshoot)
+const FIELD_SCAN_INTERVAL = 90 // 目标元素重扫间隔（帧）/ target rescan interval (frames)
+// 参与按压动效的元素选择器 / selectors of elements joining the press effect
+const FIELD_SELECTORS = '.why-me-card, .skill-card, .project-card, .timeline-content, .contact-card, .hero-actions .action-btn, .avatar-wrapper'
+
+const fieldStateMap = new Map()
+let fieldAnimationId = null
+let fieldFrame = 0
+const fieldMouse = { x: 0, y: 0, active: false }
+
+// 收集目标元素：数据异步加载后卡片才会渲染，故周期性重扫并增量维护状态
+// Collect target elements: cards render after async data, so rescan periodically
+const collectFieldTargets = () => {
+  const els = document.querySelectorAll(FIELD_SELECTORS)
+  const seen = new Set()
+  els.forEach((el) => {
+    seen.add(el)
+    if (!fieldStateMap.has(el)) {
+      fieldStateMap.set(el, { el, x: 0, y: 0, vx: 0, vy: 0 })
+    }
+  })
+  for (const key of [...fieldStateMap.keys()]) {
+    if (!seen.has(key)) fieldStateMap.delete(key)
+  }
+}
+
+// 物理步进：推离目标随距离二次衰减，弹簧阻尼积分产生按压与回弹
+// Physics step: push target falls off quadratically, spring-damper integrates press & rebound
+const updateField = () => {
+  const states = [...fieldStateMap.values()]
+  // 先集中读取几何信息，再统一写样式，避免逐元素读写触发布局抖动
+  // Read all rects first, then write styles, to avoid per-element layout thrash
+  const rects = states.map((s) => s.el.getBoundingClientRect())
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i]
+    const rect = rects[i]
+    let tx = 0
+    let ty = 0
+    if (rect.width > 0 && fieldMouse.active) {
+      // 减去当前位移还原真实中心，避免位移反馈干扰距离计算
+      // Subtract the applied offset to recover the true center (no feedback)
+      const cx = rect.left + rect.width / 2 - s.x
+      const cy = rect.top + rect.height / 2 - s.y
+      const dx = cx - fieldMouse.x
+      const dy = cy - fieldMouse.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < FIELD_RADIUS && dist > 0.001) {
+        const f = 1 - dist / FIELD_RADIUS
+        const push = f * f * FIELD_STRENGTH
+        tx = (dx / dist) * push
+        ty = (dy / dist) * push
+      }
+    }
+    s.vx = (s.vx + (tx - s.x) * FIELD_STIFFNESS) * FIELD_DAMPING
+    s.vy = (s.vy + (ty - s.y) * FIELD_STIFFNESS) * FIELD_DAMPING
+    s.x += s.vx
+    s.y += s.vy
+  }
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i]
+    if (!fieldMouse.active && Math.abs(s.x) < 0.02 && Math.abs(s.y) < 0.02 && Math.abs(s.vx) < 0.02 && Math.abs(s.vy) < 0.02) {
+      s.x = 0
+      s.y = 0
+      s.vx = 0
+      s.vy = 0
+      s.el.style.translate = ''
+      s.el.style.rotate = ''
+      continue
+    }
+    // 用独立 transform 属性 translate/rotate，不覆盖元素自身的 CSS hover transform
+    // Use individual transform props so the elements' own CSS hover transforms still compose
+    s.el.style.translate = `${s.x.toFixed(2)}px ${s.y.toFixed(2)}px`
+    s.el.style.rotate = `${(s.x * 0.06).toFixed(3)}deg`
+  }
+}
+
+const animateField = () => {
+  fieldAnimationId = requestAnimationFrame(animateField)
+  if (fieldFrame % FIELD_SCAN_INTERVAL === 0) collectFieldTargets()
+  fieldFrame++
+  updateField()
+}
+
+const handleFieldPointerMove = (e) => {
+  fieldMouse.x = e.clientX
+  fieldMouse.y = e.clientY
+  fieldMouse.active = true
+}
+
+// 鼠标移出窗口/页面失焦：释放按压，元素弹性回弹
+// Pointer leaves the window / page blurs: release the press, elements rebound
+const handleFieldPointerLeave = () => {
+  fieldMouse.active = false
+}
+
+const initField = () => {
+  if (fieldAnimationId) return
+  // 尊重系统"减少动态效果"偏好 / respect the system reduced-motion preference
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  collectFieldTargets()
+  window.addEventListener('pointermove', handleFieldPointerMove, { passive: true })
+  document.documentElement.addEventListener('mouseleave', handleFieldPointerLeave)
+  window.addEventListener('blur', handleFieldPointerLeave)
+  animateField()
+}
+
+const disposeField = () => {
+  cancelAnimationFrame(fieldAnimationId)
+  window.removeEventListener('pointermove', handleFieldPointerMove)
+  document.documentElement.removeEventListener('mouseleave', handleFieldPointerLeave)
+  window.removeEventListener('blur', handleFieldPointerLeave)
+  fieldAnimationId = null
+  fieldStateMap.forEach((s) => {
+    s.el.style.translate = ''
+    s.el.style.rotate = ''
+  })
+  fieldStateMap.clear()
+  fieldMouse.active = false
 }
 
 const getContactParticleStyle = (index) => {
@@ -878,7 +1048,9 @@ const scrollToContact = () => {
       padding: 14px 36px;
       font-weight: 600;
       font-size: 16px;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+      // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
 
@@ -1058,7 +1230,9 @@ const scrollToContact = () => {
   padding: 32px;
   border-radius: 24px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+  // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.8);
   overflow: hidden;
 
@@ -1197,7 +1371,9 @@ const scrollToContact = () => {
     padding: 30px;
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+    // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--el-border-color-lighter);
 
     &:hover {
@@ -1774,7 +1950,9 @@ const scrollToContact = () => {
       padding: 28px;
       border-radius: 20px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+      // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid var(--el-border-color-lighter);
 
       &:hover {
