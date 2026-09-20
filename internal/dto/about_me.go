@@ -102,9 +102,10 @@ type CreateAboutMeProjectReq struct {
 		Icon string `json:"icon"`
 	} `json:"techStack"`
 	Features []struct {
-		Icon  string `json:"icon"`
-		Title string `json:"title"`
-		Desc  string `json:"desc"`
+		Icon   string `json:"icon"`
+		Title  string `json:"title"`
+		Desc   string `json:"desc"`
+		Detail string `json:"detail"`
 	} `json:"features"`
 	Sort int `json:"sort"`
 }
@@ -128,9 +129,10 @@ type UpdateAboutMeProjectReq struct {
 		Icon string `json:"icon"`
 	} `json:"techStack"`
 	Features []struct {
-		Icon  string `json:"icon"`
-		Title string `json:"title"`
-		Desc  string `json:"desc"`
+		Icon   string `json:"icon"`
+		Title  string `json:"title"`
+		Desc   string `json:"desc"`
+		Detail string `json:"detail"`
 	} `json:"features"`
 	Sort int `json:"sort"`
 }

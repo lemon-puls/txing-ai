@@ -2284,7 +2284,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "文件相对路径",
+                        "description": "文件相对路径（文件名或 用户ID/日期/文件名）",
                         "name": "filePath",
                         "in": "query",
                         "required": true
@@ -2297,20 +2297,8 @@ const docTemplate = `{
                             "type": "file"
                         }
                     },
-                    "400": {
-                        "description": "请求错误",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
-                        }
-                    },
                     "404": {
                         "description": "文件不存在",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
                         "schema": {
                             "$ref": "#/definitions/utils.Response"
                         }
@@ -4081,6 +4069,9 @@ const docTemplate = `{
                             "desc": {
                                 "type": "string"
                             },
+                            "detail": {
+                                "type": "string"
+                            },
                             "icon": {
                                 "type": "string"
                             },
@@ -4713,6 +4704,9 @@ const docTemplate = `{
                             "desc": {
                                 "type": "string"
                             },
+                            "detail": {
+                                "type": "string"
+                            },
                             "icon": {
                                 "type": "string"
                             },
@@ -5261,6 +5255,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "desc": {
+                    "type": "string"
+                },
+                "detail": {
+                    "description": "详细设计（可空 / optional expanded detail）",
                     "type": "string"
                 },
                 "icon": {

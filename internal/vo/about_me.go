@@ -162,9 +162,10 @@ type AboutMeTechItem struct {
 }
 
 type AboutMeFeatureItem struct {
-	Icon  string `json:"icon"`
-	Title string `json:"title"`
-	Desc  string `json:"desc"`
+	Icon   string `json:"icon"`
+	Title  string `json:"title"`
+	Desc   string `json:"desc"`
+	Detail string `json:"detail"` // 详细设计（可空 / optional expanded detail）
 }
 
 func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
@@ -178,7 +179,7 @@ func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
 	}
 	feats := make([]AboutMeFeatureItem, 0, len(p.Features))
 	for _, f := range p.Features {
-		feats = append(feats, AboutMeFeatureItem{Icon: f.Icon, Title: f.Title, Desc: f.Desc})
+		feats = append(feats, AboutMeFeatureItem{Icon: f.Icon, Title: f.Title, Desc: f.Desc, Detail: f.Detail})
 	}
 	tags := p.Tags
 	if tags == nil {

@@ -65,8 +65,8 @@
       </div>
       <!-- Floating tech icons -->
       <div class="floating-icons">
-        <div v-for="(icon, index) in floatingIcons" :key="icon.name" 
-             class="floating-icon" 
+        <div v-for="(icon, index) in floatingIcons" :key="icon.name"
+             class="floating-icon"
              :class="`icon-${index}`"
              :style="{ animationDelay: `${index * 0.5}s` }">
           <span>{{ icon.symbol }}</span>
@@ -82,7 +82,7 @@
         <p class="section-subtitle">专注 · 热情 · 追求极致</p>
       </div>
       <div class="why-me-grid">
-        <div v-for="(reason, index) in whyChooseMe" :key="reason.title" 
+        <div v-for="(reason, index) in whyChooseMe" :key="reason.title"
              class="why-me-card animate-on-scroll"
              :style="{ animationDelay: `${index * 0.15}s` }">
           <div class="card-glow"></div>
@@ -112,7 +112,7 @@
         <div class="title-underline"></div>
       </div>
       <div class="skills-grid">
-        <div v-for="(skill, index) in skillSets" :key="skill.category" 
+        <div v-for="(skill, index) in skillSets" :key="skill.category"
              class="skill-card animate-on-scroll"
              :style="{ animationDelay: `${index * 0.1}s` }">
           <div class="skill-icon">
@@ -141,7 +141,7 @@
       </div>
       <div class="projects-grid">
 
-        <div v-for="(project, index) in projects" :key="project.name" 
+        <div v-for="(project, index) in projects" :key="project.name"
              class="project-card"
              :class="{ 'expanded': expandedProject === index }">
           <div class="project-image" :class="project.gradient" @click="toggleProject(index)">
@@ -167,12 +167,12 @@
                 <span>{{ hl }}</span>
               </div>
             </div>
-            <a :href="project.link" target="_blank" class="project-link">
+            <a v-if="project.link" :href="project.link" target="_blank" class="project-link">
               <span>访问项目</span>
               <el-icon><ArrowRight /></el-icon>
             </a>
           </div>
-          
+
           <!-- Expanded Detail Section -->
           <transition name="slide-fade">
             <div v-if="expandedProject === index" class="project-detail">
@@ -182,7 +182,7 @@
                   <el-icon><Close /></el-icon>
                 </el-button>
               </div>
-              
+
               <!-- Media Gallery -->
               <div class="media-gallery" v-if="project.media && project.media.length">
                 <div class="gallery-scroll">
@@ -205,15 +205,34 @@
                 </div>
               </div>
 
-              <!-- Key Features -->
+              <!-- 工作亮点（features 字段暂承载亮点内容，后续如需独立的核心功能/工作职责栏再说） -->
+              <!-- Work highlights (the features field carries highlight content for now) -->
+              <!-- 点击展开详细设计：detail 按换行拆段，0fr→1fr 网格动画 -->
+              <!-- Click to expand design details: detail split by newlines, 0fr→1fr grid animation -->
               <div class="key-features" v-if="project.features">
-                <h4>核心功能</h4>
+                <h4>工作亮点</h4>
                 <div class="features-grid">
-                  <div v-for="feature in project.features" :key="feature.title" class="feature-item">
+                  <div
+                    v-for="feature in project.features"
+                    :key="feature.title"
+                    class="feature-item"
+                    :class="{ 'has-detail': !!feature.detail, 'detail-open': openFeature === feature.title }"
+                    @click="feature.detail && toggleFeature(feature.title)"
+                  >
                     <span class="feature-icon">{{ feature.icon }}</span>
-                    <div>
-                      <h5>{{ feature.title }}</h5>
+                    <div class="feature-body">
+                      <div class="feature-head">
+                        <h5>{{ feature.title }}</h5>
+                        <el-icon v-if="feature.detail" class="feature-chevron"><ArrowDown /></el-icon>
+                      </div>
                       <p>{{ feature.desc }}</p>
+                      <div v-if="feature.detail" class="feature-detail-wrap">
+                        <div class="feature-detail-clip">
+                          <div class="feature-detail">
+                            <p v-for="(para, pi) in splitDetail(feature.detail)" :key="pi">{{ para }}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -231,7 +250,7 @@
         <div class="title-underline"></div>
       </div>
       <div class="timeline">
-        <div v-for="(item, index) in timeline" :key="index" 
+        <div v-for="(item, index) in timeline" :key="index"
              class="timeline-item animate-on-scroll"
              :style="{ animationDelay: `${index * 0.2}s` }">
           <div class="timeline-dot">
@@ -508,6 +527,7 @@ const loadAboutSnapshot = async () => {
     const res = await defaultApi.apiAboutGet()
     if (res?.code === 0 && res.data) {
       const data = res.data
+      console.log("data", data)
       // Hero
       if (data.hero) {
         heroData.value = {
@@ -527,6 +547,7 @@ const loadAboutSnapshot = async () => {
       }))
       skills.value = data.skills || []
       projectsRaw.value = data.projects || []
+      console.log(projectsRaw.value)
       timelineRaw.value = data.timeline || []
       if (data.contact) {
         contactData.value = {
@@ -545,9 +566,23 @@ const loadAboutSnapshot = async () => {
 
 // Project expand state
 const expandedProject = ref(null)
+// 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
+// Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
+const openFeature = ref(null)
 const toggleProject = (index) => {
   expandedProject.value = expandedProject.value === index ? null : index
+  openFeature.value = null
 }
+const toggleFeature = (title) => {
+  openFeature.value = openFeature.value === title ? null : title
+}
+// 详情按换行拆段渲染
+// Split the detail text into paragraphs by newlines
+const splitDetail = (detail) =>
+  String(detail || '')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
 
 // Media preview
 const mediaPreviewVisible = ref(false)
@@ -916,7 +951,7 @@ const scrollToContact = () => {
     margin: 0 auto;
     border-radius: 2px;
     position: relative;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -1013,7 +1048,7 @@ const scrollToContact = () => {
         border: 2px solid var(--el-color-primary-light-3);
         border-radius: 50%;
         animation: pulse-ring 3s infinite;
-        
+
         &.ring-2 {
           animation-delay: 1.5s;
         }
@@ -1025,25 +1060,75 @@ const scrollToContact = () => {
       bottom: -15px;
       left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(45deg, #10b981, #34d399);
-      color: white;
-      padding: 8px 18px;
-      border-radius: 24px;
-      font-size: 13px;
+      // 毛玻璃胶囊：呼应云海/星空底幕的通透质感；品牌绿只留一线描边与呼吸光点，不再整块铺色
+      // Glass capsule: echoes the sky/space backdrop; emerald shrinks to a hairline ring and a breathing dot
+      padding: 7px 16px 7px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
+      backdrop-filter: blur(12px) saturate(1.5);
+      -webkit-backdrop-filter: blur(12px) saturate(1.5);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow:
+        0 8px 24px rgba(16, 185, 129, 0.22),
+        0 2px 8px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      color: #047857;
+      font-size: 12.5px;
       font-weight: 600;
+      letter-spacing: 0.02em;
       white-space: nowrap;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
       display: flex;
       align-items: center;
       gap: 8px;
-      animation: badge-bounce 2s ease-in-out infinite;
+      overflow: hidden;
+      animation: badge-bounce 3s ease-in-out infinite;
+
+      // 掠过胶囊的绿调扫光（复用全局 shimmer 关键帧）
+      // A green-tinted sheen sweeping across the capsule (reuses the global shimmer keyframes)
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(105deg, transparent, rgba(52, 211, 153, 0.18), transparent);
+        animation: shimmer 3.5s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      // 暗色下沉入夜空：深色玻璃底 + 更亮的文字与描边
+      // Dark theme sinks into the night: darker glass, brighter text and ring
+      html.dark & {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.5));
+        border-color: rgba(52, 211, 153, 0.3);
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.35),
+          0 0 18px rgba(16, 185, 129, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        color: #6ee7b7;
+      }
 
       .status-dot {
+        position: relative;
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: white;
+        flex-shrink: 0;
+        background: radial-gradient(circle at 30% 30%, #34d399, #059669);
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
         animation: pulse-dot 2s infinite;
+
+        // 外圈信号波：与主头像 pulse-ring 同语言的“在线心跳”
+        // Outer signal ring: an "online heartbeat" echoing the avatar's pulse-ring
+        &::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(16, 185, 129, 0.6);
+          animation: dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
       }
     }
   }
@@ -1224,7 +1309,7 @@ const scrollToContact = () => {
     font-size: 32px;
     opacity: 0.15;
     animation: float-icon 20s linear infinite;
-    
+
     &.icon-0 { top: 10%; left: 5%; }
     &.icon-1 { top: 20%; right: 10%; }
     &.icon-2 { top: 60%; left: 8%; }
@@ -1246,7 +1331,7 @@ const scrollToContact = () => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
+    background:
       radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
       radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
     pointer-events: none;
@@ -1853,9 +1938,11 @@ const scrollToContact = () => {
     }
 
     .features-grid {
+      // 单列布局：展开的详细设计需要整行宽度才可读
+      // Single column: expanded design details need the full row width
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1fr;
+      gap: 12px;
 
       .feature-item {
         display: flex;
@@ -1864,10 +1951,20 @@ const scrollToContact = () => {
         padding: 18px;
         border-radius: 16px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s;
+        border: 1px solid transparent;
+        transition: box-shadow 0.2s, border-color 0.2s;
+
+        // 有详情的项可点击展开
+        // Items with details are clickable
+        &.has-detail {
+          cursor: pointer;
+        }
+
+        &.detail-open {
+          border-color: var(--el-color-primary-light-7);
+        }
 
         &:hover {
-          transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
@@ -1876,11 +1973,33 @@ const scrollToContact = () => {
           flex-shrink: 0;
         }
 
-        h5 {
-          font-size: 15px;
-          font-weight: 700;
-          margin: 0 0 6px 0;
-          color: var(--el-text-color-primary);
+        .feature-body {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .feature-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 6px;
+
+          h5 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--el-text-color-primary);
+          }
+
+          .feature-chevron {
+            color: var(--el-color-primary);
+            transition: transform 0.3s;
+          }
+        }
+
+        &.detail-open .feature-chevron {
+          transform: rotate(180deg);
         }
 
         p {
@@ -1888,6 +2007,41 @@ const scrollToContact = () => {
           color: var(--el-text-color-secondary);
           margin: 0;
           line-height: 1.5;
+        }
+
+        // 0fr→1fr 网格展开动画（内容始终渲染，比 max-height 更稳）
+        // 0fr→1fr grid expand animation (content stays rendered; more robust than max-height)
+        .feature-detail-wrap {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+          .feature-detail-clip {
+            overflow: hidden;
+          }
+
+          .feature-detail {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-left: 2px solid var(--el-color-primary-light-5);
+            background: var(--el-fill-color-light);
+            border-radius: 0 10px 10px 0;
+
+            p {
+              font-size: 13px;
+              color: var(--el-text-color-regular);
+              line-height: 1.7;
+              margin: 0;
+
+              & + p {
+                margin-top: 8px;
+              }
+            }
+          }
+        }
+
+        &.detail-open .feature-detail-wrap {
+          grid-template-rows: 1fr;
         }
       }
     }
@@ -2157,7 +2311,12 @@ const scrollToContact = () => {
 
 @keyframes badge-bounce {
   0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-5px); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+@keyframes dot-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  80%, 100% { transform: scale(2.4); opacity: 0; }
 }
 
 @keyframes rotate-gradient {

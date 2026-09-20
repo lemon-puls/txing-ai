@@ -2550,7 +2550,7 @@ export default class DefaultApi {
     /**
      * 下载文件
      * 从服务器下载文件
-     * @param {String} filePath 文件相对路径
+     * @param {String} filePath 文件相对路径（文件名或 用户ID/日期/文件名）
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link File} and HTTP response
      */
     apiFileDownloadGetWithHttpInfo(filePath) {
@@ -2584,7 +2584,7 @@ export default class DefaultApi {
     /**
      * 下载文件
      * 从服务器下载文件
-     * @param {String} filePath 文件相对路径
+     * @param {String} filePath 文件相对路径（文件名或 用户ID/日期/文件名）
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link File}
      */
     apiFileDownloadGet(filePath) {
