@@ -25,13 +25,14 @@ class DtoCreateAboutMeProjectReq {
     /**
      * Constructs a new <code>DtoCreateAboutMeProjectReq</code>.
      * @alias module:model/DtoCreateAboutMeProjectReq
+     * @param category {module:model/DtoCreateAboutMeProjectReq.CategoryEnum} 
      * @param desc {String} 
      * @param iconKey {String} 
      * @param name {String} 
      */
-    constructor(desc, iconKey, name) { 
+    constructor(category, desc, iconKey, name) { 
         
-        DtoCreateAboutMeProjectReq.initialize(this, desc, iconKey, name);
+        DtoCreateAboutMeProjectReq.initialize(this, category, desc, iconKey, name);
     }
 
     /**
@@ -39,7 +40,8 @@ class DtoCreateAboutMeProjectReq {
      * This method is used by the constructors of any subclasses, in order to implement multiple inheritance (mix-ins).
      * Only for internal use.
      */
-    static initialize(obj, desc, iconKey, name) { 
+    static initialize(obj, category, desc, iconKey, name) { 
+        obj['category'] = category;
         obj['desc'] = desc;
         obj['iconKey'] = iconKey;
         obj['name'] = name;
@@ -58,6 +60,9 @@ class DtoCreateAboutMeProjectReq {
 
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
+            }
+            if (data.hasOwnProperty('category')) {
+                obj['category'] = ApiClient.convertToType(data['category'], 'String');
             }
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
@@ -111,6 +116,10 @@ class DtoCreateAboutMeProjectReq {
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
             throw new Error("Expected the field `badge` to be a primitive type in the JSON string but got " + data['badge']);
+        }
+        // ensure the json data is a string
+        if (data['category'] && !(typeof data['category'] === 'string' || data['category'] instanceof String)) {
+            throw new Error("Expected the field `category` to be a primitive type in the JSON string but got " + data['category']);
         }
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
@@ -177,12 +186,17 @@ class DtoCreateAboutMeProjectReq {
 
 }
 
-DtoCreateAboutMeProjectReq.RequiredProperties = ["desc", "iconKey", "name"];
+DtoCreateAboutMeProjectReq.RequiredProperties = ["category", "desc", "iconKey", "name"];
 
 /**
  * @member {String} badge
  */
 DtoCreateAboutMeProjectReq.prototype['badge'] = undefined;
+
+/**
+ * @member {module:model/DtoCreateAboutMeProjectReq.CategoryEnum} category
+ */
+DtoCreateAboutMeProjectReq.prototype['category'] = undefined;
 
 /**
  * @member {String} desc
@@ -241,6 +255,27 @@ DtoCreateAboutMeProjectReq.prototype['techStack'] = undefined;
 
 
 
+
+
+/**
+ * Allowed values for the <code>category</code> property.
+ * @enum {String}
+ * @readonly
+ */
+DtoCreateAboutMeProjectReq['CategoryEnum'] = {
+
+    /**
+     * value: "company"
+     * @const
+     */
+    "company": "company",
+
+    /**
+     * value: "personal"
+     * @const
+     */
+    "personal": "personal"
+};
 
 
 

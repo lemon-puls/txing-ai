@@ -53,6 +53,9 @@ class DtoUpdateAboutMeProjectReq {
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
             }
+            if (data.hasOwnProperty('category')) {
+                obj['category'] = ApiClient.convertToType(data['category'], 'String');
+            }
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
             }
@@ -99,6 +102,10 @@ class DtoUpdateAboutMeProjectReq {
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
             throw new Error("Expected the field `badge` to be a primitive type in the JSON string but got " + data['badge']);
+        }
+        // ensure the json data is a string
+        if (data['category'] && !(typeof data['category'] === 'string' || data['category'] instanceof String)) {
+            throw new Error("Expected the field `category` to be a primitive type in the JSON string but got " + data['category']);
         }
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
@@ -173,6 +180,11 @@ class DtoUpdateAboutMeProjectReq {
 DtoUpdateAboutMeProjectReq.prototype['badge'] = undefined;
 
 /**
+ * @member {module:model/DtoUpdateAboutMeProjectReq.CategoryEnum} category
+ */
+DtoUpdateAboutMeProjectReq.prototype['category'] = undefined;
+
+/**
  * @member {String} desc
  */
 DtoUpdateAboutMeProjectReq.prototype['desc'] = undefined;
@@ -229,6 +241,27 @@ DtoUpdateAboutMeProjectReq.prototype['techStack'] = undefined;
 
 
 
+
+
+/**
+ * Allowed values for the <code>category</code> property.
+ * @enum {String}
+ * @readonly
+ */
+DtoUpdateAboutMeProjectReq['CategoryEnum'] = {
+
+    /**
+     * value: "company"
+     * @const
+     */
+    "company": "company",
+
+    /**
+     * value: "personal"
+     * @const
+     */
+    "personal": "personal"
+};
 
 
 

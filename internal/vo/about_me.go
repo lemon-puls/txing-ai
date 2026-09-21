@@ -143,6 +143,7 @@ type AboutMeProjectVO struct {
 	Tags       []string                `json:"tags"`
 	Link       string                  `json:"link"`
 	Badge      string                  `json:"badge"`
+	Category   string                  `json:"category"` // 项目类别 company/personal
 	Highlights []string                `json:"highlights"`
 	Media      []AboutMeMediaItem      `json:"media"`
 	TechStack  []AboutMeTechItem       `json:"techStack"`
@@ -198,6 +199,7 @@ func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
 		Tags:       tags,
 		Link:       p.Link,
 		Badge:      p.Badge,
+		Category:   p.Category,
 		Highlights: highlights,
 		Media:      media,
 		TechStack:  tech,

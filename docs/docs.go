@@ -4050,6 +4050,7 @@ const docTemplate = `{
         "dto.CreateAboutMeProjectReq": {
             "type": "object",
             "required": [
+                "category",
                 "desc",
                 "iconKey",
                 "name"
@@ -4057,6 +4058,13 @@ const docTemplate = `{
             "properties": {
                 "badge": {
                     "type": "string"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "company",
+                        "personal"
+                    ]
                 },
                 "desc": {
                     "type": "string"
@@ -4692,6 +4700,13 @@ const docTemplate = `{
             "properties": {
                 "badge": {
                     "type": "string"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "company",
+                        "personal"
+                    ]
                 },
                 "desc": {
                     "type": "string"
@@ -5330,6 +5345,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "badge": {
+                    "type": "string"
+                },
+                "category": {
+                    "description": "项目类别 company/personal",
                     "type": "string"
                 },
                 "desc": {

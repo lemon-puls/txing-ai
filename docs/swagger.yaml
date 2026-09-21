@@ -55,6 +55,11 @@ definitions:
     properties:
       badge:
         type: string
+      category:
+        enum:
+        - company
+        - personal
+        type: string
       desc:
         type: string
       features:
@@ -109,6 +114,7 @@ definitions:
           type: object
         type: array
     required:
+    - category
     - desc
     - iconKey
     - name
@@ -509,6 +515,11 @@ definitions:
   dto.UpdateAboutMeProjectReq:
     properties:
       badge:
+        type: string
+      category:
+        enum:
+        - company
+        - personal
         type: string
       desc:
         type: string
@@ -953,6 +964,9 @@ definitions:
   vo.AboutMeProjectVO:
     properties:
       badge:
+        type: string
+      category:
+        description: 项目类别 company/personal
         type: string
       desc:
         type: string
