@@ -491,6 +491,7 @@ func CreateProject(ctx *gin.Context) {
 		Link:       req.Link,
 		Badge:      req.Badge,
 		Highlights: req.Highlights,
+		Category:   req.Category,
 		Sort:       req.Sort,
 	}
 	if err := db.Create(&item).Error; err != nil {
@@ -556,6 +557,9 @@ func UpdateProject(ctx *gin.Context) {
 	}
 	item.Link = req.Link
 	item.Badge = req.Badge
+	if req.Category != "" {
+		item.Category = req.Category
+	}
 	if req.Highlights != nil {
 		item.Highlights = req.Highlights
 	}

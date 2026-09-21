@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **badge** | **String** |  | [optional] 
+**category** | **String** | 项目类别 company/personal | [optional] 
 **desc** | **String** |  | [optional] 
 **features** | [**[VoAboutMeFeatureItem]**](VoAboutMeFeatureItem.md) |  | [optional] 
 **gradient** | **String** |  | [optional] 

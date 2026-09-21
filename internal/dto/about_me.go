@@ -91,6 +91,7 @@ type CreateAboutMeProjectReq struct {
 	Tags       []string `json:"tags"`
 	Link       string   `json:"link"`
 	Badge      string   `json:"badge"`
+	Category   string   `json:"category" binding:"required,oneof=company personal"`
 	Highlights []string `json:"highlights"`
 	Media      []struct {
 		Type    string `json:"type"`
@@ -118,6 +119,7 @@ type UpdateAboutMeProjectReq struct {
 	Tags       []string `json:"tags"`
 	Link       string   `json:"link"`
 	Badge      string   `json:"badge"`
+	Category   string   `json:"category" binding:"omitempty,oneof=company personal"`
 	Highlights []string `json:"highlights"`
 	Media      []struct {
 		Type    string `json:"type"`

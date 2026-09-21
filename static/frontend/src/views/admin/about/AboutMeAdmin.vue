@@ -117,6 +117,13 @@
           <el-table-column prop="iconKey" label="图标" width="120" />
           <el-table-column prop="gradient" label="渐变" width="80" />
           <el-table-column prop="badge" label="角标" width="100" />
+          <el-table-column prop="category" label="类别" width="90">
+            <template #default="{ row }">
+              <el-tag :type="row.category === 'personal' ? 'success' : 'primary'" size="small" effect="light" round>
+                {{ row.category === 'personal' ? '个人' : '公司' }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="link" label="链接" show-overflow-tooltip />
           <el-table-column prop="sort" label="排序" width="70" />
           <el-table-column label="操作" width="180" fixed="right">
@@ -351,6 +358,13 @@
         </el-form-item>
         <el-form-item label="角标">
           <el-input v-model="projectForm.badge" placeholder="如 旗舰项目" />
+        </el-form-item>
+        <el-form-item label="类别">
+          <el-select v-model="projectForm.category" style="width: 200px">
+            <el-option label="公司项目" value="company" />
+            <el-option label="个人项目" value="personal" />
+          </el-select>
+          <span class="form-tip">前台精选作品支持按公司/个人切换查看</span>
         </el-form-item>
         <el-form-item label="亮点">
           <el-input
@@ -701,6 +715,7 @@ const projectForm = reactive({
   tags: [],
   link: '',
   badge: '',
+  category: 'company',
   highlights: [],
   media: [],
   techStack: [],
@@ -720,7 +735,7 @@ const loadProjects = async () => {
 const openProjectDialog = async (row) => {
   Object.assign(projectForm, {
     id: 0, name: '', desc: '', iconKey: '', gradient: 1,
-    tags: [], link: '', badge: '', highlights: [], media: [], techStack: [], features: [], sort: 0
+    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], techStack: [], features: [], sort: 0
   })
   if (row && row.id) {
     try {
@@ -750,6 +765,7 @@ const saveProject = async () => {
       tags: projectForm.tags || [],
       link: projectForm.link,
       badge: projectForm.badge,
+      category: projectForm.category || 'company',
       highlights: projectForm.highlights || [],
       media: projectForm.media || [],
       techStack: projectForm.techStack || [],

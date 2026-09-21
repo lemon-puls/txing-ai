@@ -139,18 +139,39 @@
         <div class="title-underline"></div>
         <p class="section-subtitle">点击卡片展开查看详情</p>
       </div>
+
+      <!-- 项目类别切换器：全部 / 公司项目 / 个人项目 -->
+      <!-- Project category switcher: all / company / personal -->
+      <div class="project-filter animate-on-scroll" role="tablist" aria-label="项目类别切换">
+        <div class="filter-track">
+          <div class="filter-thumb" :style="{ transform: `translateX(${filterIndex * 100}%)` }"></div>
+          <button
+            v-for="opt in filterOptions"
+            :key="opt.value"
+            class="filter-btn"
+            :class="{ active: projectFilter === opt.value }"
+            role="tab"
+            :aria-selected="projectFilter === opt.value"
+            @click="switchFilter(opt.value)"
+          >
+            <span class="filter-count">{{ countByCategory(opt.value) }}</span>
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+
       <div class="projects-grid">
 
-        <div v-for="(project, index) in projects" :key="project.name"
+        <div v-for="project in filteredProjects" :key="project.id"
              class="project-card"
-             :class="{ 'expanded': expandedProject === index }">
-          <div class="project-image" :class="project.gradient" @click="toggleProject(index)">
+             :class="{ 'expanded': expandedProject === project.id }">
+          <div class="project-image" :class="project.gradient" @click="toggleProject(project.id)">
             <div class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
             </div>
             <div class="project-badge">{{ project.badge }}</div>
             <div class="expand-hint">
-              <el-icon class="expand-icon" :class="{ 'rotated': expandedProject === index }">
+              <el-icon class="expand-icon" :class="{ 'rotated': expandedProject === project.id }">
                 <ArrowDown />
               </el-icon>
             </div>
@@ -159,7 +180,7 @@
             <div class="project-tags">
               <span v-for="tag in project.tags" :key="tag" class="project-tag">{{ tag }}</span>
             </div>
-            <h3 class="project-name" @click="toggleProject(index)">{{ project.name }}</h3>
+            <h3 class="project-name" @click="toggleProject(project.id)">{{ project.name }}</h3>
             <p class="project-desc">{{ project.desc }}</p>
             <div class="project-highlights">
               <div v-for="hl in project.highlights" :key="hl" class="highlight-item">
@@ -175,7 +196,7 @@
 
           <!-- Expanded Detail Section -->
           <transition name="slide-fade">
-            <div v-if="expandedProject === index" class="project-detail">
+            <div v-if="expandedProject === project.id" class="project-detail">
               <div class="detail-header">
                 <h4>项目详情</h4>
                 <el-button text @click="expandedProject = null">
@@ -472,9 +493,37 @@ const projects = computed(() =>
   projectsRaw.value.map((p) => ({
     ...p,
     icon: resolveIcon(p.iconKey) || Platform,
-    gradient: `project-gradient-${p.gradient || 1}`
+    gradient: `project-gradient-${p.gradient || 1}`,
+    category: p.category || 'company'
   }))
 )
+
+// 项目类别切换：all / company / personal（滑动指示的胶囊分段控件）
+// Project category filter: all / company / personal (pill segmented control with sliding thumb)
+const filterOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'company', label: '公司项目' },
+  { value: 'personal', label: '个人项目' }
+]
+const projectFilter = ref('all')
+const filterIndex = computed(() => filterOptions.findIndex((o) => o.value === projectFilter.value))
+const filteredProjects = computed(() =>
+  projectFilter.value === 'all'
+    ? projects.value
+    : projects.value.filter((p) => p.category === projectFilter.value)
+)
+const countByCategory = (value) =>
+  value === 'all'
+    ? projects.value.length
+    : projects.value.filter((p) => p.category === value).length
+const switchFilter = (value) => {
+  if (projectFilter.value === value) return
+  projectFilter.value = value
+  // 切换类别时收起已展开的卡片与亮点详情
+  // Collapse expanded card & highlight detail on category switch
+  expandedProject.value = null
+  openFeature.value = null
+}
 
 // 成长轨迹（来自后台）
 // Timeline (from backend)
@@ -569,8 +618,10 @@ const expandedProject = ref(null)
 // 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
 // Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
 const openFeature = ref(null)
-const toggleProject = (index) => {
-  expandedProject.value = expandedProject.value === index ? null : index
+// 展开状态按项目 id 记录（类别过滤会改变列表，index 定位会错位）
+// Expansion keyed by project id (filtering reshuffles the list, index would mismatch)
+const toggleProject = (id) => {
+  expandedProject.value = expandedProject.value === id ? null : id
   openFeature.value = null
 }
 const toggleFeature = (title) => {
@@ -1604,6 +1655,85 @@ const scrollToContact = () => {
   gap: 36px;
   max-width: 1080px;
   margin: 0 auto;
+}
+
+/* 项目类别切换器：滑动指示的胶囊分段控件 */
+/* Project category switcher: pill segmented control with sliding thumb */
+.project-filter {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 44px;
+  max-width: 1080px;
+}
+
+.filter-track {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.filter-thumb {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px) / 3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+  box-shadow: 0 4px 14px rgba(43, 94, 255, 0.35);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 22px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
+.filter-btn:hover {
+  color: var(--el-text-color-primary);
+}
+
+.filter-btn.active {
+  color: #fff;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--el-fill-color);
+  color: var(--el-text-color-secondary);
+  transition: background 0.3s, color 0.3s;
+}
+
+.filter-btn.active .filter-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 .project-card {

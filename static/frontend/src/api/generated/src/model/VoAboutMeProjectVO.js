@@ -53,6 +53,9 @@ class VoAboutMeProjectVO {
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
             }
+            if (data.hasOwnProperty('category')) {
+                obj['category'] = ApiClient.convertToType(data['category'], 'String');
+            }
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
             }
@@ -102,6 +105,10 @@ class VoAboutMeProjectVO {
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
             throw new Error("Expected the field `badge` to be a primitive type in the JSON string but got " + data['badge']);
+        }
+        // ensure the json data is a string
+        if (data['category'] && !(typeof data['category'] === 'string' || data['category'] instanceof String)) {
+            throw new Error("Expected the field `category` to be a primitive type in the JSON string but got " + data['category']);
         }
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
@@ -174,6 +181,12 @@ class VoAboutMeProjectVO {
  * @member {String} badge
  */
 VoAboutMeProjectVO.prototype['badge'] = undefined;
+
+/**
+ * 项目类别 company/personal
+ * @member {String} category
+ */
+VoAboutMeProjectVO.prototype['category'] = undefined;
 
 /**
  * @member {String} desc

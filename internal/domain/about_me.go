@@ -56,6 +56,7 @@ type AboutMeProject struct {
 	Tags        []string `gorm:"type:json;serializer:json;comment:项目标签" json:"tags"`
 	Link        string   `gorm:"type:varchar(500);comment:跳转链接" json:"link"`
 	Badge       string   `gorm:"type:varchar(50);comment:角标文字" json:"badge"`
+	Category    string   `gorm:"type:varchar(20);default:'company';comment:项目类别 company/personal" json:"category"`
 	Highlights  []string `gorm:"type:json;serializer:json;comment:亮点列表" json:"highlights"`
 	Media       []struct {
 		Type    string `json:"type"`
