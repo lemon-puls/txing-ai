@@ -217,4 +217,3 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
-test/model/DtoUpdateConversationParamsReq.spec.js

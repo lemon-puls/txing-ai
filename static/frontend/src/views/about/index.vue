@@ -1,12 +1,14 @@
 <template>
   <div class="about-container">
-    <!-- Particle Background -->
-    <div class="particle-bg" ref="particleBg">
-      <div v-for="i in 50" :key="i" class="particle" :style="getParticleStyle(i)"></div>
-    </div>
+    <!-- 3D 星云星空背景（Three.js 粒子云） -->
+    <!-- 3D nebula starfield background (Three.js particle cloud) -->
+    <div ref="starfieldRef" class="starfield-bg"></div>
 
     <!-- Hero Section -->
     <section class="hero-section">
+      <!-- 云海天幕：Hero 顶部天空，向下渐隐过渡到星空（滚动即"穿云入星空"） -->
+      <!-- Cloud-sky dome: hero sky fading down into the starfield ("through the clouds into space" on scroll) -->
+      <CloudSky class="hero-sky" />
       <div class="hero-content animate-on-scroll">
         <div class="avatar-wrapper">
           <div class="main-avatar">
@@ -20,8 +22,20 @@
           </div>
         </div>
         <h1 class="hero-title">
-          你好，我是 <span class="highlight typing-text">{{ displayedName }}</span>
-          <span class="cursor">|</span>
+          你好，我是
+          <!-- FlickerText 名字特效：入场霓虹灯管点亮，悬停再闪三下 -->
+          <!-- FlickerText name effect: neon-tube warm-up on enter, three blinks on hover -->
+          <FlickerText
+            :text="heroData.name"
+            tag="span"
+            class="flicker-name"
+            color-mode="gradient"
+            gradient-start="var(--el-color-primary)"
+            gradient-end="#a855f7"
+            :gradient-angle="45"
+            :flicker="nameEnterFlicker"
+            :flicker-hover="nameHoverFlicker"
+          />
         </h1>
         <p class="hero-subtitle animate-on-scroll delay-1">
           {{ displayedSubtitle }}
@@ -51,8 +65,8 @@
       </div>
       <!-- Floating tech icons -->
       <div class="floating-icons">
-        <div v-for="(icon, index) in floatingIcons" :key="icon.name" 
-             class="floating-icon" 
+        <div v-for="(icon, index) in floatingIcons" :key="icon.name"
+             class="floating-icon"
              :class="`icon-${index}`"
              :style="{ animationDelay: `${index * 0.5}s` }">
           <span>{{ icon.symbol }}</span>
@@ -68,7 +82,7 @@
         <p class="section-subtitle">专注 · 热情 · 追求极致</p>
       </div>
       <div class="why-me-grid">
-        <div v-for="(reason, index) in whyChooseMe" :key="reason.title" 
+        <div v-for="(reason, index) in whyChooseMe" :key="reason.title"
              class="why-me-card animate-on-scroll"
              :style="{ animationDelay: `${index * 0.15}s` }">
           <div class="card-glow"></div>
@@ -98,7 +112,7 @@
         <div class="title-underline"></div>
       </div>
       <div class="skills-grid">
-        <div v-for="(skill, index) in skillSets" :key="skill.category" 
+        <div v-for="(skill, index) in skillSets" :key="skill.category"
              class="skill-card animate-on-scroll"
              :style="{ animationDelay: `${index * 0.1}s` }">
           <div class="skill-icon">
@@ -127,7 +141,7 @@
       </div>
       <div class="projects-grid">
 
-        <div v-for="(project, index) in projects" :key="project.name" 
+        <div v-for="(project, index) in projects" :key="project.name"
              class="project-card"
              :class="{ 'expanded': expandedProject === index }">
           <div class="project-image" :class="project.gradient" @click="toggleProject(index)">
@@ -153,12 +167,12 @@
                 <span>{{ hl }}</span>
               </div>
             </div>
-            <a :href="project.link" target="_blank" class="project-link">
+            <a v-if="project.link" :href="project.link" target="_blank" class="project-link">
               <span>访问项目</span>
               <el-icon><ArrowRight /></el-icon>
             </a>
           </div>
-          
+
           <!-- Expanded Detail Section -->
           <transition name="slide-fade">
             <div v-if="expandedProject === index" class="project-detail">
@@ -168,7 +182,7 @@
                   <el-icon><Close /></el-icon>
                 </el-button>
               </div>
-              
+
               <!-- Media Gallery -->
               <div class="media-gallery" v-if="project.media && project.media.length">
                 <div class="gallery-scroll">
@@ -191,15 +205,34 @@
                 </div>
               </div>
 
-              <!-- Key Features -->
+              <!-- 工作亮点（features 字段暂承载亮点内容，后续如需独立的核心功能/工作职责栏再说） -->
+              <!-- Work highlights (the features field carries highlight content for now) -->
+              <!-- 点击展开详细设计：detail 按换行拆段，0fr→1fr 网格动画 -->
+              <!-- Click to expand design details: detail split by newlines, 0fr→1fr grid animation -->
               <div class="key-features" v-if="project.features">
-                <h4>核心功能</h4>
+                <h4>工作亮点</h4>
                 <div class="features-grid">
-                  <div v-for="feature in project.features" :key="feature.title" class="feature-item">
+                  <div
+                    v-for="feature in project.features"
+                    :key="feature.title"
+                    class="feature-item"
+                    :class="{ 'has-detail': !!feature.detail, 'detail-open': openFeature === feature.title }"
+                    @click="feature.detail && toggleFeature(feature.title)"
+                  >
                     <span class="feature-icon">{{ feature.icon }}</span>
-                    <div>
-                      <h5>{{ feature.title }}</h5>
+                    <div class="feature-body">
+                      <div class="feature-head">
+                        <h5>{{ feature.title }}</h5>
+                        <el-icon v-if="feature.detail" class="feature-chevron"><ArrowDown /></el-icon>
+                      </div>
                       <p>{{ feature.desc }}</p>
+                      <div v-if="feature.detail" class="feature-detail-wrap">
+                        <div class="feature-detail-clip">
+                          <div class="feature-detail">
+                            <p v-for="(para, pi) in splitDetail(feature.detail)" :key="pi">{{ para }}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -217,7 +250,7 @@
         <div class="title-underline"></div>
       </div>
       <div class="timeline">
-        <div v-for="(item, index) in timeline" :key="index" 
+        <div v-for="(item, index) in timeline" :key="index"
              class="timeline-item animate-on-scroll"
              :style="{ animationDelay: `${index * 0.2}s` }">
           <div class="timeline-dot">
@@ -286,6 +319,9 @@ import {
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
+import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamera, Points, PointsMaterial, SRGBColorSpace, Scene, WebGLRenderer } from 'three'
+import CloudSky from '@/components/CloudSky.vue'
+import FlickerText from '@/components/FlickerText.vue'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -301,56 +337,75 @@ const heroData = ref({
   subtitle: '全栈开发工程师 / AI 架构爱好者 / 产品极客'
 })
 
-// Typing effect（基于 heroData）
-// 用 watch 把 heroData 同步到本地字符串，便于在 setInterval 中通过下标访问
-let fullText = ''
+// Typing effect（仅副标题；主标题名字改由 FlickerText 呈现）
+// Typing effect (subtitle only; the hero name is now rendered by FlickerText)
 let fullSubtitle = ''
-const displayedName = ref('')
-const nameIndex = ref(0)
 const displayedSubtitle = ref('')
 const subtitleIndex = ref(0)
 
-const typingInterval = ref(null)
 const subtitleInterval = ref(null)
+let subtitleDelayTimer = null
 
 const startTyping = () => {
-  if (!fullText) return
+  if (!fullSubtitle) return
   // 重置
-  displayedName.value = ''
   displayedSubtitle.value = ''
-  nameIndex.value = 0
   subtitleIndex.value = 0
 
-  if (typingInterval.value) clearInterval(typingInterval.value)
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
+  if (subtitleDelayTimer) clearTimeout(subtitleDelayTimer)
 
-  // Start typing name
-  typingInterval.value = setInterval(() => {
-    if (nameIndex.value < fullText.length) {
-      displayedName.value += fullText[nameIndex.value]
-      nameIndex.value++
-    } else {
-      clearInterval(typingInterval.value)
-      // Start typing subtitle after name is done
-      setTimeout(() => {
-        subtitleInterval.value = setInterval(() => {
-          if (subtitleIndex.value < fullSubtitle.length) {
-            displayedSubtitle.value += fullSubtitle[subtitleIndex.value]
-            subtitleIndex.value++
-          } else {
-            clearInterval(subtitleInterval.value)
-          }
-        }, 50)
-      }, 300)
-    }
-  }, 150)
+  // 保留原节奏：延迟 300ms 后开始打副标题
+  // Keep the original rhythm: subtitle typing starts after a 300ms delay
+  subtitleDelayTimer = setTimeout(() => {
+    subtitleInterval.value = setInterval(() => {
+      if (subtitleIndex.value < fullSubtitle.length) {
+        displayedSubtitle.value += fullSubtitle[subtitleIndex.value]
+        subtitleIndex.value++
+      } else {
+        clearInterval(subtitleInterval.value)
+      }
+    }, 50)
+  }, 300)
+}
+
+// FlickerText 名字闪烁配置
+// FlickerText name flicker configs
+// 入场：霓虹灯管点亮式——描边与实填交替亮起。注意：逐字母透明度闪烁对
+// background-clip:text 渐变文字不可见（背景画在父层），故只用整词相位闪烁
+// Enter: neon-tube warm-up alternating outline/filled. Letter-opacity flicker is
+// invisible on background-clip:text gradients (background paints on the parent),
+// so only whole-word phase flicker is used here
+const nameEnterFlicker = {
+  replay: 'yes',
+  ease: { duration: 2.2, ease: 'easeInOut' },
+  flickerCount: 9,
+  showStroke: true,
+  strokePosition: 'start',
+  strokeCount: 2,
+  strokeColor: 'var(--el-color-primary)',
+  strokeWidth: 1.5,
+  wordFlickerEnabled: true,
+  letterFlickerEnabled: false
+}
+// 悬停：整词快速闪 3 下
+// Hover: three quick whole-word blinks
+const nameHoverFlicker = {
+  ease: { duration: 1.5, ease: 'easeInOut' },
+  flickerCount: 3,
+  showStroke: false,
+  wordFlickerEnabled: true,
+  letterFlickerEnabled: false
 }
 
 onMounted(async () => {
+  // 初始化 3D 星空背景
+  initStarfield()
+  // 初始化元素按压动效
+  initField()
   // 先加载后台配置
   await loadAboutSnapshot()
-  // 同步 typing 字符串
-  fullText = heroData.value.name || ''
+  // 同步 typing 字符串（名字由 FlickerText 直接响应 heroData，无需同步）
   fullSubtitle = heroData.value.subtitle || ''
   // 启动打字机
   startTyping()
@@ -360,9 +415,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (typingInterval.value) clearInterval(typingInterval.value)
+  if (subtitleDelayTimer) clearTimeout(subtitleDelayTimer)
   if (subtitleInterval.value) clearInterval(subtitleInterval.value)
   if (observer.value) observer.value.disconnect()
+  disposeStarfield()
+  disposeField()
 })
 
 const observer = ref(null)
@@ -470,6 +527,7 @@ const loadAboutSnapshot = async () => {
     const res = await defaultApi.apiAboutGet()
     if (res?.code === 0 && res.data) {
       const data = res.data
+      console.log("data", data)
       // Hero
       if (data.hero) {
         heroData.value = {
@@ -489,6 +547,7 @@ const loadAboutSnapshot = async () => {
       }))
       skills.value = data.skills || []
       projectsRaw.value = data.projects || []
+      console.log(projectsRaw.value)
       timelineRaw.value = data.timeline || []
       if (data.contact) {
         contactData.value = {
@@ -507,9 +566,23 @@ const loadAboutSnapshot = async () => {
 
 // Project expand state
 const expandedProject = ref(null)
+// 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
+// Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
+const openFeature = ref(null)
 const toggleProject = (index) => {
   expandedProject.value = expandedProject.value === index ? null : index
+  openFeature.value = null
 }
+const toggleFeature = (title) => {
+  openFeature.value = openFeature.value === title ? null : title
+}
+// 详情按换行拆段渲染
+// Split the detail text into paragraphs by newlines
+const splitDetail = (detail) =>
+  String(detail || '')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
 
 // Media preview
 const mediaPreviewVisible = ref(false)
@@ -519,17 +592,263 @@ const openMediaPreview = (media) => {
   mediaPreviewVisible.value = true
 }
 
-// Particle styles
-const getParticleStyle = (index) => {
-  const size = Math.random() * 6 + 2
-  return {
-    width: `${size}px`,
-    height: `${size}px`,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    animationDelay: `${Math.random() * 10}s`,
-    animationDuration: `${Math.random() * 20 + 10}s`
+// ===== 3D 星云星空背景（Three.js） =====
+// ===== 3D nebula starfield background (Three.js) =====
+const CUBE_SIZE = 1000 // 立方体空间边长 / cube space edge length
+const STAR_TWINKLE = 0.35 // 闪烁速度系数 / twinkle speed factor
+// 三层星等：共 6000 颗，大小/亮度/色温分层营造纵深（贴图为圆形柔光，避免方块颗粒）
+// Three magnitude layers: 6000 stars total, sized/tinted for depth (round soft sprite, no square dots)
+const STAR_LAYERS = [
+  { count: 4000, size: 1.2, color: 0xaac8ff, opacity: 0.55 },
+  { count: 1600, size: 2.2, color: 0x6ea8ff, opacity: 0.7 },
+  { count: 400, size: 3.6, color: 0x4e8cff, opacity: 0.85 }
+]
+
+const starfieldRef = ref(null)
+let starAnimationId = null
+let starRenderer = null
+let starScene = null
+let starCamera = null
+let starGroup = null
+let starLayers = []
+let starTexture = null
+
+// 生成圆形柔光星点贴图：中心亮核 + 柔和光晕
+// Generate the round soft-glow star sprite: bright core + gentle halo
+const createStarTexture = () => {
+  const size = 64
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')
+  gradient.addColorStop(0.3, 'rgba(232, 240, 255, 0.85)')
+  gradient.addColorStop(0.6, 'rgba(160, 200, 255, 0.22)')
+  gradient.addColorStop(1, 'rgba(160, 200, 255, 0)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, size, size)
+  const texture = new CanvasTexture(canvas)
+  texture.colorSpace = SRGBColorSpace
+  return texture
+}
+
+// 初始化星空：在立方体空间内随机分布半透明蓝色粒子，相机置于 z=220
+// Init starfield: scatter translucent blue particles in a cube space, camera at z=220
+const initStarfield = () => {
+  const container = starfieldRef.value
+  if (!container || starRenderer) return
+
+  starScene = new Scene()
+  starCamera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
+  starCamera.position.z = 220
+
+  starTexture = createStarTexture()
+  starGroup = new Group()
+  starLayers = STAR_LAYERS.map((layer) => {
+    const geometry = new BufferGeometry()
+    const positions = new Float32Array(layer.count * 3)
+    for (let i = 0; i < positions.length; i++) {
+      positions[i] = (Math.random() - 0.5) * CUBE_SIZE
+    }
+    geometry.setAttribute('position', new BufferAttribute(positions, 3))
+    const material = new PointsMaterial({
+      color: layer.color,
+      size: layer.size,
+      map: starTexture,
+      transparent: true,
+      opacity: layer.opacity,
+      sizeAttenuation: true,
+      depthWrite: false
+    })
+    const points = new Points(geometry, material)
+    starGroup.add(points)
+    return { points, material, baseOpacity: layer.opacity, phase: Math.random() * Math.PI * 2 }
+  })
+  starScene.add(starGroup)
+
+  starRenderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+  starRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  starRenderer.setSize(window.innerWidth, window.innerHeight)
+  // 透明清屏色，露出容器的 CSS 渐变深空底色
+  // Transparent clear color to reveal the container's CSS deep-space gradient
+  starRenderer.setClearColor(0x000000, 0)
+  container.appendChild(starRenderer.domElement)
+  window.addEventListener('resize', handleStarfieldResize)
+
+  animateStarfield()
+}
+
+// 每帧绕 Y 轴与 X 轴极缓慢旋转整团粒子云，各层相位错开轻微闪烁
+// Rotate the whole cloud very slowly around Y/X axes; layers twinkle out of phase
+const animateStarfield = () => {
+  starAnimationId = requestAnimationFrame(animateStarfield)
+  starGroup.rotation.y += 0.0012
+  starGroup.rotation.x += 0.0004
+  const t = performance.now() * 0.001 * STAR_TWINKLE
+  for (const layer of starLayers) {
+    layer.material.opacity = layer.baseOpacity * (0.82 + 0.18 * Math.sin(t + layer.phase))
   }
+  starRenderer.render(starScene, starCamera)
+}
+
+// 窗口 resize 自适应，画布保持全屏
+// Adapt to window resize, keep the canvas fullscreen
+const handleStarfieldResize = () => {
+  if (!starRenderer || !starCamera) return
+  starCamera.aspect = window.innerWidth / window.innerHeight
+  starCamera.updateProjectionMatrix()
+  starRenderer.setSize(window.innerWidth, window.innerHeight)
+}
+
+// 离开页面时释放 WebGL 资源，避免上下文泄漏
+// Dispose WebGL resources on leave to avoid context leaks
+const disposeStarfield = () => {
+  cancelAnimationFrame(starAnimationId)
+  window.removeEventListener('resize', handleStarfieldResize)
+  for (const layer of starLayers) {
+    layer.points.geometry.dispose()
+    layer.material.dispose()
+  }
+  starLayers = []
+  if (starTexture) {
+    starTexture.dispose()
+    starTexture = null
+  }
+  if (starRenderer) {
+    starRenderer.dispose()
+    starRenderer.forceContextLoss?.()
+    starRenderer.domElement.remove()
+    starRenderer = null
+  }
+  starScene = null
+  starCamera = null
+  starGroup = null
+}
+
+// ===== 鼠标交互元素动效（磁性按压 + 弹性回弹） =====
+// ===== Mouse-interactive element motion (magnetic press + elastic rebound) =====
+const FIELD_RADIUS = 240 // 交互影响半径 px / influence radius
+const FIELD_STRENGTH = 12 // 最大推离位移 px / max push displacement
+const FIELD_STIFFNESS = 0.1 // 弹簧刚度 / spring stiffness
+const FIELD_DAMPING = 0.75 // 弹簧阻尼（带轻微过冲的弹性感）/ spring damping (subtle overshoot)
+const FIELD_SCAN_INTERVAL = 90 // 目标元素重扫间隔（帧）/ target rescan interval (frames)
+// 参与按压动效的元素选择器 / selectors of elements joining the press effect
+const FIELD_SELECTORS = '.why-me-card, .skill-card, .project-card, .timeline-content, .contact-card, .hero-actions .action-btn, .avatar-wrapper'
+
+const fieldStateMap = new Map()
+let fieldAnimationId = null
+let fieldFrame = 0
+const fieldMouse = { x: 0, y: 0, active: false }
+
+// 收集目标元素：数据异步加载后卡片才会渲染，故周期性重扫并增量维护状态
+// Collect target elements: cards render after async data, so rescan periodically
+const collectFieldTargets = () => {
+  const els = document.querySelectorAll(FIELD_SELECTORS)
+  const seen = new Set()
+  els.forEach((el) => {
+    seen.add(el)
+    if (!fieldStateMap.has(el)) {
+      fieldStateMap.set(el, { el, x: 0, y: 0, vx: 0, vy: 0 })
+    }
+  })
+  for (const key of [...fieldStateMap.keys()]) {
+    if (!seen.has(key)) fieldStateMap.delete(key)
+  }
+}
+
+// 物理步进：推离目标随距离二次衰减，弹簧阻尼积分产生按压与回弹
+// Physics step: push target falls off quadratically, spring-damper integrates press & rebound
+const updateField = () => {
+  const states = [...fieldStateMap.values()]
+  // 先集中读取几何信息，再统一写样式，避免逐元素读写触发布局抖动
+  // Read all rects first, then write styles, to avoid per-element layout thrash
+  const rects = states.map((s) => s.el.getBoundingClientRect())
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i]
+    const rect = rects[i]
+    let tx = 0
+    let ty = 0
+    if (rect.width > 0 && fieldMouse.active) {
+      // 减去当前位移还原真实中心，避免位移反馈干扰距离计算
+      // Subtract the applied offset to recover the true center (no feedback)
+      const cx = rect.left + rect.width / 2 - s.x
+      const cy = rect.top + rect.height / 2 - s.y
+      const dx = cx - fieldMouse.x
+      const dy = cy - fieldMouse.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < FIELD_RADIUS && dist > 0.001) {
+        const f = 1 - dist / FIELD_RADIUS
+        const push = f * f * FIELD_STRENGTH
+        tx = (dx / dist) * push
+        ty = (dy / dist) * push
+      }
+    }
+    s.vx = (s.vx + (tx - s.x) * FIELD_STIFFNESS) * FIELD_DAMPING
+    s.vy = (s.vy + (ty - s.y) * FIELD_STIFFNESS) * FIELD_DAMPING
+    s.x += s.vx
+    s.y += s.vy
+  }
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i]
+    if (!fieldMouse.active && Math.abs(s.x) < 0.02 && Math.abs(s.y) < 0.02 && Math.abs(s.vx) < 0.02 && Math.abs(s.vy) < 0.02) {
+      s.x = 0
+      s.y = 0
+      s.vx = 0
+      s.vy = 0
+      s.el.style.translate = ''
+      s.el.style.rotate = ''
+      continue
+    }
+    // 用独立 transform 属性 translate/rotate，不覆盖元素自身的 CSS hover transform
+    // Use individual transform props so the elements' own CSS hover transforms still compose
+    s.el.style.translate = `${s.x.toFixed(2)}px ${s.y.toFixed(2)}px`
+    s.el.style.rotate = `${(s.x * 0.06).toFixed(3)}deg`
+  }
+}
+
+const animateField = () => {
+  fieldAnimationId = requestAnimationFrame(animateField)
+  if (fieldFrame % FIELD_SCAN_INTERVAL === 0) collectFieldTargets()
+  fieldFrame++
+  updateField()
+}
+
+const handleFieldPointerMove = (e) => {
+  fieldMouse.x = e.clientX
+  fieldMouse.y = e.clientY
+  fieldMouse.active = true
+}
+
+// 鼠标移出窗口/页面失焦：释放按压，元素弹性回弹
+// Pointer leaves the window / page blurs: release the press, elements rebound
+const handleFieldPointerLeave = () => {
+  fieldMouse.active = false
+}
+
+const initField = () => {
+  if (fieldAnimationId) return
+  // 尊重系统"减少动态效果"偏好 / respect the system reduced-motion preference
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  collectFieldTargets()
+  window.addEventListener('pointermove', handleFieldPointerMove, { passive: true })
+  document.documentElement.addEventListener('mouseleave', handleFieldPointerLeave)
+  window.addEventListener('blur', handleFieldPointerLeave)
+  animateField()
+}
+
+const disposeField = () => {
+  cancelAnimationFrame(fieldAnimationId)
+  window.removeEventListener('pointermove', handleFieldPointerMove)
+  document.documentElement.removeEventListener('mouseleave', handleFieldPointerLeave)
+  window.removeEventListener('blur', handleFieldPointerLeave)
+  fieldAnimationId = null
+  fieldStateMap.forEach((s) => {
+    s.el.style.translate = ''
+    s.el.style.rotate = ''
+  })
+  fieldStateMap.clear()
+  fieldMouse.active = false
 }
 
 const getContactParticleStyle = (index) => {
@@ -556,30 +875,31 @@ const scrollToContact = () => {
 .about-container {
   position: relative;
   width: 100%;
-  background-color: var(--el-bg-color-page, #f8fafc);
   color: var(--el-text-color-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
 }
 
-// Particle Background
-.particle-bg {
+// 3D 星空背景容器：CSS 渐变作深空底色，WebGL 画布透明叠加
+// Starfield container: CSS gradient as the deep-space base, WebGL canvas overlaid transparently
+.starfield-bg {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
   overflow: hidden;
-}
+  pointer-events: none;
+  background: linear-gradient(180deg, #eaf1ff 0%, #f6f9ff 45%, #edf2fc 100%);
 
-.particle {
-  position: absolute;
-  background: var(--el-color-primary-light-5);
-  border-radius: 50%;
-  opacity: 0.3;
-  animation: float-particle linear infinite;
+  html.dark & {
+    background: linear-gradient(180deg, #04070f 0%, #0a1024 45%, #101a38 100%);
+  }
+
+  canvas {
+    display: block;
+  }
 }
 
 @keyframes float-particle {
@@ -631,7 +951,7 @@ const scrollToContact = () => {
     margin: 0 auto;
     border-radius: 2px;
     position: relative;
-    
+
     &::after {
       content: '';
       position: absolute;
@@ -681,6 +1001,14 @@ const scrollToContact = () => {
   padding: 80px 24px;
   overflow: hidden;
 
+  // 云海天幕：垫在光斑与内容之下，底部渐隐露出星空，避免与星空生硬切换
+  // Cloud-sky dome: beneath blobs and content, fading down into the starfield for a seamless handoff
+  .hero-sky {
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 97%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 97%);
+  }
+
   .hero-content {
     position: relative;
     z-index: 2;
@@ -720,7 +1048,7 @@ const scrollToContact = () => {
         border: 2px solid var(--el-color-primary-light-3);
         border-radius: 50%;
         animation: pulse-ring 3s infinite;
-        
+
         &.ring-2 {
           animation-delay: 1.5s;
         }
@@ -732,25 +1060,75 @@ const scrollToContact = () => {
       bottom: -15px;
       left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(45deg, #10b981, #34d399);
-      color: white;
-      padding: 8px 18px;
-      border-radius: 24px;
-      font-size: 13px;
+      // 毛玻璃胶囊：呼应云海/星空底幕的通透质感；品牌绿只留一线描边与呼吸光点，不再整块铺色
+      // Glass capsule: echoes the sky/space backdrop; emerald shrinks to a hairline ring and a breathing dot
+      padding: 7px 16px 7px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
+      backdrop-filter: blur(12px) saturate(1.5);
+      -webkit-backdrop-filter: blur(12px) saturate(1.5);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow:
+        0 8px 24px rgba(16, 185, 129, 0.22),
+        0 2px 8px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      color: #047857;
+      font-size: 12.5px;
       font-weight: 600;
+      letter-spacing: 0.02em;
       white-space: nowrap;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
       display: flex;
       align-items: center;
       gap: 8px;
-      animation: badge-bounce 2s ease-in-out infinite;
+      overflow: hidden;
+      animation: badge-bounce 3s ease-in-out infinite;
+
+      // 掠过胶囊的绿调扫光（复用全局 shimmer 关键帧）
+      // A green-tinted sheen sweeping across the capsule (reuses the global shimmer keyframes)
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(105deg, transparent, rgba(52, 211, 153, 0.18), transparent);
+        animation: shimmer 3.5s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      // 暗色下沉入夜空：深色玻璃底 + 更亮的文字与描边
+      // Dark theme sinks into the night: darker glass, brighter text and ring
+      html.dark & {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.5));
+        border-color: rgba(52, 211, 153, 0.3);
+        box-shadow:
+          0 8px 24px rgba(0, 0, 0, 0.35),
+          0 0 18px rgba(16, 185, 129, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        color: #6ee7b7;
+      }
 
       .status-dot {
+        position: relative;
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: white;
+        flex-shrink: 0;
+        background: radial-gradient(circle at 30% 30%, #34d399, #059669);
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
         animation: pulse-dot 2s infinite;
+
+        // 外圈信号波：与主头像 pulse-ring 同语言的“在线心跳”
+        // Outer signal ring: an "online heartbeat" echoing the avatar's pulse-ring
+        &::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 1px solid rgba(16, 185, 129, 0.6);
+          animation: dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
       }
     }
   }
@@ -762,19 +1140,11 @@ const scrollToContact = () => {
     color: var(--el-text-color-primary, #0f172a);
     letter-spacing: -1px;
 
-    .highlight {
-      background: linear-gradient(45deg, var(--el-color-primary), #6366f1, #a855f7);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    // FlickerText 名字特效：在组件内联渐变之上补回原 .highlight 的流动渐变
+    // FlickerText name effect: layers the original flowing gradient over the component's inline gradient
+    .flicker-name {
+      background-size: 200% 200% !important;
       animation: gradient-shift 3s ease infinite;
-    }
-
-    .cursor {
-      display: inline-block;
-      -webkit-text-fill-color: var(--el-color-primary);
-      animation: blink 1s step-end infinite;
     }
   }
 
@@ -795,7 +1165,9 @@ const scrollToContact = () => {
       padding: 14px 36px;
       font-weight: 600;
       font-size: 16px;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+      // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
 
@@ -886,6 +1258,12 @@ const scrollToContact = () => {
       opacity: 0.5;
       border-radius: 50%;
       animation: float-blob 15s infinite alternate ease-in-out;
+
+      // 暗色下云海已撑起天幕，彩斑调暗以免与夜空云层打架
+      // Dark theme: the cloud dome already fills the sky; dim the blobs to avoid clutter
+      html.dark & {
+        opacity: 0.22;
+      }
     }
 
     .blob-1 {
@@ -931,7 +1309,7 @@ const scrollToContact = () => {
     font-size: 32px;
     opacity: 0.15;
     animation: float-icon 20s linear infinite;
-    
+
     &.icon-0 { top: 10%; left: 5%; }
     &.icon-1 { top: 20%; right: 10%; }
     &.icon-2 { top: 60%; left: 8%; }
@@ -953,7 +1331,7 @@ const scrollToContact = () => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
+    background:
       radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
       radial-gradient(ellipse at 80% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
     pointer-events: none;
@@ -975,7 +1353,9 @@ const scrollToContact = () => {
   padding: 32px;
   border-radius: 24px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+  // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(255, 255, 255, 0.8);
   overflow: hidden;
 
@@ -1101,7 +1481,7 @@ const scrollToContact = () => {
 
 /* Skills Section */
 .skills-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .skills-grid {
@@ -1114,7 +1494,9 @@ const scrollToContact = () => {
     padding: 30px;
     border-radius: 24px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+    // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--el-border-color-lighter);
 
     &:hover {
@@ -1213,7 +1595,7 @@ const scrollToContact = () => {
 
 /* Projects Section */
 .projects-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .projects-grid {
@@ -1556,9 +1938,11 @@ const scrollToContact = () => {
     }
 
     .features-grid {
+      // 单列布局：展开的详细设计需要整行宽度才可读
+      // Single column: expanded design details need the full row width
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1fr;
+      gap: 12px;
 
       .feature-item {
         display: flex;
@@ -1567,10 +1951,20 @@ const scrollToContact = () => {
         padding: 18px;
         border-radius: 16px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: all 0.2s;
+        border: 1px solid transparent;
+        transition: box-shadow 0.2s, border-color 0.2s;
+
+        // 有详情的项可点击展开
+        // Items with details are clickable
+        &.has-detail {
+          cursor: pointer;
+        }
+
+        &.detail-open {
+          border-color: var(--el-color-primary-light-7);
+        }
 
         &:hover {
-          transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
@@ -1579,11 +1973,33 @@ const scrollToContact = () => {
           flex-shrink: 0;
         }
 
-        h5 {
-          font-size: 15px;
-          font-weight: 700;
-          margin: 0 0 6px 0;
-          color: var(--el-text-color-primary);
+        .feature-body {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .feature-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 6px;
+
+          h5 {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--el-text-color-primary);
+          }
+
+          .feature-chevron {
+            color: var(--el-color-primary);
+            transition: transform 0.3s;
+          }
+        }
+
+        &.detail-open .feature-chevron {
+          transform: rotate(180deg);
         }
 
         p {
@@ -1591,6 +2007,41 @@ const scrollToContact = () => {
           color: var(--el-text-color-secondary);
           margin: 0;
           line-height: 1.5;
+        }
+
+        // 0fr→1fr 网格展开动画（内容始终渲染，比 max-height 更稳）
+        // 0fr→1fr grid expand animation (content stays rendered; more robust than max-height)
+        .feature-detail-wrap {
+          display: grid;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+          .feature-detail-clip {
+            overflow: hidden;
+          }
+
+          .feature-detail {
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-left: 2px solid var(--el-color-primary-light-5);
+            background: var(--el-fill-color-light);
+            border-radius: 0 10px 10px 0;
+
+            p {
+              font-size: 13px;
+              color: var(--el-text-color-regular);
+              line-height: 1.7;
+              margin: 0;
+
+              & + p {
+                margin-top: 8px;
+              }
+            }
+          }
+        }
+
+        &.detail-open .feature-detail-wrap {
+          grid-template-rows: 1fr;
         }
       }
     }
@@ -1627,7 +2078,7 @@ const scrollToContact = () => {
 
 /* Timeline Section */
 .timeline-section {
-  background: var(--el-bg-color-page);
+  background: transparent;
 }
 
 .timeline {
@@ -1691,7 +2142,9 @@ const scrollToContact = () => {
       padding: 28px;
       border-radius: 20px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      // 显式列举过渡属性：排除 translate/rotate（由按压动效逐帧驱动）
+      // Explicit transition props: exclude translate/rotate (driven per-frame by the press effect)
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border: 1px solid var(--el-border-color-lighter);
 
       &:hover {
@@ -1858,17 +2311,17 @@ const scrollToContact = () => {
 
 @keyframes badge-bounce {
   0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-5px); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+@keyframes dot-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  80%, 100% { transform: scale(2.4); opacity: 0; }
 }
 
 @keyframes rotate-gradient {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
 }
 
 @keyframes gradient-shift {

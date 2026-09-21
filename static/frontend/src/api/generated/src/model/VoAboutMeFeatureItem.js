@@ -50,6 +50,9 @@ class VoAboutMeFeatureItem {
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
             }
+            if (data.hasOwnProperty('detail')) {
+                obj['detail'] = ApiClient.convertToType(data['detail'], 'String');
+            }
             if (data.hasOwnProperty('icon')) {
                 obj['icon'] = ApiClient.convertToType(data['icon'], 'String');
             }
@@ -69,6 +72,10 @@ class VoAboutMeFeatureItem {
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
             throw new Error("Expected the field `desc` to be a primitive type in the JSON string but got " + data['desc']);
+        }
+        // ensure the json data is a string
+        if (data['detail'] && !(typeof data['detail'] === 'string' || data['detail'] instanceof String)) {
+            throw new Error("Expected the field `detail` to be a primitive type in the JSON string but got " + data['detail']);
         }
         // ensure the json data is a string
         if (data['icon'] && !(typeof data['icon'] === 'string' || data['icon'] instanceof String)) {
@@ -91,6 +98,12 @@ class VoAboutMeFeatureItem {
  * @member {String} desc
  */
 VoAboutMeFeatureItem.prototype['desc'] = undefined;
+
+/**
+ * 详细设计（可空 / optional expanded detail）
+ * @member {String} detail
+ */
+VoAboutMeFeatureItem.prototype['detail'] = undefined;
 
 /**
  * @member {String} icon

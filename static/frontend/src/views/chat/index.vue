@@ -1006,7 +1006,8 @@ const processFiles = (files) => {
     return
   }
 
-  for (const file of files) {
+  // 用 let：循环体内可能用推断的 MIME 重建 File 并回写 / let: the loop body may rebind `file` after MIME inference
+  for (let file of files) {
     console.log('处理文件:', file.name, 'MIME type:', file.type, '扩展名:', file.name.split('.').pop())
 
     if (!isSupportedFileType(file)) {

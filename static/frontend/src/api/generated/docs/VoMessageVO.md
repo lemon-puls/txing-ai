@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **name** | **String** | 消息名称 | [optional] 
 **reasoningContent** | **String** | 思考过程内容 | [optional] 
 **role** | **String** | 消息角色 | [optional] 
+**workflowError** | **String** | 执行失败详情（原始错误，前端\&quot;查看详情\&quot;用） | [optional] 
 **workflowStatus** | **String** | 工作流相关字段 | [optional] 
 
 

@@ -78,6 +78,9 @@ class VoMessageVO {
             if (data.hasOwnProperty('role')) {
                 obj['role'] = ApiClient.convertToType(data['role'], 'String');
             }
+            if (data.hasOwnProperty('workflowError')) {
+                obj['workflowError'] = ApiClient.convertToType(data['workflowError'], 'String');
+            }
             if (data.hasOwnProperty('workflowStatus')) {
                 obj['workflowStatus'] = ApiClient.convertToType(data['workflowStatus'], 'String');
             }
@@ -136,6 +139,10 @@ class VoMessageVO {
         // ensure the json data is a string
         if (data['role'] && !(typeof data['role'] === 'string' || data['role'] instanceof String)) {
             throw new Error("Expected the field `role` to be a primitive type in the JSON string but got " + data['role']);
+        }
+        // ensure the json data is a string
+        if (data['workflowError'] && !(typeof data['workflowError'] === 'string' || data['workflowError'] instanceof String)) {
+            throw new Error("Expected the field `workflowError` to be a primitive type in the JSON string but got " + data['workflowError']);
         }
         // ensure the json data is a string
         if (data['workflowStatus'] && !(typeof data['workflowStatus'] === 'string' || data['workflowStatus'] instanceof String)) {
@@ -209,6 +216,12 @@ VoMessageVO.prototype['reasoningContent'] = undefined;
  * @member {String} role
  */
 VoMessageVO.prototype['role'] = undefined;
+
+/**
+ * 执行失败详情（原始错误，前端\"查看详情\"用）
+ * @member {String} workflowError
+ */
+VoMessageVO.prototype['workflowError'] = undefined;
 
 /**
  * 工作流相关字段

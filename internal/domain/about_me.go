@@ -67,10 +67,11 @@ type AboutMeProject struct {
 		Icon string `json:"icon"`
 	} `gorm:"type:json;serializer:json;comment:技术栈" json:"techStack"`
 	Features []struct {
-		Icon  string `json:"icon"`
-		Title string `json:"title"`
-		Desc  string `json:"desc"`
-	} `gorm:"type:json;serializer:json;comment:核心功能" json:"features"`
+		Icon   string `json:"icon"`
+		Title  string `json:"title"`
+		Desc   string `json:"desc"`
+		Detail string `json:"detail"` // 详细设计（前端点击展开展示 / expanded on click in frontend）
+	} `gorm:"type:json;serializer:json;comment:工作亮点" json:"features"`
 	Sort int `gorm:"type:int;default:0;comment:排序" json:"sort"`
 }
 

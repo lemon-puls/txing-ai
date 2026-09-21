@@ -2305,7 +2305,7 @@ No authorization required
 import TxingAiApi from 'txing_ai_api';
 
 let apiInstance = new TxingAiApi.DefaultApi();
-let filePath = "filePath_example"; // String | 文件相对路径
+let filePath = "filePath_example"; // String | 文件相对路径（文件名或 用户ID/日期/文件名）
 apiInstance.apiFileDownloadGet(filePath).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
 }, (error) => {
@@ -2319,7 +2319,7 @@ apiInstance.apiFileDownloadGet(filePath).then((data) => {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **filePath** | **String**| 文件相对路径 | 
+ **filePath** | **String**| 文件相对路径（文件名或 用户ID/日期/文件名） | 
 
 ### Return type
 
