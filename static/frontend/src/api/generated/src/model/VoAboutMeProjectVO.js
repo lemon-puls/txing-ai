@@ -12,6 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
+import VoAboutMeCoverMediaItem from './VoAboutMeCoverMediaItem';
 import VoAboutMeFeatureItem from './VoAboutMeFeatureItem';
 import VoAboutMeMediaItem from './VoAboutMeMediaItem';
 import VoAboutMeTechItem from './VoAboutMeTechItem';
@@ -55,6 +56,9 @@ class VoAboutMeProjectVO {
             }
             if (data.hasOwnProperty('category')) {
                 obj['category'] = ApiClient.convertToType(data['category'], 'String');
+            }
+            if (data.hasOwnProperty('coverMedia')) {
+                obj['coverMedia'] = ApiClient.convertToType(data['coverMedia'], [VoAboutMeCoverMediaItem]);
             }
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
@@ -109,6 +113,16 @@ class VoAboutMeProjectVO {
         // ensure the json data is a string
         if (data['category'] && !(typeof data['category'] === 'string' || data['category'] instanceof String)) {
             throw new Error("Expected the field `category` to be a primitive type in the JSON string but got " + data['category']);
+        }
+        if (data['coverMedia']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['coverMedia'])) {
+                throw new Error("Expected the field `coverMedia` to be an array in the JSON data but got " + data['coverMedia']);
+            }
+            // validate the optional field `coverMedia` (array)
+            for (const item of data['coverMedia']) {
+                VoAboutMeCoverMediaItem.validateJSON(item);
+            };
         }
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
@@ -187,6 +201,11 @@ VoAboutMeProjectVO.prototype['badge'] = undefined;
  * @member {String} category
  */
 VoAboutMeProjectVO.prototype['category'] = undefined;
+
+/**
+ * @member {Array.<module:model/VoAboutMeCoverMediaItem>} coverMedia
+ */
+VoAboutMeProjectVO.prototype['coverMedia'] = undefined;
 
 /**
  * @member {String} desc

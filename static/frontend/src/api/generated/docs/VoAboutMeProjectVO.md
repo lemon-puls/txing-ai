@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **badge** | **String** |  | [optional] 
 **category** | **String** | 项目类别 company/personal | [optional] 
+**coverMedia** | [**[VoAboutMeCoverMediaItem]**](VoAboutMeCoverMediaItem.md) |  | [optional] 
 **desc** | **String** |  | [optional] 
 **features** | [**[VoAboutMeFeatureItem]**](VoAboutMeFeatureItem.md) |  | [optional] 
 **gradient** | **String** |  | [optional] 

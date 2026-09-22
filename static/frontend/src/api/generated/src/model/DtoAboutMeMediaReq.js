@@ -14,18 +14,18 @@
 import ApiClient from '../ApiClient';
 
 /**
- * The VoAboutMeMediaItem model module.
- * @module model/VoAboutMeMediaItem
+ * The DtoAboutMeMediaReq model module.
+ * @module model/DtoAboutMeMediaReq
  * @version 1.0
  */
-class VoAboutMeMediaItem {
+class DtoAboutMeMediaReq {
     /**
-     * Constructs a new <code>VoAboutMeMediaItem</code>.
-     * @alias module:model/VoAboutMeMediaItem
+     * Constructs a new <code>DtoAboutMeMediaReq</code>.
+     * @alias module:model/DtoAboutMeMediaReq
      */
     constructor() { 
         
-        VoAboutMeMediaItem.initialize(this);
+        DtoAboutMeMediaReq.initialize(this);
     }
 
     /**
@@ -37,15 +37,15 @@ class VoAboutMeMediaItem {
     }
 
     /**
-     * Constructs a <code>VoAboutMeMediaItem</code> from a plain JavaScript object, optionally creating a new instance.
+     * Constructs a <code>DtoAboutMeMediaReq</code> from a plain JavaScript object, optionally creating a new instance.
      * Copies all relevant properties from <code>data</code> to <code>obj</code> if supplied or a new instance if not.
      * @param {Object} data The plain JavaScript object bearing properties of interest.
-     * @param {module:model/VoAboutMeMediaItem} obj Optional instance to populate.
-     * @return {module:model/VoAboutMeMediaItem} The populated <code>VoAboutMeMediaItem</code> instance.
+     * @param {module:model/DtoAboutMeMediaReq} obj Optional instance to populate.
+     * @return {module:model/DtoAboutMeMediaReq} The populated <code>DtoAboutMeMediaReq</code> instance.
      */
     static constructFromObject(data, obj) {
         if (data) {
-            obj = obj || new VoAboutMeMediaItem();
+            obj = obj || new DtoAboutMeMediaReq();
 
             if (data.hasOwnProperty('caption')) {
                 obj['caption'] = ApiClient.convertToType(data['caption'], 'String');
@@ -56,17 +56,14 @@ class VoAboutMeMediaItem {
             if (data.hasOwnProperty('type')) {
                 obj['type'] = ApiClient.convertToType(data['type'], 'String');
             }
-            if (data.hasOwnProperty('url')) {
-                obj['url'] = ApiClient.convertToType(data['url'], 'String');
-            }
         }
         return obj;
     }
 
     /**
-     * Validates the JSON data with respect to <code>VoAboutMeMediaItem</code>.
+     * Validates the JSON data with respect to <code>DtoAboutMeMediaReq</code>.
      * @param {Object} data The plain JavaScript object bearing properties of interest.
-     * @return {boolean} to indicate whether the JSON data is valid with respect to <code>VoAboutMeMediaItem</code>.
+     * @return {boolean} to indicate whether the JSON data is valid with respect to <code>DtoAboutMeMediaReq</code>.
      */
     static validateJSON(data) {
         // ensure the json data is a string
@@ -81,10 +78,6 @@ class VoAboutMeMediaItem {
         if (data['type'] && !(typeof data['type'] === 'string' || data['type'] instanceof String)) {
             throw new Error("Expected the field `type` to be a primitive type in the JSON string but got " + data['type']);
         }
-        // ensure the json data is a string
-        if (data['url'] && !(typeof data['url'] === 'string' || data['url'] instanceof String)) {
-            throw new Error("Expected the field `url` to be a primitive type in the JSON string but got " + data['url']);
-        }
 
         return true;
     }
@@ -97,29 +90,22 @@ class VoAboutMeMediaItem {
 /**
  * @member {String} caption
  */
-VoAboutMeMediaItem.prototype['caption'] = undefined;
+DtoAboutMeMediaReq.prototype['caption'] = undefined;
 
 /**
- * COS 对象 key（落库值）
  * @member {String} key
  */
-VoAboutMeMediaItem.prototype['key'] = undefined;
+DtoAboutMeMediaReq.prototype['key'] = undefined;
 
 /**
  * @member {String} type
  */
-VoAboutMeMediaItem.prototype['type'] = undefined;
-
-/**
- * 带签名的临时访问 URL
- * @member {String} url
- */
-VoAboutMeMediaItem.prototype['url'] = undefined;
+DtoAboutMeMediaReq.prototype['type'] = undefined;
 
 
 
 
 
 
-export default VoAboutMeMediaItem;
+export default DtoAboutMeMediaReq;
 

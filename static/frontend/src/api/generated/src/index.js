@@ -37,6 +37,8 @@ import ApiWorkflowIdVersionsPost200Response from './model/ApiWorkflowIdVersionsP
 import ApiWorkflowPublicIdGet200Response from './model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from './model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost200Response';
+import DtoAboutMeCoverMediaReq from './model/DtoAboutMeCoverMediaReq';
+import DtoAboutMeMediaReq from './model/DtoAboutMeMediaReq';
 import DtoAgentExecReq from './model/DtoAgentExecReq';
 import DtoBatchDeleteRequest from './model/DtoBatchDeleteRequest';
 import DtoCloneTemplateReq from './model/DtoCloneTemplateReq';
@@ -44,7 +46,6 @@ import DtoConversationListRequest from './model/DtoConversationListRequest';
 import DtoCreateAboutMeFloatingIconReq from './model/DtoCreateAboutMeFloatingIconReq';
 import DtoCreateAboutMeProjectReq from './model/DtoCreateAboutMeProjectReq';
 import DtoCreateAboutMeProjectReqFeaturesInner from './model/DtoCreateAboutMeProjectReqFeaturesInner';
-import DtoCreateAboutMeProjectReqMediaInner from './model/DtoCreateAboutMeProjectReqMediaInner';
 import DtoCreateAboutMeProjectReqTechStackInner from './model/DtoCreateAboutMeProjectReqTechStackInner';
 import DtoCreateAboutMeReasonReq from './model/DtoCreateAboutMeReasonReq';
 import DtoCreateAboutMeReasonReqStatsInner from './model/DtoCreateAboutMeReasonReqStatsInner';
@@ -87,6 +88,7 @@ import GlobalModelMappingCondition from './model/GlobalModelMappingCondition';
 import UtilsResponse from './model/UtilsResponse';
 import VoAboutMeContactLink from './model/VoAboutMeContactLink';
 import VoAboutMeContactVO from './model/VoAboutMeContactVO';
+import VoAboutMeCoverMediaItem from './model/VoAboutMeCoverMediaItem';
 import VoAboutMeFeatureItem from './model/VoAboutMeFeatureItem';
 import VoAboutMeFloatingIconVO from './model/VoAboutMeFloatingIconVO';
 import VoAboutMeHeroVO from './model/VoAboutMeHeroVO';
@@ -303,6 +305,18 @@ export {
     ApiWorkflowValidatePost200Response,
 
     /**
+     * The DtoAboutMeCoverMediaReq model constructor.
+     * @property {module:model/DtoAboutMeCoverMediaReq}
+     */
+    DtoAboutMeCoverMediaReq,
+
+    /**
+     * The DtoAboutMeMediaReq model constructor.
+     * @property {module:model/DtoAboutMeMediaReq}
+     */
+    DtoAboutMeMediaReq,
+
+    /**
      * The DtoAgentExecReq model constructor.
      * @property {module:model/DtoAgentExecReq}
      */
@@ -343,12 +357,6 @@ export {
      * @property {module:model/DtoCreateAboutMeProjectReqFeaturesInner}
      */
     DtoCreateAboutMeProjectReqFeaturesInner,
-
-    /**
-     * The DtoCreateAboutMeProjectReqMediaInner model constructor.
-     * @property {module:model/DtoCreateAboutMeProjectReqMediaInner}
-     */
-    DtoCreateAboutMeProjectReqMediaInner,
 
     /**
      * The DtoCreateAboutMeProjectReqTechStackInner model constructor.
@@ -601,6 +609,12 @@ export {
      * @property {module:model/VoAboutMeContactVO}
      */
     VoAboutMeContactVO,
+
+    /**
+     * The VoAboutMeCoverMediaItem model constructor.
+     * @property {module:model/VoAboutMeCoverMediaItem}
+     */
+    VoAboutMeCoverMediaItem,
 
     /**
      * The VoAboutMeFeatureItem model constructor.

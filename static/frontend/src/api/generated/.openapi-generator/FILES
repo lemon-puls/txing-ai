@@ -28,6 +28,8 @@ docs/ApiWorkflowPublicIdGet200Response.md
 docs/ApiWorkflowTemplatesPost200Response.md
 docs/ApiWorkflowValidatePost200Response.md
 docs/DefaultApi.md
+docs/DtoAboutMeCoverMediaReq.md
+docs/DtoAboutMeMediaReq.md
 docs/DtoAgentExecReq.md
 docs/DtoBatchDeleteRequest.md
 docs/DtoCloneTemplateReq.md
@@ -35,7 +37,6 @@ docs/DtoConversationListRequest.md
 docs/DtoCreateAboutMeFloatingIconReq.md
 docs/DtoCreateAboutMeProjectReq.md
 docs/DtoCreateAboutMeProjectReqFeaturesInner.md
-docs/DtoCreateAboutMeProjectReqMediaInner.md
 docs/DtoCreateAboutMeProjectReqTechStackInner.md
 docs/DtoCreateAboutMeReasonReq.md
 docs/DtoCreateAboutMeReasonReqStatsInner.md
@@ -78,6 +79,7 @@ docs/GlobalModelMappingCondition.md
 docs/UtilsResponse.md
 docs/VoAboutMeContactLink.md
 docs/VoAboutMeContactVO.md
+docs/VoAboutMeCoverMediaItem.md
 docs/VoAboutMeFeatureItem.md
 docs/VoAboutMeFloatingIconVO.md
 docs/VoAboutMeHeroVO.md
@@ -138,6 +140,8 @@ src/model/ApiWorkflowIdVersionsPost200Response.js
 src/model/ApiWorkflowPublicIdGet200Response.js
 src/model/ApiWorkflowTemplatesPost200Response.js
 src/model/ApiWorkflowValidatePost200Response.js
+src/model/DtoAboutMeCoverMediaReq.js
+src/model/DtoAboutMeMediaReq.js
 src/model/DtoAgentExecReq.js
 src/model/DtoBatchDeleteRequest.js
 src/model/DtoCloneTemplateReq.js
@@ -145,7 +149,6 @@ src/model/DtoConversationListRequest.js
 src/model/DtoCreateAboutMeFloatingIconReq.js
 src/model/DtoCreateAboutMeProjectReq.js
 src/model/DtoCreateAboutMeProjectReqFeaturesInner.js
-src/model/DtoCreateAboutMeProjectReqMediaInner.js
 src/model/DtoCreateAboutMeProjectReqTechStackInner.js
 src/model/DtoCreateAboutMeReasonReq.js
 src/model/DtoCreateAboutMeReasonReqStatsInner.js
@@ -188,6 +191,7 @@ src/model/GlobalModelMappingCondition.js
 src/model/UtilsResponse.js
 src/model/VoAboutMeContactLink.js
 src/model/VoAboutMeContactVO.js
+src/model/VoAboutMeCoverMediaItem.js
 src/model/VoAboutMeFeatureItem.js
 src/model/VoAboutMeFloatingIconVO.js
 src/model/VoAboutMeHeroVO.js
@@ -217,3 +221,6 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
+test/model/DtoAboutMeCoverMediaReq.spec.js
+test/model/DtoAboutMeMediaReq.spec.js
+test/model/VoAboutMeCoverMediaItem.spec.js
