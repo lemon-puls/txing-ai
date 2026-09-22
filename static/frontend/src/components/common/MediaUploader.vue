@@ -198,9 +198,10 @@ const confirmUpload = async () => {
       mimeType: pendingFile.value.type
     })
     emit('update:modelValue', result.url)
-    // 同时抛出 change，让父组件可以拿到 type + caption 一并更新
+    // 同时抛出 change，让父组件可以拿到 key + type + caption 一并更新
     emit('change', {
       url: result.url,
+      key: result.key,
       type: chosenType.value,
       caption: pendingCaption.value
     })

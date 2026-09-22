@@ -146,6 +146,7 @@ type AboutMeProjectVO struct {
 	Category   string                  `json:"category"` // 项目类别 company/personal
 	Highlights []string                `json:"highlights"`
 	Media      []AboutMeMediaItem      `json:"media"`
+	CoverMedia []AboutMeCoverMediaItem `json:"coverMedia"`
 	TechStack  []AboutMeTechItem       `json:"techStack"`
 	Features   []AboutMeFeatureItem    `json:"features"`
 	Sort       int                     `json:"sort"`
@@ -153,8 +154,16 @@ type AboutMeProjectVO struct {
 
 type AboutMeMediaItem struct {
 	Type    string `json:"type"`
-	URL     string `json:"url"`
+	Key     string `json:"key"` // COS 对象 key（落库值）
+	URL     string `json:"url"` // 带签名的临时访问 URL
 	Caption string `json:"caption"`
+}
+
+// AboutMeCoverMediaItem 封面轮播项（图片/视频混合）
+type AboutMeCoverMediaItem struct {
+	Type string `json:"type"`
+	Key  string `json:"key"`
+	URL  string `json:"url"`
 }
 
 type AboutMeTechItem struct {
@@ -172,7 +181,11 @@ type AboutMeFeatureItem struct {
 func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
 	media := make([]AboutMeMediaItem, 0, len(p.Media))
 	for _, m := range p.Media {
-		media = append(media, AboutMeMediaItem{Type: m.Type, URL: m.URL, Caption: m.Caption})
+		media = append(media, AboutMeMediaItem{Type: m.Type, Key: m.Key, URL: m.URL, Caption: m.Caption})
+	}
+	coverMedia := make([]AboutMeCoverMediaItem, 0, len(p.CoverMedia))
+	for _, m := range p.CoverMedia {
+		coverMedia = append(coverMedia, AboutMeCoverMediaItem{Type: m.Type, Key: m.Key, URL: m.URL})
 	}
 	tech := make([]AboutMeTechItem, 0, len(p.TechStack))
 	for _, t := range p.TechStack {
@@ -202,6 +215,7 @@ func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
 		Category:   p.Category,
 		Highlights: highlights,
 		Media:      media,
+		CoverMedia: coverMedia,
 		TechStack:  tech,
 		Features:   feats,
 		Sort:       p.Sort,

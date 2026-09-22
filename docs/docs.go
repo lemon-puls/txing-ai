@@ -3971,6 +3971,31 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.AboutMeCoverMediaReq": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AboutMeMediaReq": {
+            "type": "object",
+            "properties": {
+                "caption": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.AgentExecReq": {
             "type": "object",
             "required": [
@@ -4066,6 +4091,12 @@ const docTemplate = `{
                         "personal"
                     ]
                 },
+                "coverMedia": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AboutMeCoverMediaReq"
+                    }
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -4107,18 +4138,7 @@ const docTemplate = `{
                 "media": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "caption": {
-                                "type": "string"
-                            },
-                            "type": {
-                                "type": "string"
-                            },
-                            "url": {
-                                "type": "string"
-                            }
-                        }
+                        "$ref": "#/definitions/dto.AboutMeMediaReq"
                     }
                 },
                 "name": {
@@ -4708,6 +4728,12 @@ const docTemplate = `{
                         "personal"
                     ]
                 },
+                "coverMedia": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AboutMeCoverMediaReq"
+                    }
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -4749,18 +4775,7 @@ const docTemplate = `{
                 "media": {
                     "type": "array",
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "caption": {
-                                "type": "string"
-                            },
-                            "type": {
-                                "type": "string"
-                            },
-                            "url": {
-                                "type": "string"
-                            }
-                        }
+                        "$ref": "#/definitions/dto.AboutMeMediaReq"
                     }
                 },
                 "name": {
@@ -5266,6 +5281,20 @@ const docTemplate = `{
                 }
             }
         },
+        "vo.AboutMeCoverMediaItem": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "vo.AboutMeFeatureItem": {
             "type": "object",
             "properties": {
@@ -5333,10 +5362,15 @@ const docTemplate = `{
                 "caption": {
                     "type": "string"
                 },
+                "key": {
+                    "description": "COS 对象 key（落库值）",
+                    "type": "string"
+                },
                 "type": {
                     "type": "string"
                 },
                 "url": {
+                    "description": "带签名的临时访问 URL",
                     "type": "string"
                 }
             }
@@ -5350,6 +5384,12 @@ const docTemplate = `{
                 "category": {
                     "description": "项目类别 company/personal",
                     "type": "string"
+                },
+                "coverMedia": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.AboutMeCoverMediaItem"
+                    }
                 },
                 "desc": {
                     "type": "string"

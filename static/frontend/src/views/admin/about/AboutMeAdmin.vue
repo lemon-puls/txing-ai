@@ -375,6 +375,32 @@
             placeholder="每行一个亮点"
           />
         </el-form-item>
+        <el-form-item label="封面轮播">
+          <div class="media-list">
+            <div
+              v-for="(m, idx) in projectForm.coverMedia || []"
+              :key="idx"
+              class="media-row"
+            >
+              <MediaUploader
+                v-model="m.url"
+                media-type="all"
+                :locked-type="m.type"
+                :width="240"
+                :height="120"
+                placeholder="点击上传封面"
+                :max-size="50"
+                @change="(info) => onCoverUploaded(idx, info)"
+              />
+              <span class="form-tip">{{ m.type === 'video' ? '视频' : '图片' }}</span>
+              <el-button text :disabled="idx === 0" @click="moveCoverMedia(idx, -1)">上移</el-button>
+              <el-button text :disabled="idx === (projectForm.coverMedia || []).length - 1" @click="moveCoverMedia(idx, 1)">下移</el-button>
+              <el-button text type="danger" @click="removeCoverMedia(idx)">删除</el-button>
+            </div>
+            <el-button @click="addCoverMediaRow">+ 添加封面（图片/视频，可多项按顺序轮播）</el-button>
+            <p class="form-tip">项目卡片左侧大图区按此顺序轮播；未配置时回退为渐变+图标</p>
+          </div>
+        </el-form-item>
         <el-form-item label="媒体列表">
           <div class="media-list">
             <div
@@ -389,6 +415,7 @@
               <MediaUploader
                 v-model="m.url"
                 :media-type="m.type"
+                :locked-type="m.type"
                 :width="240"
                 :height="120"
                 :placeholder="`点击上传${m.type === 'video' ? '视频' : '图片'}`"
@@ -399,7 +426,7 @@
               <el-button text type="danger" @click="removeMedia(idx)">删除</el-button>
             </div>
             <el-button @click="addMediaRow">+ 添加媒体</el-button>
-            <p class="form-tip">支持上传图片或视频到 OSS，超过 50MB 会被限制</p>
+            <p class="form-tip">支持上传图片或视频，超过 50MB 会被限制（详情展开区展示）</p>
           </div>
         </el-form-item>
         <el-form-item label="技术栈">
@@ -718,6 +745,7 @@ const projectForm = reactive({
   category: 'company',
   highlights: [],
   media: [],
+  coverMedia: [],
   techStack: [],
   features: [],
   sort: 0
@@ -735,7 +763,7 @@ const loadProjects = async () => {
 const openProjectDialog = async (row) => {
   Object.assign(projectForm, {
     id: 0, name: '', desc: '', iconKey: '', gradient: 1,
-    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], techStack: [], features: [], sort: 0
+    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], coverMedia: [], techStack: [], features: [], sort: 0
   })
   if (row && row.id) {
     try {
@@ -745,6 +773,7 @@ const openProjectDialog = async (row) => {
         projectForm.tags = res.data.tags || []
         projectForm.highlights = res.data.highlights || []
         projectForm.media = res.data.media || []
+        projectForm.coverMedia = res.data.coverMedia || []
         projectForm.techStack = res.data.techStack || []
         projectForm.features = res.data.features || []
       }
@@ -767,7 +796,9 @@ const saveProject = async () => {
       badge: projectForm.badge,
       category: projectForm.category || 'company',
       highlights: projectForm.highlights || [],
-      media: projectForm.media || [],
+      // 只提交 key（URL 由后端读取时签名生成，避免落库过期签名地址）
+      media: (projectForm.media || []).map(({ type, key, caption }) => ({ type, key, caption })),
+      coverMedia: (projectForm.coverMedia || []).map(({ type, key }) => ({ type, key })),
       techStack: projectForm.techStack || [],
       features: projectForm.features || [],
       sort: projectForm.sort
@@ -811,12 +842,38 @@ const removeMedia = (idx) => {
 const onMediaTypeChange = (m) => {
   m.url = ''
 }
-// 上传成功后回填 caption（如果用户已在弹窗里填写）
+// 上传成功后回填 key/type/caption（key 落库，url 仅用于预览）
 const onMediaUploaded = (idx, info) => {
   const m = projectForm.media[idx]
   if (!m) return
   m.type = info.type
+  m.key = info.key || ''
+  m.url = info.url
   if (info.caption) m.caption = info.caption
+}
+
+// 封面轮播行辅助函数：新增/删除/排序/上传回调（图片/视频混合）
+// Cover carousel row helpers: add/remove/reorder/uploaded callback (mixed image/video)
+const addCoverMediaRow = () => {
+  if (!projectForm.coverMedia) projectForm.coverMedia = []
+  projectForm.coverMedia.push({ type: '', key: '', url: '' })
+}
+const removeCoverMedia = (idx) => {
+  projectForm.coverMedia.splice(idx, 1)
+}
+const moveCoverMedia = (idx, dir) => {
+  const list = projectForm.coverMedia
+  const target = idx + dir
+  if (target < 0 || target >= list.length) return
+  const [row] = list.splice(idx, 1)
+  list.splice(target, 0, row)
+}
+const onCoverUploaded = (idx, info) => {
+  const m = projectForm.coverMedia[idx]
+  if (!m) return
+  m.type = info.type
+  m.key = info.key || ''
+  m.url = info.url
 }
 
 // ==================== Timeline ====================

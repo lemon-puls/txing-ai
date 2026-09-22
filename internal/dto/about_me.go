@@ -83,6 +83,19 @@ type ListAboutMeSkillReq struct {
 
 // === Project ===
 
+// AboutMeMediaReq 项目媒体项（只传 COS key，URL 由后端读取时签名生成）
+type AboutMeMediaReq struct {
+	Type    string `json:"type"`
+	Key     string `json:"key"`
+	Caption string `json:"caption"`
+}
+
+// AboutMeCoverMediaReq 封面轮播项（图片/视频混合）
+type AboutMeCoverMediaReq struct {
+	Type string `json:"type"`
+	Key  string `json:"key"`
+}
+
 type CreateAboutMeProjectReq struct {
 	Name       string   `json:"name" binding:"required"`
 	Desc       string   `json:"desc" binding:"required"`
@@ -93,11 +106,8 @@ type CreateAboutMeProjectReq struct {
 	Badge      string   `json:"badge"`
 	Category   string   `json:"category" binding:"required,oneof=company personal"`
 	Highlights []string `json:"highlights"`
-	Media      []struct {
-		Type    string `json:"type"`
-		URL     string `json:"url"`
-		Caption string `json:"caption"`
-	} `json:"media"`
+	Media      []AboutMeMediaReq `json:"media"`
+	CoverMedia []AboutMeCoverMediaReq `json:"coverMedia"`
 	TechStack []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
@@ -121,11 +131,8 @@ type UpdateAboutMeProjectReq struct {
 	Badge      string   `json:"badge"`
 	Category   string   `json:"category" binding:"omitempty,oneof=company personal"`
 	Highlights []string `json:"highlights"`
-	Media      []struct {
-		Type    string `json:"type"`
-		URL     string `json:"url"`
-		Caption string `json:"caption"`
-	} `json:"media"`
+	Media      []AboutMeMediaReq `json:"media"`
+	CoverMedia []AboutMeCoverMediaReq `json:"coverMedia"`
 	TechStack []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
