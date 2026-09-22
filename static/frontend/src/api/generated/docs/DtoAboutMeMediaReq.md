@@ -1,12 +1,11 @@
-# TxingAiApi.VoAboutMeMediaItem
+# TxingAiApi.DtoAboutMeMediaReq
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **caption** | **String** |  | [optional] 
-**key** | **String** | COS 对象 key（落库值） | [optional] 
+**key** | **String** |  | [optional] 
 **type** | **String** |  | [optional] 
-**url** | **String** | 带签名的临时访问 URL | [optional] 
 
 

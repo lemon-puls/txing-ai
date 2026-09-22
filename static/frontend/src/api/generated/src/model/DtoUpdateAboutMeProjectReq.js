@@ -12,8 +12,9 @@
  */
 
 import ApiClient from '../ApiClient';
+import DtoAboutMeCoverMediaReq from './DtoAboutMeCoverMediaReq';
+import DtoAboutMeMediaReq from './DtoAboutMeMediaReq';
 import DtoCreateAboutMeProjectReqFeaturesInner from './DtoCreateAboutMeProjectReqFeaturesInner';
-import DtoCreateAboutMeProjectReqMediaInner from './DtoCreateAboutMeProjectReqMediaInner';
 import DtoCreateAboutMeProjectReqTechStackInner from './DtoCreateAboutMeProjectReqTechStackInner';
 
 /**
@@ -56,6 +57,9 @@ class DtoUpdateAboutMeProjectReq {
             if (data.hasOwnProperty('category')) {
                 obj['category'] = ApiClient.convertToType(data['category'], 'String');
             }
+            if (data.hasOwnProperty('coverMedia')) {
+                obj['coverMedia'] = ApiClient.convertToType(data['coverMedia'], [DtoAboutMeCoverMediaReq]);
+            }
             if (data.hasOwnProperty('desc')) {
                 obj['desc'] = ApiClient.convertToType(data['desc'], 'String');
             }
@@ -75,7 +79,7 @@ class DtoUpdateAboutMeProjectReq {
                 obj['link'] = ApiClient.convertToType(data['link'], 'String');
             }
             if (data.hasOwnProperty('media')) {
-                obj['media'] = ApiClient.convertToType(data['media'], [DtoCreateAboutMeProjectReqMediaInner]);
+                obj['media'] = ApiClient.convertToType(data['media'], [DtoAboutMeMediaReq]);
             }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
@@ -106,6 +110,16 @@ class DtoUpdateAboutMeProjectReq {
         // ensure the json data is a string
         if (data['category'] && !(typeof data['category'] === 'string' || data['category'] instanceof String)) {
             throw new Error("Expected the field `category` to be a primitive type in the JSON string but got " + data['category']);
+        }
+        if (data['coverMedia']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['coverMedia'])) {
+                throw new Error("Expected the field `coverMedia` to be an array in the JSON data but got " + data['coverMedia']);
+            }
+            // validate the optional field `coverMedia` (array)
+            for (const item of data['coverMedia']) {
+                DtoAboutMeCoverMediaReq.validateJSON(item);
+            };
         }
         // ensure the json data is a string
         if (data['desc'] && !(typeof data['desc'] === 'string' || data['desc'] instanceof String)) {
@@ -144,7 +158,7 @@ class DtoUpdateAboutMeProjectReq {
             }
             // validate the optional field `media` (array)
             for (const item of data['media']) {
-                DtoCreateAboutMeProjectReqMediaInner.validateJSON(item);
+                DtoAboutMeMediaReq.validateJSON(item);
             };
         }
         // ensure the json data is a string
@@ -185,6 +199,11 @@ DtoUpdateAboutMeProjectReq.prototype['badge'] = undefined;
 DtoUpdateAboutMeProjectReq.prototype['category'] = undefined;
 
 /**
+ * @member {Array.<module:model/DtoAboutMeCoverMediaReq>} coverMedia
+ */
+DtoUpdateAboutMeProjectReq.prototype['coverMedia'] = undefined;
+
+/**
  * @member {String} desc
  */
 DtoUpdateAboutMeProjectReq.prototype['desc'] = undefined;
@@ -215,7 +234,7 @@ DtoUpdateAboutMeProjectReq.prototype['iconKey'] = undefined;
 DtoUpdateAboutMeProjectReq.prototype['link'] = undefined;
 
 /**
- * @member {Array.<module:model/DtoCreateAboutMeProjectReqMediaInner>} media
+ * @member {Array.<module:model/DtoAboutMeMediaReq>} media
  */
 DtoUpdateAboutMeProjectReq.prototype['media'] = undefined;
 

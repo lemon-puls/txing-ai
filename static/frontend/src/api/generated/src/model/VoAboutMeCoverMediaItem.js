@@ -14,18 +14,18 @@
 import ApiClient from '../ApiClient';
 
 /**
- * The VoAboutMeMediaItem model module.
- * @module model/VoAboutMeMediaItem
+ * The VoAboutMeCoverMediaItem model module.
+ * @module model/VoAboutMeCoverMediaItem
  * @version 1.0
  */
-class VoAboutMeMediaItem {
+class VoAboutMeCoverMediaItem {
     /**
-     * Constructs a new <code>VoAboutMeMediaItem</code>.
-     * @alias module:model/VoAboutMeMediaItem
+     * Constructs a new <code>VoAboutMeCoverMediaItem</code>.
+     * @alias module:model/VoAboutMeCoverMediaItem
      */
     constructor() { 
         
-        VoAboutMeMediaItem.initialize(this);
+        VoAboutMeCoverMediaItem.initialize(this);
     }
 
     /**
@@ -37,19 +37,16 @@ class VoAboutMeMediaItem {
     }
 
     /**
-     * Constructs a <code>VoAboutMeMediaItem</code> from a plain JavaScript object, optionally creating a new instance.
+     * Constructs a <code>VoAboutMeCoverMediaItem</code> from a plain JavaScript object, optionally creating a new instance.
      * Copies all relevant properties from <code>data</code> to <code>obj</code> if supplied or a new instance if not.
      * @param {Object} data The plain JavaScript object bearing properties of interest.
-     * @param {module:model/VoAboutMeMediaItem} obj Optional instance to populate.
-     * @return {module:model/VoAboutMeMediaItem} The populated <code>VoAboutMeMediaItem</code> instance.
+     * @param {module:model/VoAboutMeCoverMediaItem} obj Optional instance to populate.
+     * @return {module:model/VoAboutMeCoverMediaItem} The populated <code>VoAboutMeCoverMediaItem</code> instance.
      */
     static constructFromObject(data, obj) {
         if (data) {
-            obj = obj || new VoAboutMeMediaItem();
+            obj = obj || new VoAboutMeCoverMediaItem();
 
-            if (data.hasOwnProperty('caption')) {
-                obj['caption'] = ApiClient.convertToType(data['caption'], 'String');
-            }
             if (data.hasOwnProperty('key')) {
                 obj['key'] = ApiClient.convertToType(data['key'], 'String');
             }
@@ -64,15 +61,11 @@ class VoAboutMeMediaItem {
     }
 
     /**
-     * Validates the JSON data with respect to <code>VoAboutMeMediaItem</code>.
+     * Validates the JSON data with respect to <code>VoAboutMeCoverMediaItem</code>.
      * @param {Object} data The plain JavaScript object bearing properties of interest.
-     * @return {boolean} to indicate whether the JSON data is valid with respect to <code>VoAboutMeMediaItem</code>.
+     * @return {boolean} to indicate whether the JSON data is valid with respect to <code>VoAboutMeCoverMediaItem</code>.
      */
     static validateJSON(data) {
-        // ensure the json data is a string
-        if (data['caption'] && !(typeof data['caption'] === 'string' || data['caption'] instanceof String)) {
-            throw new Error("Expected the field `caption` to be a primitive type in the JSON string but got " + data['caption']);
-        }
         // ensure the json data is a string
         if (data['key'] && !(typeof data['key'] === 'string' || data['key'] instanceof String)) {
             throw new Error("Expected the field `key` to be a primitive type in the JSON string but got " + data['key']);
@@ -95,31 +88,24 @@ class VoAboutMeMediaItem {
 
 
 /**
- * @member {String} caption
- */
-VoAboutMeMediaItem.prototype['caption'] = undefined;
-
-/**
- * COS 对象 key（落库值）
  * @member {String} key
  */
-VoAboutMeMediaItem.prototype['key'] = undefined;
+VoAboutMeCoverMediaItem.prototype['key'] = undefined;
 
 /**
  * @member {String} type
  */
-VoAboutMeMediaItem.prototype['type'] = undefined;
+VoAboutMeCoverMediaItem.prototype['type'] = undefined;
 
 /**
- * 带签名的临时访问 URL
  * @member {String} url
  */
-VoAboutMeMediaItem.prototype['url'] = undefined;
+VoAboutMeCoverMediaItem.prototype['url'] = undefined;
 
 
 
 
 
 
-export default VoAboutMeMediaItem;
+export default VoAboutMeCoverMediaItem;
 
