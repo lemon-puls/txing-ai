@@ -421,6 +421,76 @@ func DeleteSkill(ctx *gin.Context) {
 // Project
 // ============================================================================
 
+// mediaReqToDomain DTO 媒体列表转 domain（只保留 type/key/caption，URL 一律不落库）
+// Convert request media items to domain (persist key only)
+func mediaReqToDomain(items []dto.AboutMeMediaReq) []domain.AboutMeMediaItem {
+	if items == nil {
+		return nil
+	}
+	out := make([]domain.AboutMeMediaItem, 0, len(items))
+	for _, m := range items {
+		out = append(out, domain.AboutMeMediaItem{Type: m.Type, Key: m.Key, Caption: m.Caption})
+	}
+	return out
+}
+
+// coverMediaReqToDomain DTO 封面轮播转 domain
+// Convert request cover carousel items to domain
+func coverMediaReqToDomain(items []dto.AboutMeCoverMediaReq) []domain.AboutMeCoverMediaItem {
+	if items == nil {
+		return nil
+	}
+	out := make([]domain.AboutMeCoverMediaItem, 0, len(items))
+	for _, m := range items {
+		out = append(out, domain.AboutMeCoverMediaItem{Type: m.Type, Key: m.Key})
+	}
+	return out
+}
+
+// signOneProjectMedia 将项目媒体/封面的 key 换成带签名的临时下载 URL
+// 兼容旧数据：历史记录里直接存了完整签名 URL（会过期），读取时提取 key 再重新签名
+// Fill signed download URLs for media/cover keys; legacy rows store full URLs — extract key and re-sign
+func signOneProjectMedia(ctx *gin.Context, p *domain.AboutMeProject) {
+	if p == nil {
+		return
+	}
+	client := utils.GetCosClientFromContext[*utils.COSClient](ctx)
+	if client == nil {
+		return
+	}
+	for j := range p.Media {
+		m := &p.Media[j]
+		if m.Key == "" {
+			m.Key = utils.COSKeyFromURL(m.URL)
+		}
+		if m.Key == "" {
+			continue
+		}
+		if url, err := client.GenerateDownloadPresignedURL(m.Key); err == nil {
+			m.URL = url
+		}
+	}
+	for j := range p.CoverMedia {
+		m := &p.CoverMedia[j]
+		if m.Key == "" {
+			m.Key = utils.COSKeyFromURL(m.URL)
+		}
+		if m.Key == "" {
+			continue
+		}
+		if url, err := client.GenerateDownloadPresignedURL(m.Key); err == nil {
+			m.URL = url
+		}
+	}
+}
+
+// signProjectMedia 批量签名项目媒体
+func signProjectMedia(ctx *gin.Context, projects []domain.AboutMeProject) {
+	for i := range projects {
+		signOneProjectMedia(ctx, &projects[i])
+	}
+}
+
 // ListProjects 精选作品列表
 // @Summary 精选作品列表
 // @Tags 关于我管理
@@ -446,6 +516,7 @@ func ListProjects(ctx *gin.Context) {
 		return
 	}
 	sort.SliceStable(items, func(i, j int) bool { return items[i].Sort < items[j].Sort })
+	signProjectMedia(ctx, items)
 	convert := page.Convert(pageVo, vo.ToAboutMeProjectVOs(items))
 	utils.OkWithData(ctx, convert)
 }
@@ -462,6 +533,7 @@ func GetProject(ctx *gin.Context) {
 		utils.ErrorWithMsg(ctx, "项目不存在", err)
 		return
 	}
+	signOneProjectMedia(ctx, &item)
 	utils.OkWithData(ctx, vo.ToAboutMeProjectVO(item))
 }
 
@@ -501,7 +573,10 @@ func CreateProject(ctx *gin.Context) {
 	// 更新嵌套 JSON 列
 	updates := map[string]interface{}{}
 	if req.Media != nil {
-		updates["media"] = req.Media
+		updates["media"] = mediaReqToDomain(req.Media)
+	}
+	if req.CoverMedia != nil {
+		updates["cover_media"] = coverMediaReqToDomain(req.CoverMedia)
 	}
 	if req.TechStack != nil {
 		updates["tech_stack"] = req.TechStack
@@ -517,6 +592,7 @@ func CreateProject(ctx *gin.Context) {
 	}
 	// 重新查询以包含所有字段
 	db.First(&item, item.Id)
+	signOneProjectMedia(ctx, &item)
 	utils.OkWithData(ctx, vo.ToAboutMeProjectVO(item))
 }
 
@@ -564,7 +640,10 @@ func UpdateProject(ctx *gin.Context) {
 		item.Highlights = req.Highlights
 	}
 	if req.Media != nil {
-		item.Media = req.Media
+		item.Media = mediaReqToDomain(req.Media)
+	}
+	if req.CoverMedia != nil {
+		item.CoverMedia = coverMediaReqToDomain(req.CoverMedia)
 	}
 	if req.TechStack != nil {
 		item.TechStack = req.TechStack
@@ -577,6 +656,7 @@ func UpdateProject(ctx *gin.Context) {
 		utils.ErrorWithMsg(ctx, "更新项目失败", err)
 		return
 	}
+	signOneProjectMedia(ctx, &item)
 	utils.OkWithData(ctx, vo.ToAboutMeProjectVO(item))
 }
 
@@ -796,6 +876,7 @@ func PublicSnapshot(ctx *gin.Context) {
 
 	var projects []domain.AboutMeProject
 	db.Order("sort asc, id asc").Find(&projects)
+	signProjectMedia(ctx, projects)
 
 	var timelines []domain.AboutMeTimeline
 	db.Order("sort asc, id asc").Find(&timelines)

@@ -1,5 +1,21 @@
 basePath: /
 definitions:
+  dto.AboutMeCoverMediaReq:
+    properties:
+      key:
+        type: string
+      type:
+        type: string
+    type: object
+  dto.AboutMeMediaReq:
+    properties:
+      caption:
+        type: string
+      key:
+        type: string
+      type:
+        type: string
+    type: object
   dto.AgentExecReq:
     properties:
       agentType:
@@ -60,6 +76,10 @@ definitions:
         - company
         - personal
         type: string
+      coverMedia:
+        items:
+          $ref: '#/definitions/dto.AboutMeCoverMediaReq'
+        type: array
       desc:
         type: string
       features:
@@ -87,14 +107,7 @@ definitions:
         type: string
       media:
         items:
-          properties:
-            caption:
-              type: string
-            type:
-              type: string
-            url:
-              type: string
-          type: object
+          $ref: '#/definitions/dto.AboutMeMediaReq'
         type: array
       name:
         type: string
@@ -521,6 +534,10 @@ definitions:
         - company
         - personal
         type: string
+      coverMedia:
+        items:
+          $ref: '#/definitions/dto.AboutMeCoverMediaReq'
+        type: array
       desc:
         type: string
       features:
@@ -548,14 +565,7 @@ definitions:
         type: string
       media:
         items:
-          properties:
-            caption:
-              type: string
-            type:
-              type: string
-            url:
-              type: string
-          type: object
+          $ref: '#/definitions/dto.AboutMeMediaReq'
         type: array
       name:
         type: string
@@ -912,6 +922,15 @@ definitions:
       title:
         type: string
     type: object
+  vo.AboutMeCoverMediaItem:
+    properties:
+      key:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
   vo.AboutMeFeatureItem:
     properties:
       desc:
@@ -956,9 +975,13 @@ definitions:
     properties:
       caption:
         type: string
+      key:
+        description: COS 对象 key（落库值）
+        type: string
       type:
         type: string
       url:
+        description: 带签名的临时访问 URL
         type: string
     type: object
   vo.AboutMeProjectVO:
@@ -968,6 +991,10 @@ definitions:
       category:
         description: 项目类别 company/personal
         type: string
+      coverMedia:
+        items:
+          $ref: '#/definitions/vo.AboutMeCoverMediaItem'
+        type: array
       desc:
         type: string
       features:

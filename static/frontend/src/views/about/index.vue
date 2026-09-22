@@ -166,7 +166,39 @@
              class="project-card"
              :class="{ 'expanded': expandedProject === project.id }">
           <div class="project-image" :class="project.gradient" @click="toggleProject(project.id)">
-            <div class="project-icon">
+            <!-- 封面轮播：图片/视频混合，未配置时回退渐变+图标 -->
+            <!-- Cover carousel: mixed image/video, falls back to gradient + icon when empty -->
+            <el-carousel
+              v-if="project.coverMedia && project.coverMedia.length"
+              class="cover-carousel"
+              :interval="5000"
+              arrow="hover"
+              :indicator-position="'none'"
+            >
+              <el-carousel-item v-for="(m, mIdx) in project.coverMedia" :key="mIdx">
+                <!-- contain 完整展示 + 模糊垫底：任何比例都不裁切，留边由图片自身的模糊放大填充 -->
+                <!-- Contain shows the whole media; a blurred oversized copy fills the letterbox bars -->
+                <div class="cover-media-wrap">
+                  <template v-if="m.type === 'image'">
+                    <img :src="m.url" class="cover-media-blur" alt="" aria-hidden="true" />
+                    <img :src="m.url" class="cover-media" alt="" />
+                  </template>
+                  <video
+                    v-else
+                    :src="m.url"
+                    class="cover-media"
+                    muted
+                    loop
+                    preload="metadata"
+                    playsinline
+                    @click.stop
+                    @mouseenter="$event.target.play()"
+                    @mouseleave="$event.target.pause()"
+                  />
+                </div>
+              </el-carousel-item>
+            </el-carousel>
+            <div v-else class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
             </div>
             <div class="project-badge">{{ project.badge }}</div>
@@ -494,7 +526,12 @@ const projects = computed(() =>
     ...p,
     icon: resolveIcon(p.iconKey) || Platform,
     gradient: `project-gradient-${p.gradient || 1}`,
-    category: p.category || 'company'
+    category: p.category || 'company',
+    // 封面轮播（图片/视频混合）；url 为后端读取时签名的临时地址
+    // Cover carousel (mixed image/video); url is a signed temp URL generated on read
+    coverMedia: (p.coverMedia || [])
+      .map((m) => ({ type: m.type || 'image', url: m.url }))
+      .filter((m) => m.url)
   }))
 )
 
@@ -1770,6 +1807,50 @@ const scrollToContact = () => {
     @media (min-width: 768px) {
       height: auto;
       min-height: 320px;
+    }
+
+    // 封面轮播：铺满整个图区，压在渐变背景之上、角标/展开按钮之下
+    // Cover carousel fills the media area, above gradient, below badge/expand hint
+    .cover-carousel {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+
+      :deep(.el-carousel__container) {
+        height: 100%;
+      }
+
+      :deep(.el-carousel__arrow) {
+        background: rgba(0, 0, 0, 0.35);
+      }
+
+      .cover-media-wrap {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      // 模糊垫底：放大超出容器，避免 blur 边缘露白
+      // Blurred oversized copy as backdrop; oversize hides blur edge artifacts
+      .cover-media-blur {
+        position: absolute;
+        inset: -24px;
+        width: calc(100% + 48px);
+        height: calc(100% + 48px);
+        object-fit: cover;
+        filter: blur(28px) brightness(0.85) saturate(1.1);
+      }
+
+      // 主体媒体：contain 完整展示，不裁切
+      // Main media: contain — fully visible, no cropping
+      .cover-media {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
     }
 
     &.project-gradient-1 {

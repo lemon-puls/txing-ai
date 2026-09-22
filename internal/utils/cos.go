@@ -305,6 +305,24 @@ func (c *COSClient) ConvertObjectPath(path string) string {
 	return u.Path[1:]
 }
 
+// COSKeyFromURL 从完整 URL 中提取对象 key，用于兼容历史数据里直接存 URL 的情况
+// Extract object key from a full URL (legacy rows stored signed URLs directly).
+// 非 http(s) 地址视为已经是 key，原样返回
+func COSKeyFromURL(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	if !strings.HasPrefix(raw, "http://") && !strings.HasPrefix(raw, "https://") {
+		return raw
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Path == "" {
+		return ""
+	}
+	// EscapedPath 保留百分号编码，避免 url.Parse 解码导致 key 与对象不一致
+	return strings.TrimPrefix(u.EscapedPath(), "/")
+}
+
 // ConvertSliceFieldToPresignedURL 将切片中每个元素的指定字段转换为预签名URL
 // slice: 要处理的切片
 // fieldName: 要转换的字段名

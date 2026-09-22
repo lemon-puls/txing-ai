@@ -45,6 +45,25 @@ type AboutMeSkill struct {
 	Sort     int      `gorm:"type:int;default:0;comment:排序" json:"sort"`
 }
 
+// AboutMeMediaItem 项目媒体项（图片/视频，落库只存 COS key，读取时换签名 URL）
+// Project media item; only the COS key is persisted, signed URLs are generated on read
+type AboutMeMediaItem struct {
+	Type    string `json:"type"`
+	Key     string `json:"key"`
+	Caption string `json:"caption"`
+	// 兼容旧数据：历史版本直接存完整签名 URL（会过期），读取时会提取 key 并重新签名
+	// Legacy: old rows store full signed URLs; keys are extracted and re-signed on read
+	URL string `json:"url,omitempty"`
+}
+
+// AboutMeCoverMediaItem 封面轮播项（图片/视频混合）
+// Cover carousel item (mixed image/video)
+type AboutMeCoverMediaItem struct {
+	Type string `json:"type"`
+	Key  string `json:"key"`
+	URL  string `json:"url,omitempty"` // 读取时填充签名 URL / filled with signed URL on read
+}
+
 // 精选作品
 // Featured project
 type AboutMeProject struct {
@@ -58,11 +77,10 @@ type AboutMeProject struct {
 	Badge       string   `gorm:"type:varchar(50);comment:角标文字" json:"badge"`
 	Category    string   `gorm:"type:varchar(20);default:'company';comment:项目类别 company/personal" json:"category"`
 	Highlights  []string `gorm:"type:json;serializer:json;comment:亮点列表" json:"highlights"`
-	Media       []struct {
-		Type    string `json:"type"`
-		URL     string `json:"url"`
-		Caption string `json:"caption"`
-	} `gorm:"type:json;serializer:json;comment:媒体列表(图/视频)" json:"media"`
+	Media       []AboutMeMediaItem       `gorm:"type:json;serializer:json;comment:媒体列表(图/视频,存key)" json:"media"`
+	// 封面轮播：卡片左侧大图区，支持图片/视频混合多项轮播
+	// Cover carousel: card's left visual area, mixed image/video multi-item carousel
+	CoverMedia []AboutMeCoverMediaItem `gorm:"type:json;serializer:json;comment:封面轮播媒体(图/视频,存key)" json:"coverMedia"`
 	TechStack []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
