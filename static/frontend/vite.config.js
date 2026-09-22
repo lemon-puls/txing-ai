@@ -29,6 +29,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
+    // WSL2 下 /mnt/d（drvfs）的 inotify 不可靠，文件变更常不触发 HMR；
+    // 用轮询监听保证热更新生效（ignored 限制范围，控制 CPU 开销）
+    // inotify is unreliable on /mnt/d (drvfs) under WSL2 — poll for changes so HMR fires
+    watch: {
+      usePolling: true,
+      interval: 500,
+      ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**']
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
