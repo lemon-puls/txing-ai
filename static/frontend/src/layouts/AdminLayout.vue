@@ -59,6 +59,11 @@
             <template #title>关于我页面</template>
           </el-menu-item>
 
+          <el-menu-item index="/admin/ops-assistant">
+            <el-icon><MagicStick /></el-icon>
+            <template #title>运营助手</template>
+          </el-menu-item>
+
 
 <!--          <el-menu-item index="/pricing">-->
 <!--            <el-icon><Wallet /></el-icon>-->
@@ -192,7 +197,8 @@ import {
   SwitchButton,
   HomeFilled,
   Share,
-  UserFilled
+  UserFilled,
+  MagicStick
 } from '@element-plus/icons-vue'
 import ThemeDrawer from '@/components/common/ThemeDrawer.vue'
 const route = useRoute()

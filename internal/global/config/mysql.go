@@ -85,6 +85,8 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 	db.AutoMigrate(&model.AgentFlow{})
 	db.AutoMigrate(&model.AgentFlowVersion{})
 	db.AutoMigrate(&model.WorkflowExecution{})
+	// 运营助手审计日志
+	db.AutoMigrate(&model.OpsAgentLog{})
 
 	// 关于我页面
 	db.AutoMigrate(&model.AboutMeHero{})

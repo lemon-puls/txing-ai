@@ -36,6 +36,7 @@ type AppConfig struct {
 	*SearchAPIConfig   `mapstructure:"searchapi"`
 	*ImageSearchConfig `mapstructure:"image_search"`
 	*LocalUploadConfig `mapstructure:"local_upload"`
+	*OpsAgentConfig    `mapstructure:"ops_agent"`
 }
 
 type ServerConfig struct {
@@ -126,6 +127,16 @@ type ImageSearchSougou struct {
 type LocalUploadConfig struct {
 	Dir     string `mapstructure:"dir"`
 	MaxSize int    `mapstructure:"max_size"`
+}
+
+// OpsAgentConfig 后台运营助手配置
+type OpsAgentConfig struct {
+	// 模型名，需在渠道管理中已配置；经 ChannelModelResolver 解析
+	Model string `mapstructure:"model"`
+	// 最大工具调用轮次，<=0 时使用默认值
+	MaxToolRounds int `mapstructure:"max_tool_rounds"`
+	// GitHub API Token（可选），提升 API 限额
+	GithubToken string `mapstructure:"github_token"`
 }
 
 func LoadConfig() *AppConfig {

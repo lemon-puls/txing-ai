@@ -38,6 +38,7 @@ Method | HTTP request | Description
 [**apiAdminModelIdDelete**](DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 [**apiAdminModelIdPut**](DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
+[**apiAdminOpsChatStreamPost**](DefaultApi.md#apiAdminOpsChatStreamPost) | **POST** /api/admin/ops/chat/stream | 运营助手流式对话
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiAdminWebsitesFaviconPost**](DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
@@ -1599,6 +1600,50 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
+
+
+## apiAdminOpsChatStreamPost
+
+> String apiAdminOpsChatStreamPost(data)
+
+运营助手流式对话
+
+管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoOpsChatStreamReq(); // DtoOpsChatStreamReq | 对话消息与页面上下文
+apiInstance.apiAdminOpsChatStreamPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoOpsChatStreamReq**](DtoOpsChatStreamReq.md)| 对话消息与页面上下文 | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: text/event-stream
 
 
 ## apiAdminUserListGet

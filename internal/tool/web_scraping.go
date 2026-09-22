@@ -168,3 +168,14 @@ func extractText(html string) string {
 
 	return strings.TrimSpace(html)
 }
+
+// WebScrapingRequest 网页抓取请求参数（导出别名，供其他包复用）
+type WebScrapingRequest = webScrapingRequest
+
+// WebScrapingResponse 网页抓取响应（导出别名，供其他包复用）
+type WebScrapingResponse = webScrapingResponse
+
+// ScrapeWebPage 网页抓取入口（导出包装，供其他包复用）
+func ScrapeWebPage(ctx context.Context, req *WebScrapingRequest) (WebScrapingResponse, error) {
+	return scrapeWebPage(ctx, req)
+}

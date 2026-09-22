@@ -1433,6 +1433,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/ops/chat/stream": {
+            "post": {
+                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "运营助手"
+                ],
+                "summary": "运营助手流式对话",
+                "parameters": [
+                    {
+                        "description": "对话消息与页面上下文",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OpsChatStreamReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SSE stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/user/list": {
             "get": {
                 "description": "获取用户列表，支持分页",
@@ -4556,6 +4590,67 @@ const docTemplate = `{
                     "description": "用户名 Username",
                     "type": "string",
                     "example": "johndoe"
+                }
+            }
+        },
+        "dto.OpsChatContext": {
+            "type": "object",
+            "properties": {
+                "draft": {
+                    "description": "页面草稿数据，如 {\"url\":\"https://github.com/cloudwego/eino\"}",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "page": {
+                    "description": "来源页面标识，如 \"websites\"、\"ops-assistant\"",
+                    "type": "string",
+                    "example": "websites"
+                }
+            }
+        },
+        "dto.OpsChatMessage": {
+            "type": "object",
+            "required": [
+                "content",
+                "role"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 8000,
+                    "example": "收录 https://github.com/cloudwego/eino"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "user",
+                        "assistant"
+                    ],
+                    "example": "user"
+                }
+            }
+        },
+        "dto.OpsChatStreamReq": {
+            "type": "object",
+            "required": [
+                "messages"
+            ],
+            "properties": {
+                "context": {
+                    "description": "页面上下文（可选），由前端各管理页注入",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.OpsChatContext"
+                        }
+                    ]
+                },
+                "messages": {
+                    "type": "array",
+                    "maxItems": 40,
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/dto.OpsChatMessage"
+                    }
                 }
             }
         },

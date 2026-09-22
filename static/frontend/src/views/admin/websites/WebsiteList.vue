@@ -15,9 +15,28 @@
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
           <el-button type="success" @click="handleAdd">新增网站</el-button>
+          <el-button type="warning" @click="openOpsDrawer">
+            <el-icon style="margin-right: 4px"><MagicStick /></el-icon>
+            AI 录入
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- AI 录入抽屉：运营助手对话，提案确认后刷新列表 -->
+    <el-drawer
+      v-model="opsDrawerVisible"
+      size="480px"
+      class="ops-drawer"
+    >
+      <template #header>
+        <span class="ops-drawer-title">
+          <el-icon><MagicStick /></el-icon>
+          AI 录入助手
+        </span>
+      </template>
+      <OpsChatPanel :context="opsContext" style="height: 100%" @inserted="loadWebsites" />
+    </el-drawer>
 
 
     <!-- 网站列表 -->
@@ -203,8 +222,9 @@
 <script setup name="WebsiteList">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Link } from '@element-plus/icons-vue'
+import { Link, MagicStick } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
+import OpsChatPanel from '@/components/ops/OpsChatPanel.vue'
 import {formatISODate} from "../../../utils/timeUtils.js";
 
 // 响应式数据
@@ -241,6 +261,22 @@ const websiteForm = ref({
 const inputVisible = ref(false)
 const inputValue = ref('')
 const inputRef = ref(null)
+
+// AI 录入抽屉（打开时若新增对话框已填地址则带入草稿上下文）
+const opsDrawerVisible = ref(false)
+const opsDraftUrl = ref('')
+const opsContext = computed(() => {
+  const ctx = { page: 'websites' }
+  if (opsDraftUrl.value) ctx.draft = { url: opsDraftUrl.value }
+  return ctx
+})
+
+const openOpsDrawer = () => {
+  opsDraftUrl.value = (dialogType.value === 'add' && dialogVisible.value && websiteForm.value.url)
+    ? websiteForm.value.url
+    : ''
+  opsDrawerVisible.value = true
+}
 
 
 // 计算所有标签
@@ -696,6 +732,31 @@ onMounted(() => {
         box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
       }
     }
+  }
+}
+</style>
+
+<style lang="scss">
+// AI 录入抽屉（el-drawer 内容不生效 scoped，需全局覆写）
+.ops-drawer {
+  .el-drawer__header {
+    margin-bottom: 0;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  .el-drawer__body {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .ops-drawer-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-color-primary);
   }
 }
 </style>

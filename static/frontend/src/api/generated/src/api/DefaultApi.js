@@ -55,6 +55,7 @@ import DtoCreateWebsiteReq from '../model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from '../model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from '../model/DtoGetPresignedURLReq';
 import DtoLoginReq from '../model/DtoLoginReq';
+import DtoOpsChatStreamReq from '../model/DtoOpsChatStreamReq';
 import DtoPublishVersionReq from '../model/DtoPublishVersionReq';
 import DtoRegisterReq from '../model/DtoRegisterReq';
 import DtoResetPasswordReq from '../model/DtoResetPasswordReq';
@@ -1768,6 +1769,53 @@ export default class DefaultApi {
      */
     apiAdminModelPost(data) {
       return this.apiAdminModelPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 运营助手流式对话
+     * 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）
+     * @param {module:model/DtoOpsChatStreamReq} data 对话消息与页面上下文
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminOpsChatStreamPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminOpsChatStreamPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['text/event-stream'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/stream', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 运营助手流式对话
+     * 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）
+     * @param {module:model/DtoOpsChatStreamReq} data 对话消息与页面上下文
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminOpsChatStreamPost(data) {
+      return this.apiAdminOpsChatStreamPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

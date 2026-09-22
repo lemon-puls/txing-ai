@@ -51,6 +51,9 @@ docs/DtoCreateWebsiteReq.md
 docs/DtoGetFaviconReq.md
 docs/DtoGetPresignedURLReq.md
 docs/DtoLoginReq.md
+docs/DtoOpsChatContext.md
+docs/DtoOpsChatMessage.md
+docs/DtoOpsChatStreamReq.md
 docs/DtoPublishVersionReq.md
 docs/DtoRegisterReq.md
 docs/DtoResetPasswordReq.md
@@ -161,6 +164,9 @@ src/model/DtoCreateWebsiteReq.js
 src/model/DtoGetFaviconReq.js
 src/model/DtoGetPresignedURLReq.js
 src/model/DtoLoginReq.js
+src/model/DtoOpsChatContext.js
+src/model/DtoOpsChatMessage.js
+src/model/DtoOpsChatStreamReq.js
 src/model/DtoPublishVersionReq.js
 src/model/DtoRegisterReq.js
 src/model/DtoResetPasswordReq.js
@@ -217,3 +223,6 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
+test/model/DtoOpsChatContext.spec.js
+test/model/DtoOpsChatMessage.spec.js
+test/model/DtoOpsChatStreamReq.spec.js

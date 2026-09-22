@@ -416,6 +416,48 @@ definitions:
     - password
     - username
     type: object
+  dto.OpsChatContext:
+    properties:
+      draft:
+        additionalProperties: true
+        description: 页面草稿数据，如 {"url":"https://github.com/cloudwego/eino"}
+        type: object
+      page:
+        description: 来源页面标识，如 "websites"、"ops-assistant"
+        example: websites
+        type: string
+    type: object
+  dto.OpsChatMessage:
+    properties:
+      content:
+        example: 收录 https://github.com/cloudwego/eino
+        maxLength: 8000
+        type: string
+      role:
+        enum:
+        - user
+        - assistant
+        example: user
+        type: string
+    required:
+    - content
+    - role
+    type: object
+  dto.OpsChatStreamReq:
+    properties:
+      context:
+        allOf:
+        - $ref: '#/definitions/dto.OpsChatContext'
+        description: 页面上下文（可选），由前端各管理页注入
+      messages:
+        items:
+          $ref: '#/definitions/dto.OpsChatMessage'
+        maxItems: 40
+        minItems: 1
+        type: array
+    required:
+    - messages
+    type: object
   dto.PublishVersionReq:
     properties:
       version:
@@ -2464,6 +2506,28 @@ paths:
       summary: 更新模型
       tags:
       - 模型管理
+  /api/admin/ops/chat/stream:
+    post:
+      consumes:
+      - application/json
+      description: 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）
+      parameters:
+      - description: 对话消息与页面上下文
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OpsChatStreamReq'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream
+          schema:
+            type: string
+      summary: 运营助手流式对话
+      tags:
+      - 运营助手
   /api/admin/user/list:
     get:
       consumes:

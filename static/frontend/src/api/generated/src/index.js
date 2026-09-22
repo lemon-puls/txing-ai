@@ -60,6 +60,9 @@ import DtoCreateWebsiteReq from './model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from './model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from './model/DtoGetPresignedURLReq';
 import DtoLoginReq from './model/DtoLoginReq';
+import DtoOpsChatContext from './model/DtoOpsChatContext';
+import DtoOpsChatMessage from './model/DtoOpsChatMessage';
+import DtoOpsChatStreamReq from './model/DtoOpsChatStreamReq';
 import DtoPublishVersionReq from './model/DtoPublishVersionReq';
 import DtoRegisterReq from './model/DtoRegisterReq';
 import DtoResetPasswordReq from './model/DtoResetPasswordReq';
@@ -439,6 +442,24 @@ export {
      * @property {module:model/DtoLoginReq}
      */
     DtoLoginReq,
+
+    /**
+     * The DtoOpsChatContext model constructor.
+     * @property {module:model/DtoOpsChatContext}
+     */
+    DtoOpsChatContext,
+
+    /**
+     * The DtoOpsChatMessage model constructor.
+     * @property {module:model/DtoOpsChatMessage}
+     */
+    DtoOpsChatMessage,
+
+    /**
+     * The DtoOpsChatStreamReq model constructor.
+     * @property {module:model/DtoOpsChatStreamReq}
+     */
+    DtoOpsChatStreamReq,
 
     /**
      * The DtoPublishVersionReq model constructor.

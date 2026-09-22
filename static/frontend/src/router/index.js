@@ -166,6 +166,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'ops-assistant',
+          name: 'OpsAssistant',
+          component: () => import('@/views/admin/ops/OpsAssistant.vue'),
+          meta: {
+            title: '运营助手',
+            icon: 'MagicStick',
+            roles: ['admin']
+          }
+        },
+        {
           path: 'users',
           name: 'users',
           component: () => import('@/views/admin/user/UserList.vue'),

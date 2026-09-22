@@ -153,6 +153,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatStreamPost**](docs/DefaultApi.md#apiAdminOpsChatStreamPost) | **POST** /api/admin/ops/chat/stream | 运营助手流式对话
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiAdminWebsitesFaviconPost**](docs/DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
@@ -260,6 +261,9 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoGetFaviconReq](docs/DtoGetFaviconReq.md)
  - [TxingAiApi.DtoGetPresignedURLReq](docs/DtoGetPresignedURLReq.md)
  - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
+ - [TxingAiApi.DtoOpsChatContext](docs/DtoOpsChatContext.md)
+ - [TxingAiApi.DtoOpsChatMessage](docs/DtoOpsChatMessage.md)
+ - [TxingAiApi.DtoOpsChatStreamReq](docs/DtoOpsChatStreamReq.md)
  - [TxingAiApi.DtoPublishVersionReq](docs/DtoPublishVersionReq.md)
  - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
  - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)

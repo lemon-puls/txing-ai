@@ -10,6 +10,7 @@ import (
 	"txing-ai/internal/controller/cos"
 	"txing-ai/internal/controller/file"
 	"txing-ai/internal/controller/model"
+	"txing-ai/internal/controller/ops"
 	"txing-ai/internal/controller/preset"
 	"txing-ai/internal/controller/user"
 	"txing-ai/internal/controller/website"
@@ -43,6 +44,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 	preset.Register(group)
 
 	website.Register(group)
+
+	// 运营助手相关路由（管理后台 AI 助手）
+	ops.Register(group)
 
 	workflow.Register(group, res)
 
