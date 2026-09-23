@@ -13,7 +13,6 @@
 
 import ApiClient from '../ApiClient';
 import DtoOpsChatContext from './DtoOpsChatContext';
-import DtoOpsChatMessage from './DtoOpsChatMessage';
 
 /**
  * The DtoOpsChatStreamReq model module.
@@ -24,11 +23,11 @@ class DtoOpsChatStreamReq {
     /**
      * Constructs a new <code>DtoOpsChatStreamReq</code>.
      * @alias module:model/DtoOpsChatStreamReq
-     * @param messages {Array.<module:model/DtoOpsChatMessage>} 
+     * @param content {String} 本次用户输入
      */
-    constructor(messages) { 
+    constructor(content) { 
         
-        DtoOpsChatStreamReq.initialize(this, messages);
+        DtoOpsChatStreamReq.initialize(this, content);
     }
 
     /**
@@ -36,8 +35,8 @@ class DtoOpsChatStreamReq {
      * This method is used by the constructors of any subclasses, in order to implement multiple inheritance (mix-ins).
      * Only for internal use.
      */
-    static initialize(obj, messages) { 
-        obj['messages'] = messages;
+    static initialize(obj, content) { 
+        obj['content'] = content;
     }
 
     /**
@@ -51,11 +50,14 @@ class DtoOpsChatStreamReq {
         if (data) {
             obj = obj || new DtoOpsChatStreamReq();
 
+            if (data.hasOwnProperty('content')) {
+                obj['content'] = ApiClient.convertToType(data['content'], 'String');
+            }
             if (data.hasOwnProperty('context')) {
                 obj['context'] = ApiClient.convertToType(data['context'], DtoOpsChatContext);
             }
-            if (data.hasOwnProperty('messages')) {
-                obj['messages'] = ApiClient.convertToType(data['messages'], [DtoOpsChatMessage]);
+            if (data.hasOwnProperty('sessionId')) {
+                obj['sessionId'] = ApiClient.convertToType(data['sessionId'], 'Number');
             }
         }
         return obj;
@@ -73,19 +75,13 @@ class DtoOpsChatStreamReq {
                 throw new Error("The required field `" + property + "` is not found in the JSON data: " + JSON.stringify(data));
             }
         }
+        // ensure the json data is a string
+        if (data['content'] && !(typeof data['content'] === 'string' || data['content'] instanceof String)) {
+            throw new Error("Expected the field `content` to be a primitive type in the JSON string but got " + data['content']);
+        }
         // validate the optional field `context`
         if (data['context']) { // data not null
           DtoOpsChatContext.validateJSON(data['context']);
-        }
-        if (data['messages']) { // data not null
-            // ensure the json data is an array
-            if (!Array.isArray(data['messages'])) {
-                throw new Error("Expected the field `messages` to be an array in the JSON data but got " + data['messages']);
-            }
-            // validate the optional field `messages` (array)
-            for (const item of data['messages']) {
-                DtoOpsChatMessage.validateJSON(item);
-            };
         }
 
         return true;
@@ -94,7 +90,13 @@ class DtoOpsChatStreamReq {
 
 }
 
-DtoOpsChatStreamReq.RequiredProperties = ["messages"];
+DtoOpsChatStreamReq.RequiredProperties = ["content"];
+
+/**
+ * 本次用户输入
+ * @member {String} content
+ */
+DtoOpsChatStreamReq.prototype['content'] = undefined;
 
 /**
  * 页面上下文（可选），由前端各管理页注入
@@ -103,9 +105,10 @@ DtoOpsChatStreamReq.RequiredProperties = ["messages"];
 DtoOpsChatStreamReq.prototype['context'] = undefined;
 
 /**
- * @member {Array.<module:model/DtoOpsChatMessage>} messages
+ * 会话ID，0 表示新建会话
+ * @member {Number} sessionId
  */
-DtoOpsChatStreamReq.prototype['messages'] = undefined;
+DtoOpsChatStreamReq.prototype['sessionId'] = undefined;
 
 
 

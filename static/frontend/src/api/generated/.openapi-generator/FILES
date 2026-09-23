@@ -13,6 +13,7 @@ docs/ApiAdminAboutSkillPost200Response.md
 docs/ApiAdminAboutTimelinePost200Response.md
 docs/ApiAdminChannelPost200Response.md
 docs/ApiAdminModelPost200Response.md
+docs/ApiAdminOpsChatSessionsIdGet200Response.md
 docs/ApiAdminWebsitesFaviconPost200Response.md
 docs/ApiAdminWebsitesPost200Response.md
 docs/ApiChatConversationsIdGet200Response.md
@@ -28,6 +29,9 @@ docs/ApiWorkflowPublicIdGet200Response.md
 docs/ApiWorkflowTemplatesPost200Response.md
 docs/ApiWorkflowValidatePost200Response.md
 docs/DefaultApi.md
+docs/DomainOpsChatMessage.md
+docs/DomainOpsChatProposal.md
+docs/DomainOpsChatToolCall.md
 docs/DtoAgentExecReq.md
 docs/DtoBatchDeleteRequest.md
 docs/DtoCloneTemplateReq.md
@@ -51,8 +55,9 @@ docs/DtoCreateWebsiteReq.md
 docs/DtoGetFaviconReq.md
 docs/DtoGetPresignedURLReq.md
 docs/DtoLoginReq.md
+docs/DtoOpsChatAppendReq.md
 docs/DtoOpsChatContext.md
-docs/DtoOpsChatMessage.md
+docs/DtoOpsChatSessionListReq.md
 docs/DtoOpsChatStreamReq.md
 docs/DtoPublishVersionReq.md
 docs/DtoRegisterReq.md
@@ -102,6 +107,7 @@ docs/VoGetPresignedURLVO.md
 docs/VoLoginVO.md
 docs/VoMessageVO.md
 docs/VoModelVO.md
+docs/VoOpsChatSessionDetailVO.md
 docs/VoPresetVO.md
 docs/VoPublishedWorkflowVO.md
 docs/VoTemplateVO.md
@@ -127,6 +133,7 @@ src/model/ApiAdminAboutSkillPost200Response.js
 src/model/ApiAdminAboutTimelinePost200Response.js
 src/model/ApiAdminChannelPost200Response.js
 src/model/ApiAdminModelPost200Response.js
+src/model/ApiAdminOpsChatSessionsIdGet200Response.js
 src/model/ApiAdminWebsitesFaviconPost200Response.js
 src/model/ApiAdminWebsitesPost200Response.js
 src/model/ApiChatConversationsIdGet200Response.js
@@ -141,6 +148,9 @@ src/model/ApiWorkflowIdVersionsPost200Response.js
 src/model/ApiWorkflowPublicIdGet200Response.js
 src/model/ApiWorkflowTemplatesPost200Response.js
 src/model/ApiWorkflowValidatePost200Response.js
+src/model/DomainOpsChatMessage.js
+src/model/DomainOpsChatProposal.js
+src/model/DomainOpsChatToolCall.js
 src/model/DtoAgentExecReq.js
 src/model/DtoBatchDeleteRequest.js
 src/model/DtoCloneTemplateReq.js
@@ -164,8 +174,9 @@ src/model/DtoCreateWebsiteReq.js
 src/model/DtoGetFaviconReq.js
 src/model/DtoGetPresignedURLReq.js
 src/model/DtoLoginReq.js
+src/model/DtoOpsChatAppendReq.js
 src/model/DtoOpsChatContext.js
-src/model/DtoOpsChatMessage.js
+src/model/DtoOpsChatSessionListReq.js
 src/model/DtoOpsChatStreamReq.js
 src/model/DtoPublishVersionReq.js
 src/model/DtoRegisterReq.js
@@ -215,6 +226,7 @@ src/model/VoGetPresignedURLVO.js
 src/model/VoLoginVO.js
 src/model/VoMessageVO.js
 src/model/VoModelVO.js
+src/model/VoOpsChatSessionDetailVO.js
 src/model/VoPresetVO.js
 src/model/VoPublishedWorkflowVO.js
 src/model/VoTemplateVO.js
@@ -223,6 +235,10 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
-test/model/DtoOpsChatContext.spec.js
-test/model/DtoOpsChatMessage.spec.js
-test/model/DtoOpsChatStreamReq.spec.js
+test/model/ApiAdminOpsChatSessionsIdGet200Response.spec.js
+test/model/DomainOpsChatMessage.spec.js
+test/model/DomainOpsChatProposal.spec.js
+test/model/DomainOpsChatToolCall.spec.js
+test/model/DtoOpsChatAppendReq.spec.js
+test/model/DtoOpsChatSessionListReq.spec.js
+test/model/VoOpsChatSessionDetailVO.spec.js

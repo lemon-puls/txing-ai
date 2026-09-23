@@ -4,8 +4,10 @@ package domain
 // 记录每次运营助手对话的输入、工具调用、提案与输出，便于追溯与排查
 type OpsAgentLog struct {
 	BaseModel
-	UserID int64  `gorm:"column:user_id;type:bigint;not null;index;comment:操作用户ID" json:"userId"`
-	Page   string `gorm:"column:page;type:varchar(50);comment:来源页面标识" json:"page"`
+	UserID int64 `gorm:"column:user_id;type:bigint;not null;index;comment:操作用户ID" json:"userId"`
+	// 关联的运营助手会话 ID
+	SessionId int64  `gorm:"column:session_id;type:bigint;index;comment:会话ID" json:"sessionId"`
+	Page      string `gorm:"column:page;type:varchar(50);comment:来源页面标识" json:"page"`
 	// 页面上下文 JSON（page/draft 等）
 	Context string `gorm:"column:context;type:text;comment:页面上下文JSON" json:"context"`
 	// 对话消息 JSON（[{role,content}]）

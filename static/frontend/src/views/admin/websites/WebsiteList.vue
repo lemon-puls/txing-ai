@@ -23,16 +23,22 @@
       </el-form>
     </el-card>
 
-    <!-- AI 录入抽屉：运营助手对话，提案确认后刷新列表 -->
+    <!-- AI 录入抽屉：运营助手对话，提案确认后刷新列表（destroy-on-close 保证每次打开重新加载会话） -->
     <el-drawer
       v-model="opsDrawerVisible"
       size="480px"
       class="ops-drawer"
+      destroy-on-close
     >
       <template #header>
         <span class="ops-drawer-title">
-          <el-icon><MagicStick /></el-icon>
-          AI 录入助手
+          <span class="title-icon">
+            <el-icon :size="14"><MagicStick /></el-icon>
+          </span>
+          <span class="title-text">
+            AI 录入助手
+            <small>提案确认后才会入库</small>
+          </span>
         </span>
       </template>
       <OpsChatPanel :context="opsContext" style="height: 100%" @inserted="loadWebsites" />
@@ -753,10 +759,34 @@ onMounted(() => {
   .ops-drawer-title {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--el-color-primary);
+    gap: 10px;
+
+    .title-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+      box-shadow: 0 2px 8px var(--el-color-primary-light-8);
+    }
+
+    .title-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--el-text-color-primary);
+
+      small {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--el-text-color-secondary);
+      }
+    }
   }
 }
 </style>

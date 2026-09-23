@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -36,6 +37,20 @@ func Create(ctx *gin.Context) {
 	db := utils.GetDBFromContext[*gorm.DB](ctx)
 
 	cosClient := utils.GetCosClientFromContext[*utils.COSClient](ctx)
+
+	// URL 查重（软删感知：GORM 自动排除已删除记录），兜底防止提案重复确认或手动重复新增
+	normalizedURL := strings.TrimRight(strings.TrimSpace(req.Url), "/")
+	if normalizedURL != "" {
+		var count int64
+		if err := db.Model(&domain.Website{}).Where("url = ?", normalizedURL).Count(&count).Error; err != nil {
+			utils.ErrorWithMsg(ctx, "查询网站失败", err)
+			return
+		}
+		if count > 0 {
+			utils.ErrorWithMsg(ctx, "该网站地址已存在，请勿重复录入", nil)
+			return
+		}
+	}
 
 	website := &domain.Website{
 		Name:        req.Name,

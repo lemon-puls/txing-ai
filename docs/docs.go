@@ -1433,9 +1433,170 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/ops/chat/sessions/list": {
+            "post": {
+                "description": "游标分页获取当前管理员的运营助手会话列表（按更新时间倒序）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "运营助手"
+                ],
+                "summary": "运营助手会话列表",
+                "parameters": [
+                    {
+                        "description": "游标分页参数",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OpsChatSessionListReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/ops/chat/sessions/{id}": {
+            "get": {
+                "description": "获取指定会话的完整消息列表，用于刷新后回放",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "运营助手"
+                ],
+                "summary": "运营助手会话详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.OpsChatSessionDetailVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "无权限",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "软删除指定的会话（仅限本人会话）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "运营助手"
+                ],
+                "summary": "删除运营助手会话",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/ops/chat/sessions/{id}/append": {
+            "post": {
+                "description": "持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "运营助手"
+                ],
+                "summary": "追加运营助手会话消息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "追加的消息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OpsChatAppendReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/ops/chat/stream": {
             "post": {
-                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）",
+                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId",
                 "consumes": [
                     "application/json"
                 ],
@@ -1448,7 +1609,7 @@ const docTemplate = `{
                 "summary": "运营助手流式对话",
                 "parameters": [
                     {
-                        "description": "对话消息与页面上下文",
+                        "description": "会话ID与本次输入",
                         "name": "data",
                         "in": "body",
                         "required": true,
@@ -4005,6 +4166,91 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.OpsChatMessage": {
+            "type": "object",
+            "properties": {
+                "confirmed": {
+                    "description": "Confirmed 标记提案确认完成的提示消息（前端本地产生，经 append 接口持久化）",
+                    "type": "boolean"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "interrupted": {
+                    "description": "Interrupted 表示本次回复被用户主动中断（内容为已生成的部分）",
+                    "type": "boolean"
+                },
+                "proposal": {
+                    "$ref": "#/definitions/domain.OpsChatProposal"
+                },
+                "proposalMessage": {
+                    "type": "string"
+                },
+                "proposalStatus": {
+                    "type": "string"
+                },
+                "reasoning": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "user/assistant",
+                    "type": "string"
+                },
+                "toolCalls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.OpsChatToolCall"
+                    }
+                }
+            }
+        },
+        "domain.OpsChatProposal": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.OpsChatToolCall": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "running/completed/failed/interrupted",
+                    "type": "string"
+                }
+            }
+        },
         "dto.AgentExecReq": {
             "type": "object",
             "required": [
@@ -4593,6 +4839,31 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.OpsChatAppendReq": {
+            "type": "object",
+            "required": [
+                "content",
+                "role"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 8000,
+                    "example": "✅ 提案已确认，网站录入完成。"
+                },
+                "markProposalConfirmed": {
+                    "description": "是否将最后一条未确认的提案标记为已确认",
+                    "type": "boolean"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "assistant"
+                    ],
+                    "example": "assistant"
+                }
+            }
+        },
         "dto.OpsChatContext": {
             "type": "object",
             "properties": {
@@ -4608,34 +4879,29 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.OpsChatMessage": {
+        "dto.OpsChatSessionListReq": {
             "type": "object",
-            "required": [
-                "content",
-                "role"
-            ],
             "properties": {
-                "content": {
-                    "type": "string",
-                    "maxLength": 8000,
-                    "example": "收录 https://github.com/cloudwego/eino"
+                "cursor": {
+                    "type": "string"
                 },
-                "role": {
-                    "type": "string",
-                    "enum": [
-                        "user",
-                        "assistant"
-                    ],
-                    "example": "user"
+                "pageSize": {
+                    "type": "integer"
                 }
             }
         },
         "dto.OpsChatStreamReq": {
             "type": "object",
             "required": [
-                "messages"
+                "content"
             ],
             "properties": {
+                "content": {
+                    "description": "本次用户输入",
+                    "type": "string",
+                    "maxLength": 8000,
+                    "example": "收录 https://github.com/cloudwego/eino"
+                },
                 "context": {
                     "description": "页面上下文（可选），由前端各管理页注入",
                     "allOf": [
@@ -4644,13 +4910,10 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "messages": {
-                    "type": "array",
-                    "maxItems": 40,
-                    "minItems": 1,
-                    "items": {
-                        "$ref": "#/definitions/dto.OpsChatMessage"
-                    }
+                "sessionId": {
+                    "description": "会话ID，0 表示新建会话",
+                    "type": "integer",
+                    "example": 0
                 }
             }
         },
@@ -6067,6 +6330,32 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "vo.OpsChatSessionDetailVO": {
+            "type": "object",
+            "properties": {
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.OpsChatMessage"
+                    }
+                },
+                "model": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updateTime": {
                     "type": "string"
                 }
             }

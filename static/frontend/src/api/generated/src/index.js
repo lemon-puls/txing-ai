@@ -23,6 +23,7 @@ import ApiAdminAboutSkillPost200Response from './model/ApiAdminAboutSkillPost200
 import ApiAdminAboutTimelinePost200Response from './model/ApiAdminAboutTimelinePost200Response';
 import ApiAdminChannelPost200Response from './model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from './model/ApiAdminModelPost200Response';
+import ApiAdminOpsChatSessionsIdGet200Response from './model/ApiAdminOpsChatSessionsIdGet200Response';
 import ApiAdminWebsitesFaviconPost200Response from './model/ApiAdminWebsitesFaviconPost200Response';
 import ApiAdminWebsitesPost200Response from './model/ApiAdminWebsitesPost200Response';
 import ApiChatConversationsIdGet200Response from './model/ApiChatConversationsIdGet200Response';
@@ -37,6 +38,9 @@ import ApiWorkflowIdVersionsPost200Response from './model/ApiWorkflowIdVersionsP
 import ApiWorkflowPublicIdGet200Response from './model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from './model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost200Response';
+import DomainOpsChatMessage from './model/DomainOpsChatMessage';
+import DomainOpsChatProposal from './model/DomainOpsChatProposal';
+import DomainOpsChatToolCall from './model/DomainOpsChatToolCall';
 import DtoAgentExecReq from './model/DtoAgentExecReq';
 import DtoBatchDeleteRequest from './model/DtoBatchDeleteRequest';
 import DtoCloneTemplateReq from './model/DtoCloneTemplateReq';
@@ -60,8 +64,9 @@ import DtoCreateWebsiteReq from './model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from './model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from './model/DtoGetPresignedURLReq';
 import DtoLoginReq from './model/DtoLoginReq';
+import DtoOpsChatAppendReq from './model/DtoOpsChatAppendReq';
 import DtoOpsChatContext from './model/DtoOpsChatContext';
-import DtoOpsChatMessage from './model/DtoOpsChatMessage';
+import DtoOpsChatSessionListReq from './model/DtoOpsChatSessionListReq';
 import DtoOpsChatStreamReq from './model/DtoOpsChatStreamReq';
 import DtoPublishVersionReq from './model/DtoPublishVersionReq';
 import DtoRegisterReq from './model/DtoRegisterReq';
@@ -111,6 +116,7 @@ import VoGetPresignedURLVO from './model/VoGetPresignedURLVO';
 import VoLoginVO from './model/VoLoginVO';
 import VoMessageVO from './model/VoMessageVO';
 import VoModelVO from './model/VoModelVO';
+import VoOpsChatSessionDetailVO from './model/VoOpsChatSessionDetailVO';
 import VoPresetVO from './model/VoPresetVO';
 import VoPublishedWorkflowVO from './model/VoPublishedWorkflowVO';
 import VoTemplateVO from './model/VoTemplateVO';
@@ -222,6 +228,12 @@ export {
     ApiAdminModelPost200Response,
 
     /**
+     * The ApiAdminOpsChatSessionsIdGet200Response model constructor.
+     * @property {module:model/ApiAdminOpsChatSessionsIdGet200Response}
+     */
+    ApiAdminOpsChatSessionsIdGet200Response,
+
+    /**
      * The ApiAdminWebsitesFaviconPost200Response model constructor.
      * @property {module:model/ApiAdminWebsitesFaviconPost200Response}
      */
@@ -304,6 +316,24 @@ export {
      * @property {module:model/ApiWorkflowValidatePost200Response}
      */
     ApiWorkflowValidatePost200Response,
+
+    /**
+     * The DomainOpsChatMessage model constructor.
+     * @property {module:model/DomainOpsChatMessage}
+     */
+    DomainOpsChatMessage,
+
+    /**
+     * The DomainOpsChatProposal model constructor.
+     * @property {module:model/DomainOpsChatProposal}
+     */
+    DomainOpsChatProposal,
+
+    /**
+     * The DomainOpsChatToolCall model constructor.
+     * @property {module:model/DomainOpsChatToolCall}
+     */
+    DomainOpsChatToolCall,
 
     /**
      * The DtoAgentExecReq model constructor.
@@ -444,16 +474,22 @@ export {
     DtoLoginReq,
 
     /**
+     * The DtoOpsChatAppendReq model constructor.
+     * @property {module:model/DtoOpsChatAppendReq}
+     */
+    DtoOpsChatAppendReq,
+
+    /**
      * The DtoOpsChatContext model constructor.
      * @property {module:model/DtoOpsChatContext}
      */
     DtoOpsChatContext,
 
     /**
-     * The DtoOpsChatMessage model constructor.
-     * @property {module:model/DtoOpsChatMessage}
+     * The DtoOpsChatSessionListReq model constructor.
+     * @property {module:model/DtoOpsChatSessionListReq}
      */
-    DtoOpsChatMessage,
+    DtoOpsChatSessionListReq,
 
     /**
      * The DtoOpsChatStreamReq model constructor.
@@ -748,6 +784,12 @@ export {
      * @property {module:model/VoModelVO}
      */
     VoModelVO,
+
+    /**
+     * The VoOpsChatSessionDetailVO model constructor.
+     * @property {module:model/VoOpsChatSessionDetailVO}
+     */
+    VoOpsChatSessionDetailVO,
 
     /**
      * The VoPresetVO model constructor.

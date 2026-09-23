@@ -11,6 +11,12 @@ func Register(router gin.IRouter) {
 	adminRouter := router.Group("/admin", middleware.AuthMiddleware())
 	{
 		adminRouter.POST("/ops/chat/stream", ChatStream)
+
+		// 会话持久化（聊天记录）
+		adminRouter.POST("/ops/chat/sessions/list", GetOpsSessionList)
+		adminRouter.GET("/ops/chat/sessions/:id", GetOpsSessionDetail)
+		adminRouter.DELETE("/ops/chat/sessions/:id", DeleteOpsSession)
+		adminRouter.POST("/ops/chat/sessions/:id/append", AppendOpsSession)
 	}
 
 }

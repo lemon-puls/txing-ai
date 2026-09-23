@@ -2,7 +2,7 @@
   <div class="proposal-card">
     <div class="card-header">
       <span class="card-badge">
-        <el-icon :size="12"><Link /></el-icon>
+        <el-icon :size="12"><MagicStick /></el-icon>
         网站录入提案
       </span>
       <a :href="proposal.url" target="_blank" rel="noopener noreferrer" class="card-link">
@@ -61,6 +61,8 @@
               :key="tag"
               closable
               size="small"
+              effect="light"
+              round
               @close="removeTag(tag)"
             >
               {{ tag }}
@@ -74,8 +76,9 @@
               @keyup.enter="confirmTag"
               @blur="confirmTag"
             />
-            <el-button v-else size="small" link type="primary" @click="showTagInput">
-              + 标签
+            <el-button v-else size="small" link type="primary" class="add-tag-btn" @click="showTagInput">
+              <el-icon :size="12"><Plus /></el-icon>
+              添加标签
             </el-button>
           </div>
         </div>
@@ -83,11 +86,27 @@
     </div>
 
     <div class="card-footer">
-      <span class="footer-hint">确认后将调用创建接口入库</span>
+      <span class="footer-hint">
+        <el-icon :size="12"><CircleCheck /></el-icon>
+        {{ confirmed ? '该网站已录入' : '确认后才会写入数据库' }}
+      </span>
       <el-button
+        v-if="confirmed"
+        type="success"
+        size="small"
+        round
+        class="confirmed-btn"
+        disabled
+      >
+        <el-icon class="btn-icon"><Check /></el-icon>
+        已录入
+      </el-button>
+      <el-button
+        v-else
         type="primary"
         size="small"
         round
+        class="confirm-btn"
         :loading="submitting"
         :disabled="!canSubmit"
         @click="handleConfirm"
@@ -101,15 +120,17 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Link, TopRight } from '@element-plus/icons-vue'
+import { Link, TopRight, Check } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 
 const props = defineProps({
   // 结构化提案 { type, name, description, url, avatar, tags(逗号分隔) }
   proposal: { type: Object, required: true },
-  // preview 工具给出的校验状态：ok | duplicate
+  // preview 工具给出的校验状态：ok | duplicate | confirmed
   proposalStatus: { type: String, default: 'ok' },
-  proposalMessage: { type: String, default: '' }
+  proposalMessage: { type: String, default: '' },
+  // 提案已确认入库（历史回放时禁用确认按钮，防止重复录入）
+  confirmed: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['confirmed'])
@@ -188,10 +209,17 @@ const handleConfirm = async () => {
 <style lang="scss" scoped>
 .proposal-card {
   margin-top: 10px;
+  width: 100%;
   border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--el-bg-color);
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .card-header {
@@ -199,8 +227,9 @@ const handleConfirm = async () => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
-  background: var(--el-color-primary-light-9);
+  padding: 9px 12px;
+  background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-color-primary-light-8));
+  border-bottom: 1px solid var(--el-color-primary-light-8);
 
   .card-badge {
     display: inline-flex;
@@ -216,37 +245,43 @@ const handleConfirm = async () => {
     display: inline-flex;
     align-items: center;
     gap: 2px;
+    min-width: 0;
     font-size: 12px;
     color: var(--el-text-color-secondary);
     text-decoration: none;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    transition: color 0.2s ease;
 
     &:hover {
       color: var(--el-color-primary);
+      text-decoration: underline;
     }
   }
 }
 
 .card-alert {
-  margin: 8px 12px 0;
+  margin: 10px 12px 0;
   padding: 5px 8px;
+  border-radius: 10px;
 }
 
 .card-body {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
 }
 
 .avatar-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   flex-shrink: 0;
   overflow: hidden;
   background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -273,11 +308,12 @@ const handleConfirm = async () => {
   gap: 8px;
 
   .field-label {
-    width: 32px;
+    width: 34px;
     flex-shrink: 0;
     font-size: 12px;
     color: var(--el-text-color-secondary);
     line-height: 24px;
+    text-align: justify;
   }
 
   :deep(.el-input),
@@ -292,19 +328,77 @@ const handleConfirm = async () => {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+
+  .add-tag-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+  }
 }
 
 .card-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-top: 1px solid var(--el-border-color-lighter);
   background: var(--el-fill-color-lighter);
 
   .footer-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 12px;
     color: var(--el-text-color-secondary);
+  }
+}
+
+// 确认按钮渐变强化 CTA
+.confirm-btn {
+  border: none;
+  background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+  box-shadow: 0 2px 8px var(--el-color-primary-light-8);
+
+  &:not(:disabled):hover {
+    opacity: 0.88;
+  }
+}
+
+// 已录入成功态
+.confirmed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .btn-icon {
+    margin-right: 2px;
+  }
+}
+
+// 暗色模式补充：项目暗色主题未覆写 --el-fill-color-lighter 等变量，这里手动补齐
+// 注意：scoped 下须用 `html.dark &` 写法（与 about/index.vue 一致），`:global(.dark)` 包裹会被编译器丢弃内部选择器
+.proposal-card {
+  html.dark & {
+    box-shadow: none;
+
+    .card-header {
+      border-bottom-color: rgba(255, 255, 255, 0.06);
+    }
+
+    .avatar-box {
+      border-color: #363637;
+      box-shadow: none;
+    }
+
+    .card-footer {
+      background: #1c1c1c;
+      border-top-color: #363637;
+    }
+
+    .confirm-btn {
+      box-shadow: none;
+    }
   }
 }
 </style>
