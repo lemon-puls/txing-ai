@@ -1,690 +1,626 @@
 <template>
-  <div class="websites-container">
-
-    <!-- 动态背景 -->
-    <div class="animated-background">
-      <div class="light"></div>
+  <div class="websites-page">
+    <!-- 环境光斑背景 -->
+    <div class="ambient" aria-hidden="true">
+      <div class="blob blob-a"></div>
+      <div class="blob blob-b"></div>
     </div>
 
-    <!-- 粒子动画背景 -->
-    <div class="particles">
-      <div
-        v-for="particle in particles"
-        :key="particle.id"
-        class="particle"
-        :style="particle.style"
-      ></div>
-    </div>
+    <div class="page-body">
+      <!-- 头部 -->
+      <header class="hero">
+        <h1 class="hero-title">网站导航</h1>
+        <div class="hero-accent" aria-hidden="true"></div>
+        <p class="hero-subtitle">精选优质站点，发现实用工具、AI 与开源资源</p>
+      </header>
 
-    <!-- 主要内容 -->
-    <div class="content">
-      <!-- 页面标题 -->
-      <div class="page-header">
-        <h1 class="page-title">
-          <div class="subtitle">精选实用网站，提升工作效率</div>
-        </h1>
-      </div>
-
-      <!-- 搜索和筛选区域 -->
-      <div class="search-section">
-        <div class="search-container">
+      <!-- 搜索与分类筛选 -->
+      <div class="toolbar">
+        <div class="search-row">
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索网站名称或描述..."
+            placeholder="搜索站点名称或描述…"
             class="search-input"
             :prefix-icon="Search"
             clearable
-            @input="handleSearch"
           />
         </div>
 
-        <!-- 标签筛选 -->
-        <div class="tags-filter">
-          <div class="filter-label">标签筛选：</div>
-          <div class="tags-container">
-            <el-tag
-              v-for="tag in allTags"
-              :key="tag"
-              :type="selectedTags.includes(tag) ? 'primary' : ''"
-              :effect="selectedTags.includes(tag) ? 'dark' : 'plain'"
-              class="tag-item"
-              @click="toggleTag(tag)"
-              style="color: rgba(0, 0, 0, 0.7)"
-            >
-              {{ tag }}
-            </el-tag>
-          </div>
+        <!-- 内定分类 -->
+        <div class="cat-row">
+          <button class="pill" :class="{ active: selectedTags.length === 0 }" @click="selectedTags = []">
+            全部
+          </button>
+          <button
+            v-for="tag in PRESET_WEBSITE_TAGS"
+            :key="tag"
+            class="pill"
+            :class="{ active: selectedTags[0] === tag }"
+            @click="toggleTag(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+
+        <!-- 其他标签（次级） -->
+        <div v-if="customTags.length" class="extra-row">
+          <button
+            v-for="tag in customTags"
+            :key="tag"
+            class="mini-chip"
+            :class="{ active: selectedTags[0] === tag }"
+            @click="toggleTag(tag)"
+          >
+            {{ tag }}
+          </button>
         </div>
       </div>
 
-      <!-- 网站列表 -->
+      <!-- 列表标题 -->
+      <div class="section-head">
+        <span class="section-title">{{ filterActive ? '筛选结果' : '全部站点' }}</span>
+        <span class="count-badge">共 {{ websites.length }} 个</span>
+      </div>
+
+      <!-- 站点网格 -->
       <div class="websites-grid" v-loading="loading">
-        <div
+        <a
           v-for="website in websites"
           :key="website.id"
-          class="website-card"
-          @click="openWebsite(website.url)"
+          class="site-card"
+          :href="website.url"
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          <div class="card-header">
-            <div class="website-avatar">
+          <div class="card-top">
+            <div class="site-avatar">
+              <span class="avatar-letter">{{ (website.name || '?').slice(0, 1).toUpperCase() }}</span>
               <img
                 v-if="website.avatar"
                 :src="website.avatar"
                 :alt="website.name"
                 @error="handleImageError"
               />
-              <el-icon v-else class="default-icon"><Link /></el-icon>
             </div>
-            <div class="website-info">
-              <h3 class="website-name">{{ website.name }}</h3>
-              <p class="website-description" :title="website.description">{{ website.description }}</p>
-            </div>
-          </div>
-
-          <div class="card-footer">
-            <div class="website-tags">
-              <el-tag
-                v-for="tag in website.tags.split(',')"
-                :key="tag"
-                size="small"
-                type="info"
-                effect="plain"
-                style="color: rgba(0, 0, 0, 0.7)"
-              >
-                {{ tag }}
-              </el-tag>
-            </div>
-            <div class="visit-btn">
-              <el-icon><Link /></el-icon>
+            <div class="site-head-info">
+              <div class="site-name" :title="website.name">{{ website.name }}</div>
+              <div class="site-host">
+                {{ hostOf(website.url) }}
+                <el-icon :size="11" class="host-icon"><TopRight /></el-icon>
+              </div>
             </div>
           </div>
 
-          <div class="card-overlay"></div>
-        </div>
+          <p class="site-desc" :title="website.description">{{ website.description }}</p>
+
+          <div class="site-tags">
+            <el-tag
+              v-for="tag in orderTagsPresetFirst(splitTags(website.tags)).slice(0, 4)"
+              :key="tag"
+              size="small"
+              round
+              :type="isPresetTag(tag) ? 'primary' : 'info'"
+              :effect="isPresetTag(tag) ? 'light' : 'plain'"
+            >
+              {{ tag }}
+            </el-tag>
+            <span v-if="splitTags(website.tags).length > 4" class="more-count">
+              +{{ splitTags(website.tags).length - 4 }}
+            </span>
+          </div>
+        </a>
       </div>
 
       <!-- 空状态 -->
       <div v-if="!loading && websites.length === 0" class="empty-state">
-        <el-empty description="暂无相关网站" />
+        <el-empty :description="filterActive ? '没有符合筛选条件的站点' : '暂无收录站点'">
+          <el-button v-if="filterActive" round @click="resetFilter">清空筛选</el-button>
+        </el-empty>
       </div>
     </div>
   </div>
 </template>
 
 <script setup name="WebsitesPage">
-import {ref, onMounted, computed, watchEffect} from 'vue'
-import {
-  Search,
-  Link
-} from '@element-plus/icons-vue'
+import { ref, computed, watchEffect } from 'vue'
+import { Search, TopRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { defaultApi } from '@/api'
+import { PRESET_WEBSITE_TAGS, isPresetTag, splitTags, orderTagsPresetFirst } from '@/constants/websiteTags'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
+// 与 chat 页一致：直接访问本页时也应用用户主题（挂载 dark.scss 与暗色变量）
+themeStore.initTheme()
 
 const loading = ref(false)
 const searchKeyword = ref('')
 const selectedTags = ref([])
 const websites = ref([])
-const particles = ref([])
 
-import { defaultApi } from '@/api'
-import {useThemeStore} from "@/stores/theme.js";
-
-
-// 计算所有标签
-const allTags = computed(() => {
+// 自定义标签：站点实际使用、内定分类之外的补充标签
+const customTags = computed(() => {
   const tags = new Set()
-  websites.value.forEach(website => {
-    // 以 , 分割 website.tags
-    website.tags.split(',').forEach(tag => {
-      tags.add(tag.trim())
+  websites.value.forEach((website) => {
+    splitTags(website.tags).forEach((tag) => {
+      if (!isPresetTag(tag)) {
+        tags.add(tag)
+      }
     })
   })
   return Array.from(tags)
 })
 
-// 生成随机数在指定范围内
-const random = (min, max) => Math.random() * (max - min) + min
+// 是否处于筛选状态（标题与空态文案用）
+const filterActive = computed(() => !!(searchKeyword.value || selectedTags.value.length))
 
-// 初始化粒子
-const initParticles = () => {
-  const particlesArray = []
-  for (let i = 0; i < 15; i++) {
-    particlesArray.push({
-      id: i,
-      style: {
-        width: `${random(1, 3)}px`,
-        height: `${random(1, 3)}px`,
-        left: `${random(0, 100)}%`,
-        top: `${random(0, 100)}%`,
-        animationDelay: `${random(-8000, 0)}ms`,
-        animationDuration: `${random(5000, 20000)}ms`,
-        opacity: random(0.1, 0.3)
-      }
-    })
+// 展示用主机名（解析失败时原样返回）
+const hostOf = (url) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return url
   }
-  particles.value = particlesArray
 }
 
-// 加载网站数据
+// 加载网站数据（搜索关键词与选中标签变化时经 watchEffect 自动重载）
 const loadWebsites = async () => {
   loading.value = true
   try {
     const response = await defaultApi.apiWebsitesListGet({
-      page: 1, // page
-      limit: 100, // pageSize - 获取所有数据
+      page: 1,
+      limit: 100, // 一次取全量
       name: searchKeyword.value || undefined,
-      tag: selectedTags.value.length > 0 ? selectedTags.value[0] : undefined
+      tag: selectedTags.value[0] || undefined
     })
 
     if (response.code === 0) {
       websites.value = response.data.records || []
     } else {
-      ElMessage.error(response.message || '加载网站列表失败')
+      ElMessage.error(response.message || '加载站点列表失败')
     }
   } catch (error) {
-    console.error('加载网站列表失败:', error)
-    ElMessage.error('加载网站列表失败')
+    console.error('加载站点列表失败:', error)
+    ElMessage.error('加载站点列表失败')
   } finally {
     loading.value = false
   }
 }
 
 watchEffect(() => {
-  // 监听搜索关键词和标签变化，重新加载网站数据
   loadWebsites()
 })
 
-// 搜索处理
-const handleSearch = () => {
-  // 搜索逻辑已在computed中处理
-}
-
-// 标签切换
+// 分类切换（列表接口仅支持单标签筛选：单选语义，再点一次取消）
 const toggleTag = (tag) => {
-  const index = selectedTags.value.indexOf(tag)
-  if (index > -1) {
-    selectedTags.value.splice(index, 1)
-  } else {
-    selectedTags.value.push(tag)
-  }
+  selectedTags.value = selectedTags.value[0] === tag ? [] : [tag]
 }
 
-// 打开网站
-const openWebsite = (url) => {
-  window.open(url, '_blank')
+// 清空全部筛选
+const resetFilter = () => {
+  searchKeyword.value = ''
+  selectedTags.value = []
 }
 
-// 图片加载错误处理
+// 头像加载失败时露出字母兜底
 const handleImageError = (event) => {
   event.target.style.display = 'none'
 }
-
-
-const themeStore = useThemeStore()
-// 存储进入页面时的主题状态
-const previousThemeState = ref(null)
-const previousTheme = ref("'#409EFF'")
-
-onMounted(() => {
-  initParticles()
-  loadWebsites()
-
-  // 保存当前主题状态
-  previousThemeState.value = themeStore.isDark
-  previousTheme.value = themeStore.primaryColor
-  themeStore.setPrimaryColor('#409EFF')
-  // 如果当前是暗色主题，切换为明亮主题
-  if (themeStore.isDark) {
-    themeStore.toggleTheme()
-  }
-})
 </script>
 
 <style scoped lang="scss">
-.websites-container {
+.websites-page {
+  position: relative;
   min-height: 100vh;
-  width: 100%;
-  position: relative;
-  background: #f5f7fa;
-  overflow-x: hidden;
-}
-
-// 导航栏样式
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  z-index: 100;
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.8);
-
-  .nav-content {
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .nav-left {
-      display: flex;
-      align-items: center;
-
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .logo-text {
-          font-size: 24px;
-          font-weight: bold;
-          background: linear-gradient(45deg, #2B5EFF, #1E88E5);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-      }
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-
-      .github-link {
-        display: flex;
-        align-items: center;
-        color: rgba(0, 0, 0, 0.7);
-        transition: color 0.3s ease;
-
-        &:hover {
-          color: var(--el-color-primary);
-        }
-
-        .nav-icon {
-          font-size: 24px;
-        }
-      }
-    }
-  }
-}
-
-// 动态背景
-.animated-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   overflow: hidden;
-  z-index: 1;
-
-  .light {
-    position: absolute;
-    width: 150vmax;
-    height: 150vmax;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(
-      circle,
-      rgba(43, 94, 255, 0.05) 0%,
-      rgba(30, 136, 229, 0.05) 30%,
-      rgba(3, 169, 244, 0.05) 70%
-    );
-    animation: rotate 30s linear infinite;
-  }
+  background: #f5f7fa;
 }
 
-// 粒子动画
-.particles {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
+// ===== 环境光斑 =====
+.ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 
-  .particle {
+  .blob {
     position: absolute;
-    background: linear-gradient(45deg, rgba(43, 94, 255, 0.2), rgba(3, 169, 244, 0.2));
     border-radius: 50%;
-    animation: float 10s infinite;
+    filter: blur(90px);
+  }
+
+  .blob-a {
+    width: 520px;
+    height: 520px;
+    top: -180px;
+    right: -80px;
+    background: color-mix(in srgb, var(--el-color-primary) 12%, transparent);
+  }
+
+  .blob-b {
+    width: 420px;
+    height: 420px;
+    top: 320px;
+    left: -160px;
+    background: color-mix(in srgb, var(--el-color-primary) 7%, transparent);
   }
 }
 
-// 主要内容
-.content {
+.page-body {
   position: relative;
-  z-index: 10;
-  padding: 40px 24px 40px;
-  max-width: 1200px;
+  z-index: 1;
+  max-width: 1080px;
   margin: 0 auto;
+  padding: 44px 24px 60px;
 }
 
-// 页面头部
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 40px;
+// ===== 头部 =====
+.hero {
+  text-align: center;
 
-  .page-title {
-    .subtitle {
-      margin-top: 10px;
-      font-size: 1.2em;
-      color: rgba(0, 0, 0, 0.7);
-      font-weight: normal;
-    }
+  .hero-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: linear-gradient(120deg, var(--el-text-color-primary) 30%, var(--el-color-primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .back-btn {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+  // 标题下的渐变短横线点缀
+  .hero-accent {
+    width: 36px;
+    height: 4px;
+    margin: 14px auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--el-color-primary-light-3), var(--el-color-primary));
+  }
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(43, 94, 255, 0.3);
-    }
+  .hero-subtitle {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
   }
 }
 
-// 搜索区域
-.search-section {
-  margin-bottom: 40px;
+// ===== 搜索与分类 =====
+.toolbar {
+  margin-top: 30px;
+  padding: 18px 22px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 
-  .search-container {
-    margin-bottom: 20px;
+  .search-row {
+    display: flex;
+    justify-content: center;
 
     .search-input {
-      max-width: 500px;
+      width: min(520px, 100%);
 
       :deep(.el-input__wrapper) {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        transition: all 0.3s ease;
-
-        &:hover {
-          border-color: rgba(43, 94, 255, 0.5);
-        }
-
-        &.is-focus {
-          border-color: var(--el-color-primary);
-          box-shadow: 0 0 0 2px rgba(43, 94, 255, 0.2);
-        }
-      }
-
-      :deep(.el-input__inner) {
-        color: #333;
-
-        &::placeholder {
-          color: rgba(0, 0, 0, 0.4);
-        }
+        border-radius: 999px;
       }
     }
   }
 
-  .tags-filter {
+  .cat-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+
+    .pill {
+      padding: 6px 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--el-text-color-regular);
+      background: var(--el-fill-color-light);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+      }
+
+      &.active {
+        color: #fff;
+        background: var(--el-color-primary);
+        border-color: var(--el-color-primary);
+        box-shadow: 0 2px 10px var(--el-color-primary-light-7);
+      }
+    }
+  }
+
+  .extra-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--el-border-color-lighter);
+
+    .mini-chip {
+      padding: 2px 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--el-text-color-secondary);
+      background: transparent;
+      border: 1px solid var(--el-border-color-lighter);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--el-color-primary);
+        border-color: var(--el-color-primary-light-5);
+      }
+
+      &.active {
+        color: var(--el-color-primary);
+        border-color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+      }
+    }
+  }
+}
+
+// ===== 列表标题 =====
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 2px 16px;
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  .count-badge {
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    background: var(--el-fill-color-light);
+    border-radius: 999px;
+  }
+}
+
+// ===== 站点卡片 =====
+.websites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.site-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: var(--el-color-primary-light-5);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--el-color-primary) 12%, transparent);
+
+    .host-icon {
+      color: var(--el-color-primary);
+    }
+  }
+
+  .card-top {
     display: flex;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-    .filter-label {
-      color: rgba(0, 0, 0, 0.8);
-      font-weight: 500;
+  .site-avatar {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--el-color-primary-light-8), var(--el-color-primary-light-6));
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+    .avatar-letter {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--el-color-primary);
+    }
+
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .site-head-info {
+    flex: 1;
+    min-width: 0;
+
+    .site-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .tags-container {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .tag-item {
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border-radius: 16px;
-        color: rgba(0, 0, 0, 0.7);
-
-        &:hover {
-          transform: translateY(-2px);
-        }
-      }
-    }
-  }
-}
-
-// 网站网格
-.websites-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
-}
-
-// 网站卡片
-.website-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  padding: 24px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.15);
-    border-color: rgba(43, 94, 255, 0.3);
-
-    .card-overlay {
-      opacity: 1;
-    }
-
-    .visit-btn {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  .card-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    //margin-bottom: 16px; /* 减小底部间距 */
-    height: 100px; /* 固定高度，为标签位置提供稳定基础 */
-
-    .website-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: rgba(0, 0, 0, 0.05);
+    .site-host {
       display: flex;
       align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      gap: 3px;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .default-icon {
-        font-size: 24px;
-        color: rgba(0, 0, 0, 0.6);
-      }
-    }
-
-    .website-info {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-
-      .website-name {
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        margin: 0 0 8px 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .website-description {
-        font-size: 14px;
-        color: rgba(0, 0, 0, 0.7);
-        margin: 0;
-        line-height: 1.5;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        position: relative;
-        cursor: default;
+      .host-icon {
+        flex-shrink: 0;
+        color: var(--el-text-color-placeholder);
+        transition: color 0.2s ease;
       }
     }
   }
 
-  .card-footer {
+  .site-desc {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--el-text-color-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .site-tags {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    margin-top: 8px; /* 减小与上方内容的间距 */
+    gap: 6px;
+    margin-top: auto;
+    min-height: 24px;
 
-    .website-tags {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      flex: 1;
-      min-height: 28px; /* 固定最小高度，确保标签位置稳定 */
-
-      :deep(.el-tag) {
-        margin-bottom: 4px;
-        border-radius: 12px;
-        padding: 0 10px;
-        height: 24px;
-        line-height: 22px;
-        background: rgba(64, 158, 255, 0.08);
-        border-color: rgba(64, 158, 255, 0.2);
-        transition: all 0.3s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
-          background: rgba(64, 158, 255, 0.12);
-        }
-      }
+    .more-count {
+      font-size: 12px;
+      color: var(--el-text-color-placeholder);
     }
-
-    .visit-btn {
-      opacity: 0;
-      transform: translateX(10px);
-      transition: all 0.3s ease;
-      color: var(--el-color-primary);
-      font-size: 18px;
-    }
-  }
-
-  .card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      45deg,
-      rgba(43, 94, 255, 0.03) 0%,
-      rgba(30, 136, 229, 0.03) 50%,
-      rgba(3, 169, 244, 0.03) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.4s ease;
   }
 }
 
-// 空状态
+// ===== 空状态 =====
 .empty-state {
-  text-align: center;
-  padding: 60px 20px;
-
-  :deep(.el-empty__description p) {
-    color: rgba(0, 0, 0, 0.6);
-  }
+  padding: 60px 0;
 }
 
-// 动画关键帧
-@keyframes rotate {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-30px) translateX(15px);
-  }
-}
-
-@keyframes hue-rotate {
-  from {
-    filter: hue-rotate(0deg);
-  }
-  to {
-    filter: hue-rotate(360deg);
-  }
-}
-
-// 响应式设计
+// ===== 响应式 =====
 @media screen and (max-width: 768px) {
-  .content {
-    padding: 80px 16px 40px;
+  .page-body {
+    padding: 32px 16px 44px;
   }
 
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
+  .hero .hero-title {
+    font-size: 24px;
+  }
 
-    .page-title {
-      .gradient-text {
-        font-size: 2.5em;
-      }
+  .toolbar {
+    margin-top: 22px;
+    padding: 14px 16px;
 
-      .subtitle {
-        font-size: 1em;
+    .cat-row {
+      gap: 8px;
+
+      .pill {
+        padding: 5px 14px;
+        font-size: 12px;
       }
     }
   }
 
   .websites-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
+}
 
-  .search-section {
-    .tags-filter {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
+// ===== 暗色模式：项目暗色变量未覆盖部分，这里手动补齐 =====
+// 注意：scoped 下须用 `html.dark &` 写法（与 about/index.vue 一致），`:global(.dark)` 包裹会被编译器丢弃内部选择器
+.websites-page {
+  html.dark & {
+    background: #141414;
+  }
+}
+
+.ambient .blob {
+  html.dark & {
+    filter: blur(110px);
+
+    &.blob-a {
+      background: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
+    }
+
+    &.blob-b {
+      background: color-mix(in srgb, var(--el-color-primary) 6%, transparent);
+    }
+  }
+}
+
+.toolbar {
+  html.dark & {
+    background: #1c1c1c;
+    border-color: #363637;
+    box-shadow: none;
+
+    .cat-row .pill {
+      background: #262627;
+
+      &:hover {
+        background: var(--el-color-primary-light-9);
+      }
+
+      &.active {
+        color: #fff;
+        background: var(--el-color-primary);
+      }
+    }
+
+    .extra-row {
+      border-top-color: #363637;
+
+      .mini-chip {
+        border-color: #363637;
+
+        &:hover {
+          border-color: var(--el-color-primary-light-5);
+        }
+
+        &.active {
+          background: var(--el-color-primary-light-9);
+        }
+      }
+    }
+  }
+}
+
+.section-head .count-badge {
+  html.dark & {
+    background: #262627;
+  }
+}
+
+.site-card {
+  html.dark & {
+    background: #1c1c1c;
+    border-color: #363637;
+
+    .site-avatar {
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
   }
 }
