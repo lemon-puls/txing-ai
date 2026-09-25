@@ -218,28 +218,42 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 			// Append the assistant message (with ToolCalls) to the history
 			messages = append(messages, response)
 
-			// 参数合法性校验：非法 JSON 参数不执行工具，错误信息回喂给模型自修复
-			// Validate tool arguments: invalid JSON arguments are not executed;
-			// an error message is fed back so the model can self-repair.
-			if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
+			// 参数合法性校验：非法 JSON 参数不执行、错误信息回喂给模型自修复；
+			// 参数合法的子集照常执行 —— provider 要求 assistant 消息里的每个
+			// tool_call_id 都有对应 tool 消息，漏喂会导致下一次请求 400
+			// Validate tool arguments: invalid JSON arguments are not executed and
+			// an error is fed back for self-repair, while the valid subset still runs.
+			validCalls, errMsgs := splitToolCalls(response.ToolCalls)
+			if len(errMsgs) > 0 {
 				consecutiveInvalid++
-				// 参数非法的工具不会执行，逐个推送 failed，避免前端工具行一直转圈、
-				// 节点收尾时被误标为成功
+				// 仅对参数非法的调用推送 failed，合法调用的结果随后照常推送，
+				// 避免前端工具行状态与实际执行情况不符
 				if callback != nil {
-					for _, tc := range response.ToolCalls {
+					for _, em := range errMsgs {
 						callback(&global.Chunk{
 							NodeId:     cfg.NodeID,
 							NodeType:   cfg.NodeType,
 							NodeLabel:  cfg.NodeLabel,
-							ToolCallId: tc.ID,
-							ToolName:   tc.Function.Name,
+							ToolCallId: em.ToolCallID,
+							ToolName:   em.ToolName,
 							ToolResult: "工具调用参数非法，本次调用未执行",
 							ToolStatus: "failed",
-							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 参数非法", cfg.NodeLabel, tc.Function.Name),
+							ShowMsg:    fmt.Sprintf("[%s] 工具 %s 参数非法", cfg.NodeLabel, em.ToolName),
 						})
 					}
 				}
 				messages = append(messages, errMsgs...)
+
+				// 执行参数合法的子集并回喂结果，保证消息历史完整
+				if len(validCalls) > 0 {
+					toolResults, toolErr := llmToolNode.Invoke(ctx, cloneWithToolCalls(response, validCalls))
+					if toolErr != nil {
+						messages = append(messages, toolErrorMessages("工具执行失败: "+toolErr.Error(), validCalls)...)
+					} else {
+						emitToolResults(cfg, callback, toolResults)
+						messages = append(messages, capToolResultsForContext(toolResults)...)
+					}
+				}
 
 				if consecutiveInvalid >= maxConsecutiveInvalidToolCalls {
 					log.Warn("工具调用参数连续非法，中止工具循环",
@@ -277,23 +291,10 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 							})
 						}
 					}
-					messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
+					// 每个工具调用各回喂一条失败消息（provider 强校验每个 tool_call_id）
+					messages = append(messages, toolErrorMessages(toolResultMsg, response.ToolCalls)...)
 				} else {
-					// 推送工具执行结果 / Emit tool results
-					if callback != nil {
-						for _, tr := range toolResults {
-							callback(&global.Chunk{
-								NodeId:     cfg.NodeID,
-								NodeType:   cfg.NodeType,
-								NodeLabel:  cfg.NodeLabel,
-								ToolCallId: tr.ToolCallID,
-								ToolName:   tr.ToolName,
-								ToolResult: tr.Content,
-								ToolStatus: "completed",
-								ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", cfg.NodeLabel, tr.ToolName),
-							})
-						}
-					}
+					emitToolResults(cfg, callback, toolResults)
 					// 回喂前截断超长结果（展示 chunk 已用原始全量内容推送，不受影响）
 					messages = append(messages, capToolResultsForContext(toolResults)...)
 				}
@@ -331,15 +332,22 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	// 工具调用响应通常无文本内容（Content 为空），直接返回会导致最终输出为空。
 	// 这里执行最后一批工具并做收尾生成，让模型基于结果产出最终答复。
 	if response != nil && len(response.ToolCalls) > 0 && llmToolNode != nil {
-		// 与主循环一致：补齐缺失的工具调用 ID，保证 ToolMessage 引用与展示匹配稳定
-		ensureToolCallIDs(response.ToolCalls, cfg.NodeID, maxToolRounds)
-		messages = append(messages, response)
-		if errMsgs, invalid := validateToolCallArgs(response.ToolCalls); invalid {
+		// 主循环因连续非法中止时 response 已入列（同一指针），重复追加会产生
+		// 两条相同的 assistant(tool_calls) 消息，破坏消息历史
+		if len(messages) == 0 || messages[len(messages)-1] != response {
+			// 与主循环一致：补齐缺失的工具调用 ID，保证 ToolMessage 引用与展示匹配稳定
+			ensureToolCallIDs(response.ToolCalls, cfg.NodeID, maxToolRounds)
+			messages = append(messages, response)
+			validCalls, errMsgs := splitToolCalls(response.ToolCalls)
 			messages = append(messages, errMsgs...)
-		} else if toolResults, toolErr := llmToolNode.Invoke(ctx, response); toolErr != nil {
-			messages = append(messages, schema.ToolMessage("工具执行失败: "+toolErr.Error(), response.ToolCalls[0].ID))
-		} else {
-			messages = append(messages, capToolResultsForContext(toolResults)...)
+			if len(validCalls) > 0 {
+				if toolResults, toolErr := llmToolNode.Invoke(ctx, cloneWithToolCalls(response, validCalls)); toolErr != nil {
+					messages = append(messages, toolErrorMessages("工具执行失败: "+toolErr.Error(), validCalls)...)
+				} else {
+					emitToolResults(cfg, callback, toolResults)
+					messages = append(messages, capToolResultsForContext(toolResults)...)
+				}
+			}
 		}
 		// 收尾生成：本次结果作为最终输出，不再继续工具循环
 		if response, execErr = cfg.callChatModel(ctx, nodeChatModel, messages, callback); execErr != nil {
@@ -583,52 +591,93 @@ func truncateRunes(s string, max int) string {
 	return string(rs[:max])
 }
 
-// validateToolCallArgs 校验工具调用参数是否为合法 JSON
-// validateToolCallArgs checks whether tool-call arguments are valid JSON.
-// 返回非法参数对应的错误消息（ToolMessage）列表，以及是否存在非法参数。
+// emitToolResults 推送工具执行结果 chunk（completed 状态）
+func emitToolResults(cfg *LLMExecConfig, callback func(*global.Chunk) error, toolResults []*schema.Message) {
+	if callback == nil {
+		return
+	}
+	for _, tr := range toolResults {
+		callback(&global.Chunk{
+			NodeId:     cfg.NodeID,
+			NodeType:   cfg.NodeType,
+			NodeLabel:  cfg.NodeLabel,
+			ToolCallId: tr.ToolCallID,
+			ToolName:   tr.ToolName,
+			ToolResult: tr.Content,
+			ToolStatus: "completed",
+			ShowMsg:    fmt.Sprintf("[%s] 工具 %s 执行完成", cfg.NodeLabel, tr.ToolName),
+		})
+	}
+}
+
+// splitToolCalls 按参数是否为合法 JSON 把工具调用分成合法/非法两组，
+// 并为非法组生成回喂错误消息（ToolMessage）。
+// splitToolCalls partitions tool calls into a valid subset and error messages
+// (as ToolMessages) for the invalid ones.
 // 错误信息附带可操作指引：内容过长导致 JSON 被截断时，建议先落盘再传文件路径，
 // 避免模型反复生成同样被截断的参数空转多轮。
-// It returns error messages (as ToolMessages) for the invalid calls and
-// whether any invalid argument was found.
-func validateToolCallArgs(toolCalls []schema.ToolCall) ([]*schema.Message, bool) {
-	var errMsgs []*schema.Message
+func splitToolCalls(toolCalls []schema.ToolCall) (valid []schema.ToolCall, errMsgs []*schema.Message) {
 	for _, tc := range toolCalls {
-		if tc.Function.Arguments == "" {
+		var hint string
+		switch {
+		case tc.Function.Arguments == "":
 			// 空参数同样回喂错误，避免模型以为调用已成功
-			errorMsg := fmt.Sprintf("工具调用参数为空: %s, ToolCallID: %s。请提供完整合法的 JSON 参数", tc.Function.Name, tc.ID)
-			log.Warn(errorMsg)
-			errMsgs = append(errMsgs, &schema.Message{
-				Role:       schema.Tool,
-				Content:    errorMsg,
-				ToolName:   tc.Function.Name,
-				ToolCallID: tc.ID,
-			})
-			continue
-		}
-		var jsonObj map[string]interface{}
-		if err := json.Unmarshal([]byte(tc.Function.Arguments), &jsonObj); err != nil {
-			errorMsg := fmt.Sprintf("工具调用参数不是合法的 JSON: %s, ToolCallID: %s, 错误: %v",
+			hint = "工具调用参数为空: " + tc.Function.Name + ", ToolCallID: " + tc.ID +
+				"。请提供完整合法的 JSON 参数"
+			log.Warn(hint)
+		default:
+			var jsonObj map[string]interface{}
+			err := json.Unmarshal([]byte(tc.Function.Arguments), &jsonObj)
+			if err == nil {
+				valid = append(valid, tc)
+				continue
+			}
+			hint = fmt.Sprintf("工具调用参数不是合法的 JSON: %s, ToolCallID: %s, 错误: %v",
 				tc.Function.Name, tc.ID, err)
 			// 大段正文塞进工具调用参数时，模型生成的 JSON 容易被截断/转义错误；
 			// 给出明确的修复指引，避免同一失败反复重试
 			switch tc.Function.Name {
 			case "markdown_to_pdf_file_tool":
-				errorMsg += "。若内容过长导致 JSON 被截断，请先用 markdown_save_tool 保存 Markdown 文件，" +
+				hint += "。若内容过长导致 JSON 被截断，请先用 markdown_save_tool 保存 Markdown 文件，" +
 					"再调用本工具并传入 filePath 参数（不要再把整段正文放进 content）"
 			case "markdown_save_tool":
-				errorMsg += "。若内容过长导致 JSON 被截断，请将内容拆分为多段分多次保存到同一文件：" +
+				hint += "。若内容过长导致 JSON 被截断，请将内容拆分为多段分多次保存到同一文件：" +
 					"第一次调用传 is_append=false，后续调用传 is_append=true 追加（每次只传一小段，避免参数超长被截断）"
 			default:
-				errorMsg += "。请重新生成，确保参数是完整合法的 JSON（注意双引号、换行需正确转义）"
+				hint += "。请重新生成，确保参数是完整合法的 JSON（注意双引号、换行需正确转义）"
 			}
-			log.Error(errorMsg)
-			errMsgs = append(errMsgs, &schema.Message{
-				Role:       schema.Tool,
-				Content:    errorMsg,
-				ToolName:   tc.Function.Name,
-				ToolCallID: tc.ID,
-			})
+			log.Error(hint)
 		}
+		errMsgs = append(errMsgs, &schema.Message{
+			Role:       schema.Tool,
+			Content:    hint,
+			ToolName:   tc.Function.Name,
+			ToolCallID: tc.ID,
+		})
 	}
-	return errMsgs, len(errMsgs) > 0
+	return valid, errMsgs
+}
+
+// cloneWithToolCalls 返回仅携带 subset 工具调用的 response 副本（不修改原消息，
+// 历史中已入列的 assistant 消息保持完整 tool_calls）
+func cloneWithToolCalls(response *schema.Message, subset []schema.ToolCall) *schema.Message {
+	clone := *response
+	clone.ToolCalls = subset
+	return &clone
+}
+
+// toolErrorMessages 为每个工具调用生成一条失败 ToolMessage。
+// OpenAI 协议要求 assistant 消息里的每个 tool_call_id 都必须有对应 tool 消息，
+// 只回喂首条会让下一次请求被 provider 以 400 拒绝。
+func toolErrorMessages(msg string, toolCalls []schema.ToolCall) []*schema.Message {
+	msgs := make([]*schema.Message, 0, len(toolCalls))
+	for _, tc := range toolCalls {
+		msgs = append(msgs, &schema.Message{
+			Role:       schema.Tool,
+			Content:    msg,
+			ToolName:   tc.Function.Name,
+			ToolCallID: tc.ID,
+		})
+	}
+	return msgs
 }

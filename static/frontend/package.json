@@ -18,6 +18,7 @@
     "@vue-flow/core": "^1.48.2",
     "@vue-flow/node-resizer": "^1.5.1",
     "color2k": "^2.0.3",
+    "dompurify": "^3.4.16",
     "echarts": "^5.6.0",
     "element-plus": "^2.9.3",
     "github-markdown-css": "^5.8.1",

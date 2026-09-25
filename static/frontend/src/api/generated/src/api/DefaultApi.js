@@ -38,6 +38,8 @@ import ApiWorkflowIdVersionsPost200Response from '../model/ApiWorkflowIdVersions
 import ApiWorkflowPublicIdGet200Response from '../model/ApiWorkflowPublicIdGet200Response';
 import ApiWorkflowTemplatesPost200Response from '../model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from '../model/ApiWorkflowValidatePost200Response';
+import DomainWikiPage from '../model/DomainWikiPage';
+import DomainWikiSource from '../model/DomainWikiSource';
 import DtoBatchDeleteRequest from '../model/DtoBatchDeleteRequest';
 import DtoCloneTemplateReq from '../model/DtoCloneTemplateReq';
 import DtoConversationListRequest from '../model/DtoConversationListRequest';
@@ -79,7 +81,12 @@ import DtoUpdateProfileReq from '../model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from '../model/DtoUpdateWebsiteReq';
 import DtoUpdateWorkflowStatusReq from '../model/DtoUpdateWorkflowStatusReq';
 import DtoValidateWorkflowReq from '../model/DtoValidateWorkflowReq';
+import DtoWikiAskReq from '../model/DtoWikiAskReq';
+import DtoWikiMDSourceReq from '../model/DtoWikiMDSourceReq';
+import DtoWikiURLSourceReq from '../model/DtoWikiURLSourceReq';
+import DtoWikiUpdateDraftReq from '../model/DtoWikiUpdateDraftReq';
 import UtilsResponse from '../model/UtilsResponse';
+import WikiGraphData from '../model/WikiGraphData';
 
 /**
 *  service.
@@ -2458,6 +2465,755 @@ export default class DefaultApi {
 
 
     /**
+     * 一键确认全部草稿
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
+     */
+    apiAdminWikiDraftsConfirmAllPostWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = {'String': Object};
+      return this.apiClient.callApi(
+        '/api/admin/wiki/drafts/confirm_all', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 一键确认全部草稿
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
+     */
+    apiAdminWikiDraftsConfirmAllPost() {
+      return this.apiAdminWikiDraftsConfirmAllPostWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 确认草稿为已发布（同 slug 已有发布页则合并更新）
+     * @param {Number} id 草稿ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiDraftsIdConfirmPostWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiDraftsIdConfirmPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/drafts/{id}/confirm', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 确认草稿为已发布（同 slug 已有发布页则合并更新）
+     * @param {Number} id 草稿ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiDraftsIdConfirmPost(id) {
+      return this.apiAdminWikiDraftsIdConfirmPostWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 丢弃草稿
+     * @param {Number} id 草稿ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiDraftsIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiDraftsIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/drafts/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 丢弃草稿
+     * @param {Number} id 草稿ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiDraftsIdDelete(id) {
+      return this.apiAdminWikiDraftsIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 编辑草稿（可改标题/类型/别名/摘要/正文）
+     * @param {Number} id 草稿ID
+     * @param {module:model/DtoWikiUpdateDraftReq} data 更新字段（只更新传入项）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiDraftsIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiDraftsIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWikiDraftsIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/drafts/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 编辑草稿（可改标题/类型/别名/摘要/正文）
+     * @param {Number} id 草稿ID
+     * @param {module:model/DtoWikiUpdateDraftReq} data 更新字段（只更新传入项）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiDraftsIdPut(id, data) {
+      return this.apiAdminWikiDraftsIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 分页列出待审核草稿
+     * @param {Object} opts Optional parameters
+     * @param {Number} [page = 1)] 页码
+     * @param {Number} [pageSize = 20)] 每页数量
+     * @param {String} [keyword] 关键词（标题/slug/摘要）
+     * @param {String} [pageType] 页面类型 summary/entity/concept
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
+     */
+    apiAdminWikiDraftsListGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': opts['page'],
+        'pageSize': opts['pageSize'],
+        'keyword': opts['keyword'],
+        'pageType': opts['pageType']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = {'String': Object};
+      return this.apiClient.callApi(
+        '/api/admin/wiki/drafts/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 分页列出待审核草稿
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.page 页码 (default to 1)
+     * @param {Number} opts.pageSize 每页数量 (default to 20)
+     * @param {String} opts.keyword 关键词（标题/slug/摘要）
+     * @param {String} opts.pageType 页面类型 summary/entity/concept
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
+     */
+    apiAdminWikiDraftsListGet(opts) {
+      return this.apiAdminWikiDraftsListGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 导出全部已发布页为 md 压缩包（含 index.md）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link File} and HTTP response
+     */
+    apiAdminWikiExportGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/zip'];
+      let returnType = File;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/export', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 导出全部已发布页为 md 压缩包（含 index.md）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link File}
+     */
+    apiAdminWikiExportGet() {
+      return this.apiAdminWikiExportGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/WikiGraphData} and HTTP response
+     */
+    apiAdminWikiGraphGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = WikiGraphData;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/graph', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/WikiGraphData}
+     */
+    apiAdminWikiGraphGet() {
+      return this.apiAdminWikiGraphGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取单个已发布页
+     * @param {Number} id 页面ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/DomainWikiPage} and HTTP response
+     */
+    apiAdminWikiPagesIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiPagesIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = DomainWikiPage;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/pages/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取单个已发布页
+     * @param {Number} id 页面ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/DomainWikiPage}
+     */
+    apiAdminWikiPagesIdGet(id) {
+      return this.apiAdminWikiPagesIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 下线已发布页
+     * @param {Number} id 页面ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiPagesIdOfflinePostWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiPagesIdOfflinePost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/pages/{id}/offline', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 下线已发布页
+     * @param {Number} id 页面ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiPagesIdOfflinePost(id) {
+      return this.apiAdminWikiPagesIdOfflinePostWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 编辑已发布页（version+1 并重建出入链与 index）
+     * @param {Number} id 页面ID
+     * @param {module:model/DtoWikiUpdateDraftReq} data 更新字段（只更新传入项）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiPagesIdPutWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiPagesIdPut");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWikiPagesIdPut");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/pages/{id}', 'PUT',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 编辑已发布页（version+1 并重建出入链与 index）
+     * @param {Number} id 页面ID
+     * @param {module:model/DtoWikiUpdateDraftReq} data 更新字段（只更新传入项）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiPagesIdPut(id, data) {
+      return this.apiAdminWikiPagesIdPutWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 分页列出已发布页面
+     * @param {Object} opts Optional parameters
+     * @param {Number} [page = 1)] 页码
+     * @param {Number} [pageSize = 20)] 每页数量
+     * @param {String} [keyword] 关键词（标题/slug/摘要）
+     * @param {String} [pageType] 页面类型 summary/entity/concept
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
+     */
+    apiAdminWikiPagesListGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': opts['page'],
+        'pageSize': opts['pageSize'],
+        'keyword': opts['keyword'],
+        'pageType': opts['pageType']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = {'String': Object};
+      return this.apiClient.callApi(
+        '/api/admin/wiki/pages/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 分页列出已发布页面
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.page 页码 (default to 1)
+     * @param {Number} opts.pageSize 每页数量 (default to 20)
+     * @param {String} opts.keyword 关键词（标题/slug/摘要）
+     * @param {String} opts.pageType 页面类型 summary/entity/concept
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
+     */
+    apiAdminWikiPagesListGet(opts) {
+      return this.apiAdminWikiPagesListGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除知识库源
+     * @param {Number} id 源ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiSourcesIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiSourcesIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/sources/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除知识库源
+     * @param {Number} id 源ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiSourcesIdDelete(id) {
+      return this.apiAdminWikiSourcesIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 触发源的 ingest 编译
+     * 异步执行：抓取/拉取正文 → agent 编译为草稿；通过源列表的 status 轮询进度
+     * @param {Number} id 源ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminWikiSourcesIdIngestPostWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminWikiSourcesIdIngestPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/wiki/sources/{id}/ingest', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 触发源的 ingest 编译
+     * 异步执行：抓取/拉取正文 → agent 编译为草稿；通过源列表的 status 轮询进度
+     * @param {Number} id 源ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminWikiSourcesIdIngestPost(id) {
+      return this.apiAdminWikiSourcesIdIngestPostWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 分页列出知识库源
+     * @param {Object} opts Optional parameters
+     * @param {Number} [page = 1)] 页码
+     * @param {Number} [pageSize = 20)] 每页数量
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
+     */
+    apiAdminWikiSourcesListGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'page': opts['page'],
+        'pageSize': opts['pageSize']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = {'String': Object};
+      return this.apiClient.callApi(
+        '/api/admin/wiki/sources/list', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 分页列出知识库源
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.page 页码 (default to 1)
+     * @param {Number} opts.pageSize 每页数量 (default to 20)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
+     */
+    apiAdminWikiSourcesListGet(opts) {
+      return this.apiAdminWikiSourcesListGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 新建 markdown 源
+     * 上传 markdown 原文创建 Raw 源（服务端转存 COS，只存 key）
+     * @param {module:model/DtoWikiMDSourceReq} data 标题与正文
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/DomainWikiSource} and HTTP response
+     */
+    apiAdminWikiSourcesMdPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWikiSourcesMdPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = DomainWikiSource;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/sources/md', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 新建 markdown 源
+     * 上传 markdown 原文创建 Raw 源（服务端转存 COS，只存 key）
+     * @param {module:model/DtoWikiMDSourceReq} data 标题与正文
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/DomainWikiSource}
+     */
+    apiAdminWikiSourcesMdPost(data) {
+      return this.apiAdminWikiSourcesMdPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 新建网页 URL 源
+     * 登记网页地址，ingest 时由服务端抓取正文
+     * @param {module:model/DtoWikiURLSourceReq} data 标题与地址
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/DomainWikiSource} and HTTP response
+     */
+    apiAdminWikiSourcesUrlPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminWikiSourcesUrlPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = DomainWikiSource;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/sources/url', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 新建网页 URL 源
+     * 登记网页地址，ingest 时由服务端抓取正文
+     * @param {module:model/DtoWikiURLSourceReq} data 标题与地址
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/DomainWikiSource}
+     */
+    apiAdminWikiSourcesUrlPost(data) {
+      return this.apiAdminWikiSourcesUrlPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
      * 生成验证码
      * 生成图片验证码
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
@@ -3707,6 +4463,53 @@ export default class DefaultApi {
      */
     apiWebsitesListGet(opts) {
       return this.apiWebsitesListGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 知识库问答（公开）
+     * 面试官/访客匿名向知识库 AI 提问；SSE 流式返回内容与工具调用进度。多轮上下文由前端携带；IP 限流 + 全站日配额；问答会被记录（前端须展示\"对话将被记录\"声明）
+     * @param {module:model/DtoWikiAskReq} data 会话标识与提问
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiWikiAskPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiWikiAskPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['text/event-stream'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/wiki/ask', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 知识库问答（公开）
+     * 面试官/访客匿名向知识库 AI 提问；SSE 流式返回内容与工具调用进度。多轮上下文由前端携带；IP 限流 + 全站日配额；问答会被记录（前端须展示\"对话将被记录\"声明）
+     * @param {module:model/DtoWikiAskReq} data 会话标识与提问
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiWikiAskPost(data) {
+      return this.apiWikiAskPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

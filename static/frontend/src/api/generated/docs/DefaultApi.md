@@ -51,6 +51,22 @@ Method | HTTP request | Description
 [**apiAdminWebsitesIdPut**](DefaultApi.md#apiAdminWebsitesIdPut) | **PUT** /api/admin/websites/{id} | 更新网站
 [**apiAdminWebsitesListGet**](DefaultApi.md#apiAdminWebsitesListGet) | **GET** /api/admin/websites/list | 获取网站列表
 [**apiAdminWebsitesPost**](DefaultApi.md#apiAdminWebsitesPost) | **POST** /api/admin/websites | 创建网站
+[**apiAdminWikiDraftsConfirmAllPost**](DefaultApi.md#apiAdminWikiDraftsConfirmAllPost) | **POST** /api/admin/wiki/drafts/confirm_all | 一键确认全部草稿
+[**apiAdminWikiDraftsIdConfirmPost**](DefaultApi.md#apiAdminWikiDraftsIdConfirmPost) | **POST** /api/admin/wiki/drafts/{id}/confirm | 确认草稿为已发布（同 slug 已有发布页则合并更新）
+[**apiAdminWikiDraftsIdDelete**](DefaultApi.md#apiAdminWikiDraftsIdDelete) | **DELETE** /api/admin/wiki/drafts/{id} | 丢弃草稿
+[**apiAdminWikiDraftsIdPut**](DefaultApi.md#apiAdminWikiDraftsIdPut) | **PUT** /api/admin/wiki/drafts/{id} | 编辑草稿（可改标题/类型/别名/摘要/正文）
+[**apiAdminWikiDraftsListGet**](DefaultApi.md#apiAdminWikiDraftsListGet) | **GET** /api/admin/wiki/drafts/list | 分页列出待审核草稿
+[**apiAdminWikiExportGet**](DefaultApi.md#apiAdminWikiExportGet) | **GET** /api/admin/wiki/export | 导出全部已发布页为 md 压缩包（含 index.md）
+[**apiAdminWikiGraphGet**](DefaultApi.md#apiAdminWikiGraphGet) | **GET** /api/admin/wiki/graph | 获取已发布页知识图谱（节点&#x3D;页面，边&#x3D;[[slug]] 互链，含悬空目标）
+[**apiAdminWikiPagesIdGet**](DefaultApi.md#apiAdminWikiPagesIdGet) | **GET** /api/admin/wiki/pages/{id} | 获取单个已发布页
+[**apiAdminWikiPagesIdOfflinePost**](DefaultApi.md#apiAdminWikiPagesIdOfflinePost) | **POST** /api/admin/wiki/pages/{id}/offline | 下线已发布页
+[**apiAdminWikiPagesIdPut**](DefaultApi.md#apiAdminWikiPagesIdPut) | **PUT** /api/admin/wiki/pages/{id} | 编辑已发布页（version+1 并重建出入链与 index）
+[**apiAdminWikiPagesListGet**](DefaultApi.md#apiAdminWikiPagesListGet) | **GET** /api/admin/wiki/pages/list | 分页列出已发布页面
+[**apiAdminWikiSourcesIdDelete**](DefaultApi.md#apiAdminWikiSourcesIdDelete) | **DELETE** /api/admin/wiki/sources/{id} | 删除知识库源
+[**apiAdminWikiSourcesIdIngestPost**](DefaultApi.md#apiAdminWikiSourcesIdIngestPost) | **POST** /api/admin/wiki/sources/{id}/ingest | 触发源的 ingest 编译
+[**apiAdminWikiSourcesListGet**](DefaultApi.md#apiAdminWikiSourcesListGet) | **GET** /api/admin/wiki/sources/list | 分页列出知识库源
+[**apiAdminWikiSourcesMdPost**](DefaultApi.md#apiAdminWikiSourcesMdPost) | **POST** /api/admin/wiki/sources/md | 新建 markdown 源
+[**apiAdminWikiSourcesUrlPost**](DefaultApi.md#apiAdminWikiSourcesUrlPost) | **POST** /api/admin/wiki/sources/url | 新建网页 URL 源
 [**apiCaptchaGet**](DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 [**apiChatConversationListPost**](DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 [**apiChatConversationsDeletebatchPost**](DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
@@ -76,6 +92,7 @@ Method | HTTP request | Description
 [**apiUserRegisterPost**](DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 [**apiUserResetPasswordPost**](DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 [**apiWebsitesListGet**](DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
+[**apiWikiAskPost**](DefaultApi.md#apiWikiAskPost) | **POST** /api/wiki/ask | 知识库问答（公开）
 [**apiWorkflowGet**](DefaultApi.md#apiWorkflowGet) | **GET** /api/workflow | 获取工作流列表
 [**apiWorkflowIdDelete**](DefaultApi.md#apiWorkflowIdDelete) | **DELETE** /api/workflow/{id} | 删除工作流
 [**apiWorkflowIdGet**](DefaultApi.md#apiWorkflowIdGet) | **GET** /api/workflow/{id} | 获取单个工作流
@@ -2208,6 +2225,696 @@ No authorization required
 - **Accept**: application/json
 
 
+## apiAdminWikiDraftsConfirmAllPost
+
+> {String: Object} apiAdminWikiDraftsConfirmAllPost()
+
+一键确认全部草稿
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminWikiDraftsConfirmAllPost().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+**{String: Object}**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiDraftsIdConfirmPost
+
+> String apiAdminWikiDraftsIdConfirmPost(id)
+
+确认草稿为已发布（同 slug 已有发布页则合并更新）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 草稿ID
+apiInstance.apiAdminWikiDraftsIdConfirmPost(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 草稿ID | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiDraftsIdDelete
+
+> String apiAdminWikiDraftsIdDelete(id)
+
+丢弃草稿
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 草稿ID
+apiInstance.apiAdminWikiDraftsIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 草稿ID | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiDraftsIdPut
+
+> String apiAdminWikiDraftsIdPut(id, data)
+
+编辑草稿（可改标题/类型/别名/摘要/正文）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 草稿ID
+let data = new TxingAiApi.DtoWikiUpdateDraftReq(); // DtoWikiUpdateDraftReq | 更新字段（只更新传入项）
+apiInstance.apiAdminWikiDraftsIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 草稿ID | 
+ **data** | [**DtoWikiUpdateDraftReq**](DtoWikiUpdateDraftReq.md)| 更新字段（只更新传入项） | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminWikiDraftsListGet
+
+> {String: Object} apiAdminWikiDraftsListGet(opts)
+
+分页列出待审核草稿
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'page': 1, // Number | 页码
+  'pageSize': 20, // Number | 每页数量
+  'keyword': "keyword_example", // String | 关键词（标题/slug/摘要）
+  'pageType': "pageType_example" // String | 页面类型 summary/entity/concept
+};
+apiInstance.apiAdminWikiDraftsListGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | [optional] [default to 1]
+ **pageSize** | **Number**| 每页数量 | [optional] [default to 20]
+ **keyword** | **String**| 关键词（标题/slug/摘要） | [optional] 
+ **pageType** | **String**| 页面类型 summary/entity/concept | [optional] 
+
+### Return type
+
+**{String: Object}**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiExportGet
+
+> File apiAdminWikiExportGet()
+
+导出全部已发布页为 md 压缩包（含 index.md）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminWikiExportGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+**File**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/zip
+
+
+## apiAdminWikiGraphGet
+
+> WikiGraphData apiAdminWikiGraphGet()
+
+获取已发布页知识图谱（节点&#x3D;页面，边&#x3D;[[slug]] 互链，含悬空目标）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminWikiGraphGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**WikiGraphData**](WikiGraphData.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiPagesIdGet
+
+> DomainWikiPage apiAdminWikiPagesIdGet(id)
+
+获取单个已发布页
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 页面ID
+apiInstance.apiAdminWikiPagesIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 页面ID | 
+
+### Return type
+
+[**DomainWikiPage**](DomainWikiPage.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiPagesIdOfflinePost
+
+> String apiAdminWikiPagesIdOfflinePost(id)
+
+下线已发布页
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 页面ID
+apiInstance.apiAdminWikiPagesIdOfflinePost(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 页面ID | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiPagesIdPut
+
+> String apiAdminWikiPagesIdPut(id, data)
+
+编辑已发布页（version+1 并重建出入链与 index）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 页面ID
+let data = new TxingAiApi.DtoWikiUpdateDraftReq(); // DtoWikiUpdateDraftReq | 更新字段（只更新传入项）
+apiInstance.apiAdminWikiPagesIdPut(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 页面ID | 
+ **data** | [**DtoWikiUpdateDraftReq**](DtoWikiUpdateDraftReq.md)| 更新字段（只更新传入项） | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminWikiPagesListGet
+
+> {String: Object} apiAdminWikiPagesListGet(opts)
+
+分页列出已发布页面
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'page': 1, // Number | 页码
+  'pageSize': 20, // Number | 每页数量
+  'keyword': "keyword_example", // String | 关键词（标题/slug/摘要）
+  'pageType': "pageType_example" // String | 页面类型 summary/entity/concept
+};
+apiInstance.apiAdminWikiPagesListGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | [optional] [default to 1]
+ **pageSize** | **Number**| 每页数量 | [optional] [default to 20]
+ **keyword** | **String**| 关键词（标题/slug/摘要） | [optional] 
+ **pageType** | **String**| 页面类型 summary/entity/concept | [optional] 
+
+### Return type
+
+**{String: Object}**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiSourcesIdDelete
+
+> String apiAdminWikiSourcesIdDelete(id)
+
+删除知识库源
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 源ID
+apiInstance.apiAdminWikiSourcesIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 源ID | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiSourcesIdIngestPost
+
+> String apiAdminWikiSourcesIdIngestPost(id)
+
+触发源的 ingest 编译
+
+异步执行：抓取/拉取正文 → agent 编译为草稿；通过源列表的 status 轮询进度
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 源ID
+apiInstance.apiAdminWikiSourcesIdIngestPost(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 源ID | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiSourcesListGet
+
+> {String: Object} apiAdminWikiSourcesListGet(opts)
+
+分页列出知识库源
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'page': 1, // Number | 页码
+  'pageSize': 20 // Number | 每页数量
+};
+apiInstance.apiAdminWikiSourcesListGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **page** | **Number**| 页码 | [optional] [default to 1]
+ **pageSize** | **Number**| 每页数量 | [optional] [default to 20]
+
+### Return type
+
+**{String: Object}**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminWikiSourcesMdPost
+
+> DomainWikiSource apiAdminWikiSourcesMdPost(data)
+
+新建 markdown 源
+
+上传 markdown 原文创建 Raw 源（服务端转存 COS，只存 key）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoWikiMDSourceReq(); // DtoWikiMDSourceReq | 标题与正文
+apiInstance.apiAdminWikiSourcesMdPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoWikiMDSourceReq**](DtoWikiMDSourceReq.md)| 标题与正文 | 
+
+### Return type
+
+[**DomainWikiSource**](DomainWikiSource.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminWikiSourcesUrlPost
+
+> DomainWikiSource apiAdminWikiSourcesUrlPost(data)
+
+新建网页 URL 源
+
+登记网页地址，ingest 时由服务端抓取正文
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoWikiURLSourceReq(); // DtoWikiURLSourceReq | 标题与地址
+apiInstance.apiAdminWikiSourcesUrlPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoWikiURLSourceReq**](DtoWikiURLSourceReq.md)| 标题与地址 | 
+
+### Return type
+
+[**DomainWikiSource**](DomainWikiSource.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
 ## apiCaptchaGet
 
 > UtilsResponse apiCaptchaGet()
@@ -3342,6 +4049,50 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
+
+
+## apiWikiAskPost
+
+> String apiWikiAskPost(data)
+
+知识库问答（公开）
+
+面试官/访客匿名向知识库 AI 提问；SSE 流式返回内容与工具调用进度。多轮上下文由前端携带；IP 限流 + 全站日配额；问答会被记录（前端须展示\&quot;对话将被记录\&quot;声明）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoWikiAskReq(); // DtoWikiAskReq | 会话标识与提问
+apiInstance.apiWikiAskPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoWikiAskReq**](DtoWikiAskReq.md)| 会话标识与提问 | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: text/event-stream
 
 
 ## apiWorkflowGet

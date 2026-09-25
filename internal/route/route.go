@@ -14,6 +14,7 @@ import (
 	"txing-ai/internal/controller/preset"
 	"txing-ai/internal/controller/user"
 	"txing-ai/internal/controller/website"
+	"txing-ai/internal/controller/wiki"
 	"txing-ai/internal/controller/workflow"
 	"txing-ai/internal/iface"
 	"txing-ai/static"
@@ -64,6 +65,9 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	// 关于我页面路由（公开 + 管理后台）
 	aboutme.Register(group)
+
+	// LLM Wiki 知识库（公开问答 + 管理后台）
+	wiki.Register(group)
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

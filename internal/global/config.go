@@ -37,6 +37,7 @@ type AppConfig struct {
 	*ImageSearchConfig `mapstructure:"image_search"`
 	*LocalUploadConfig `mapstructure:"local_upload"`
 	*OpsAgentConfig    `mapstructure:"ops_agent"`
+	*WikiConfig        `mapstructure:"wiki"`
 }
 
 type ServerConfig struct {
@@ -137,6 +138,24 @@ type OpsAgentConfig struct {
 	MaxToolRounds int `mapstructure:"max_tool_rounds"`
 	// GitHub API Token（可选），提升 API 限额
 	GithubToken string `mapstructure:"github_token"`
+}
+
+// WikiConfig LLM Wiki 知识库配置（docs/llmwiki_design.md §9）
+type WikiConfig struct {
+	// 总开关（false 时公开问答端点直接下线）
+	Enabled bool `mapstructure:"enabled"`
+	// agent 引擎实现选择（D14）：builtin | hermes | ...，当前仅 builtin
+	AgentImpl string `mapstructure:"agent_impl"`
+	// ingest 编译用模型名，留空回退 qa_model
+	IngestModel string `mapstructure:"ingest_model"`
+	// 问答用模型名，留空走默认解析
+	QAModel string `mapstructure:"qa_model"`
+	// 最大工具调用轮次，<=0 时使用默认值
+	MaxToolRounds int `mapstructure:"max_tool_rounds"`
+	// 单 IP 每小时问答上限，<=0 时使用默认值
+	RateLimitPerIPPerHour int `mapstructure:"rate_limit_per_ip_per_hour"`
+	// 全站每日问答总量上限，<=0 时使用默认值
+	DailyQuota int `mapstructure:"daily_quota"`
 }
 
 func LoadConfig() *AppConfig {

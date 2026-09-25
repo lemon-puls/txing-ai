@@ -263,6 +263,16 @@ const router = createRouter({
             icon: 'UserFilled',
             roles: ['admin']
           }
+        },
+        {
+          path: 'wiki',
+          name: 'AdminWiki',
+          component: () => import('@/views/admin/wiki/WikiAdmin.vue'),
+          meta: {
+            title: '知识库管理',
+            icon: 'Collection',
+            roles: ['admin']
+          }
         }
       ]
     },
