@@ -32,6 +32,11 @@ type server struct {
 	resProvider iface.ResourceProvider
 }
 
+// serverPort 服务监听端口（/ Service listen port）
+// 必须在包级注册：global.LoadConfig 会先执行 flag.Parse()，
+// 局部定义的 -port 到那时还未注册，命令行传入会报 "flag provided but not defined"
+var serverPort = flag.Int("port", 8080, "port to listen on")
+
 var _ Server = (*server)(nil)
 
 func (s *server) Start() {
@@ -107,17 +112,14 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 	// 注册路由
 	route.Register(engine, resProvider)
 
-	// 获取启动端口
-	// 定义一个命令行参数，默认值为 8080，描述为 "port to listen on"
-	port := flag.Int("port", 8080, "port to listen on")
-	// 解析命令行参数
+	// 端口在包级 serverPort 定义（确保先于 LoadConfig 的 flag.Parse 注册）
 	flag.Parse()
 
-	log.Info("server listening on port", zap.Int("port", *port))
+	log.Info("server listening on port", zap.Int("port", *serverPort))
 
 	// 创建一个HTTP服务器
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", *port),
+		Addr:    fmt.Sprintf(":%d", *serverPort),
 		Handler: engine,
 	}
 

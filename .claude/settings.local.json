@@ -72,9 +72,20 @@
       "Bash(pnpm generate-api *)",
       "Bash(make build *)",
       "Bash(go get *)",
-      "Bash(go doc *)"
+      "Bash(go doc *)",
+      "Skill(update-config)",
+      "Bash(claude mcp *)",
+      "mcp__whodb-mysql__whodb_connections",
+      "mcp__whodb-mysql__whodb_tables",
+      "mcp__whodb-mysql__whodb_columns",
+      "mcp__whodb-mysql__whodb_query",
+      "Bash(env)"
     ]
   },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "whodb-mysql"
+  ],
   "hooks": {
     "PostToolUse": [
       {

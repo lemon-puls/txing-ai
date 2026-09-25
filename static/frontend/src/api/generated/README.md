@@ -153,6 +153,11 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatSessionsIdAppendPost**](docs/DefaultApi.md#apiAdminOpsChatSessionsIdAppendPost) | **POST** /api/admin/ops/chat/sessions/{id}/append | 追加运营助手会话消息
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatSessionsIdDelete**](docs/DefaultApi.md#apiAdminOpsChatSessionsIdDelete) | **DELETE** /api/admin/ops/chat/sessions/{id} | 删除运营助手会话
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatSessionsIdGet**](docs/DefaultApi.md#apiAdminOpsChatSessionsIdGet) | **GET** /api/admin/ops/chat/sessions/{id} | 运营助手会话详情
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatSessionsListPost**](docs/DefaultApi.md#apiAdminOpsChatSessionsListPost) | **POST** /api/admin/ops/chat/sessions/list | 运营助手会话列表
+*TxingAiApi.DefaultApi* | [**apiAdminOpsChatStreamPost**](docs/DefaultApi.md#apiAdminOpsChatStreamPost) | **POST** /api/admin/ops/chat/stream | 运营助手流式对话
 *TxingAiApi.DefaultApi* | [**apiAdminUserListGet**](docs/DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 *TxingAiApi.DefaultApi* | [**apiAdminUserStatusIdPut**](docs/DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 *TxingAiApi.DefaultApi* | [**apiAdminWebsitesFaviconPost**](docs/DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
@@ -223,6 +228,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiAdminAboutTimelinePost200Response](docs/ApiAdminAboutTimelinePost200Response.md)
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
+ - [TxingAiApi.ApiAdminOpsChatSessionsIdGet200Response](docs/ApiAdminOpsChatSessionsIdGet200Response.md)
  - [TxingAiApi.ApiAdminWebsitesFaviconPost200Response](docs/ApiAdminWebsitesFaviconPost200Response.md)
  - [TxingAiApi.ApiAdminWebsitesPost200Response](docs/ApiAdminWebsitesPost200Response.md)
  - [TxingAiApi.ApiChatConversationsIdGet200Response](docs/ApiChatConversationsIdGet200Response.md)
@@ -237,6 +243,9 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiWorkflowPublicIdGet200Response](docs/ApiWorkflowPublicIdGet200Response.md)
  - [TxingAiApi.ApiWorkflowTemplatesPost200Response](docs/ApiWorkflowTemplatesPost200Response.md)
  - [TxingAiApi.ApiWorkflowValidatePost200Response](docs/ApiWorkflowValidatePost200Response.md)
+ - [TxingAiApi.DomainOpsChatMessage](docs/DomainOpsChatMessage.md)
+ - [TxingAiApi.DomainOpsChatProposal](docs/DomainOpsChatProposal.md)
+ - [TxingAiApi.DomainOpsChatToolCall](docs/DomainOpsChatToolCall.md)
  - [TxingAiApi.DtoAboutMeCoverMediaReq](docs/DtoAboutMeCoverMediaReq.md)
  - [TxingAiApi.DtoAboutMeMediaReq](docs/DtoAboutMeMediaReq.md)
  - [TxingAiApi.DtoAgentExecReq](docs/DtoAgentExecReq.md)
@@ -261,6 +270,10 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoGetFaviconReq](docs/DtoGetFaviconReq.md)
  - [TxingAiApi.DtoGetPresignedURLReq](docs/DtoGetPresignedURLReq.md)
  - [TxingAiApi.DtoLoginReq](docs/DtoLoginReq.md)
+ - [TxingAiApi.DtoOpsChatAppendReq](docs/DtoOpsChatAppendReq.md)
+ - [TxingAiApi.DtoOpsChatContext](docs/DtoOpsChatContext.md)
+ - [TxingAiApi.DtoOpsChatSessionListReq](docs/DtoOpsChatSessionListReq.md)
+ - [TxingAiApi.DtoOpsChatStreamReq](docs/DtoOpsChatStreamReq.md)
  - [TxingAiApi.DtoPublishVersionReq](docs/DtoPublishVersionReq.md)
  - [TxingAiApi.DtoRegisterReq](docs/DtoRegisterReq.md)
  - [TxingAiApi.DtoResetPasswordReq](docs/DtoResetPasswordReq.md)
@@ -310,6 +323,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
  - [TxingAiApi.VoMessageVO](docs/VoMessageVO.md)
  - [TxingAiApi.VoModelVO](docs/VoModelVO.md)
+ - [TxingAiApi.VoOpsChatSessionDetailVO](docs/VoOpsChatSessionDetailVO.md)
  - [TxingAiApi.VoPresetVO](docs/VoPresetVO.md)
  - [TxingAiApi.VoPublishedWorkflowVO](docs/VoPublishedWorkflowVO.md)
  - [TxingAiApi.VoTemplateVO](docs/VoTemplateVO.md)

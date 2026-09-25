@@ -23,6 +23,7 @@ import ApiAdminAboutSkillPost200Response from '../model/ApiAdminAboutSkillPost20
 import ApiAdminAboutTimelinePost200Response from '../model/ApiAdminAboutTimelinePost200Response';
 import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
+import ApiAdminOpsChatSessionsIdGet200Response from '../model/ApiAdminOpsChatSessionsIdGet200Response';
 import ApiAdminWebsitesFaviconPost200Response from '../model/ApiAdminWebsitesFaviconPost200Response';
 import ApiAdminWebsitesPost200Response from '../model/ApiAdminWebsitesPost200Response';
 import ApiChatConversationsIdGet200Response from '../model/ApiChatConversationsIdGet200Response';
@@ -55,6 +56,9 @@ import DtoCreateWebsiteReq from '../model/DtoCreateWebsiteReq';
 import DtoGetFaviconReq from '../model/DtoGetFaviconReq';
 import DtoGetPresignedURLReq from '../model/DtoGetPresignedURLReq';
 import DtoLoginReq from '../model/DtoLoginReq';
+import DtoOpsChatAppendReq from '../model/DtoOpsChatAppendReq';
+import DtoOpsChatSessionListReq from '../model/DtoOpsChatSessionListReq';
+import DtoOpsChatStreamReq from '../model/DtoOpsChatStreamReq';
 import DtoPublishVersionReq from '../model/DtoPublishVersionReq';
 import DtoRegisterReq from '../model/DtoRegisterReq';
 import DtoResetPasswordReq from '../model/DtoResetPasswordReq';
@@ -1768,6 +1772,250 @@ export default class DefaultApi {
      */
     apiAdminModelPost(data) {
       return this.apiAdminModelPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 追加运营助手会话消息
+     * 持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+     * @param {Number} id 会话ID
+     * @param {module:model/DtoOpsChatAppendReq} data 追加的消息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminOpsChatSessionsIdAppendPostWithHttpInfo(id, data) {
+      let postBody = data;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminOpsChatSessionsIdAppendPost");
+      }
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminOpsChatSessionsIdAppendPost");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/sessions/{id}/append', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 追加运营助手会话消息
+     * 持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+     * @param {Number} id 会话ID
+     * @param {module:model/DtoOpsChatAppendReq} data 追加的消息
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminOpsChatSessionsIdAppendPost(id, data) {
+      return this.apiAdminOpsChatSessionsIdAppendPostWithHttpInfo(id, data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 删除运营助手会话
+     * 软删除指定的会话（仅限本人会话）
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminOpsChatSessionsIdDeleteWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminOpsChatSessionsIdDelete");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/sessions/{id}', 'DELETE',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 删除运营助手会话
+     * 软删除指定的会话（仅限本人会话）
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminOpsChatSessionsIdDelete(id) {
+      return this.apiAdminOpsChatSessionsIdDeleteWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 运营助手会话详情
+     * 获取指定会话的完整消息列表，用于刷新后回放
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminOpsChatSessionsIdGet200Response} and HTTP response
+     */
+    apiAdminOpsChatSessionsIdGetWithHttpInfo(id) {
+      let postBody = null;
+      // verify the required parameter 'id' is set
+      if (id === undefined || id === null) {
+        throw new Error("Missing the required parameter 'id' when calling apiAdminOpsChatSessionsIdGet");
+      }
+
+      let pathParams = {
+        'id': id
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminOpsChatSessionsIdGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/sessions/{id}', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 运营助手会话详情
+     * 获取指定会话的完整消息列表，用于刷新后回放
+     * @param {Number} id 会话ID
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminOpsChatSessionsIdGet200Response}
+     */
+    apiAdminOpsChatSessionsIdGet(id) {
+      return this.apiAdminOpsChatSessionsIdGetWithHttpInfo(id)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 运营助手会话列表
+     * 游标分页获取当前管理员的运营助手会话列表（按更新时间倒序）
+     * @param {module:model/DtoOpsChatSessionListReq} data 游标分页参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/UtilsResponse} and HTTP response
+     */
+    apiAdminOpsChatSessionsListPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminOpsChatSessionsListPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['application/json'];
+      let returnType = UtilsResponse;
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/sessions/list', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 运营助手会话列表
+     * 游标分页获取当前管理员的运营助手会话列表（按更新时间倒序）
+     * @param {module:model/DtoOpsChatSessionListReq} data 游标分页参数
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/UtilsResponse}
+     */
+    apiAdminOpsChatSessionsListPost(data) {
+      return this.apiAdminOpsChatSessionsListPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 运营助手流式对话
+     * 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId
+     * @param {module:model/DtoOpsChatStreamReq} data 会话ID与本次输入
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link String} and HTTP response
+     */
+    apiAdminOpsChatStreamPostWithHttpInfo(data) {
+      let postBody = data;
+      // verify the required parameter 'data' is set
+      if (data === undefined || data === null) {
+        throw new Error("Missing the required parameter 'data' when calling apiAdminOpsChatStreamPost");
+      }
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = ['application/json'];
+      let accepts = ['text/event-stream'];
+      let returnType = 'String';
+      return this.apiClient.callApi(
+        '/api/admin/ops/chat/stream', 'POST',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 运营助手流式对话
+     * 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId
+     * @param {module:model/DtoOpsChatStreamReq} data 会话ID与本次输入
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link String}
+     */
+    apiAdminOpsChatStreamPost(data) {
+      return this.apiAdminOpsChatStreamPostWithHttpInfo(data)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

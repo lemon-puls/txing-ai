@@ -3,7 +3,9 @@ package workflow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/tool"
@@ -41,6 +43,18 @@ type LLMExecConfig struct {
 	MaxTokens    int     // <=0 时使用默认值 8192 / defaults to 8192 when <=0
 	Temperature  float32 // <=0 时使用默认值 0.7 / defaults to 0.7 when <=0
 	SystemPrompt string  // 系统提示词 / System prompt
+
+	// 对话历史（可选）：插入 system 之后、本次输入之前，用于多轮对话
+	// Conversation history (optional): inserted after the system message and
+	// before the current input, for multi-turn conversations.
+	History []*schema.Message
+
+	// 是否流式调用：开启后逐 token 推送 Content/ReasoningContent delta，
+	// 并通过 ConcatMessages 聚合出完整消息供工具循环使用
+	// When enabled, the model is called in streaming mode: content/reasoning
+	// deltas are pushed via callback as they arrive, and the full message is
+	// reconstructed via ConcatMessages for the tool-calling loop.
+	Stream bool
 
 	// 工具 / Tools
 	AllTools             []tool.BaseTool // 全量工具注册表 / Full tool registry
@@ -144,17 +158,13 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	if cfg.SystemPrompt != "" {
 		messages = append(messages, schema.SystemMessage(cfg.SystemPrompt))
 	}
+	messages = append(messages, cfg.History...)
 	if input != "" {
 		messages = append(messages, schema.UserMessage(input))
 	}
 
-	// 首次 LLM 调用（带重试）/ First LLM call (with retry)
-	var response *schema.Message
-	execErr := executeWithRetry(cfg.Retry, func() error {
-		var genErr error
-		response, genErr = nodeChatModel.Generate(ctx, messages)
-		return genErr
-	})
+	// 首次 LLM 调用 / First LLM call
+	response, execErr := cfg.callChatModel(ctx, nodeChatModel, messages, callback)
 	if execErr != nil {
 		log.Error("LLM generate error",
 			zap.String("nodeId", cfg.NodeID), zap.Error(execErr))
@@ -298,12 +308,8 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 				})
 			}
 
-			// 再次调用 LLM（带重试）/ Call the LLM again (with retry)
-			execErr = executeWithRetry(cfg.Retry, func() error {
-				var genErr error
-				response, genErr = nodeChatModel.Generate(ctx, messages)
-				return genErr
-			})
+			// 再次调用 LLM / Call the LLM again
+			response, execErr = cfg.callChatModel(ctx, nodeChatModel, messages, callback)
 			if execErr != nil {
 				log.Error("LLM 多轮调用 generate error",
 					zap.String("nodeId", cfg.NodeID),
@@ -336,11 +342,7 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 			messages = append(messages, capToolResultsForContext(toolResults)...)
 		}
 		// 收尾生成：本次结果作为最终输出，不再继续工具循环
-		if execErr := executeWithRetry(cfg.Retry, func() error {
-			var genErr error
-			response, genErr = nodeChatModel.Generate(ctx, messages)
-			return genErr
-		}); execErr != nil {
+		if response, execErr = cfg.callChatModel(ctx, nodeChatModel, messages, callback); execErr != nil {
 			log.Error("LLM 收尾生成失败", zap.String("nodeId", cfg.NodeID), zap.Error(execErr))
 		}
 	}
@@ -373,11 +375,8 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 			zap.Int("partialLen", len(response.Content)))
 		messages = append(messages, response, schema.UserMessage(
 			"你上面的输出因长度限制被截断。请严格从截断处继续输出：不要重复已输出的内容，不要添加任何前言或说明，直接续写正文。"))
-		contErr := executeWithRetry(cfg.Retry, func() error {
-			var genErr error
-			response, genErr = nodeChatModel.Generate(ctx, messages)
-			return genErr
-		})
+		var contErr error
+		response, contErr = cfg.callChatModel(ctx, nodeChatModel, messages, callback)
 		if contErr != nil {
 			log.Error("LLM 截断续写生成失败", zap.String("nodeId", cfg.NodeID), zap.Error(contErr))
 			break
@@ -389,9 +388,9 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 
 	// 用户主动停止生成（或执行超时）：不产出兜底文案，取消错误向上传播，
 	// 由上层识别为"已中断"（interrupted）。若已累积部分内容（如截断续写被打断），
-	// 先推送出去，中断消息仍能展示已生成的部分
+	// 先推送出去，中断消息仍能展示已生成的部分（流式模式 delta 已推送过，跳过）
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		if result != "" && cfg.EmitFinalContent && callback != nil {
+		if result != "" && cfg.EmitFinalContent && !cfg.Stream && callback != nil {
 			callback(&global.Chunk{
 				Content: result,
 				ShowMsg: fmt.Sprintf("[%s] 思考中...", cfg.NodeLabel),
@@ -406,7 +405,8 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	}
 
 	// 推送最终内容 / Emit final content
-	if cfg.EmitFinalContent && callback != nil && result != "" {
+	// 流式模式下 delta 已实时推送，不再整段重复推送
+	if cfg.EmitFinalContent && !cfg.Stream && callback != nil && result != "" {
 		callback(&global.Chunk{
 			Content: result,
 			ShowMsg: fmt.Sprintf("[%s] 思考中...", cfg.NodeLabel),
@@ -414,6 +414,68 @@ func ExecuteLLM(ctx context.Context, cfg *LLMExecConfig, input string, callback 
 	}
 
 	return result, nil
+}
+
+// callChatModel 统一的模型调用入口，屏蔽 Generate 与 Stream 两种模式
+// callChatModel is the single entry point for model calls, hiding the
+// difference between Generate and Stream modes from the tool-calling loop.
+//   - 非 Stream：与原实现一致，重试包裹整个 Generate 调用
+//   - Stream：重试仅包裹流的建立阶段；Recv 中途出错直接返回（不重试，
+//     避免 delta 重复推送），逐 token 通过 callback 推送增量内容，
+//     最后用 ConcatMessages 聚合出完整消息（含按 index 聚合的 ToolCalls）
+func (cfg *LLMExecConfig) callChatModel(ctx context.Context, model *openai.ChatModel,
+	messages []*schema.Message, callback func(chunk *global.Chunk) error) (*schema.Message, error) {
+
+	if !cfg.Stream {
+		var response *schema.Message
+		execErr := executeWithRetry(cfg.Retry, func() error {
+			var genErr error
+			response, genErr = model.Generate(ctx, messages)
+			return genErr
+		})
+		return response, execErr
+	}
+
+	// 流式建立阶段（带重试）/ Stream establishment (with retry)
+	var stream *schema.StreamReader[*schema.Message]
+	execErr := executeWithRetry(cfg.Retry, func() error {
+		var streamErr error
+		stream, streamErr = model.Stream(ctx, messages)
+		return streamErr
+	})
+	if execErr != nil {
+		return nil, execErr
+	}
+	defer stream.Close()
+
+	chunks := make([]*schema.Message, 0, 32)
+	for {
+		chunk, recvErr := stream.Recv()
+		if errors.Is(recvErr, io.EOF) {
+			break
+		}
+		if recvErr != nil {
+			return nil, recvErr
+		}
+		chunks = append(chunks, chunk)
+		if callback != nil && (chunk.Content != "" || chunk.ReasoningContent != "") {
+			if err := callback(&global.Chunk{
+				NodeId:           cfg.NodeID,
+				NodeType:         cfg.NodeType,
+				NodeLabel:        cfg.NodeLabel,
+				Content:          chunk.Content,
+				ReasoningContent: chunk.ReasoningContent,
+			}); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 无任何 chunk 时返回空 assistant 消息，避免 ConcatMessages 报错
+	if len(chunks) == 0 {
+		return &schema.Message{Role: schema.Assistant}, nil
+	}
+	return schema.ConcatMessages(chunks)
 }
 
 // resolveLLMModel 解析节点模型信息，支持节点级别覆盖

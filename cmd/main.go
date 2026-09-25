@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate swag init -g main.go -o ../docs
+//go:generate swag init --dir .. -g cmd/main.go -o ../docs --parseDependency
 
 // @title        Txing AI API
 // @version      1.0

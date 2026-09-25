@@ -70,3 +70,12 @@ local_upload:
   dir: "/runtime/temp_files"
   # 文件大小限制 最大 20MB
   max_size: 20971520
+
+# 后台运营助手
+ops_agent:
+  # 模型名，需在后台「渠道管理」中已配置该模型，否则接口会返回选择渠道失败
+  model: "deepseek-v3"
+  # 最大工具调用轮次（可选，默认 8）
+  max_tool_rounds: 8
+  # GitHub API Token（可选），配置后可提升 GitHub 接口限额
+  github_token: ""

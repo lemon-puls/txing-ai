@@ -38,6 +38,11 @@ Method | HTTP request | Description
 [**apiAdminModelIdDelete**](DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 [**apiAdminModelIdPut**](DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
+[**apiAdminOpsChatSessionsIdAppendPost**](DefaultApi.md#apiAdminOpsChatSessionsIdAppendPost) | **POST** /api/admin/ops/chat/sessions/{id}/append | 追加运营助手会话消息
+[**apiAdminOpsChatSessionsIdDelete**](DefaultApi.md#apiAdminOpsChatSessionsIdDelete) | **DELETE** /api/admin/ops/chat/sessions/{id} | 删除运营助手会话
+[**apiAdminOpsChatSessionsIdGet**](DefaultApi.md#apiAdminOpsChatSessionsIdGet) | **GET** /api/admin/ops/chat/sessions/{id} | 运营助手会话详情
+[**apiAdminOpsChatSessionsListPost**](DefaultApi.md#apiAdminOpsChatSessionsListPost) | **POST** /api/admin/ops/chat/sessions/list | 运营助手会话列表
+[**apiAdminOpsChatStreamPost**](DefaultApi.md#apiAdminOpsChatStreamPost) | **POST** /api/admin/ops/chat/stream | 运营助手流式对话
 [**apiAdminUserListGet**](DefaultApi.md#apiAdminUserListGet) | **GET** /api/admin/user/list | 获取用户列表
 [**apiAdminUserStatusIdPut**](DefaultApi.md#apiAdminUserStatusIdPut) | **PUT** /api/admin/user/status/{id} | 切换用户状态
 [**apiAdminWebsitesFaviconPost**](DefaultApi.md#apiAdminWebsitesFaviconPost) | **POST** /api/admin/websites/favicon | 获取网站图标
@@ -1599,6 +1604,228 @@ No authorization required
 
 - **Content-Type**: application/json
 - **Accept**: application/json
+
+
+## apiAdminOpsChatSessionsIdAppendPost
+
+> UtilsResponse apiAdminOpsChatSessionsIdAppendPost(id, data)
+
+追加运营助手会话消息
+
+持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+let data = new TxingAiApi.DtoOpsChatAppendReq(); // DtoOpsChatAppendReq | 追加的消息
+apiInstance.apiAdminOpsChatSessionsIdAppendPost(id, data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+ **data** | [**DtoOpsChatAppendReq**](DtoOpsChatAppendReq.md)| 追加的消息 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminOpsChatSessionsIdDelete
+
+> UtilsResponse apiAdminOpsChatSessionsIdDelete(id)
+
+删除运营助手会话
+
+软删除指定的会话（仅限本人会话）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+apiInstance.apiAdminOpsChatSessionsIdDelete(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminOpsChatSessionsIdGet
+
+> ApiAdminOpsChatSessionsIdGet200Response apiAdminOpsChatSessionsIdGet(id)
+
+运营助手会话详情
+
+获取指定会话的完整消息列表，用于刷新后回放
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let id = 56; // Number | 会话ID
+apiInstance.apiAdminOpsChatSessionsIdGet(id).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **id** | **Number**| 会话ID | 
+
+### Return type
+
+[**ApiAdminOpsChatSessionsIdGet200Response**](ApiAdminOpsChatSessionsIdGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminOpsChatSessionsListPost
+
+> UtilsResponse apiAdminOpsChatSessionsListPost(data)
+
+运营助手会话列表
+
+游标分页获取当前管理员的运营助手会话列表（按更新时间倒序）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoOpsChatSessionListReq(); // DtoOpsChatSessionListReq | 游标分页参数
+apiInstance.apiAdminOpsChatSessionsListPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoOpsChatSessionListReq**](DtoOpsChatSessionListReq.md)| 游标分页参数 | 
+
+### Return type
+
+[**UtilsResponse**](UtilsResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminOpsChatStreamPost
+
+> String apiAdminOpsChatStreamPost(data)
+
+运营助手流式对话
+
+管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let data = new TxingAiApi.DtoOpsChatStreamReq(); // DtoOpsChatStreamReq | 会话ID与本次输入
+apiInstance.apiAdminOpsChatStreamPost(data).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **data** | [**DtoOpsChatStreamReq**](DtoOpsChatStreamReq.md)| 会话ID与本次输入 | 
+
+### Return type
+
+**String**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: text/event-stream
 
 
 ## apiAdminUserListGet

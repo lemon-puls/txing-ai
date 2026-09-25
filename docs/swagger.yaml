@@ -1,5 +1,62 @@
 basePath: /
 definitions:
+  domain.OpsChatMessage:
+    properties:
+      confirmed:
+        description: Confirmed 标记提案确认完成的提示消息（前端本地产生，经 append 接口持久化）
+        type: boolean
+      content:
+        type: string
+      error:
+        type: string
+      interrupted:
+        description: Interrupted 表示本次回复被用户主动中断（内容为已生成的部分）
+        type: boolean
+      proposal:
+        $ref: '#/definitions/domain.OpsChatProposal'
+      proposalMessage:
+        type: string
+      proposalStatus:
+        type: string
+      reasoning:
+        type: string
+      role:
+        description: user/assistant
+        type: string
+      toolCalls:
+        items:
+          $ref: '#/definitions/domain.OpsChatToolCall'
+        type: array
+    type: object
+  domain.OpsChatProposal:
+    properties:
+      avatar:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      tags:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  domain.OpsChatToolCall:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      params:
+        type: string
+      result:
+        type: string
+      status:
+        description: running/completed/failed/interrupted
+        type: string
+    type: object
   dto.AboutMeCoverMediaReq:
     properties:
       key:
@@ -428,6 +485,60 @@ definitions:
     - captchaId
     - password
     - username
+    type: object
+  dto.OpsChatAppendReq:
+    properties:
+      content:
+        example: ✅ 提案已确认，网站录入完成。
+        maxLength: 8000
+        type: string
+      markProposalConfirmed:
+        description: 是否将最后一条未确认的提案标记为已确认
+        type: boolean
+      role:
+        enum:
+        - assistant
+        example: assistant
+        type: string
+    required:
+    - content
+    - role
+    type: object
+  dto.OpsChatContext:
+    properties:
+      draft:
+        additionalProperties: true
+        description: 页面草稿数据，如 {"url":"https://github.com/cloudwego/eino"}
+        type: object
+      page:
+        description: 来源页面标识，如 "websites"、"ops-assistant"
+        example: websites
+        type: string
+    type: object
+  dto.OpsChatSessionListReq:
+    properties:
+      cursor:
+        type: string
+      pageSize:
+        type: integer
+    type: object
+  dto.OpsChatStreamReq:
+    properties:
+      content:
+        description: 本次用户输入
+        example: 收录 https://github.com/cloudwego/eino
+        maxLength: 8000
+        type: string
+      context:
+        allOf:
+        - $ref: '#/definitions/dto.OpsChatContext'
+        description: 页面上下文（可选），由前端各管理页注入
+      sessionId:
+        description: 会话ID，0 表示新建会话
+        example: 0
+        type: integer
+    required:
+    - content
     type: object
   dto.PublishVersionReq:
     properties:
@@ -1430,6 +1541,23 @@ definitions:
         type: string
       updated_at:
         description: 更新时间
+        type: string
+    type: object
+  vo.OpsChatSessionDetailVO:
+    properties:
+      createTime:
+        type: string
+      id:
+        type: integer
+      messages:
+        items:
+          $ref: '#/definitions/domain.OpsChatMessage'
+        type: array
+      model:
+        type: string
+      title:
+        type: string
+      updateTime:
         type: string
     type: object
   vo.PresetVO:
@@ -2491,6 +2619,132 @@ paths:
       summary: 更新模型
       tags:
       - 模型管理
+  /api/admin/ops/chat/sessions/{id}:
+    delete:
+      description: 软删除指定的会话（仅限本人会话）
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: 无权限
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 删除运营助手会话
+      tags:
+      - 运营助手
+    get:
+      description: 获取指定会话的完整消息列表，用于刷新后回放
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.OpsChatSessionDetailVO'
+              type: object
+        "403":
+          description: 无权限
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 运营助手会话详情
+      tags:
+      - 运营助手
+  /api/admin/ops/chat/sessions/{id}/append:
+    post:
+      consumes:
+      - application/json
+      description: 持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+      parameters:
+      - description: 会话ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 追加的消息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OpsChatAppendReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "403":
+          description: 无权限
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 追加运营助手会话消息
+      tags:
+      - 运营助手
+  /api/admin/ops/chat/sessions/list:
+    post:
+      consumes:
+      - application/json
+      description: 游标分页获取当前管理员的运营助手会话列表（按更新时间倒序）
+      parameters:
+      - description: 游标分页参数
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OpsChatSessionListReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: 运营助手会话列表
+      tags:
+      - 运营助手
+  /api/admin/ops/chat/stream:
+    post:
+      consumes:
+      - application/json
+      description: 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回
+        sessionId
+      parameters:
+      - description: 会话ID与本次输入
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OpsChatStreamReq'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream
+          schema:
+            type: string
+      summary: 运营助手流式对话
+      tags:
+      - 运营助手
   /api/admin/user/list:
     get:
       consumes:

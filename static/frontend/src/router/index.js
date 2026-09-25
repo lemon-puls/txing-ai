@@ -69,7 +69,7 @@ const router = createRouter({
               path: '',
               component: () => import('@/views/websites/index.vue'),
               meta: {
-                title: '实用网站',
+                title: '网站导航',
                 icon: 'link'
               }
             }
@@ -166,6 +166,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'ops-assistant',
+          name: 'OpsAssistant',
+          component: () => import('@/views/admin/ops/OpsAssistant.vue'),
+          meta: {
+            title: '运营助手',
+            icon: 'MagicStick',
+            roles: ['admin']
+          }
+        },
+        {
           path: 'users',
           name: 'users',
           component: () => import('@/views/admin/user/UserList.vue'),
@@ -239,7 +249,7 @@ const router = createRouter({
           name: 'AdminWebsites',
           component: () => import('@/views/admin/websites/WebsiteList.vue'),
           meta: {
-            title: '网站管理',
+            title: '网站导航管理',
             icon: 'Link',
             roles: ['admin']
           }
