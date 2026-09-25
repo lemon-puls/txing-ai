@@ -47,7 +47,8 @@ func ProvideOpsTools(deps OpsToolDeps) []tool.BaseTool {
 		"Validate and canonicalize a website-entry proposal before presenting it to the admin. "+
 			"Pass the name/description/url/avatar/tags you intend to submit. It checks field constraints, "+
 			"normalizes the URL, checks the database for duplicates, and returns the canonical proposal JSON "+
-			"that will be rendered as a preview card. ALWAYS call this tool right before presenting a proposal, "+
+			"that will be rendered as a preview card (tags matching the preset category set are reordered first). "+
+			"ALWAYS call this tool right before presenting a proposal, "+
 			"and present its proposal JSON as-is without modifying any field.",
 		deps.previewWebsite)
 	if err != nil {

@@ -9,7 +9,7 @@
           </div>
           <div class="header-text">
             <div class="header-title">运营助手</div>
-            <div class="header-subtitle">AI 快速录入实用网站，提案确认后才会入库</div>
+            <div class="header-subtitle">AI 快速录入网站，提案确认后才会入库</div>
           </div>
         </div>
         <el-tag effect="plain" round size="small">Beta</el-tag>

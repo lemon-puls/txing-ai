@@ -1,26 +1,181 @@
 <template>
-  <div class="website-container">
-    <!-- 搜索表单 -->
-    <el-card class="search-form">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item label="网站名称">
-          <el-input v-model="searchForm.name" placeholder="请输入网站名称" clearable />
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select v-model="searchForm.tag" placeholder="请选择标签" clearable>
-            <el-option v-for="tag in allTags" :key="tag" :value="tag" :label="tag" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-          <el-button type="success" @click="handleAdd">新增网站</el-button>
-          <el-button type="warning" @click="openOpsDrawer">
-            <el-icon style="margin-right: 4px"><MagicStick /></el-icon>
-            AI 录入
-          </el-button>
-        </el-form-item>
-      </el-form>
+  <div class="website-page">
+    <!-- 页头 -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <el-icon :size="18"><Link /></el-icon>
+        </div>
+        <div class="header-text">
+          <div class="header-title">网站导航管理</div>
+          <div class="header-subtitle">管理对外展示的精选站点，支持 AI 智能录入</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <el-button round @click="handleAdd">
+          <el-icon class="btn-icon"><Plus /></el-icon>
+          新增网站
+        </el-button>
+        <el-button round class="ai-btn" @click="openOpsDrawer">
+          <el-icon class="btn-icon"><MagicStick /></el-icon>
+          AI 录入
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 筛选工具栏 -->
+    <el-card class="filter-card" shadow="never">
+      <div class="filter-bar">
+        <div class="filter-row">
+          <el-input
+            v-model="searchForm.name"
+            class="search-input"
+            placeholder="搜索网站名称，回车确认"
+            clearable
+            :prefix-icon="Search"
+            @keyup.enter="handleSearch"
+            @clear="handleSearch"
+          />
+          <span class="filter-spacer"></span>
+          <el-tooltip content="刷新列表" placement="top">
+            <el-button circle class="refresh-btn" @click="loadWebsites">
+              <el-icon><Refresh /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
+        <div class="tag-chips">
+          <button class="chip" :class="{ active: !searchForm.tag }" @click="handleTagFilter('')">全部</button>
+          <button
+            v-for="tag in PRESET_WEBSITE_TAGS"
+            :key="`preset-${tag}`"
+            class="chip preset"
+            :class="{ active: searchForm.tag === tag }"
+            @click="handleTagFilter(tag)"
+          >
+            {{ tag }}
+          </button>
+          <button
+            v-for="tag in customChipTags"
+            :key="tag"
+            class="chip"
+            :class="{ active: searchForm.tag === tag }"
+            @click="handleTagFilter(tag)"
+          >
+            {{ tag }}
+          </button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 网站列表 -->
+    <el-card class="table-card" shadow="never">
+      <div class="table-head">
+        <span class="table-title">
+          网站列表
+          <span class="total-badge">共 {{ total }} 个</span>
+        </span>
+      </div>
+
+      <el-table v-show="websites.length > 0 || loading" :data="websites" v-loading="loading" style="width: 100%">
+        <el-table-column label="网站信息" min-width="330">
+          <template #default="{ row }">
+            <div class="website-info">
+              <div class="website-avatar">
+                <span class="avatar-letter">{{ (row.name || '?').slice(0, 1).toUpperCase() }}</span>
+                <img
+                  v-if="row.avatar"
+                  :src="row.avatar"
+                  :alt="row.name"
+                  @error="handleImageError"
+                />
+              </div>
+              <div class="website-details">
+                <a class="website-name" :href="row.url" target="_blank" rel="noopener noreferrer" :title="row.name">
+                  {{ row.name }}
+                  <el-icon :size="11" class="name-link-icon"><TopRight /></el-icon>
+                </a>
+                <div class="website-url">{{ row.url }}</div>
+                <div class="website-description" :title="row.description">{{ row.description }}</div>
+                <div class="tag-list">
+                  <el-tag
+                    v-for="tag in orderTagsPresetFirst(splitTags(row.tags))"
+                    :key="tag"
+                    :type="isPresetTag(tag) ? 'primary' : tagType(tag)"
+                    :effect="isPresetTag(tag) ? 'light' : 'plain'"
+                    size="small"
+                    round
+                  >
+                    {{ tag }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="状态" width="70" align="center">
+          <template #default="{ row }">
+            <el-switch
+              :model-value="row.status"
+              :active-value="1"
+              :inactive-value="0"
+              :disabled="statusUpdating.has(row.id)"
+              inline-prompt
+              active-text="启"
+              inactive-text="停"
+              @change="(val) => handleStatusChange(row, val)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="创建时间" width="100">
+          <template #default="{ row }">
+            <el-tooltip :content="formatISODate(row.createdAt)" placement="top">
+              <span class="cell-time">{{ getRelativeTime(row.createdAt) }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="{ row }">
+            <div class="row-actions">
+              <el-button link type="primary" :icon="EditPen" @click="handleEdit(row)">编辑</el-button>
+              <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 空状态 -->
+      <div v-if="!loading && websites.length === 0" class="empty-state">
+        <el-empty :description="searchForm.name || searchForm.tag ? '没有符合筛选条件的网站' : '还没有收录任何网站'">
+          <div class="empty-actions">
+            <el-button v-if="isFiltered" round @click="handleReset">清空筛选</el-button>
+            <el-button round class="ai-btn" @click="openOpsDrawer">
+              <el-icon class="btn-icon"><MagicStick /></el-icon>
+              AI 录入
+            </el-button>
+            <el-button v-if="!isFiltered" round type="primary" @click="handleAdd">
+              <el-icon class="btn-icon"><Plus /></el-icon>
+              新增网站
+            </el-button>
+          </div>
+        </el-empty>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="total > 0" class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          background
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
 
     <!-- AI 录入抽屉：运营助手对话，提案确认后刷新列表（destroy-on-close 保证每次打开重新加载会话） -->
@@ -44,112 +199,28 @@
       <OpsChatPanel :context="opsContext" style="height: 100%" @inserted="loadWebsites" />
     </el-drawer>
 
-
-    <!-- 网站列表 -->
-    <el-card class="table-card">
-      <el-table
-        :data="websites"
-        v-loading="loading"
-        stripe
-        style="width: 100%"
-      >
-        <el-table-column prop="id" label="ID" width="80" />
-
-        <el-table-column label="网站信息" min-width="300">
-          <template #default="{ row }">
-            <div class="website-info">
-              <div class="website-avatar">
-                <img
-                  v-if="row.avatar"
-                  :src="row.avatar"
-                  :alt="row.name"
-                  @error="handleImageError"
-                />
-                <el-icon v-else class="default-icon"><Link /></el-icon>
-              </div>
-              <div class="website-details">
-                <div class="website-name">{{ row.name }}</div>
-                <div class="website-url">{{ row.url }}</div>
-                <div class="website-description">{{ row.description }}</div>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="标签" min-width="200">
-          <template #default="{ row }">
-            <el-tag
-              v-for="tag in (row.tags || '').split(',')"
-              :key="tag"
-              size="small"
-              type="info"
-              effect="plain"
-              style="margin-right: 8px; margin-bottom: 4px;"
-            >
-              {{ tag }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="createdAt" label="创建时间" width="180">
-          <template #default="{ row }">
-            {{ formatISODate(row.createdAt) }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleEdit(row)"
-            >
-              编辑
-            </el-button>
-            <el-button
-              type="danger"
-              size="small"
-              @click="handleDelete(row)"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-    </el-card>
-
     <!-- 新增/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'add' ? '新增网站' : '编辑网站'"
-      width="600px"
+      width="620px"
+      class="website-dialog"
+      align-center
       :close-on-click-modal="false"
     >
       <el-form
         ref="websiteFormRef"
         :model="websiteForm"
         :rules="websiteRules"
-        label-width="100px"
+        label-width="90px"
+        label-position="right"
       >
         <el-form-item label="网站名称" prop="name">
-          <el-input v-model="websiteForm.name" placeholder="请输入网站名称" />
+          <el-input v-model="websiteForm.name" placeholder="请输入网站名称" maxlength="50" />
         </el-form-item>
 
         <el-form-item label="网站地址" prop="url">
-          <el-input v-model="websiteForm.url" placeholder="请输入网站地址" />
+          <el-input v-model="websiteForm.url" placeholder="请输入网站地址，如 https://example.com" />
         </el-form-item>
 
         <el-form-item label="网站描述" prop="description">
@@ -157,69 +228,102 @@
             v-model="websiteForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入网站描述"
+            maxlength="200"
+            show-word-limit
+            placeholder="一句话介绍这个网站"
           />
         </el-form-item>
 
         <el-form-item label="网站头像" prop="avatar">
-          <div class="avatar-upload">
-            <el-input
-              v-model="websiteForm.avatar"
-              placeholder="请输入头像URL或点击自动获取"
-            />
-            <div class="avatar-actions">
-              <el-button @click="autoGetAvatar" :loading="avatarLoading">
-                自动获取
-              </el-button>
-              <el-upload
-                class="avatar-uploader"
-                :show-file-list="false"
-                :before-upload="beforeAvatarUpload"
-                :http-request="uploadAvatar"
-              >
-                <el-button>上传头像</el-button>
-              </el-upload>
+          <div class="avatar-field">
+            <div class="avatar-preview">
+              <span v-if="!websiteForm.avatar" class="avatar-placeholder">
+                <el-icon :size="20"><Link /></el-icon>
+              </span>
+              <img v-else :src="websiteForm.avatar" alt="头像预览" />
             </div>
-          </div>
-          <div v-if="websiteForm.avatar" class="avatar-preview">
-            <img :src="websiteForm.avatar" alt="头像预览" />
+            <div class="avatar-ops">
+              <el-input
+                v-model="websiteForm.avatar"
+                placeholder="头像 URL，可自动获取或上传"
+                clearable
+              />
+              <div class="avatar-actions">
+                <el-button size="small" round :loading="avatarLoading" @click="autoGetAvatar">
+                  <el-icon class="btn-icon"><Download /></el-icon>
+                  自动获取
+                </el-button>
+                <el-upload
+                  class="avatar-uploader"
+                  :show-file-list="false"
+                  :before-upload="beforeAvatarUpload"
+                  :http-request="uploadAvatar"
+                >
+                  <el-button size="small" round>
+                    <el-icon class="btn-icon"><Upload /></el-icon>
+                    上传头像
+                  </el-button>
+                </el-upload>
+              </div>
+            </div>
           </div>
         </el-form-item>
 
         <el-form-item label="标签" prop="tags">
-          <div class="tags-input">
-            <el-tag
-              v-for="tag in websiteForm.tags"
-              :key="tag"
-              closable
-              @close="removeTag(tag)"
-              style="margin-right: 8px; margin-bottom: 8px;"
-            >
-              {{ tag }}
-            </el-tag>
-            <el-input
-              v-if="inputVisible"
-              ref="inputRef"
-              v-model="inputValue"
-              size="small"
-              style="width: 100px;"
-              @keyup.enter="handleInputConfirm"
-              @blur="handleInputConfirm"
-            />
-            <el-button v-else size="small" @click="showInput">
-              + 添加标签
-            </el-button>
+          <div class="tags-editor">
+            <div class="preset-tags">
+              <el-tag
+                v-for="pt in PRESET_WEBSITE_TAGS"
+                :key="pt"
+                class="preset-tag"
+                :type="websiteForm.tags.includes(pt) ? 'primary' : 'info'"
+                :effect="websiteForm.tags.includes(pt) ? 'light' : 'plain'"
+                size="small"
+                round
+                @click="togglePresetTag(pt)"
+              >
+                {{ pt }}
+              </el-tag>
+            </div>
+            <div class="tags-input">
+              <el-tag
+                v-for="tag in websiteForm.tags"
+                :key="tag"
+                :type="isPresetTag(tag) ? 'primary' : tagType(tag)"
+                :effect="isPresetTag(tag) ? 'light' : 'plain'"
+                closable
+                size="small"
+                round
+                @close="removeTag(tag)"
+              >
+                {{ tag }}
+              </el-tag>
+              <el-input
+                v-if="inputVisible"
+                ref="inputRef"
+                v-model="inputValue"
+                size="small"
+                class="tag-editor-input"
+                placeholder="自定义标签，回车确认"
+                @keyup.enter="handleInputConfirm"
+                @blur="handleInputConfirm"
+              />
+              <el-button v-else size="small" round link type="primary" @click="showInput">
+                <el-icon class="btn-icon"><Plus /></el-icon>
+                添加标签
+              </el-button>
+            </div>
           </div>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit" :loading="submitLoading">
-            确定
+        <div class="dialog-footer">
+          <el-button round @click="dialogVisible = false">取消</el-button>
+          <el-button round type="primary" class="submit-btn" :loading="submitLoading" @click="handleSubmit">
+            {{ dialogType === 'add' ? '创建' : '保存' }}
           </el-button>
-        </span>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -228,10 +332,11 @@
 <script setup name="WebsiteList">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Link, MagicStick } from '@element-plus/icons-vue'
+import { Link, MagicStick, Plus, Search, Refresh, TopRight, EditPen, Delete, Download, Upload } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import OpsChatPanel from '@/components/ops/OpsChatPanel.vue'
-import {formatISODate} from "../../../utils/timeUtils.js";
+import { formatISODate, getRelativeTime } from '@/utils/timeUtils'
+import { PRESET_WEBSITE_TAGS, isPresetTag, splitTags, orderTagsPresetFirst } from '@/constants/websiteTags'
 
 // 响应式数据
 const loading = ref(false)
@@ -249,6 +354,18 @@ const searchForm = ref({
 
 // 网站数据
 const websites = ref([])
+
+// 已知标签并集（跨筛选累积，避免筛选后标签 chips 收缩）
+const knownTags = ref(new Set())
+const allTags = computed(() => Array.from(knownTags.value))
+// 筛选 chips：内定分类标签恒在且置前（来自常量），其余实际标签排后
+const customChipTags = computed(() => allTags.value.filter((t) => !isPresetTag(t)))
+
+// 是否处于筛选状态（空状态文案与 CTA 用）
+const isFiltered = computed(() => !!(searchForm.value.name || searchForm.value.tag))
+
+// 状态切换中的行（防止重复点击）
+const statusUpdating = ref(new Set())
 
 // 对话框数据
 const dialogVisible = ref(false)
@@ -284,16 +401,15 @@ const openOpsDrawer = () => {
   opsDrawerVisible.value = true
 }
 
-
-// 计算所有标签
-const allTags = computed(() => {
-  const tags = new Set()
-  websites.value.forEach(website => {
-    // 把 website.tags 按 , 分割，放入 tags 集合
-    website.tags.split(',').forEach(tag => tags.add(tag))
-  })
-  return Array.from(tags)
-})
+// 标签按名称哈希固定配色，同一标签始终同色
+const TAG_TYPES = ['primary', 'success', 'warning', 'danger', 'info']
+const tagType = (tag) => {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    hash = (hash * 31 + tag.charCodeAt(i)) >>> 0
+  }
+  return TAG_TYPES[hash % TAG_TYPES.length]
+}
 
 // 表单验证规则
 const websiteRules = {
@@ -319,17 +435,19 @@ const websiteRules = {
 const loadWebsites = async () => {
   loading.value = true
   try {
-
     const response = await defaultApi.apiWebsitesListGet({
       page: currentPage.value,
       limit: pageSize.value,
       name: searchForm.value.name || undefined,
       tag: searchForm.value.tag || undefined
     })
-    console.log('网站列表:', response)
     if (response.code === 0) {
       websites.value = response.data.records || []
       total.value = response.data.total || 0
+      // 累积标签并集，供筛选 chips 使用
+      websites.value.forEach((w) => {
+        ;(w.tags || '').split(',').forEach((t) => t && knownTags.value.add(t))
+      })
     } else {
       ElMessage.error(response.message || '加载失败')
     }
@@ -343,6 +461,13 @@ const loadWebsites = async () => {
 
 // 搜索
 const handleSearch = () => {
+  currentPage.value = 1
+  loadWebsites()
+}
+
+// 标签筛选
+const handleTagFilter = (tag) => {
+  searchForm.value.tag = tag
   currentPage.value = 1
   loadWebsites()
 }
@@ -395,6 +520,25 @@ const handleEdit = async (row) => {
   }
 }
 
+// 启用/停用（失败回滚开关状态）
+const handleStatusChange = async (row, val) => {
+  statusUpdating.value.add(row.id)
+  try {
+    const response = await defaultApi.apiAdminWebsitesIdPut(row.id, { status: val })
+    if (response.code === 0) {
+      row.status = val
+      ElMessage.success(val === 1 ? '已启用' : '已停用')
+    } else {
+      ElMessage.error(response.message || '操作失败')
+    }
+  } catch (error) {
+    console.error('切换网站状态失败:', error)
+    ElMessage.error('操作失败')
+  } finally {
+    statusUpdating.value.delete(row.id)
+  }
+}
+
 // 删除网站
 const handleDelete = async (row) => {
   try {
@@ -411,6 +555,10 @@ const handleDelete = async (row) => {
     const response = await defaultApi.apiAdminWebsitesIdDelete(row.id)
     if (response.code === 0) {
       ElMessage.success('删除成功')
+      // 删完后当前页只剩一条时回退一页，避免空页
+      if (websites.value.length === 1 && currentPage.value > 1) {
+        currentPage.value -= 1
+      }
       await loadWebsites()
     } else {
       ElMessage.error(response.message || '删除失败')
@@ -527,6 +675,16 @@ const uploadAvatar = async (options) => {
 }
 
 // 标签相关方法
+// 点击内定分类标签快捷加入/移除
+const togglePresetTag = (tag) => {
+  const index = websiteForm.value.tags.indexOf(tag)
+  if (index > -1) {
+    websiteForm.value.tags.splice(index, 1)
+  } else {
+    websiteForm.value.tags.push(tag)
+  }
+}
+
 const removeTag = (tag) => {
   const index = websiteForm.value.tags.indexOf(tag)
   if (index > -1) {
@@ -542,13 +700,13 @@ const showInput = () => {
 }
 
 const handleInputConfirm = () => {
-  if (inputValue.value && !websiteForm.value.tags.includes(inputValue.value)) {
-    websiteForm.value.tags.push(inputValue.value)
+  const value = inputValue.value.trim()
+  if (value && !websiteForm.value.tags.includes(value)) {
+    websiteForm.value.tags.push(value)
   }
   inputVisible.value = false
   inputValue.value = ''
 }
-
 
 const handleImageError = (event) => {
   event.target.style.display = 'none'
@@ -573,44 +731,232 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.website-container {
-  padding: 20px;
+.website-page {
+  min-height: 100%;
+  padding: 16px 20px 20px;
+  box-sizing: border-box;
+  // 顶部淡淡的 primary 氛围渐变
+  background: linear-gradient(180deg, var(--el-color-primary-light-9), transparent 300px);
 }
 
-.search-form {
-  margin-bottom: 20px;
+// ===== 页头 =====
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 
-  .el-form {
-    margin-bottom: 0;
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+    box-shadow: 0 4px 12px var(--el-color-primary-light-8);
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-top: 2px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    :deep(.el-button) {
+      padding: 10px 20px;
+
+      .btn-icon {
+        margin-right: 4px;
+      }
+    }
   }
 }
 
-.table-card {
-  .website-info {
+// AI 录入按钮：渐变强化 CTA
+.ai-btn {
+  border: none !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary)) !important;
+  box-shadow: 0 2px 10px var(--el-color-primary-light-7);
+
+  &:hover {
+    opacity: 0.88;
+  }
+}
+
+// ===== 筛选工具栏 =====
+.filter-card {
+  margin-bottom: 16px;
+  border-radius: 14px;
+
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .filter-row {
     display: flex;
     align-items: center;
     gap: 12px;
 
+    .search-input {
+      width: 260px;
+
+      :deep(.el-input__wrapper) {
+        border-radius: 999px;
+      }
+    }
+
+    .filter-spacer {
+      flex: 1;
+    }
+
+    .refresh-btn {
+      flex-shrink: 0;
+    }
+  }
+
+  .tag-chips {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    // 最多两行，其余滚动查看
+    max-height: 62px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+
+    .chip {
+      flex-shrink: 0;
+      padding: 4px 14px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--el-text-color-regular);
+      background: var(--el-fill-color-light);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      // 内定分类标签：常亮 primary 底色以突出
+      &.preset {
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+        font-weight: 500;
+
+        &:hover {
+          background: var(--el-color-primary-light-8);
+        }
+      }
+
+      &:hover {
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+      }
+
+      &.active {
+        color: #fff;
+        background: var(--el-color-primary);
+        border-color: var(--el-color-primary);
+      }
+    }
+  }
+}
+
+// ===== 列表卡片 =====
+.table-card {
+  border-radius: 14px;
+
+  :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  .table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+
+      .total-badge {
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+
+  :deep(.el-table) {
+    --el-table-header-bg-color: transparent;
+
+    th.el-table__cell {
+      font-weight: 600;
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  .website-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+
     .website-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
+      position: relative;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
       overflow: hidden;
-      background: #f5f5f5;
+      background: linear-gradient(135deg, var(--el-color-primary-light-8), var(--el-color-primary-light-6));
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+      .avatar-letter {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--el-color-primary);
+      }
 
       img {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
-      }
-
-      .default-icon {
-        font-size: 20px;
-        color: #999;
       }
     }
 
@@ -619,131 +965,306 @@ onMounted(() => {
       min-width: 0;
 
       .website-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
         font-weight: 600;
-        color: #303133;
-        margin-bottom: 4px;
+        font-size: 14px;
+        color: var(--el-text-color-primary);
+        text-decoration: none;
+        margin-bottom: 2px;
+        transition: color 0.2s ease;
+
+        .name-link-icon {
+          color: var(--el-text-color-placeholder);
+          transition: color 0.2s ease;
+        }
+
+        &:hover {
+          color: var(--el-color-primary);
+
+          .name-link-icon {
+            color: var(--el-color-primary);
+          }
+        }
       }
 
       .website-url {
         font-size: 12px;
-        color: #409eff;
-        margin-bottom: 4px;
-        word-break: break-all;
+        color: var(--el-text-color-secondary);
+        margin-bottom: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .website-description {
         font-size: 12px;
-        color: #909399;
-        line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
+        color: var(--el-text-color-placeholder);
+        line-height: 1.5;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .tag-list {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  .cell-time {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row-actions {
+    display: inline-flex;
+    align-items: center;
+
+    :deep(.el-button) {
+      padding: 6px 5px;
+    }
+
+    :deep(.el-button + .el-button) {
+      margin-left: 6px;
+    }
+  }
+}
+
+// 分页
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+
+  :deep(.el-pagination) {
+    --el-pagination-border-radius: 8px;
+
+    .el-pager li,
+    .btn-prev,
+    .btn-next {
+      border-radius: 8px;
+    }
+  }
+}
+
+// ===== 空状态 =====
+.empty-state {
+  padding: 30px 0 40px;
+
+  .empty-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    .btn-icon {
+      margin-right: 4px;
+    }
+  }
+}
+
+// ===== 对话框 =====
+.avatar-field {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+
+  .avatar-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--el-fill-color-light);
+    border: 1px dashed var(--el-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--el-text-color-placeholder);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .avatar-ops {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .avatar-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+}
+
+.tags-editor {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .preset-tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--el-border-color-lighter);
+
+    .preset-tag {
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-1px);
       }
     }
   }
 }
 
-.pagination-container {
-  margin-top: 20px;
-  text-align: right;
-}
-
-// 对话框样式
-.avatar-upload {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-
-  .el-input {
-    flex: 1;
-  }
-
-  .avatar-actions {
-    display: flex;
-    gap: 8px;
-  }
-}
-
-.avatar-preview {
-  margin-top: 10px;
-
-  img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid #dcdfe6;
-  }
-}
-
 .tags-input {
-  .el-tag {
-    margin-right: 8px;
-    margin-bottom: 8px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .tag-editor-input {
+    width: 130px;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  .submit-btn {
+    border: none;
+    background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+    box-shadow: 0 2px 8px var(--el-color-primary-light-8);
+
+    &:not(:disabled):hover {
+      opacity: 0.88;
+    }
   }
 }
 
 // 响应式设计
 @media screen and (max-width: 768px) {
-  .website-container {
-    padding: 10px;
+  .website-page {
+    padding: 12px;
   }
 
-  .search-form {
-    :deep(.el-form--inline) {
-      .el-form-item {
-        display: block;
-        margin-right: 0;
-        margin-bottom: 10px;
-      }
+  .page-header {
+    .header-actions {
+      width: 100%;
+      justify-content: flex-end;
     }
   }
 
-  .table-card {
-    :deep(.el-table) {
-      .el-table__cell {
-        padding: 8px 0;
+  .filter-bar {
+    .filter-row {
+      flex-wrap: wrap;
+
+      .search-input {
+        width: 100%;
       }
     }
   }
 }
-.search-form {
-  margin-bottom: 24px;
 
-  :deep(.el-form-item) {
-    margin-bottom: 0;
+// ===== 暗色模式补充：项目暗色主题未覆写部分变量，这里手动补齐 =====
+// 注意：scoped 下须用 `html.dark &` 写法（与 about/index.vue 一致），`:global(.dark)` 包裹会被编译器丢弃内部选择器
+.website-page {
+  html.dark & {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 300px);
   }
+}
 
-  :deep(.el-input__wrapper) {
-    border-radius: 12px;
+.filter-card,
+.table-card {
+  html.dark & {
+    background: #1c1c1c;
+    border-color: #363637;
   }
+}
 
-  :deep(.el-select) {
-    width: 180px;
+.website-page .ai-btn {
+  html.dark & {
+    box-shadow: none;
   }
+}
 
-  :deep(.el-button) {
-    border-radius: 12px;
-    padding: 12px 24px;
-    transition: all 0.3s;
+.website-page .filter-bar .tag-chips .chip {
+  html.dark & {
+    background: #262627;
+    color: var(--el-text-color-regular);
 
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: var(--el-color-primary-light-9);
     }
 
-    &.el-button--primary {
-      &:hover {
-        box-shadow: 0 4px 12px rgba(var(--el-color-primary-rgb), 0.3);
-      }
+    &.preset {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
     }
+
+    &.active {
+      color: #fff;
+      background: var(--el-color-primary);
+    }
+  }
+}
+
+.table-card .website-info .website-avatar {
+  html.dark & {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
 }
 </style>
 
 <style lang="scss">
-// AI 录入抽屉（el-drawer 内容不生效 scoped，需全局覆写）
+// 弹层类组件（dialog / drawer）内容不生效 scoped，需全局覆写
+.website-dialog {
+  border-radius: 18px;
+
+  .el-dialog__header {
+    padding: 18px 24px 14px;
+    margin-right: 0;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+
+    .el-dialog__title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 20px 24px;
+  }
+
+  .el-dialog__footer {
+    padding: 12px 24px 18px;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+}
+
+// AI 录入抽屉
 .ops-drawer {
   .el-drawer__header {
     margin-bottom: 0;

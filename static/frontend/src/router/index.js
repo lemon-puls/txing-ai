@@ -69,7 +69,7 @@ const router = createRouter({
               path: '',
               component: () => import('@/views/websites/index.vue'),
               meta: {
-                title: '实用网站',
+                title: '网站导航',
                 icon: 'link'
               }
             }
@@ -249,7 +249,7 @@ const router = createRouter({
           name: 'AdminWebsites',
           component: () => import('@/views/admin/websites/WebsiteList.vue'),
           meta: {
-            title: '网站管理',
+            title: '网站导航管理',
             icon: 'Link',
             roles: ['admin']
           }

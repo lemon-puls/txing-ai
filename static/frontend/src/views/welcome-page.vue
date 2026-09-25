@@ -83,7 +83,7 @@
           <div class="card-overlay"></div>
         </div>
 
-        <!-- 实用网站入口 -->
+        <!-- 网站导航入口 -->
         <div
           class="entrance-card websites-card"
           :class="{ 'card-hover': hoveredCard === 'websites' }"
@@ -93,8 +93,8 @@
         >
           <div class="card-content">
             <el-icon class="card-icon"><Link /></el-icon>
-            <h2>实用网站</h2>
-            <p>精选实用网站，提升工作效率</p>
+            <h2>网站导航</h2>
+            <p>精选优质站点，发现实用工具、AI 与开源资源</p>
             <div class="card-action">
               <el-icon><ArrowRight /></el-icon>
             </div>

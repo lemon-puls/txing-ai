@@ -72,7 +72,7 @@ func (d OpsToolDeps) previewWebsite(ctx context.Context, req *websitePreviewRequ
 	if n := len([]rune(description)); n > 200 {
 		return invalidResult(fmt.Sprintf("网站描述不能超过 200 个字，当前 %d 个字", n)), nil
 	}
-	tags := normalizeTags(req.Tags)
+	tags := reorderTagsPresetFirst(normalizeTags(req.Tags))
 	if len(tags) == 0 {
 		return invalidResult("至少需要 1 个标签"), nil
 	}

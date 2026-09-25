@@ -51,7 +51,7 @@
 
           <el-menu-item index="/admin/websites">
             <el-icon><Cpu /></el-icon>
-            <template #title>工具网站管理</template>
+            <template #title>网站导航管理</template>
           </el-menu-item>
 
           <el-menu-item index="/admin/about">

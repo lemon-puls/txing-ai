@@ -136,3 +136,15 @@ func TestNormalizeTags(t *testing.T) {
 		t.Fatalf("normalizeTags = %v, want [%s]", got, want)
 	}
 }
+
+// TestReorderTagsPresetFirst 内定标签置前（按内定顺序），其余保持原相对顺序
+func TestReorderTagsPresetFirst(t *testing.T) {
+	got := reorderTagsPresetFirst([]string{"Go", "设计资源", "机器学习", "开源项目", "AI"})
+	want := "AI,开源项目,设计资源,Go,机器学习"
+	if strings.Join(got, ",") != want {
+		t.Fatalf("reorderTagsPresetFirst = %v, want [%s]", got, want)
+	}
+	if got := reorderTagsPresetFirst(nil); len(got) != 0 {
+		t.Fatalf("empty input = %v, want empty", got)
+	}
+}
