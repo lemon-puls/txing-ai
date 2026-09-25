@@ -30,6 +30,12 @@
           </template>
           <PagePanel ref="pageRef" />
         </el-tab-pane>
+        <el-tab-pane name="graph">
+          <template #label>
+            <span class="tab-label"><el-icon><Share /></el-icon> 知识图谱</span>
+          </template>
+          <GraphPanel ref="graphRef" />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -37,15 +43,17 @@
 
 <script setup name="WikiAdmin">
 import { ref, nextTick } from 'vue'
-import { Collection, Files, EditPen, Reading } from '@element-plus/icons-vue'
+import { Collection, Files, EditPen, Reading, Share } from '@element-plus/icons-vue'
 import SourcePanel from './SourcePanel.vue'
 import DraftPanel from './DraftPanel.vue'
 import PagePanel from './PagePanel.vue'
+import GraphPanel from './GraphPanel.vue'
 
 const activeTab = ref('sources')
 const sourceRef = ref(null)
 const draftRef = ref(null)
 const pageRef = ref(null)
+const graphRef = ref(null)
 // 已挂载过的 Tab：首次进入由面板 onMounted 拉取，再进入时手动刷新，
 // 保证 ingest 产出草稿、确认发布后跨 Tab 立即可见
 const visited = new Set(['sources'])
@@ -53,7 +61,8 @@ const visited = new Set(['sources'])
 const refreshers = {
   sources: () => sourceRef.value?.refresh(),
   drafts: () => draftRef.value?.refresh(),
-  pages: () => pageRef.value?.refresh()
+  pages: () => pageRef.value?.refresh(),
+  graph: () => graphRef.value?.refresh()
 }
 
 const handleTabChange = (name) => {

@@ -134,6 +134,9 @@ import VoUserVO from './model/VoUserVO';
 import VoValidationErrorVO from './model/VoValidationErrorVO';
 import VoValidationResultVO from './model/VoValidationResultVO';
 import VoWebsiteVO from './model/VoWebsiteVO';
+import WikiGraphData from './model/WikiGraphData';
+import WikiGraphEdge from './model/WikiGraphEdge';
+import WikiGraphNode from './model/WikiGraphNode';
 import WikiagentQAHistoryItem from './model/WikiagentQAHistoryItem';
 import DefaultApi from './api/DefaultApi';
 import AgentApi from './api/AgentApi';
@@ -902,6 +905,24 @@ export {
      * @property {module:model/VoWebsiteVO}
      */
     VoWebsiteVO,
+
+    /**
+     * The WikiGraphData model constructor.
+     * @property {module:model/WikiGraphData}
+     */
+    WikiGraphData,
+
+    /**
+     * The WikiGraphEdge model constructor.
+     * @property {module:model/WikiGraphEdge}
+     */
+    WikiGraphEdge,
+
+    /**
+     * The WikiGraphNode model constructor.
+     * @property {module:model/WikiGraphNode}
+     */
+    WikiGraphNode,
 
     /**
      * The WikiagentQAHistoryItem model constructor.

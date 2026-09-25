@@ -125,6 +125,9 @@ docs/VoUserVO.md
 docs/VoValidationErrorVO.md
 docs/VoValidationResultVO.md
 docs/VoWebsiteVO.md
+docs/WikiGraphData.md
+docs/WikiGraphEdge.md
+docs/WikiGraphNode.md
 docs/WikiagentQAHistoryItem.md
 git_push.sh
 mocha.opts
@@ -254,4 +257,7 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
+src/model/WikiGraphData.js
+src/model/WikiGraphEdge.js
+src/model/WikiGraphNode.js
 src/model/WikiagentQAHistoryItem.js

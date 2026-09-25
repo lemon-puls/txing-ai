@@ -2194,6 +2194,25 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/wiki/graph": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/wiki.GraphData"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/wiki/pages/list": {
             "get": {
                 "produces": [
@@ -7367,6 +7386,63 @@ const docTemplate = `{
                     "description": "网站地址",
                     "type": "string",
                     "example": "https://github.com"
+                }
+            }
+        },
+        "wiki.GraphData": {
+            "type": "object",
+            "properties": {
+                "edges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/wiki.GraphEdge"
+                    }
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/wiki.GraphNode"
+                    }
+                }
+            }
+        },
+        "wiki.GraphEdge": {
+            "type": "object",
+            "properties": {
+                "anchorText": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "wiki.GraphNode": {
+            "type": "object",
+            "properties": {
+                "dangling": {
+                    "type": "boolean"
+                },
+                "degree": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pageType": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },

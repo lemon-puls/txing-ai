@@ -57,6 +57,7 @@ Method | HTTP request | Description
 [**apiAdminWikiDraftsIdPut**](DefaultApi.md#apiAdminWikiDraftsIdPut) | **PUT** /api/admin/wiki/drafts/{id} | 编辑草稿（可改标题/类型/别名/摘要/正文）
 [**apiAdminWikiDraftsListGet**](DefaultApi.md#apiAdminWikiDraftsListGet) | **GET** /api/admin/wiki/drafts/list | 分页列出待审核草稿
 [**apiAdminWikiExportGet**](DefaultApi.md#apiAdminWikiExportGet) | **GET** /api/admin/wiki/export | 导出全部已发布页为 md 压缩包（含 index.md）
+[**apiAdminWikiGraphGet**](DefaultApi.md#apiAdminWikiGraphGet) | **GET** /api/admin/wiki/graph | 获取已发布页知识图谱（节点&#x3D;页面，边&#x3D;[[slug]] 互链，含悬空目标）
 [**apiAdminWikiPagesIdGet**](DefaultApi.md#apiAdminWikiPagesIdGet) | **GET** /api/admin/wiki/pages/{id} | 获取单个已发布页
 [**apiAdminWikiPagesIdOfflinePost**](DefaultApi.md#apiAdminWikiPagesIdOfflinePost) | **POST** /api/admin/wiki/pages/{id}/offline | 下线已发布页
 [**apiAdminWikiPagesIdPut**](DefaultApi.md#apiAdminWikiPagesIdPut) | **PUT** /api/admin/wiki/pages/{id} | 编辑已发布页（version+1 并重建出入链与 index）
@@ -2476,6 +2477,44 @@ No authorization required
 
 - **Content-Type**: Not defined
 - **Accept**: application/zip
+
+
+## apiAdminWikiGraphGet
+
+> WikiGraphData apiAdminWikiGraphGet()
+
+获取已发布页知识图谱（节点&#x3D;页面，边&#x3D;[[slug]] 互链，含悬空目标）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminWikiGraphGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**WikiGraphData**](WikiGraphData.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
 
 
 ## apiAdminWikiPagesIdGet

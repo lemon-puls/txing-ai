@@ -1883,6 +1883,43 @@ definitions:
         example: https://github.com
         type: string
     type: object
+  wiki.GraphData:
+    properties:
+      edges:
+        items:
+          $ref: '#/definitions/wiki.GraphEdge'
+        type: array
+      nodes:
+        items:
+          $ref: '#/definitions/wiki.GraphNode'
+        type: array
+    type: object
+  wiki.GraphEdge:
+    properties:
+      anchorText:
+        type: string
+      source:
+        type: string
+      target:
+        type: string
+    type: object
+  wiki.GraphNode:
+    properties:
+      dangling:
+        type: boolean
+      degree:
+        type: integer
+      id:
+        type: integer
+      pageType:
+        type: string
+      slug:
+        type: string
+      summary:
+        type: string
+      title:
+        type: string
+    type: object
   wikiagent.QAHistoryItem:
     properties:
       content:
@@ -3247,6 +3284,18 @@ paths:
           schema:
             type: file
       summary: 导出全部已发布页为 md 压缩包（含 index.md）
+      tags:
+      - 知识库管理
+  /api/admin/wiki/graph:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/wiki.GraphData'
+      summary: 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
       tags:
       - 知识库管理
   /api/admin/wiki/pages/{id}:

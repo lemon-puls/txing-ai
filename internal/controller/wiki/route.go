@@ -34,6 +34,9 @@ func Register(router gin.IRouter) {
 		adminRouter.PUT("/wiki/pages/:id", UpdatePublished)
 		adminRouter.POST("/wiki/pages/:id/offline", OfflinePage)
 
+		// 知识图谱（可视化）
+		adminRouter.GET("/wiki/graph", Graph)
+
 		// 导出（md 资产退出保险）
 		adminRouter.GET("/wiki/export", ExportAll)
 	}

@@ -507,6 +507,26 @@ func OfflinePage(ctx *gin.Context) {
 
 // --- 导出 ---
 
+// Graph 知识图谱
+// @Summary 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
+// @Tags 知识库管理
+// @Produce json
+// @Success 200 {object} wikisvc.GraphData
+// @Router /api/admin/wiki/graph [get]
+func Graph(ctx *gin.Context) {
+	svc, err := newService(ctx)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "服务初始化失败", err)
+		return
+	}
+	data, err := svc.ListGraph(ctx)
+	if err != nil {
+		utils.ErrorWithMsg(ctx, "构建知识图谱失败", err)
+		return
+	}
+	utils.OkWithData(ctx, data)
+}
+
 // ExportAll 导出全部已发布页
 // @Summary 导出全部已发布页为 md 压缩包（含 index.md）
 // @Tags 知识库管理

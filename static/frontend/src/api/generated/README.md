@@ -172,6 +172,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsIdPut**](docs/DefaultApi.md#apiAdminWikiDraftsIdPut) | **PUT** /api/admin/wiki/drafts/{id} | 编辑草稿（可改标题/类型/别名/摘要/正文）
 *TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsListGet**](docs/DefaultApi.md#apiAdminWikiDraftsListGet) | **GET** /api/admin/wiki/drafts/list | 分页列出待审核草稿
 *TxingAiApi.DefaultApi* | [**apiAdminWikiExportGet**](docs/DefaultApi.md#apiAdminWikiExportGet) | **GET** /api/admin/wiki/export | 导出全部已发布页为 md 压缩包（含 index.md）
+*TxingAiApi.DefaultApi* | [**apiAdminWikiGraphGet**](docs/DefaultApi.md#apiAdminWikiGraphGet) | **GET** /api/admin/wiki/graph | 获取已发布页知识图谱（节点&#x3D;页面，边&#x3D;[[slug]] 互链，含悬空目标）
 *TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdGet**](docs/DefaultApi.md#apiAdminWikiPagesIdGet) | **GET** /api/admin/wiki/pages/{id} | 获取单个已发布页
 *TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdOfflinePost**](docs/DefaultApi.md#apiAdminWikiPagesIdOfflinePost) | **POST** /api/admin/wiki/pages/{id}/offline | 下线已发布页
 *TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdPut**](docs/DefaultApi.md#apiAdminWikiPagesIdPut) | **PUT** /api/admin/wiki/pages/{id} | 编辑已发布页（version+1 并重建出入链与 index）
@@ -355,6 +356,9 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoValidationErrorVO](docs/VoValidationErrorVO.md)
  - [TxingAiApi.VoValidationResultVO](docs/VoValidationResultVO.md)
  - [TxingAiApi.VoWebsiteVO](docs/VoWebsiteVO.md)
+ - [TxingAiApi.WikiGraphData](docs/WikiGraphData.md)
+ - [TxingAiApi.WikiGraphEdge](docs/WikiGraphEdge.md)
+ - [TxingAiApi.WikiGraphNode](docs/WikiGraphNode.md)
  - [TxingAiApi.WikiagentQAHistoryItem](docs/WikiagentQAHistoryItem.md)
 
 

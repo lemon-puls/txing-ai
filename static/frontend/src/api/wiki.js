@@ -58,6 +58,10 @@ export default {
   offlinePage: (id) =>
     call(`/api/admin/wiki/pages/${id}/offline`, 'POST'),
 
+  // --- 知识图谱 ---
+  graph: () =>
+    call('/api/admin/wiki/graph', 'GET'),
+
   // --- 导出（带鉴权头拉取 zip 二进制） ---
   async exportAll() {
     const authHeaders = (await import('./auth')).default.getAuthHeaders()

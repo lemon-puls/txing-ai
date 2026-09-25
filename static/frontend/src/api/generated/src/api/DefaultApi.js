@@ -86,6 +86,7 @@ import DtoWikiMDSourceReq from '../model/DtoWikiMDSourceReq';
 import DtoWikiURLSourceReq from '../model/DtoWikiURLSourceReq';
 import DtoWikiUpdateDraftReq from '../model/DtoWikiUpdateDraftReq';
 import UtilsResponse from '../model/UtilsResponse';
+import WikiGraphData from '../model/WikiGraphData';
 
 /**
 *  service.
@@ -2733,6 +2734,45 @@ export default class DefaultApi {
      */
     apiAdminWikiExportGet() {
       return this.apiAdminWikiExportGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/WikiGraphData} and HTTP response
+     */
+    apiAdminWikiGraphGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = WikiGraphData;
+      return this.apiClient.callApi(
+        '/api/admin/wiki/graph', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 获取已发布页知识图谱（节点=页面，边=[[slug]] 互链，含悬空目标）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/WikiGraphData}
+     */
+    apiAdminWikiGraphGet() {
+      return this.apiAdminWikiGraphGetWithHttpInfo()
         .then(function(response_and_data) {
           return response_and_data.data;
         });
