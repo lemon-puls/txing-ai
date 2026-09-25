@@ -97,22 +97,23 @@ type AboutMeCoverMediaReq struct {
 }
 
 type CreateAboutMeProjectReq struct {
-	Name       string   `json:"name" binding:"required"`
-	Desc       string   `json:"desc" binding:"required"`
-	IconKey    string   `json:"iconKey" binding:"required"`
-	Gradient   string   `json:"gradient"`
-	Tags       []string `json:"tags"`
-	Link       string   `json:"link"`
-	Badge      string   `json:"badge"`
-	Category   string   `json:"category" binding:"required,oneof=company personal"`
-	Highlights []string `json:"highlights"`
-	Media      []AboutMeMediaReq `json:"media"`
+	Name       string                 `json:"name" binding:"required"`
+	Desc       string                 `json:"desc" binding:"required"`
+	IconKey    string                 `json:"iconKey" binding:"required"`
+	Gradient   string                 `json:"gradient"`
+	Tags       []string               `json:"tags"`
+	Link       string                 `json:"link"`
+	Badge      string                 `json:"badge"`
+	Category   string                 `json:"category" binding:"required,oneof=company personal"`
+	Highlights []string               `json:"highlights"`
+	Media      []AboutMeMediaReq      `json:"media"`
 	CoverMedia []AboutMeCoverMediaReq `json:"coverMedia"`
-	TechStack []struct {
+	TechStack  []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
 	} `json:"techStack"`
-	Features []struct {
+	Architecture string `json:"architecture"`
+	Features     []struct {
 		Icon   string `json:"icon"`
 		Title  string `json:"title"`
 		Desc   string `json:"desc"`
@@ -122,22 +123,23 @@ type CreateAboutMeProjectReq struct {
 }
 
 type UpdateAboutMeProjectReq struct {
-	Name       string   `json:"name"`
-	Desc       string   `json:"desc"`
-	IconKey    string   `json:"iconKey"`
-	Gradient   string   `json:"gradient"`
-	Tags       []string `json:"tags"`
-	Link       string   `json:"link"`
-	Badge      string   `json:"badge"`
-	Category   string   `json:"category" binding:"omitempty,oneof=company personal"`
-	Highlights []string `json:"highlights"`
-	Media      []AboutMeMediaReq `json:"media"`
+	Name       string                 `json:"name"`
+	Desc       string                 `json:"desc"`
+	IconKey    string                 `json:"iconKey"`
+	Gradient   string                 `json:"gradient"`
+	Tags       []string               `json:"tags"`
+	Link       string                 `json:"link"`
+	Badge      string                 `json:"badge"`
+	Category   string                 `json:"category" binding:"omitempty,oneof=company personal"`
+	Highlights []string               `json:"highlights"`
+	Media      []AboutMeMediaReq      `json:"media"`
 	CoverMedia []AboutMeCoverMediaReq `json:"coverMedia"`
-	TechStack []struct {
+	TechStack  []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
 	} `json:"techStack"`
-	Features []struct {
+	Architecture string `json:"architecture"`
+	Features     []struct {
 		Icon   string `json:"icon"`
 		Title  string `json:"title"`
 		Desc   string `json:"desc"`

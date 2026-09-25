@@ -59,6 +59,9 @@ class DtoCreateAboutMeProjectReq {
         if (data) {
             obj = obj || new DtoCreateAboutMeProjectReq();
 
+            if (data.hasOwnProperty('architecture')) {
+                obj['architecture'] = ApiClient.convertToType(data['architecture'], 'String');
+            }
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
             }
@@ -116,6 +119,10 @@ class DtoCreateAboutMeProjectReq {
             if (!data.hasOwnProperty(property)) {
                 throw new Error("The required field `" + property + "` is not found in the JSON data: " + JSON.stringify(data));
             }
+        }
+        // ensure the json data is a string
+        if (data['architecture'] && !(typeof data['architecture'] === 'string' || data['architecture'] instanceof String)) {
+            throw new Error("Expected the field `architecture` to be a primitive type in the JSON string but got " + data['architecture']);
         }
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
@@ -201,6 +208,11 @@ class DtoCreateAboutMeProjectReq {
 }
 
 DtoCreateAboutMeProjectReq.RequiredProperties = ["category", "desc", "iconKey", "name"];
+
+/**
+ * @member {String} architecture
+ */
+DtoCreateAboutMeProjectReq.prototype['architecture'] = undefined;
 
 /**
  * @member {String} badge

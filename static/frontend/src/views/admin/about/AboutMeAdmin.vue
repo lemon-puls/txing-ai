@@ -445,6 +445,16 @@
             </el-button>
           </div>
         </el-form-item>
+        <el-form-item label="系统架构">
+          <!-- 架构总览（选填）：前端在项目详情中独立展示，支持收起与放大查看 -->
+          <!-- Architecture overview (optional): rendered standalone in project detail, collapsible & zoomable -->
+          <el-input
+            v-model="projectForm.architecture"
+            type="textarea"
+            :rows="6"
+            placeholder="项目架构总览（选填，留空则前端不展示该区块）&#10;支持 Markdown 与 ```mermaid 代码块（自动渲染为架构图），建议结构：```mermaid 架构图 + **分层说明** 列表"
+          />
+        </el-form-item>
         <el-form-item label="核心功能">
           <div class="feature-list">
             <div
@@ -452,10 +462,20 @@
               :key="idx"
               class="feature-row"
             >
-              <el-input v-model="f.icon" placeholder="emoji" style="width: 60px" />
-              <el-input v-model="f.title" placeholder="标题" style="width: 200px" />
-              <el-input v-model="f.desc" placeholder="描述" style="flex: 1" />
-              <el-button text type="danger" @click="projectForm.features.splice(idx, 1)">删除</el-button>
+              <div class="feature-row-main">
+                <el-input v-model="f.icon" placeholder="emoji" style="width: 60px" />
+                <el-input v-model="f.title" placeholder="标题" style="width: 200px" />
+                <el-input v-model="f.desc" placeholder="描述" style="flex: 1" />
+                <el-button text type="danger" @click="projectForm.features.splice(idx, 1)">删除</el-button>
+              </div>
+              <!-- 详细内容（前端点击展开，支持 Markdown 与 Mermaid 图表） -->
+              <!-- Detail content (expanded on the front page, Markdown + Mermaid supported) -->
+              <el-input
+                v-model="f.detail"
+                type="textarea"
+                :rows="4"
+                placeholder="详细内容（选填，支持 Markdown：## 标题、- 列表、**加粗**、`代码`、> 引用；```mermaid 代码块会渲染为图表）"
+              />
             </div>
             <el-button @click="(projectForm.features = projectForm.features || []).push({ icon: '', title: '', desc: '' })">
               + 添加功能
@@ -748,6 +768,7 @@ const projectForm = reactive({
   coverMedia: [],
   techStack: [],
   features: [],
+  architecture: '',
   sort: 0
 })
 
@@ -763,7 +784,7 @@ const loadProjects = async () => {
 const openProjectDialog = async (row) => {
   Object.assign(projectForm, {
     id: 0, name: '', desc: '', iconKey: '', gradient: 1,
-    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], coverMedia: [], techStack: [], features: [], sort: 0
+    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], coverMedia: [], techStack: [], features: [], architecture: '', sort: 0
   })
   if (row && row.id) {
     try {
@@ -776,6 +797,7 @@ const openProjectDialog = async (row) => {
         projectForm.coverMedia = res.data.coverMedia || []
         projectForm.techStack = res.data.techStack || []
         projectForm.features = res.data.features || []
+        projectForm.architecture = res.data.architecture || ''
       }
     } catch (e) {
       ElMessage.error('加载项目失败')
@@ -801,6 +823,7 @@ const saveProject = async () => {
       coverMedia: (projectForm.coverMedia || []).map(({ type, key }) => ({ type, key })),
       techStack: projectForm.techStack || [],
       features: projectForm.features || [],
+      architecture: projectForm.architecture || '',
       sort: projectForm.sort
     }
     if (projectForm.id) {
@@ -1033,12 +1056,30 @@ onMounted(() => {
 .link-row,
 .stat-row,
 .media-row,
-.tech-row,
-.feature-row {
+.tech-row {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
+}
+
+// 亮点行：上面一行基础信息，下面详细内容 textarea
+// Feature row: basic info on top, detail textarea below
+.feature-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+
+  .feature-row-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
 }
 
 .media-row {

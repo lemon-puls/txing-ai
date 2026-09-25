@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**architecture** | **String** |  | [optional] 
 **badge** | **String** |  | [optional] 
 **category** | **String** |  | 
 **coverMedia** | [**[DtoAboutMeCoverMediaReq]**](DtoAboutMeCoverMediaReq.md) |  | [optional] 

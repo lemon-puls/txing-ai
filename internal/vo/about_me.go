@@ -58,13 +58,13 @@ func ToAboutMeFloatingIconVOs(items []domain.AboutMeFloatingIcon) []AboutMeFloat
 
 // AboutMeReasonVO 为什么选择我视图对象
 type AboutMeReasonVO struct {
-	Id    int64              `json:"id"`
-	Emoji string             `json:"emoji"`
-	Title string             `json:"title"`
-	Desc  string             `json:"desc"`
-	Tags  []string           `json:"tags"`
-	Stats []AboutMeStatItem  `json:"stats"`
-	Sort  int                `json:"sort"`
+	Id    int64             `json:"id"`
+	Emoji string            `json:"emoji"`
+	Title string            `json:"title"`
+	Desc  string            `json:"desc"`
+	Tags  []string          `json:"tags"`
+	Stats []AboutMeStatItem `json:"stats"`
+	Sort  int               `json:"sort"`
 }
 
 type AboutMeStatItem struct {
@@ -135,21 +135,22 @@ func ToAboutMeSkillVOs(items []domain.AboutMeSkill) []AboutMeSkillVO {
 
 // AboutMeProjectVO 作品视图对象
 type AboutMeProjectVO struct {
-	Id         int64                   `json:"id"`
-	Name       string                  `json:"name"`
-	Desc       string                  `json:"desc"`
-	IconKey    string                  `json:"iconKey"`
-	Gradient   string                  `json:"gradient"`
-	Tags       []string                `json:"tags"`
-	Link       string                  `json:"link"`
-	Badge      string                  `json:"badge"`
-	Category   string                  `json:"category"` // 项目类别 company/personal
-	Highlights []string                `json:"highlights"`
-	Media      []AboutMeMediaItem      `json:"media"`
-	CoverMedia []AboutMeCoverMediaItem `json:"coverMedia"`
-	TechStack  []AboutMeTechItem       `json:"techStack"`
-	Features   []AboutMeFeatureItem    `json:"features"`
-	Sort       int                     `json:"sort"`
+	Id           int64                   `json:"id"`
+	Name         string                  `json:"name"`
+	Desc         string                  `json:"desc"`
+	IconKey      string                  `json:"iconKey"`
+	Gradient     string                  `json:"gradient"`
+	Tags         []string                `json:"tags"`
+	Link         string                  `json:"link"`
+	Badge        string                  `json:"badge"`
+	Category     string                  `json:"category"` // 项目类别 company/personal
+	Highlights   []string                `json:"highlights"`
+	Media        []AboutMeMediaItem      `json:"media"`
+	CoverMedia   []AboutMeCoverMediaItem `json:"coverMedia"`
+	TechStack    []AboutMeTechItem       `json:"techStack"`
+	Architecture string                  `json:"architecture"` // 系统架构总览(Markdown,支持mermaid) / architecture overview
+	Features     []AboutMeFeatureItem    `json:"features"`
+	Sort         int                     `json:"sort"`
 }
 
 type AboutMeMediaItem struct {
@@ -204,21 +205,22 @@ func ToAboutMeProjectVO(p domain.AboutMeProject) AboutMeProjectVO {
 		highlights = []string{}
 	}
 	return AboutMeProjectVO{
-		Id:         p.Id,
-		Name:       p.Name,
-		Desc:       p.Desc,
-		IconKey:    p.IconKey,
-		Gradient:   p.Gradient,
-		Tags:       tags,
-		Link:       p.Link,
-		Badge:      p.Badge,
-		Category:   p.Category,
-		Highlights: highlights,
-		Media:      media,
-		CoverMedia: coverMedia,
-		TechStack:  tech,
-		Features:   feats,
-		Sort:       p.Sort,
+		Id:           p.Id,
+		Name:         p.Name,
+		Desc:         p.Desc,
+		IconKey:      p.IconKey,
+		Gradient:     p.Gradient,
+		Tags:         tags,
+		Link:         p.Link,
+		Badge:        p.Badge,
+		Category:     p.Category,
+		Highlights:   highlights,
+		Media:        media,
+		CoverMedia:   coverMedia,
+		TechStack:    tech,
+		Architecture: p.Architecture,
+		Features:     feats,
+		Sort:         p.Sort,
 	}
 }
 
@@ -265,10 +267,10 @@ func ToAboutMeTimelineVOs(items []domain.AboutMeTimeline) []AboutMeTimelineVO {
 
 // AboutMeContactVO 联系区视图对象
 type AboutMeContactVO struct {
-	Id    int64                 `json:"id"`
-	Title string                `json:"title"`
-	Desc  string                `json:"desc"`
-	Links []AboutMeContactLink  `json:"links"`
+	Id    int64                `json:"id"`
+	Title string               `json:"title"`
+	Desc  string               `json:"desc"`
+	Links []AboutMeContactLink `json:"links"`
 }
 
 type AboutMeContactLink struct {
@@ -293,11 +295,11 @@ func ToAboutMeContactVO(c domain.AboutMeContact) AboutMeContactVO {
 // AboutMeSnapshotVO 关于我页面整体快照（公开端点返回）
 // Aggregated about me snapshot returned by GET /api/about
 type AboutMeSnapshotVO struct {
-	Hero         AboutMeHeroVO          `json:"hero"`
+	Hero         AboutMeHeroVO           `json:"hero"`
 	FloatingIcon []AboutMeFloatingIconVO `json:"floatingIcons"`
-	Reasons      []AboutMeReasonVO      `json:"reasons"`
-	Skills       []AboutMeSkillVO       `json:"skills"`
-	Projects     []AboutMeProjectVO     `json:"projects"`
-	Timeline     []AboutMeTimelineVO    `json:"timeline"`
-	Contact      AboutMeContactVO       `json:"contact"`
+	Reasons      []AboutMeReasonVO       `json:"reasons"`
+	Skills       []AboutMeSkillVO        `json:"skills"`
+	Projects     []AboutMeProjectVO      `json:"projects"`
+	Timeline     []AboutMeTimelineVO     `json:"timeline"`
+	Contact      AboutMeContactVO        `json:"contact"`
 }

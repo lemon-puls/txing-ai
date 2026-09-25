@@ -51,6 +51,9 @@ class VoAboutMeProjectVO {
         if (data) {
             obj = obj || new VoAboutMeProjectVO();
 
+            if (data.hasOwnProperty('architecture')) {
+                obj['architecture'] = ApiClient.convertToType(data['architecture'], 'String');
+            }
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
             }
@@ -106,6 +109,10 @@ class VoAboutMeProjectVO {
      * @return {boolean} to indicate whether the JSON data is valid with respect to <code>VoAboutMeProjectVO</code>.
      */
     static validateJSON(data) {
+        // ensure the json data is a string
+        if (data['architecture'] && !(typeof data['architecture'] === 'string' || data['architecture'] instanceof String)) {
+            throw new Error("Expected the field `architecture` to be a primitive type in the JSON string but got " + data['architecture']);
+        }
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
             throw new Error("Expected the field `badge` to be a primitive type in the JSON string but got " + data['badge']);
@@ -190,6 +197,12 @@ class VoAboutMeProjectVO {
 }
 
 
+
+/**
+ * 系统架构总览(Markdown,支持mermaid) / architecture overview
+ * @member {String} architecture
+ */
+VoAboutMeProjectVO.prototype['architecture'] = undefined;
 
 /**
  * @member {String} badge

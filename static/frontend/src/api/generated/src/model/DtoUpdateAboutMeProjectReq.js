@@ -51,6 +51,9 @@ class DtoUpdateAboutMeProjectReq {
         if (data) {
             obj = obj || new DtoUpdateAboutMeProjectReq();
 
+            if (data.hasOwnProperty('architecture')) {
+                obj['architecture'] = ApiClient.convertToType(data['architecture'], 'String');
+            }
             if (data.hasOwnProperty('badge')) {
                 obj['badge'] = ApiClient.convertToType(data['badge'], 'String');
             }
@@ -103,6 +106,10 @@ class DtoUpdateAboutMeProjectReq {
      * @return {boolean} to indicate whether the JSON data is valid with respect to <code>DtoUpdateAboutMeProjectReq</code>.
      */
     static validateJSON(data) {
+        // ensure the json data is a string
+        if (data['architecture'] && !(typeof data['architecture'] === 'string' || data['architecture'] instanceof String)) {
+            throw new Error("Expected the field `architecture` to be a primitive type in the JSON string but got " + data['architecture']);
+        }
         // ensure the json data is a string
         if (data['badge'] && !(typeof data['badge'] === 'string' || data['badge'] instanceof String)) {
             throw new Error("Expected the field `badge` to be a primitive type in the JSON string but got " + data['badge']);
@@ -187,6 +194,11 @@ class DtoUpdateAboutMeProjectReq {
 }
 
 
+
+/**
+ * @member {String} architecture
+ */
+DtoUpdateAboutMeProjectReq.prototype['architecture'] = undefined;
 
 /**
  * @member {String} badge
