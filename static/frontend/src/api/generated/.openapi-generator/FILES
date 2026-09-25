@@ -221,6 +221,3 @@ src/model/VoUserVO.js
 src/model/VoValidationErrorVO.js
 src/model/VoValidationResultVO.js
 src/model/VoWebsiteVO.js
-test/model/DtoAboutMeCoverMediaReq.spec.js
-test/model/DtoAboutMeMediaReq.spec.js
-test/model/VoAboutMeCoverMediaItem.spec.js

@@ -4081,6 +4081,9 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },
@@ -4718,6 +4721,9 @@ const docTemplate = `{
         "dto.UpdateAboutMeProjectReq": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },
@@ -5378,6 +5384,10 @@ const docTemplate = `{
         "vo.AboutMeProjectVO": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "description": "系统架构总览(Markdown,支持mermaid) / architecture overview",
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },

@@ -69,6 +69,8 @@ definitions:
     type: object
   dto.CreateAboutMeProjectReq:
     properties:
+      architecture:
+        type: string
       badge:
         type: string
       category:
@@ -527,6 +529,8 @@ definitions:
     type: object
   dto.UpdateAboutMeProjectReq:
     properties:
+      architecture:
+        type: string
       badge:
         type: string
       category:
@@ -986,6 +990,9 @@ definitions:
     type: object
   vo.AboutMeProjectVO:
     properties:
+      architecture:
+        description: 系统架构总览(Markdown,支持mermaid) / architecture overview
+        type: string
       badge:
         type: string
       category:

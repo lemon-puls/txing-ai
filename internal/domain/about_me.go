@@ -68,24 +68,27 @@ type AboutMeCoverMediaItem struct {
 // Featured project
 type AboutMeProject struct {
 	BaseModel
-	Name        string   `gorm:"type:varchar(100);not null;comment:项目名" json:"name"`
-	Desc        string   `gorm:"type:text;not null;comment:项目描述" json:"desc"`
-	IconKey     string   `gorm:"type:varchar(50);not null;comment:Element Plus 图标 key" json:"iconKey"`
-	Gradient    string   `gorm:"type:varchar(20);default:'1';comment:封面渐变编号 1-6" json:"gradient"`
-	Tags        []string `gorm:"type:json;serializer:json;comment:项目标签" json:"tags"`
-	Link        string   `gorm:"type:varchar(500);comment:跳转链接" json:"link"`
-	Badge       string   `gorm:"type:varchar(50);comment:角标文字" json:"badge"`
-	Category    string   `gorm:"type:varchar(20);default:'company';comment:项目类别 company/personal" json:"category"`
-	Highlights  []string `gorm:"type:json;serializer:json;comment:亮点列表" json:"highlights"`
-	Media       []AboutMeMediaItem       `gorm:"type:json;serializer:json;comment:媒体列表(图/视频,存key)" json:"media"`
+	Name       string             `gorm:"type:varchar(100);not null;comment:项目名" json:"name"`
+	Desc       string             `gorm:"type:text;not null;comment:项目描述" json:"desc"`
+	IconKey    string             `gorm:"type:varchar(50);not null;comment:Element Plus 图标 key" json:"iconKey"`
+	Gradient   string             `gorm:"type:varchar(20);default:'1';comment:封面渐变编号 1-6" json:"gradient"`
+	Tags       []string           `gorm:"type:json;serializer:json;comment:项目标签" json:"tags"`
+	Link       string             `gorm:"type:varchar(500);comment:跳转链接" json:"link"`
+	Badge      string             `gorm:"type:varchar(50);comment:角标文字" json:"badge"`
+	Category   string             `gorm:"type:varchar(20);default:'company';comment:项目类别 company/personal" json:"category"`
+	Highlights []string           `gorm:"type:json;serializer:json;comment:亮点列表" json:"highlights"`
+	Media      []AboutMeMediaItem `gorm:"type:json;serializer:json;comment:媒体列表(图/视频,存key)" json:"media"`
 	// 封面轮播：卡片左侧大图区，支持图片/视频混合多项轮播
 	// Cover carousel: card's left visual area, mixed image/video multi-item carousel
 	CoverMedia []AboutMeCoverMediaItem `gorm:"type:json;serializer:json;comment:封面轮播媒体(图/视频,存key)" json:"coverMedia"`
-	TechStack []struct {
+	TechStack  []struct {
 		Name string `json:"name"`
 		Icon string `json:"icon"`
 	} `gorm:"type:json;serializer:json;comment:技术栈" json:"techStack"`
-	Features []struct {
+	// 系统架构总览（Markdown，支持 mermaid 图表），前端在项目详情中独立展示
+	// System architecture overview (Markdown with mermaid support), shown standalone in project detail
+	Architecture string `gorm:"type:text;comment:系统架构(Markdown,支持mermaid)" json:"architecture"`
+	Features     []struct {
 		Icon   string `json:"icon"`
 		Title  string `json:"title"`
 		Desc   string `json:"desc"`
@@ -121,11 +124,11 @@ type AboutMeContact struct {
 // 关于我页面整体 VO（聚合只读视图）
 // About me aggregated read-only VO
 type AboutMeSnapshot struct {
-	Hero          AboutMeHero          `json:"hero"`
+	Hero          AboutMeHero           `json:"hero"`
 	FloatingIcons []AboutMeFloatingIcon `json:"floatingIcons"`
-	Reasons       []AboutMeReason      `json:"reasons"`
-	Skills        []AboutMeSkill       `json:"skills"`
-	Projects      []AboutMeProject     `json:"projects"`
-	Timeline      []AboutMeTimeline    `json:"timeline"`
-	Contact       AboutMeContact       `json:"contact"`
+	Reasons       []AboutMeReason       `json:"reasons"`
+	Skills        []AboutMeSkill        `json:"skills"`
+	Projects      []AboutMeProject      `json:"projects"`
+	Timeline      []AboutMeTimeline     `json:"timeline"`
+	Contact       AboutMeContact        `json:"contact"`
 }
