@@ -274,6 +274,8 @@ func TriggerIngest(ctx *gin.Context) {
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
+// @Param keyword query string false "关键词（标题/slug/摘要）"
+// @Param pageType query string false "页面类型 summary/entity/concept"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/admin/wiki/drafts/list [get]
 func ListDrafts(ctx *gin.Context) {
@@ -283,7 +285,7 @@ func ListDrafts(ctx *gin.Context) {
 		return
 	}
 	page, pageSize := pageParams(ctx)
-	list, total, err := svc.ListDrafts(ctx, page, pageSize)
+	list, total, err := svc.ListDrafts(ctx, page, pageSize, ctx.Query("keyword"), ctx.Query("pageType"))
 	if err != nil {
 		utils.ErrorWithMsg(ctx, "查询草稿列表失败", err)
 		return
@@ -402,6 +404,7 @@ func DeleteDraft(ctx *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param pageSize query int false "每页数量" default(20)
 // @Param keyword query string false "关键词（标题/slug/摘要）"
+// @Param pageType query string false "页面类型 summary/entity/concept"
 // @Success 200 {object} map[string]interface{}
 // @Router /api/admin/wiki/pages/list [get]
 func ListPublished(ctx *gin.Context) {
@@ -411,7 +414,7 @@ func ListPublished(ctx *gin.Context) {
 		return
 	}
 	page, pageSize := pageParams(ctx)
-	list, total, err := svc.ListPublished(ctx, page, pageSize, ctx.Query("keyword"))
+	list, total, err := svc.ListPublished(ctx, page, pageSize, ctx.Query("keyword"), ctx.Query("pageType"))
 	if err != nil {
 		utils.ErrorWithMsg(ctx, "查询页面列表失败", err)
 		return

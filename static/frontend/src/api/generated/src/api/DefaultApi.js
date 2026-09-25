@@ -2651,6 +2651,8 @@ export default class DefaultApi {
      * @param {Object} opts Optional parameters
      * @param {Number} [page = 1)] 页码
      * @param {Number} [pageSize = 20)] 每页数量
+     * @param {String} [keyword] 关键词（标题/slug/摘要）
+     * @param {String} [pageType] 页面类型 summary/entity/concept
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
      */
     apiAdminWikiDraftsListGetWithHttpInfo(opts) {
@@ -2661,7 +2663,9 @@ export default class DefaultApi {
       };
       let queryParams = {
         'page': opts['page'],
-        'pageSize': opts['pageSize']
+        'pageSize': opts['pageSize'],
+        'keyword': opts['keyword'],
+        'pageType': opts['pageType']
       };
       let headerParams = {
       };
@@ -2684,6 +2688,8 @@ export default class DefaultApi {
      * @param {Object} opts Optional parameters
      * @param {Number} opts.page 页码 (default to 1)
      * @param {Number} opts.pageSize 每页数量 (default to 20)
+     * @param {String} opts.keyword 关键词（标题/slug/摘要）
+     * @param {String} opts.pageType 页面类型 summary/entity/concept
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
      */
     apiAdminWikiDraftsListGet(opts) {
@@ -2883,6 +2889,7 @@ export default class DefaultApi {
      * @param {Number} [page = 1)] 页码
      * @param {Number} [pageSize = 20)] 每页数量
      * @param {String} [keyword] 关键词（标题/slug/摘要）
+     * @param {String} [pageType] 页面类型 summary/entity/concept
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link Object.<String, {String: Object}>} and HTTP response
      */
     apiAdminWikiPagesListGetWithHttpInfo(opts) {
@@ -2894,7 +2901,8 @@ export default class DefaultApi {
       let queryParams = {
         'page': opts['page'],
         'pageSize': opts['pageSize'],
-        'keyword': opts['keyword']
+        'keyword': opts['keyword'],
+        'pageType': opts['pageType']
       };
       let headerParams = {
       };
@@ -2918,6 +2926,7 @@ export default class DefaultApi {
      * @param {Number} opts.page 页码 (default to 1)
      * @param {Number} opts.pageSize 每页数量 (default to 20)
      * @param {String} opts.keyword 关键词（标题/slug/摘要）
+     * @param {String} opts.pageType 页面类型 summary/entity/concept
      * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link Object.<String, {String: Object}>}
      */
     apiAdminWikiPagesListGet(opts) {

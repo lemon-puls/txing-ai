@@ -338,13 +338,26 @@ func (s *Service) listPublishedBriefs(ctx context.Context) ([]wikiagent.PageBrie
 
 // --- 草稿审核流 ---
 
-// ListDrafts 分页列出草稿
-func (s *Service) ListDrafts(ctx context.Context, page, pageSize int) ([]domain.WikiPage, int64, error) {
+// applyPageFilters 列表通用过滤：keyword 模糊匹配标题/slug/摘要，pageType 精确匹配类型
+func applyPageFilters(q *gorm.DB, keyword, pageType string) *gorm.DB {
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		q = q.Where("title LIKE ? OR slug LIKE ? OR summary LIKE ?", like, like, like)
+	}
+	if pageType != "" {
+		q = q.Where("page_type = ?", pageType)
+	}
+	return q
+}
+
+// ListDrafts 分页列出草稿（keyword 匹配标题/slug/摘要，pageType 过滤页面类型）
+func (s *Service) ListDrafts(ctx context.Context, page, pageSize int, keyword, pageType string) ([]domain.WikiPage, int64, error) {
 	var (
 		list  []domain.WikiPage
 		total int64
 	)
 	q := s.db.WithContext(ctx).Model(&domain.WikiPage{}).Where("status = ?", domain.WikiPageStatusDraft)
+	q = applyPageFilters(q, keyword, pageType)
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -473,17 +486,14 @@ func rebuildLinks(tx *gorm.DB, page *domain.WikiPage) error {
 
 // --- 已发布页管理 ---
 
-// ListPublished 分页列出已发布页
-func (s *Service) ListPublished(ctx context.Context, page, pageSize int, keyword string) ([]domain.WikiPage, int64, error) {
+// ListPublished 分页列出已发布页（keyword 匹配标题/slug/摘要，pageType 过滤页面类型）
+func (s *Service) ListPublished(ctx context.Context, page, pageSize int, keyword, pageType string) ([]domain.WikiPage, int64, error) {
 	var (
 		list  []domain.WikiPage
 		total int64
 	)
 	q := s.db.WithContext(ctx).Model(&domain.WikiPage{}).Where("status = ?", domain.WikiPageStatusPublished)
-	if keyword != "" {
-		like := "%" + keyword + "%"
-		q = q.Where("title LIKE ? OR slug LIKE ? OR summary LIKE ?", like, like, like)
-	}
+	q = applyPageFilters(q, keyword, pageType)
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}

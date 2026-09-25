@@ -2056,6 +2056,18 @@ const docTemplate = `{
                         "description": "每页数量",
                         "name": "pageSize",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键词（标题/slug/摘要）",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "页面类型 summary/entity/concept",
+                        "name": "pageType",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2210,6 +2222,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "关键词（标题/slug/摘要）",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "页面类型 summary/entity/concept",
+                        "name": "pageType",
                         "in": "query"
                     }
                 ],

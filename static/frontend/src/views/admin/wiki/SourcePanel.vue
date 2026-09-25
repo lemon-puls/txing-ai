@@ -17,8 +17,8 @@
       </el-button>
     </div>
 
-    <!-- 源列表 -->
-    <el-table :data="list" v-loading="loading" class="rounded-table">
+    <!-- 源列表（row-key 让轮询时原地更新状态单元格，不整表重绘） -->
+    <el-table :data="list" row-key="id" v-loading="loading" class="rounded-table">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
       <el-table-column label="类型" width="90">
@@ -159,33 +159,36 @@ const statusMeta = (status) => ({
 
 const formatTime = (t) => (t ? String(t).replace('T', ' ').slice(0, 19) : '—')
 
-const fetchList = async () => {
-  loading.value = true
+const loadSources = async (silent) => {
+  // silent：轮询专用——不触发 loading 遮罩、不弹错误提示，状态列原地刷新，对使用者无感
+  if (!silent) loading.value = true
   try {
     const response = await wikiApi.listSources(page.value, pageSize)
     if (response.code === 0) {
       list.value = response.data.list || []
       total.value = response.data.total || 0
       schedulePoll()
-    } else {
+    } else if (!silent) {
       ElMessage.error(response.msg || '加载失败')
     }
   } catch (e) {
     console.error(e)
-    ElMessage.error('加载源列表失败')
+    if (!silent) ElMessage.error('加载源列表失败')
   } finally {
     loading.value = false
   }
 }
 
-// 有进行中的编译时轮询刷新（ingest 为后台异步任务）
+const fetchList = () => loadSources(false)
+
+// 有进行中的编译时轮询刷新（ingest 为后台异步任务）；静默执行避免表格闪烁
 const schedulePoll = () => {
   const busy = list.value.some(row => row.status === 'pending' || row.status === 'ingesting')
   if (busy && !pollTimer) {
     pollTimer = setTimeout(async () => {
       pollTimer = null
       if (list.value.some(row => row.status === 'pending' || row.status === 'ingesting')) {
-        await fetchList()
+        await loadSources(true)
       }
     }, 3000)
   }

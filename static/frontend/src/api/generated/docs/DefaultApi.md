@@ -2404,7 +2404,9 @@ import TxingAiApi from 'txing_ai_api';
 let apiInstance = new TxingAiApi.DefaultApi();
 let opts = {
   'page': 1, // Number | 页码
-  'pageSize': 20 // Number | 每页数量
+  'pageSize': 20, // Number | 每页数量
+  'keyword': "keyword_example", // String | 关键词（标题/slug/摘要）
+  'pageType': "pageType_example" // String | 页面类型 summary/entity/concept
 };
 apiInstance.apiAdminWikiDraftsListGet(opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -2421,6 +2423,8 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **page** | **Number**| 页码 | [optional] [default to 1]
  **pageSize** | **Number**| 每页数量 | [optional] [default to 20]
+ **keyword** | **String**| 关键词（标题/slug/摘要） | [optional] 
+ **pageType** | **String**| 页面类型 summary/entity/concept | [optional] 
 
 ### Return type
 
@@ -2617,7 +2621,8 @@ let apiInstance = new TxingAiApi.DefaultApi();
 let opts = {
   'page': 1, // Number | 页码
   'pageSize': 20, // Number | 每页数量
-  'keyword': "keyword_example" // String | 关键词（标题/slug/摘要）
+  'keyword': "keyword_example", // String | 关键词（标题/slug/摘要）
+  'pageType': "pageType_example" // String | 页面类型 summary/entity/concept
 };
 apiInstance.apiAdminWikiPagesListGet(opts).then((data) => {
   console.log('API called successfully. Returned data: ' + data);
@@ -2635,6 +2640,7 @@ Name | Type | Description  | Notes
  **page** | **Number**| 页码 | [optional] [default to 1]
  **pageSize** | **Number**| 每页数量 | [optional] [default to 20]
  **keyword** | **String**| 关键词（标题/slug/摘要） | [optional] 
+ **pageType** | **String**| 页面类型 summary/entity/concept | [optional] 
 
 ### Return type
 

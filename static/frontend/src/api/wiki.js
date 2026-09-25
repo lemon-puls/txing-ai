@@ -33,8 +33,10 @@ export default {
     call(`/api/admin/wiki/sources/${id}/ingest`, 'POST'),
 
   // --- 草稿审核 ---
-  listDrafts: (page = 1, pageSize = 50) =>
-    call('/api/admin/wiki/drafts/list', 'GET', { query: { page, pageSize } }),
+  listDrafts: (page = 1, pageSize = 50, keyword = '', pageType = '') =>
+    call('/api/admin/wiki/drafts/list', 'GET', {
+      query: { page, pageSize, keyword: keyword || undefined, pageType: pageType || undefined }
+    }),
   updateDraft: (id, data) =>
     call(`/api/admin/wiki/drafts/${id}`, 'PUT', { body: data }),
   confirmDraft: (id) =>
@@ -45,8 +47,10 @@ export default {
     call(`/api/admin/wiki/drafts/${id}`, 'DELETE'),
 
   // --- 已发布页管理 ---
-  listPublished: (page = 1, pageSize = 20, keyword = '') =>
-    call('/api/admin/wiki/pages/list', 'GET', { query: { page, pageSize, keyword: keyword || undefined } }),
+  listPublished: (page = 1, pageSize = 20, keyword = '', pageType = '') =>
+    call('/api/admin/wiki/pages/list', 'GET', {
+      query: { page, pageSize, keyword: keyword || undefined, pageType: pageType || undefined }
+    }),
   getPublished: (id) =>
     call(`/api/admin/wiki/pages/${id}`, 'GET'),
   updatePublished: (id, data) =>

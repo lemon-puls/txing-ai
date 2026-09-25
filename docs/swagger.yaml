@@ -3218,6 +3218,14 @@ paths:
         in: query
         name: pageSize
         type: integer
+      - description: 关键词（标题/slug/摘要）
+        in: query
+        name: keyword
+        type: string
+      - description: 页面类型 summary/entity/concept
+        in: query
+        name: pageType
+        type: string
       produces:
       - application/json
       responses:
@@ -3318,6 +3326,10 @@ paths:
       - description: 关键词（标题/slug/摘要）
         in: query
         name: keyword
+        type: string
+      - description: 页面类型 summary/entity/concept
+        in: query
+        name: pageType
         type: string
       produces:
       - application/json
