@@ -258,10 +258,40 @@
                 </div>
               </div>
 
+              <!-- 系统架构：独立区块（后台「系统架构」字段），默认展开，支持收起与放大查看 -->
+              <!-- System architecture: standalone section (admin field), open by default, collapsible & zoomable -->
+              <div
+                v-if="project.architecture"
+                class="arch-section"
+                :class="{ 'arch-open': openArch === project.id }"
+              >
+                <div class="arch-header" @click="toggleArch(project.id)">
+                  <h4>系统架构</h4>
+                  <span class="arch-tools">
+                    <el-button
+                      v-if="archChartReady[project.id]"
+                      text
+                      size="small"
+                      class="arch-zoom-btn"
+                      @click.stop="openArchViewer(project)"
+                    >
+                      <el-icon><FullScreen /></el-icon>
+                      <span>放大查看</span>
+                    </el-button>
+                    <el-icon class="arch-chevron"><ArrowDown /></el-icon>
+                  </span>
+                </div>
+                <div class="arch-body-wrap">
+                  <div class="arch-body-clip">
+                    <div :id="`arch-body-${project.id}`" class="arch-body" v-html="renderMarkdown(project.architecture)"></div>
+                  </div>
+                </div>
+              </div>
+
               <!-- 工作亮点（features 字段暂承载亮点内容，后续如需独立的核心功能/工作职责栏再说） -->
               <!-- Work highlights (the features field carries highlight content for now) -->
-              <!-- 点击展开详细设计：detail 按换行拆段，0fr→1fr 网格动画 -->
-              <!-- Click to expand design details: detail split by newlines, 0fr→1fr grid animation -->
+              <!-- 点击展开详细设计：detail 以 Markdown 渲染，0fr→1fr 网格动画 -->
+              <!-- Click to expand design details: detail rendered as Markdown, 0fr→1fr grid animation -->
               <div class="key-features" v-if="project.features">
                 <h4>工作亮点</h4>
                 <div class="features-grid">
@@ -279,11 +309,11 @@
                         <el-icon v-if="feature.detail" class="feature-chevron"><ArrowDown /></el-icon>
                       </div>
                       <p>{{ feature.desc }}</p>
-                      <div v-if="feature.detail" class="feature-detail-wrap">
+                      <div v-if="feature.detail" class="feature-detail-wrap" @click.stop>
                         <div class="feature-detail-clip">
-                          <div class="feature-detail">
-                            <p v-for="(para, pi) in splitDetail(feature.detail)" :key="pi">{{ para }}</p>
-                          </div>
+                          <!-- 详情支持 Markdown：后台编辑「详细内容」，前端渲染为富文本面板 -->
+                          <!-- Detail supports Markdown: authored in admin, rendered as a rich panel -->
+                          <div class="feature-detail" v-html="renderMarkdown(feature.detail)"></div>
                         </div>
                       </div>
                     </div>
@@ -361,11 +391,43 @@
       <img v-if="currentMedia?.type === 'image'" :src="currentMedia.url" style="width: 100%; border-radius: 12px;" />
       <video v-else-if="currentMedia?.type === 'video'" :src="currentMedia.url" controls autoplay style="width: 100%; border-radius: 12px;" />
     </el-dialog>
+
+    <!-- 架构图查看器：全屏遮罩，滚轮缩放 / 拖拽平移 / 双击适应屏幕 -->
+    <!-- Architecture viewer: fullscreen overlay, wheel zoom / drag pan / double-click to fit -->
+    <teleport to="body">
+      <transition name="viewer-fade">
+        <div v-if="archViewer.visible" class="arch-viewer" @wheel.prevent="onViewerWheel">
+          <div class="arch-viewer-toolbar">
+            <span class="arch-viewer-title">{{ archViewer.name }} · 系统架构</span>
+            <div class="arch-viewer-ops">
+              <button title="缩小" @click="zoomViewerStep(-1)"><el-icon><ZoomOut /></el-icon></button>
+              <span class="arch-viewer-scale">{{ Math.round(archViewer.scale * 100) }}%</span>
+              <button title="放大" @click="zoomViewerStep(1)"><el-icon><ZoomIn /></el-icon></button>
+              <button title="适应屏幕" @click="fitViewer"><el-icon><Aim /></el-icon></button>
+              <button title="关闭 (Esc)" @click="closeArchViewer"><el-icon><Close /></el-icon></button>
+            </div>
+          </div>
+          <div ref="viewerCanvasRef" class="arch-viewer-canvas">
+            <div
+              class="arch-viewer-stage"
+              :style="{ transform: `translate(${archViewer.x}px, ${archViewer.y}px) scale(${archViewer.scale})` }"
+              v-html="archViewer.svg"
+              @pointerdown="onViewerPointerDown"
+              @pointermove="onViewerPointerMove"
+              @pointerup="onViewerPointerUp"
+              @pointercancel="onViewerPointerUp"
+              @dblclick="fitViewer"
+            ></div>
+          </div>
+          <div class="arch-viewer-tip">滚轮缩放 · 拖拽平移 · 双击适应屏幕 · Esc 关闭</div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
 <script setup name="AboutPage">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import {
   ArrowRight,
   ArrowDown,
@@ -378,10 +440,15 @@ import {
   Platform,
   Document,
   ChatDotRound,
-  DataLine
+  DataLine,
+  FullScreen,
+  ZoomIn,
+  ZoomOut,
+  Aim
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
+import { marked } from 'marked'
 import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamera, Points, PointsMaterial, SRGBColorSpace, Scene, WebGLRenderer } from 'three'
 import CloudSky from '@/components/CloudSky.vue'
 import FlickerText from '@/components/FlickerText.vue'
@@ -484,6 +551,10 @@ onUnmounted(() => {
   if (observer.value) observer.value.disconnect()
   disposeStarfield()
   disposeField()
+  // 兜底恢复查看器对页面滚动的锁定
+  // Safety: release the viewer's page scroll lock on unmount
+  if (archViewer.visible) closeArchViewer()
+  document.body.style.overflow = ''
 })
 
 const observer = ref(null)
@@ -567,10 +638,11 @@ const countByCategory = (value) =>
 const switchFilter = (value) => {
   if (projectFilter.value === value) return
   projectFilter.value = value
-  // 切换类别时收起已展开的卡片与亮点详情
-  // Collapse expanded card & highlight detail on category switch
+  // 切换类别时收起已展开的卡片、亮点详情与系统架构
+  // Collapse expanded card, highlight detail & architecture on category switch
   expandedProject.value = null
   openFeature.value = null
+  openArch.value = null
 }
 
 // 成长轨迹（来自后台）
@@ -666,22 +738,132 @@ const expandedProject = ref(null)
 // 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
 // Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
 const openFeature = ref(null)
+// 系统架构区块展开状态（按项目 id 记录；项目详情展开时默认展开）
+// Architecture section expanded (keyed by project id; open by default with the project detail)
+const openArch = ref(null)
+// 各项目架构图是否已渲染成功（控制「放大查看」按钮显隐）
+// Whether each project's chart has rendered (controls the zoom button visibility)
+const archChartReady = reactive({})
 // 展开状态按项目 id 记录（类别过滤会改变列表，index 定位会错位）
 // Expansion keyed by project id (filtering reshuffles the list, index would mismatch)
-const toggleProject = (id) => {
-  expandedProject.value = expandedProject.value === id ? null : id
+const toggleProject = async (id) => {
+  const next = expandedProject.value === id ? null : id
+  expandedProject.value = next
   openFeature.value = null
+  openArch.value = next
+  // 展开后渲染架构区与详情中的 Mermaid 图表
+  // Render Mermaid diagrams in the architecture section & details after expanding
+  if (next) {
+    await nextTick()
+    await renderMermaidInDetail()
+  }
 }
-const toggleFeature = (title) => {
+const toggleArch = async (id) => {
+  openArch.value = openArch.value === id ? null : id
+  // 展开后渲染架构区中的 Mermaid 图表
+  // Render Mermaid diagrams in the architecture section after expanding
+  if (openArch.value) {
+    await nextTick()
+    await renderMermaidInDetail()
+  }
+}
+const toggleFeature = async (title) => {
   openFeature.value = openFeature.value === title ? null : title
+  // 展开后渲染详情中的 Mermaid 图表
+  // Render Mermaid diagrams in the detail after expanding
+  if (openFeature.value) {
+    await nextTick()
+    await renderMermaidInDetail()
+  }
 }
-// 详情按换行拆段渲染
-// Split the detail text into paragraphs by newlines
-const splitDetail = (detail) =>
-  String(detail || '')
-    .split('\n')
-    .map((s) => s.trim())
-    .filter(Boolean)
+
+// ===== Mermaid 图表渲染（详情 Markdown 中的 ```mermaid 代码块） =====
+// ===== Mermaid diagram rendering (```mermaid blocks inside detail markdown) =====
+// 包体积大，按需懒加载：仅当展开的详情包含图表时才拉取
+// The bundle is large; lazy-load it only when an opened detail contains a diagram
+let mermaidPromise = null
+const loadMermaid = () => {
+  if (!mermaidPromise) {
+    mermaidPromise = import('mermaid').then(({ default: mermaid }) => {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#eef4ff',
+          primaryBorderColor: '#6366f1',
+          primaryTextColor: '#1f2937',
+          lineColor: '#94a3b8',
+          fontSize: '13px',
+        },
+      })
+      return mermaid
+    })
+  }
+  return mermaidPromise
+}
+
+// 详情/架构区渲染后把 language-mermaid 代码块替换为 SVG 图表
+// Replace language-mermaid code blocks with SVG diagrams after detail/architecture renders
+let mermaidSeq = 0
+const renderMermaidInDetail = async () => {
+  const blocks = document.querySelectorAll(
+    '.feature-item.detail-open pre > code.language-mermaid, .arch-section.arch-open pre > code.language-mermaid'
+  )
+  if (!blocks.length) return
+  let mermaid
+  try {
+    mermaid = await loadMermaid()
+  } catch (err) {
+    console.error('[About] Mermaid 加载失败：', err)
+    return
+  }
+  for (const code of blocks) {
+    const pre = code.closest('pre')
+    // 幂等：已处理过的代码块跳过（v-html 未变化时 DOM 修改会保留）
+    // Idempotent: skip processed blocks (DOM edits persist while v-html stays unchanged)
+    if (!pre || pre.dataset.mermaidDone) continue
+    pre.dataset.mermaidDone = '1'
+    const holder = document.createElement('div')
+    holder.className = 'mermaid-chart'
+    try {
+      const { svg } = await mermaid.render(`about-mmd-${Date.now()}-${mermaidSeq++}`, code.textContent)
+      holder.innerHTML = svg
+    } catch (err) {
+      // 渲染失败回退为源码展示，不影响其余内容
+      // Fall back to showing the source on render failure
+      console.error('[About] Mermaid 渲染失败：', err)
+      holder.classList.add('mermaid-chart--fallback')
+      holder.textContent = code.textContent
+    }
+    pre.replaceWith(holder)
+  }
+  // 架构图渲染成功后点亮「放大查看」按钮
+  // Light up the zoom button once an architecture chart has rendered
+  document
+    .querySelectorAll('.arch-section .arch-body .mermaid-chart:not(.mermaid-chart--fallback)')
+    .forEach((el) => {
+      const host = el.closest('.arch-body')
+      if (host?.id?.startsWith('arch-body-')) {
+        archChartReady[host.id.slice('arch-body-'.length)] = true
+      }
+    })
+}
+// 详情按 Markdown 渲染为 HTML（内容仅后台管理员可编辑）
+// Render the detail text as Markdown HTML (content authored by admins only)
+// breaks:true 让单换行也断行，兼容历史纯文本内容；按调用传参，不污染全局 marked 配置
+// breaks:true keeps single newlines as line breaks (back-compat with legacy plain text);
+// pass options per call instead of setOptions to avoid leaking into other marked consumers
+const renderMarkdown = (detail) => {
+  const text = String(detail || '').trim()
+  if (!text) return ''
+  try {
+    return marked.parse(text, { breaks: true, gfm: true })
+  } catch (err) {
+    console.error('[About] Markdown 渲染失败：', err)
+    return ''
+  }
+}
 
 // Media preview
 const mediaPreviewVisible = ref(false)
@@ -689,6 +871,107 @@ const currentMedia = ref(null)
 const openMediaPreview = (media) => {
   currentMedia.value = media
   mediaPreviewVisible.value = true
+}
+
+// ===== 架构图放大查看器（全屏，滚轮缩放 / 拖拽平移 / 双击适应屏幕） =====
+// ===== Architecture chart viewer (fullscreen; wheel zoom / drag pan / double-click to fit) =====
+const viewerCanvasRef = ref(null)
+const archViewer = reactive({ visible: false, name: '', svg: '', scale: 1, x: 0, y: 0 })
+let viewerDrag = null
+
+const openArchViewer = (project) => {
+  // 从已渲染的架构区取 SVG；图表尚未就绪时不响应
+  // Grab the SVG from the rendered section; ignore clicks before the chart is ready
+  const host = document.getElementById(`arch-body-${project.id}`)
+  const svgEl = host?.querySelector('.mermaid-chart:not(.mermaid-chart--fallback) svg')
+  if (!svgEl) return
+  archViewer.name = project.name
+  archViewer.svg = svgEl.outerHTML
+  archViewer.visible = true
+  // 查看器打开期间锁定页面滚动
+  // Lock page scrolling while the viewer is open
+  document.body.style.overflow = 'hidden'
+  window.addEventListener('keydown', onViewerKeydown)
+  window.addEventListener('resize', fitViewer)
+  // 等挂载完成后修正 SVG 尺寸并适配屏幕
+  // Fix the SVG size then fit to the screen once mounted
+  nextTick(initViewerSvg)
+}
+const closeArchViewer = () => {
+  archViewer.visible = false
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onViewerKeydown)
+  window.removeEventListener('resize', fitViewer)
+}
+const onViewerKeydown = (e) => {
+  if (e.key === 'Escape') closeArchViewer()
+}
+
+// mermaid 输出的 svg 带固定 max-width 且宽度为 100%，放大查看前先改为显式像素尺寸
+// mermaid ships svg with width 100% + fixed max-width; switch to explicit px before zooming
+const initViewerSvg = () => {
+  const svg = document.querySelector('.arch-viewer-stage svg')
+  if (!svg) return
+  const vb = svg.viewBox && svg.viewBox.baseVal
+  if (vb && vb.width && vb.height) {
+    svg.setAttribute('width', vb.width)
+    svg.setAttribute('height', vb.height)
+  }
+  svg.style.maxWidth = 'none'
+  fitViewer()
+}
+
+// 适应屏幕：整体缩放到画布内并居中
+// Fit to screen: scale into the canvas and center
+const fitViewer = () => {
+  const canvas = viewerCanvasRef.value
+  if (!canvas) return
+  const stage = canvas.querySelector('.arch-viewer-stage')
+  if (!stage) return
+  const w = stage.offsetWidth || 1
+  const h = stage.offsetHeight || 1
+  const scale = Math.min((canvas.clientWidth - 48) / w, (canvas.clientHeight - 48) / h, 1)
+  archViewer.scale = scale
+  archViewer.x = (canvas.clientWidth - w * scale) / 2
+  archViewer.y = (canvas.clientHeight - h * scale) / 2
+}
+
+// 以 (cx, cy) 为锚点缩放，保持光标下的内容不动
+// Zoom around (cx, cy), keeping the content under the cursor still
+const zoomViewerAt = (factor, cx, cy) => {
+  const canvas = viewerCanvasRef.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+  const px = cx - rect.left
+  const py = cy - rect.top
+  const next = Math.min(4, Math.max(0.3, archViewer.scale * factor))
+  const k = next / archViewer.scale
+  archViewer.x = px - (px - archViewer.x) * k
+  archViewer.y = py - (py - archViewer.y) * k
+  archViewer.scale = next
+}
+const zoomViewerStep = (dir) => {
+  const canvas = viewerCanvasRef.value
+  if (!canvas) return
+  const rect = canvas.getBoundingClientRect()
+  zoomViewerAt(dir > 0 ? 1.2 : 1 / 1.2, rect.left + canvas.clientWidth / 2, rect.top + canvas.clientHeight / 2)
+}
+const onViewerWheel = (e) => zoomViewerAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY)
+
+// 拖拽平移（Pointer Capture 保证移出画布也能继续跟踪）
+// Drag to pan (pointer capture keeps tracking outside the canvas)
+const onViewerPointerDown = (e) => {
+  if (e.button !== 0) return
+  viewerDrag = { px: e.clientX, py: e.clientY, ox: archViewer.x, oy: archViewer.y }
+  e.currentTarget.setPointerCapture(e.pointerId)
+}
+const onViewerPointerMove = (e) => {
+  if (!viewerDrag) return
+  archViewer.x = viewerDrag.ox + (e.clientX - viewerDrag.px)
+  archViewer.y = viewerDrag.oy + (e.clientY - viewerDrag.py)
+}
+const onViewerPointerUp = () => {
+  viewerDrag = null
 }
 
 // ===== 3D 星云星空背景（Three.js） =====
@@ -971,6 +1254,170 @@ const scrollToContact = () => {
 </script>
 
 <style scoped lang="scss">
+// Markdown 面板排版（工作亮点详情与系统架构区块共用；v-html 节点需 :deep 穿透）
+// Markdown panel typography shared by feature details & the architecture section (v-html nodes need :deep)
+// 面板底色/边距等外观由使用处自行定义
+// Panel chrome (background/padding) stays at the usage site
+@mixin markdown-panel {
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--el-text-color-regular);
+  overflow-wrap: break-word;
+
+  // 首尾元素贴边，避免面板上下出现多余空隙
+  // Flush first/last children to avoid extra gaps inside the panel
+  > :deep(*:first-child) {
+    margin-top: 0;
+  }
+
+  > :deep(*:last-child) {
+    margin-bottom: 0;
+  }
+
+  :deep(p) {
+    margin: 0 0 10px;
+  }
+
+  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
+    margin: 18px 0 8px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--el-text-color-primary);
+  }
+
+  :deep(h1) { font-size: 17px; }
+  :deep(h2) { font-size: 16px; }
+  :deep(h3) { font-size: 15px; }
+  :deep(h4), :deep(h5), :deep(h6) { font-size: 14px; }
+
+  :deep(ul), :deep(ol) {
+    margin: 0 0 10px;
+    padding-left: 20px;
+
+    li {
+      margin: 4px 0;
+    }
+
+    li::marker {
+      color: var(--el-color-primary);
+    }
+  }
+
+  :deep(a) {
+    color: var(--el-color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  :deep(strong) {
+    color: var(--el-text-color-primary);
+    font-weight: 700;
+  }
+
+  :deep(code) {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: var(--el-fill-color);
+    color: var(--el-color-primary);
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12.5px;
+  }
+
+  :deep(pre) {
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    // 代码块固定深色底，明暗主题下都有足够对比度
+    // Fixed dark code background keeps contrast in both themes
+    background: #0d1117;
+    overflow-x: auto;
+
+    code {
+      padding: 0;
+      background: transparent;
+      color: #e6edf3;
+    }
+  }
+
+  // Mermaid 图表容器：白底卡片居中展示，宽图横向滚动
+  // Mermaid chart container: centered white card, wide diagrams scroll horizontally
+  :deep(.mermaid-chart) {
+    margin: 0 0 10px;
+    padding: 12px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    text-align: center;
+    overflow-x: auto;
+
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    // 渲染失败回退：等宽展示源码
+    // Fallback on render failure: monospace source view
+    &.mermaid-chart--fallback {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      white-space: pre-wrap;
+      text-align: left;
+    }
+  }
+
+  :deep(blockquote) {
+    margin: 0 0 10px;
+    padding: 8px 14px;
+    border-left: 3px solid var(--el-color-primary-light-5);
+    background: var(--el-fill-color);
+    border-radius: 0 8px 8px 0;
+    color: var(--el-text-color-secondary);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  // 块级表格 + 横向滚动，避免宽表撑破移动端卡片
+  // Block table with horizontal scroll keeps wide tables inside the card
+  :deep(table) {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+    border-collapse: collapse;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+
+  :deep(th), :deep(td) {
+    border: 1px solid var(--el-border-color-lighter);
+    padding: 6px 10px;
+    text-align: left;
+  }
+
+  :deep(th) {
+    background: var(--el-fill-color);
+    font-weight: 600;
+  }
+
+  :deep(img) {
+    display: block;
+    max-width: 100%;
+    margin: 8px 0;
+    border-radius: 8px;
+  }
+
+  :deep(hr) {
+    margin: 14px 0;
+    border: none;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+}
+
 .about-container {
   position: relative;
   width: 100%;
@@ -2131,6 +2578,81 @@ const scrollToContact = () => {
       }
     }
 
+    // 系统架构区块：标题在卡片外（与技术栈/工作亮点一致），头部点击收展，默认展开
+    // Architecture section: title outside the card (consistent with tech stack / features), header toggles collapse, open by default
+    .arch-section {
+      margin-bottom: 24px;
+
+      .arch-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        user-select: none;
+
+        h4 {
+          font-size: 16px;
+          font-weight: 700;
+          margin: 0;
+          color: var(--el-text-color-primary);
+        }
+
+        .arch-tools {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .arch-zoom-btn {
+          font-size: 13px;
+          color: var(--el-color-primary);
+
+          .el-icon {
+            margin-right: 4px;
+          }
+        }
+
+        .arch-chevron {
+          color: var(--el-color-primary);
+          transition: transform 0.3s;
+        }
+      }
+
+      &.arch-open .arch-chevron {
+        transform: rotate(180deg);
+      }
+
+      // 与亮点详情一致的 0fr→1fr 收展动画
+      // Same 0fr→1fr expand animation as feature details
+      .arch-body-wrap {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .arch-body-clip {
+          overflow: hidden;
+        }
+      }
+
+      &.arch-open .arch-body-wrap {
+        grid-template-rows: 1fr;
+      }
+
+      // 架构内容卡片：与技术栈/亮点条目同为白卡，Markdown 排版共用 markdown-panel
+      // Architecture content card: white card like tech/feature items; Markdown typography via markdown-panel
+      .arch-body {
+        padding: 16px 18px;
+        background: var(--el-bg-color);
+        border: 1px solid var(--el-border-color-lighter);
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+        @include markdown-panel;
+      }
+    }
+
     .tech-items {
       display: flex;
       flex-wrap: wrap;
@@ -2242,23 +2764,16 @@ const scrollToContact = () => {
             overflow: hidden;
           }
 
+          // 详情面板：Markdown 渲染容器（v-html 节点不在模板中，需 :deep 穿透）
+          // Detail panel: Markdown container (v-html nodes are outside the template, :deep required)
           .feature-detail {
             margin-top: 12px;
-            padding: 12px 14px;
-            border-left: 2px solid var(--el-color-primary-light-5);
+            padding: 16px 18px;
             background: var(--el-fill-color-light);
-            border-radius: 0 10px 10px 0;
+            border: 1px solid var(--el-border-color-lighter);
+            border-radius: 12px;
 
-            p {
-              font-size: 13px;
-              color: var(--el-text-color-regular);
-              line-height: 1.7;
-              margin: 0;
-
-              & + p {
-                margin-top: 8px;
-              }
-            }
+            @include markdown-panel;
           }
         }
 
@@ -2643,5 +3158,105 @@ const scrollToContact = () => {
       }
     }
   }
+}
+
+// 架构图查看器：teleport 到 body 的全屏遮罩（深色底 + 白色画布卡片）
+// Architecture viewer: fullscreen overlay teleported to body (dark base + white stage card)
+.arch-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.92);
+
+  .arch-viewer-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 20px;
+    color: #e2e8f0;
+
+    .arch-viewer-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .arch-viewer-ops {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      button {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(226, 232, 240, 0.25);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.18);
+        }
+      }
+
+      .arch-viewer-scale {
+        min-width: 44px;
+        text-align: center;
+        font-size: 13px;
+      }
+    }
+  }
+
+  .arch-viewer-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+
+    .arch-viewer-stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: max-content;
+      padding: 16px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+      cursor: grab;
+      user-select: none;
+      transform-origin: 0 0;
+
+      &:active {
+        cursor: grabbing;
+      }
+
+      :deep(svg) {
+        display: block;
+      }
+    }
+  }
+
+  .arch-viewer-tip {
+    padding: 10px 0 14px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(226, 232, 240, 0.55);
+  }
+}
+
+.viewer-fade-enter-active,
+.viewer-fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.viewer-fade-enter-from,
+.viewer-fade-leave-to {
+  opacity: 0;
 }
 </style>

@@ -4995,6 +4995,9 @@
                 "name"
             ],
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },
@@ -5710,6 +5713,9 @@
         "dto.UpdateAboutMeProjectReq": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },
@@ -6463,6 +6469,10 @@
         "vo.AboutMeProjectVO": {
             "type": "object",
             "properties": {
+                "architecture": {
+                    "description": "系统架构总览(Markdown,支持mermaid) / architecture overview",
+                    "type": "string"
+                },
                 "badge": {
                     "type": "string"
                 },

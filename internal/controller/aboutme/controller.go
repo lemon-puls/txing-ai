@@ -555,16 +555,17 @@ func CreateProject(ctx *gin.Context) {
 		req.Gradient = "1"
 	}
 	item := domain.AboutMeProject{
-		Name:       req.Name,
-		Desc:       req.Desc,
-		IconKey:    req.IconKey,
-		Gradient:   req.Gradient,
-		Tags:       req.Tags,
-		Link:       req.Link,
-		Badge:      req.Badge,
-		Highlights: req.Highlights,
-		Category:   req.Category,
-		Sort:       req.Sort,
+		Name:         req.Name,
+		Desc:         req.Desc,
+		IconKey:      req.IconKey,
+		Gradient:     req.Gradient,
+		Tags:         req.Tags,
+		Link:         req.Link,
+		Badge:        req.Badge,
+		Highlights:   req.Highlights,
+		Category:     req.Category,
+		Architecture: req.Architecture,
+		Sort:         req.Sort,
 	}
 	if err := db.Create(&item).Error; err != nil {
 		utils.ErrorWithMsg(ctx, "创建项目失败", err)
@@ -648,6 +649,9 @@ func UpdateProject(ctx *gin.Context) {
 	if req.TechStack != nil {
 		item.TechStack = req.TechStack
 	}
+	// 架构总览允许清空，故不做空值跳过
+	// Architecture can be cleared, so assign unconditionally
+	item.Architecture = req.Architecture
 	if req.Features != nil {
 		item.Features = req.Features
 	}
