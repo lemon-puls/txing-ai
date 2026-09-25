@@ -27,11 +27,11 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// TestValidateToolCallArgs 验证非法工具调用参数会被标记并回喂可操作指引：
+// TestSplitToolCalls 验证工具调用按参数合法性分组，非法参数回喂可操作指引：
 // - 空参数不再静默跳过
 // - 大段正文导致 JSON 被截断时，PDF 工具的错误提示引导改用 filePath（落盘后转换）
 // - 其他工具提示重新生成合法 JSON
-func TestValidateToolCallArgs(t *testing.T) {
+func TestSplitToolCalls(t *testing.T) {
 	tests := []struct {
 		name        string
 		toolCalls   []schema.ToolCall
@@ -81,12 +81,19 @@ func TestValidateToolCallArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msgs, invalid := validateToolCallArgs(tt.toolCalls)
+			valid, msgs := splitToolCalls(tt.toolCalls)
+			invalid := len(msgs) > 0
 			if invalid != tt.wantInvalid {
 				t.Fatalf("expected invalid=%v, got %v", tt.wantInvalid, invalid)
 			}
 			if tt.wantInvalid && len(msgs) == 0 {
 				t.Fatal("expected error messages")
+			}
+			if !tt.wantInvalid && len(valid) != len(tt.toolCalls) {
+				t.Fatalf("expected all %d calls valid, got %d", len(tt.toolCalls), len(valid))
+			}
+			if tt.wantInvalid && len(valid) != 0 {
+				t.Fatalf("expected no valid calls, got %d", len(valid))
 			}
 			if tt.wantHint != "" {
 				var joined strings.Builder
@@ -128,5 +135,54 @@ func TestExecuteWithRetryBailsOnCanceledCtx(t *testing.T) {
 	}
 	if calls != 1 {
 		t.Fatalf("expected exactly 1 call (bail on deadline), got %d", calls)
+	}
+}
+
+// TestSplitToolCallsMixed 验证同一轮里合法与非法参数混合时的分组：
+// 合法子集照常执行，非法子集逐个回喂错误（每个 tool_call_id 一条消息，
+// 满足 provider 对 assistant.tool_calls 的完整 tool 响应校验）
+func TestSplitToolCallsMixed(t *testing.T) {
+	toolCalls := []schema.ToolCall{
+		{ID: "a1", Function: schema.FunctionCall{Name: "t_valid", Arguments: `{"x":1}`}},
+		{ID: "a2", Function: schema.FunctionCall{Name: "t_truncated", Arguments: `{"q": `}},
+		{ID: "a3", Function: schema.FunctionCall{Name: "t_valid2", Arguments: `{"y":"ok"}`}},
+		{ID: "a4", Function: schema.FunctionCall{Name: "t_empty", Arguments: ""}},
+	}
+	valid, errMsgs := splitToolCalls(toolCalls)
+	if len(valid) != 2 {
+		t.Fatalf("expected 2 valid calls, got %d", len(valid))
+	}
+	if valid[0].ID != "a1" || valid[1].ID != "a3" {
+		t.Fatalf("unexpected valid ids: %s, %s", valid[0].ID, valid[1].ID)
+	}
+	if len(errMsgs) != 2 {
+		t.Fatalf("expected 2 error messages, got %d", len(errMsgs))
+	}
+	ids := map[string]bool{}
+	for _, m := range errMsgs {
+		if m.Role != schema.Tool || m.ToolCallID == "" || m.Content == "" {
+			t.Fatalf("bad error message: %+v", m)
+		}
+		ids[m.ToolCallID] = true
+	}
+	if !ids["a2"] || !ids["a4"] {
+		t.Fatalf("expected error messages for a2/a4, got %v", ids)
+	}
+}
+
+// TestToolErrorMessages 验证失败消息逐个 tool_call_id 生成（不能只喂首条）
+func TestToolErrorMessages(t *testing.T) {
+	toolCalls := []schema.ToolCall{
+		{ID: "b1", Function: schema.FunctionCall{Name: "t1"}},
+		{ID: "b2", Function: schema.FunctionCall{Name: "t2"}},
+	}
+	msgs := toolErrorMessages("工具执行失败: boom", toolCalls)
+	if len(msgs) != len(toolCalls) {
+		t.Fatalf("expected %d messages, got %d", len(toolCalls), len(msgs))
+	}
+	for i, m := range msgs {
+		if m.ToolCallID != toolCalls[i].ID || m.ToolName != toolCalls[i].Function.Name {
+			t.Fatalf("message %d mismatches call: %+v", i, m)
+		}
 	}
 }

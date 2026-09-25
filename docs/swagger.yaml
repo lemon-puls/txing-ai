@@ -57,6 +57,72 @@ definitions:
         description: running/completed/failed/interrupted
         type: string
     type: object
+  domain.WikiPage:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+      content:
+        type: string
+      createTime:
+        type: string
+      id:
+        type: integer
+      pageType:
+        type: string
+      slug:
+        type: string
+      sourceRefs:
+        items:
+          $ref: '#/definitions/domain.WikiSourceRef'
+        type: array
+      status:
+        type: string
+      summary:
+        type: string
+      targetPageId:
+        description: 草稿更新已有页时指向目标页（同一 slug 的 draft 与 published 可并存）
+        type: integer
+      title:
+        type: string
+      updateTime:
+        type: string
+      version:
+        type: integer
+    type: object
+  domain.WikiSource:
+    properties:
+      contentHash:
+        type: string
+      cosKey:
+        type: string
+      createTime:
+        type: string
+      errorMsg:
+        type: string
+      id:
+        type: integer
+      ingestedAt:
+        type: string
+      sourceType:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updateTime:
+        type: string
+      url:
+        type: string
+    type: object
+  domain.WikiSourceRef:
+    properties:
+      note:
+        type: string
+      sourceId:
+        type: integer
+    type: object
   dto.AboutMeCoverMediaReq:
     properties:
       key:
@@ -970,6 +1036,74 @@ definitions:
       useLLM:
         type: boolean
     type: object
+  dto.WikiAskReq:
+    properties:
+      history:
+        description: '近期对话历史（role: user/assistant）'
+        items:
+          $ref: '#/definitions/wikiagent.QAHistoryItem'
+        type: array
+      question:
+        description: 本次提问
+        example: 他最熟悉的技术栈是什么？
+        maxLength: 4000
+        type: string
+      sessionId:
+        description: 前端生成的会话标识（用于服务端问答留存聚合，D10）
+        example: b7c8d9e0-...
+        maxLength: 64
+        type: string
+    required:
+    - question
+    - sessionId
+    type: object
+  dto.WikiMDSourceReq:
+    properties:
+      content:
+        example: '# 简历正文...'
+        maxLength: 1000000
+        type: string
+      title:
+        example: 个人简历 2026
+        maxLength: 255
+        type: string
+    required:
+    - content
+    - title
+    type: object
+  dto.WikiURLSourceReq:
+    properties:
+      title:
+        example: 我的技术博客
+        maxLength: 255
+        type: string
+      url:
+        example: https://blog.example.com/about
+        maxLength: 1024
+        type: string
+    required:
+    - title
+    - url
+    type: object
+  dto.WikiUpdateDraftReq:
+    properties:
+      aliases:
+        items:
+          type: string
+        type: array
+      content:
+        maxLength: 200000
+        type: string
+      pageType:
+        maxLength: 32
+        type: string
+      summary:
+        maxLength: 512
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    type: object
   file.UploadResponse:
     properties:
       fileName:
@@ -1747,6 +1881,14 @@ definitions:
       url:
         description: 网站地址
         example: https://github.com
+        type: string
+    type: object
+  wikiagent.QAHistoryItem:
+    properties:
+      content:
+        type: string
+      role:
+        description: user / assistant
         type: string
     type: object
 host: localhost:8080
@@ -2989,6 +3131,310 @@ paths:
       summary: 获取网站列表
       tags:
       - 网站管理
+  /api/admin/wiki/drafts/{id}:
+    delete:
+      parameters:
+      - description: 草稿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 丢弃草稿
+      tags:
+      - 知识库管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 草稿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新字段（只更新传入项）
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WikiUpdateDraftReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 编辑草稿（可改标题/类型/别名/摘要/正文）
+      tags:
+      - 知识库管理
+  /api/admin/wiki/drafts/{id}/confirm:
+    post:
+      parameters:
+      - description: 草稿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 确认草稿为已发布（同 slug 已有发布页则合并更新）
+      tags:
+      - 知识库管理
+  /api/admin/wiki/drafts/confirm_all:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 一键确认全部草稿
+      tags:
+      - 知识库管理
+  /api/admin/wiki/drafts/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分页列出待审核草稿
+      tags:
+      - 知识库管理
+  /api/admin/wiki/export:
+    get:
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: zip 压缩包
+          schema:
+            type: file
+      summary: 导出全部已发布页为 md 压缩包（含 index.md）
+      tags:
+      - 知识库管理
+  /api/admin/wiki/pages/{id}:
+    get:
+      parameters:
+      - description: 页面ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.WikiPage'
+      summary: 获取单个已发布页
+      tags:
+      - 知识库管理
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 页面ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新字段（只更新传入项）
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WikiUpdateDraftReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 编辑已发布页（version+1 并重建出入链与 index）
+      tags:
+      - 知识库管理
+  /api/admin/wiki/pages/{id}/offline:
+    post:
+      parameters:
+      - description: 页面ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 下线已发布页
+      tags:
+      - 知识库管理
+  /api/admin/wiki/pages/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 关键词（标题/slug/摘要）
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分页列出已发布页面
+      tags:
+      - 知识库管理
+  /api/admin/wiki/sources/{id}:
+    delete:
+      parameters:
+      - description: 源ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 删除知识库源
+      tags:
+      - 知识库管理
+  /api/admin/wiki/sources/{id}/ingest:
+    post:
+      description: 异步执行：抓取/拉取正文 → agent 编译为草稿；通过源列表的 status 轮询进度
+      parameters:
+      - description: 源ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 触发源的 ingest 编译
+      tags:
+      - 知识库管理
+  /api/admin/wiki/sources/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分页列出知识库源
+      tags:
+      - 知识库管理
+  /api/admin/wiki/sources/md:
+    post:
+      consumes:
+      - application/json
+      description: 上传 markdown 原文创建 Raw 源（服务端转存 COS，只存 key）
+      parameters:
+      - description: 标题与正文
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WikiMDSourceReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.WikiSource'
+      summary: 新建 markdown 源
+      tags:
+      - 知识库管理
+  /api/admin/wiki/sources/url:
+    post:
+      consumes:
+      - application/json
+      description: 登记网页地址，ingest 时由服务端抓取正文
+      parameters:
+      - description: 标题与地址
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WikiURLSourceReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.WikiSource'
+      summary: 新建网页 URL 源
+      tags:
+      - 知识库管理
   /api/agent/exec:
     post:
       consumes:
@@ -3802,6 +4248,28 @@ paths:
       summary: 用户端获取网站列表
       tags:
       - 网站
+  /api/wiki/ask:
+    post:
+      consumes:
+      - application/json
+      description: 面试官/访客匿名向知识库 AI 提问；SSE 流式返回内容与工具调用进度。多轮上下文由前端携带；IP 限流 + 全站日配额；问答会被记录（前端须展示"对话将被记录"声明）
+      parameters:
+      - description: 会话标识与提问
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/dto.WikiAskReq'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: SSE stream
+          schema:
+            type: string
+      summary: 知识库问答（公开）
+      tags:
+      - 知识库
   /api/workflow:
     get:
       consumes:

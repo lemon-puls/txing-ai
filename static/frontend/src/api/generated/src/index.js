@@ -41,6 +41,9 @@ import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost2
 import DomainOpsChatMessage from './model/DomainOpsChatMessage';
 import DomainOpsChatProposal from './model/DomainOpsChatProposal';
 import DomainOpsChatToolCall from './model/DomainOpsChatToolCall';
+import DomainWikiPage from './model/DomainWikiPage';
+import DomainWikiSource from './model/DomainWikiSource';
+import DomainWikiSourceRef from './model/DomainWikiSourceRef';
 import DtoAboutMeCoverMediaReq from './model/DtoAboutMeCoverMediaReq';
 import DtoAboutMeMediaReq from './model/DtoAboutMeMediaReq';
 import DtoAgentExecReq from './model/DtoAgentExecReq';
@@ -90,6 +93,10 @@ import DtoUpdateProfileReq from './model/DtoUpdateProfileReq';
 import DtoUpdateWebsiteReq from './model/DtoUpdateWebsiteReq';
 import DtoUpdateWorkflowStatusReq from './model/DtoUpdateWorkflowStatusReq';
 import DtoValidateWorkflowReq from './model/DtoValidateWorkflowReq';
+import DtoWikiAskReq from './model/DtoWikiAskReq';
+import DtoWikiMDSourceReq from './model/DtoWikiMDSourceReq';
+import DtoWikiURLSourceReq from './model/DtoWikiURLSourceReq';
+import DtoWikiUpdateDraftReq from './model/DtoWikiUpdateDraftReq';
 import FileUploadResponse from './model/FileUploadResponse';
 import GlobalModelMapping from './model/GlobalModelMapping';
 import GlobalModelMappingCondition from './model/GlobalModelMappingCondition';
@@ -127,6 +134,7 @@ import VoUserVO from './model/VoUserVO';
 import VoValidationErrorVO from './model/VoValidationErrorVO';
 import VoValidationResultVO from './model/VoValidationResultVO';
 import VoWebsiteVO from './model/VoWebsiteVO';
+import WikiagentQAHistoryItem from './model/WikiagentQAHistoryItem';
 import DefaultApi from './api/DefaultApi';
 import AgentApi from './api/AgentApi';
 
@@ -336,6 +344,24 @@ export {
      * @property {module:model/DomainOpsChatToolCall}
      */
     DomainOpsChatToolCall,
+
+    /**
+     * The DomainWikiPage model constructor.
+     * @property {module:model/DomainWikiPage}
+     */
+    DomainWikiPage,
+
+    /**
+     * The DomainWikiSource model constructor.
+     * @property {module:model/DomainWikiSource}
+     */
+    DomainWikiSource,
+
+    /**
+     * The DomainWikiSourceRef model constructor.
+     * @property {module:model/DomainWikiSourceRef}
+     */
+    DomainWikiSourceRef,
 
     /**
      * The DtoAboutMeCoverMediaReq model constructor.
@@ -632,6 +658,30 @@ export {
     DtoValidateWorkflowReq,
 
     /**
+     * The DtoWikiAskReq model constructor.
+     * @property {module:model/DtoWikiAskReq}
+     */
+    DtoWikiAskReq,
+
+    /**
+     * The DtoWikiMDSourceReq model constructor.
+     * @property {module:model/DtoWikiMDSourceReq}
+     */
+    DtoWikiMDSourceReq,
+
+    /**
+     * The DtoWikiURLSourceReq model constructor.
+     * @property {module:model/DtoWikiURLSourceReq}
+     */
+    DtoWikiURLSourceReq,
+
+    /**
+     * The DtoWikiUpdateDraftReq model constructor.
+     * @property {module:model/DtoWikiUpdateDraftReq}
+     */
+    DtoWikiUpdateDraftReq,
+
+    /**
      * The FileUploadResponse model constructor.
      * @property {module:model/FileUploadResponse}
      */
@@ -852,6 +902,12 @@ export {
      * @property {module:model/VoWebsiteVO}
      */
     VoWebsiteVO,
+
+    /**
+     * The WikiagentQAHistoryItem model constructor.
+     * @property {module:model/WikiagentQAHistoryItem}
+     */
+    WikiagentQAHistoryItem,
 
     /**
     * The DefaultApi service constructor.

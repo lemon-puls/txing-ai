@@ -79,3 +79,20 @@ ops_agent:
   max_tool_rounds: 8
   # GitHub API Token（可选），配置后可提升 GitHub 接口限额
   github_token: ""
+
+# LLM Wiki 知识库（docs/llmwiki_design.md §9）
+wiki:
+  # 总开关：false 时公开问答端点直接下线
+  enabled: false
+  # agent 引擎实现（D14 插拔）：builtin | hermes | ...（当前仅 builtin）
+  agent_impl: "builtin"
+  # 问答用模型名，需在后台「渠道管理」中已配置；留空回退默认
+  qa_model: "deepseek-v3"
+  # ingest 编译用模型名，留空回退 qa_model
+  ingest_model: ""
+  # 最大工具调用轮次（可选，默认 8）
+  max_tool_rounds: 8
+  # 单 IP 每小时提问上限（可选，默认 10）
+  rate_limit_per_ip_per_hour: 10
+  # 全站每日提问总量上限（可选，默认 200）
+  daily_quota: 200

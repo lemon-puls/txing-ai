@@ -2013,6 +2013,472 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/wiki/drafts/confirm_all": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "一键确认全部草稿",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/drafts/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "分页列出待审核草稿",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/drafts/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "编辑草稿（可改标题/类型/别名/摘要/正文）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "草稿ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新字段（只更新传入项）",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WikiUpdateDraftReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "丢弃草稿",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "草稿ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/drafts/{id}/confirm": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "确认草稿为已发布（同 slug 已有发布页则合并更新）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "草稿ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/export": {
+            "get": {
+                "produces": [
+                    "application/zip"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "导出全部已发布页为 md 压缩包（含 index.md）",
+                "responses": {
+                    "200": {
+                        "description": "zip 压缩包",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/pages/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "分页列出已发布页面",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键词（标题/slug/摘要）",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/pages/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "获取单个已发布页",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页面ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.WikiPage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "编辑已发布页（version+1 并重建出入链与 index）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页面ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新字段（只更新传入项）",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WikiUpdateDraftReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/pages/{id}/offline": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "下线已发布页",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页面ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/sources/list": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "分页列出知识库源",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/sources/md": {
+            "post": {
+                "description": "上传 markdown 原文创建 Raw 源（服务端转存 COS，只存 key）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "新建 markdown 源",
+                "parameters": [
+                    {
+                        "description": "标题与正文",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WikiMDSourceReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.WikiSource"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/sources/url": {
+            "post": {
+                "description": "登记网页地址，ingest 时由服务端抓取正文",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "新建网页 URL 源",
+                "parameters": [
+                    {
+                        "description": "标题与地址",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WikiURLSourceReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.WikiSource"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/sources/{id}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "删除知识库源",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "源ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/wiki/sources/{id}/ingest": {
+            "post": {
+                "description": "异步执行：抓取/拉取正文 → agent 编译为草稿；通过源列表的 status 轮询进度",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "知识库管理"
+                ],
+                "summary": "触发源的 ingest 编译",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "源ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/agent/exec": {
             "post": {
                 "description": "调用智能体",
@@ -3288,6 +3754,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/wiki/ask": {
+            "post": {
+                "description": "面试官/访客匿名向知识库 AI 提问；SSE 流式返回内容与工具调用进度。多轮上下文由前端携带；IP 限流 + 全站日配额；问答会被记录（前端须展示\"对话将被记录\"声明）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "知识库"
+                ],
+                "summary": "知识库问答（公开）",
+                "parameters": [
+                    {
+                        "description": "会话标识与提问",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.WikiAskReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SSE stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/workflow": {
             "get": {
                 "description": "获取工作流分页列表",
@@ -4248,6 +4748,106 @@ const docTemplate = `{
                 "status": {
                     "description": "running/completed/failed/interrupted",
                     "type": "string"
+                }
+            }
+        },
+        "domain.WikiPage": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "pageType": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "sourceRefs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.WikiSourceRef"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "targetPageId": {
+                    "description": "草稿更新已有页时指向目标页（同一 slug 的 draft 与 published 可并存）",
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updateTime": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.WikiSource": {
+            "type": "object",
+            "properties": {
+                "contentHash": {
+                    "type": "string"
+                },
+                "cosKey": {
+                    "type": "string"
+                },
+                "createTime": {
+                    "type": "string"
+                },
+                "errorMsg": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ingestedAt": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updateTime": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.WikiSourceRef": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                },
+                "sourceId": {
+                    "type": "integer"
                 }
             }
         },
@@ -5546,6 +6146,99 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.WikiAskReq": {
+            "type": "object",
+            "required": [
+                "question",
+                "sessionId"
+            ],
+            "properties": {
+                "history": {
+                    "description": "近期对话历史（role: user/assistant）",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/wikiagent.QAHistoryItem"
+                    }
+                },
+                "question": {
+                    "description": "本次提问",
+                    "type": "string",
+                    "maxLength": 4000,
+                    "example": "他最熟悉的技术栈是什么？"
+                },
+                "sessionId": {
+                    "description": "前端生成的会话标识（用于服务端问答留存聚合，D10）",
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "b7c8d9e0-..."
+                }
+            }
+        },
+        "dto.WikiMDSourceReq": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "maxLength": 1000000,
+                    "example": "# 简历正文..."
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "个人简历 2026"
+                }
+            }
+        },
+        "dto.WikiURLSourceReq": {
+            "type": "object",
+            "required": [
+                "title",
+                "url"
+            ],
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "我的技术博客"
+                },
+                "url": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "example": "https://blog.example.com/about"
+                }
+            }
+        },
+        "dto.WikiUpdateDraftReq": {
+            "type": "object",
+            "properties": {
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "content": {
+                    "type": "string",
+                    "maxLength": 200000
+                },
+                "pageType": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "summary": {
+                    "type": "string",
+                    "maxLength": 512
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
+        },
         "file.UploadResponse": {
             "type": "object",
             "properties": {
@@ -6656,6 +7349,18 @@ const docTemplate = `{
                     "description": "网站地址",
                     "type": "string",
                     "example": "https://github.com"
+                }
+            }
+        },
+        "wikiagent.QAHistoryItem": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "user / assistant",
+                    "type": "string"
                 }
             }
         }

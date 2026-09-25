@@ -99,6 +99,13 @@ func NewMysqlDB(conf *global.MysqlConfig) *gorm.DB {
 	db.AutoMigrate(&model.AboutMeTimeline{})
 	db.AutoMigrate(&model.AboutMeContact{})
 
+	// LLM Wiki 知识库（wiki_pages 的 FULLTEXT ngram 索引需手写迁移：sql/wiki_fulltext.sql）
+	db.AutoMigrate(&model.WikiSource{})
+	db.AutoMigrate(&model.WikiPage{})
+	db.AutoMigrate(&model.WikiLink{})
+	db.AutoMigrate(&model.WikiKV{})
+	db.AutoMigrate(&model.WikiQALog{})
+
 	// 设置 GORM 的 JSON 序列化器
 	db.Config.PrepareStmt = true
 	db.Config.DisableForeignKeyConstraintWhenMigrating = true

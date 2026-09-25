@@ -166,6 +166,21 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminWebsitesIdPut**](docs/DefaultApi.md#apiAdminWebsitesIdPut) | **PUT** /api/admin/websites/{id} | 更新网站
 *TxingAiApi.DefaultApi* | [**apiAdminWebsitesListGet**](docs/DefaultApi.md#apiAdminWebsitesListGet) | **GET** /api/admin/websites/list | 获取网站列表
 *TxingAiApi.DefaultApi* | [**apiAdminWebsitesPost**](docs/DefaultApi.md#apiAdminWebsitesPost) | **POST** /api/admin/websites | 创建网站
+*TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsConfirmAllPost**](docs/DefaultApi.md#apiAdminWikiDraftsConfirmAllPost) | **POST** /api/admin/wiki/drafts/confirm_all | 一键确认全部草稿
+*TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsIdConfirmPost**](docs/DefaultApi.md#apiAdminWikiDraftsIdConfirmPost) | **POST** /api/admin/wiki/drafts/{id}/confirm | 确认草稿为已发布（同 slug 已有发布页则合并更新）
+*TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsIdDelete**](docs/DefaultApi.md#apiAdminWikiDraftsIdDelete) | **DELETE** /api/admin/wiki/drafts/{id} | 丢弃草稿
+*TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsIdPut**](docs/DefaultApi.md#apiAdminWikiDraftsIdPut) | **PUT** /api/admin/wiki/drafts/{id} | 编辑草稿（可改标题/类型/别名/摘要/正文）
+*TxingAiApi.DefaultApi* | [**apiAdminWikiDraftsListGet**](docs/DefaultApi.md#apiAdminWikiDraftsListGet) | **GET** /api/admin/wiki/drafts/list | 分页列出待审核草稿
+*TxingAiApi.DefaultApi* | [**apiAdminWikiExportGet**](docs/DefaultApi.md#apiAdminWikiExportGet) | **GET** /api/admin/wiki/export | 导出全部已发布页为 md 压缩包（含 index.md）
+*TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdGet**](docs/DefaultApi.md#apiAdminWikiPagesIdGet) | **GET** /api/admin/wiki/pages/{id} | 获取单个已发布页
+*TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdOfflinePost**](docs/DefaultApi.md#apiAdminWikiPagesIdOfflinePost) | **POST** /api/admin/wiki/pages/{id}/offline | 下线已发布页
+*TxingAiApi.DefaultApi* | [**apiAdminWikiPagesIdPut**](docs/DefaultApi.md#apiAdminWikiPagesIdPut) | **PUT** /api/admin/wiki/pages/{id} | 编辑已发布页（version+1 并重建出入链与 index）
+*TxingAiApi.DefaultApi* | [**apiAdminWikiPagesListGet**](docs/DefaultApi.md#apiAdminWikiPagesListGet) | **GET** /api/admin/wiki/pages/list | 分页列出已发布页面
+*TxingAiApi.DefaultApi* | [**apiAdminWikiSourcesIdDelete**](docs/DefaultApi.md#apiAdminWikiSourcesIdDelete) | **DELETE** /api/admin/wiki/sources/{id} | 删除知识库源
+*TxingAiApi.DefaultApi* | [**apiAdminWikiSourcesIdIngestPost**](docs/DefaultApi.md#apiAdminWikiSourcesIdIngestPost) | **POST** /api/admin/wiki/sources/{id}/ingest | 触发源的 ingest 编译
+*TxingAiApi.DefaultApi* | [**apiAdminWikiSourcesListGet**](docs/DefaultApi.md#apiAdminWikiSourcesListGet) | **GET** /api/admin/wiki/sources/list | 分页列出知识库源
+*TxingAiApi.DefaultApi* | [**apiAdminWikiSourcesMdPost**](docs/DefaultApi.md#apiAdminWikiSourcesMdPost) | **POST** /api/admin/wiki/sources/md | 新建 markdown 源
+*TxingAiApi.DefaultApi* | [**apiAdminWikiSourcesUrlPost**](docs/DefaultApi.md#apiAdminWikiSourcesUrlPost) | **POST** /api/admin/wiki/sources/url | 新建网页 URL 源
 *TxingAiApi.DefaultApi* | [**apiCaptchaGet**](docs/DefaultApi.md#apiCaptchaGet) | **GET** /api/captcha | 生成验证码
 *TxingAiApi.DefaultApi* | [**apiChatConversationListPost**](docs/DefaultApi.md#apiChatConversationListPost) | **POST** /api/chat/conversation/list | 获取会话列表
 *TxingAiApi.DefaultApi* | [**apiChatConversationsDeletebatchPost**](docs/DefaultApi.md#apiChatConversationsDeletebatchPost) | **POST** /api/chat/conversations/deletebatch | 批量删除会话
@@ -191,6 +206,7 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiUserRegisterPost**](docs/DefaultApi.md#apiUserRegisterPost) | **POST** /api/user/register | 用户注册
 *TxingAiApi.DefaultApi* | [**apiUserResetPasswordPost**](docs/DefaultApi.md#apiUserResetPasswordPost) | **POST** /api/user/reset-password | 重置密码
 *TxingAiApi.DefaultApi* | [**apiWebsitesListGet**](docs/DefaultApi.md#apiWebsitesListGet) | **GET** /api/websites/list | 用户端获取网站列表
+*TxingAiApi.DefaultApi* | [**apiWikiAskPost**](docs/DefaultApi.md#apiWikiAskPost) | **POST** /api/wiki/ask | 知识库问答（公开）
 *TxingAiApi.DefaultApi* | [**apiWorkflowGet**](docs/DefaultApi.md#apiWorkflowGet) | **GET** /api/workflow | 获取工作流列表
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdDelete**](docs/DefaultApi.md#apiWorkflowIdDelete) | **DELETE** /api/workflow/{id} | 删除工作流
 *TxingAiApi.DefaultApi* | [**apiWorkflowIdGet**](docs/DefaultApi.md#apiWorkflowIdGet) | **GET** /api/workflow/{id} | 获取单个工作流
@@ -246,6 +262,9 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DomainOpsChatMessage](docs/DomainOpsChatMessage.md)
  - [TxingAiApi.DomainOpsChatProposal](docs/DomainOpsChatProposal.md)
  - [TxingAiApi.DomainOpsChatToolCall](docs/DomainOpsChatToolCall.md)
+ - [TxingAiApi.DomainWikiPage](docs/DomainWikiPage.md)
+ - [TxingAiApi.DomainWikiSource](docs/DomainWikiSource.md)
+ - [TxingAiApi.DomainWikiSourceRef](docs/DomainWikiSourceRef.md)
  - [TxingAiApi.DtoAboutMeCoverMediaReq](docs/DtoAboutMeCoverMediaReq.md)
  - [TxingAiApi.DtoAboutMeMediaReq](docs/DtoAboutMeMediaReq.md)
  - [TxingAiApi.DtoAgentExecReq](docs/DtoAgentExecReq.md)
@@ -295,6 +314,10 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.DtoUpdateWebsiteReq](docs/DtoUpdateWebsiteReq.md)
  - [TxingAiApi.DtoUpdateWorkflowStatusReq](docs/DtoUpdateWorkflowStatusReq.md)
  - [TxingAiApi.DtoValidateWorkflowReq](docs/DtoValidateWorkflowReq.md)
+ - [TxingAiApi.DtoWikiAskReq](docs/DtoWikiAskReq.md)
+ - [TxingAiApi.DtoWikiMDSourceReq](docs/DtoWikiMDSourceReq.md)
+ - [TxingAiApi.DtoWikiURLSourceReq](docs/DtoWikiURLSourceReq.md)
+ - [TxingAiApi.DtoWikiUpdateDraftReq](docs/DtoWikiUpdateDraftReq.md)
  - [TxingAiApi.FileUploadResponse](docs/FileUploadResponse.md)
  - [TxingAiApi.GlobalModelMapping](docs/GlobalModelMapping.md)
  - [TxingAiApi.GlobalModelMappingCondition](docs/GlobalModelMappingCondition.md)
@@ -332,6 +355,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoValidationErrorVO](docs/VoValidationErrorVO.md)
  - [TxingAiApi.VoValidationResultVO](docs/VoValidationResultVO.md)
  - [TxingAiApi.VoWebsiteVO](docs/VoWebsiteVO.md)
+ - [TxingAiApi.WikiagentQAHistoryItem](docs/WikiagentQAHistoryItem.md)
 
 
 ## Documentation for Authorization
