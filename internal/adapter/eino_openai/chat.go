@@ -142,6 +142,22 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 				return fmt.Errorf("stream recv error: %v", err)
 			}
 
+			// token 用量：acl/openai 库已默认 IncludeUsage，
+			// usage 随 ResponseMeta 挂在消息上（观测层 WrapHook 拦截后不会下发下游）
+			if message.ResponseMeta != nil && message.ResponseMeta.Usage != nil {
+				u := message.ResponseMeta.Usage
+				if err := callback(&global.Chunk{
+					Usage: &global.UsageInfo{
+						PromptTokens:     int64(u.PromptTokens),
+						CompletionTokens: int64(u.CompletionTokens),
+						TotalTokens:      int64(u.TotalTokens),
+					},
+				}); err != nil {
+					log.Error("callback error", zap.Error(err))
+					return fmt.Errorf("callback error: %v", err)
+				}
+			}
+
 			content := message.Content
 			reasoningContent := message.ReasoningContent
 			if content != "" || reasoningContent != "" {

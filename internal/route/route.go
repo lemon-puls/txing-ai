@@ -1,6 +1,8 @@
 package route
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"txing-ai/internal/controller/aboutme"
 	"txing-ai/internal/controller/agent"
@@ -8,6 +10,7 @@ import (
 	"txing-ai/internal/controller/channel"
 	"txing-ai/internal/controller/chat"
 	"txing-ai/internal/controller/cos"
+	"txing-ai/internal/controller/dashboard"
 	"txing-ai/internal/controller/file"
 	"txing-ai/internal/controller/model"
 	"txing-ai/internal/controller/ops"
@@ -17,6 +20,7 @@ import (
 	"txing-ai/internal/controller/wiki"
 	"txing-ai/internal/controller/workflow"
 	"txing-ai/internal/iface"
+	"txing-ai/internal/observability"
 	"txing-ai/static"
 
 	_ "txing-ai/docs"
@@ -68,6 +72,21 @@ func Register(router gin.IRouter, res iface.ResourceProvider) {
 
 	// LLM Wiki 知识库（公开问答 + 管理后台）
 	wiki.Register(group)
+
+	// 管理后台控制台（可观测性 + 运营统计）
+	dashboard.Register(group)
+
+	// 可观测性外部抓取端点：标准 Prometheus exposition（observability.external.enabled 时注册；
+	// 可选 Bearer token 校验，不走 JWT，便于 Prometheus/VictoriaMetrics 直接抓取）
+	if h := observability.PromHTTPHandler(); h != nil {
+		router.GET("/metrics", func(c *gin.Context) {
+			if !observability.CheckMetricsToken(c.GetHeader("Authorization")) {
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
+			h.ServeHTTP(c.Writer, c.Request)
+		})
+	}
 
 	// 注册Swagger
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

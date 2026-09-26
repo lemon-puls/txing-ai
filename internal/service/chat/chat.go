@@ -11,6 +11,7 @@ import (
 	"txing-ai/internal/dto"
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
+	obs "txing-ai/internal/observability"
 	"txing-ai/internal/service/channel"
 	"txing-ai/internal/utils"
 
@@ -87,6 +88,9 @@ func HandleChat(ctx *gin.Context, conn *utils.Connection, conversation *domain.C
 		})
 		return limitMessage, ""
 	}
+
+	// 观测：用户聊天消息计数（通过限流检查后）
+	obs.ChatMessage(conversation.Model)
 
 	// 设置 ctx（兼容停止生成等场景）；流的生命周期不依赖连接
 	_, cancel := context.WithCancel(ctx)
@@ -179,11 +183,21 @@ func NewChatRequest(ctx context.Context, db *gorm.DB, chatConfig *adaptercommon.
 	targetChannel, mappingModel, err := channel.ChooseChannelAndModel(db, chatConfig.Model, mappingParams)
 	if err != nil {
 		log.Error("choose channel failed", zap.Error(err))
+		// 观测：渠道选择失败（未发起 LLM 调用，只记错误不记请求）
+		kind := "no_channel"
+		if errors.Is(err, channel.ErrNoAvailableChannel) {
+			kind = "no_mapping"
+		}
+		obs.LLMFail(chatConfig.Model, kind)
 		return err
 	}
 	chatConfig.Model = mappingModel
 
-	err = adapter.NewChatRequest(ctx, targetChannel, chatConfig, hook)
+	// 观测：LLM 调用唯一收敛点（channel/model 标签仅在此作用域可用），
+	// WrapHook 记 TTFT 与 token 用量，End 记时长与错误分类
+	trace := obs.LLM(targetChannel.Name, mappingModel)
+	err = adapter.NewChatRequest(ctx, targetChannel, chatConfig, trace.WrapHook(hook))
+	trace.End(err)
 
 	return err
 }

@@ -22,6 +22,12 @@ import ApiAdminAboutReasonPost200Response from './model/ApiAdminAboutReasonPost2
 import ApiAdminAboutSkillPost200Response from './model/ApiAdminAboutSkillPost200Response';
 import ApiAdminAboutTimelinePost200Response from './model/ApiAdminAboutTimelinePost200Response';
 import ApiAdminChannelPost200Response from './model/ApiAdminChannelPost200Response';
+import ApiAdminDashboardActivitiesGet200Response from './model/ApiAdminDashboardActivitiesGet200Response';
+import ApiAdminDashboardAssistantUsageGet200Response from './model/ApiAdminDashboardAssistantUsageGet200Response';
+import ApiAdminDashboardChannelUsageGet200Response from './model/ApiAdminDashboardChannelUsageGet200Response';
+import ApiAdminDashboardOverviewGet200Response from './model/ApiAdminDashboardOverviewGet200Response';
+import ApiAdminDashboardTimeseriesGet200Response from './model/ApiAdminDashboardTimeseriesGet200Response';
+import ApiAdminDashboardTrendsGet200Response from './model/ApiAdminDashboardTrendsGet200Response';
 import ApiAdminModelPost200Response from './model/ApiAdminModelPost200Response';
 import ApiAdminOpsChatSessionsIdGet200Response from './model/ApiAdminOpsChatSessionsIdGet200Response';
 import ApiAdminWebsitesFaviconPost200Response from './model/ApiAdminWebsitesFaviconPost200Response';
@@ -120,6 +126,17 @@ import VoAgentFlowVersionVO from './model/VoAgentFlowVersionVO';
 import VoAttachmentVO from './model/VoAttachmentVO';
 import VoChannelVO from './model/VoChannelVO';
 import VoConversationDetailVO from './model/VoConversationDetailVO';
+import VoDashboardActivity from './model/VoDashboardActivity';
+import VoDashboardCard from './model/VoDashboardCard';
+import VoDashboardChannelUsageItem from './model/VoDashboardChannelUsageItem';
+import VoDashboardChannelUsageVO from './model/VoDashboardChannelUsageVO';
+import VoDashboardNameCount from './model/VoDashboardNameCount';
+import VoDashboardOverviewVO from './model/VoDashboardOverviewVO';
+import VoDashboardTimeseriesPoint from './model/VoDashboardTimeseriesPoint';
+import VoDashboardTimeseriesSeries from './model/VoDashboardTimeseriesSeries';
+import VoDashboardTimeseriesVO from './model/VoDashboardTimeseriesVO';
+import VoDashboardTrendPoint from './model/VoDashboardTrendPoint';
+import VoDashboardTrendVO from './model/VoDashboardTrendVO';
 import VoGetFaviconVO from './model/VoGetFaviconVO';
 import VoGetPresignedURLVO from './model/VoGetPresignedURLVO';
 import VoLoginVO from './model/VoLoginVO';
@@ -233,6 +250,42 @@ export {
      * @property {module:model/ApiAdminChannelPost200Response}
      */
     ApiAdminChannelPost200Response,
+
+    /**
+     * The ApiAdminDashboardActivitiesGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardActivitiesGet200Response}
+     */
+    ApiAdminDashboardActivitiesGet200Response,
+
+    /**
+     * The ApiAdminDashboardAssistantUsageGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardAssistantUsageGet200Response}
+     */
+    ApiAdminDashboardAssistantUsageGet200Response,
+
+    /**
+     * The ApiAdminDashboardChannelUsageGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardChannelUsageGet200Response}
+     */
+    ApiAdminDashboardChannelUsageGet200Response,
+
+    /**
+     * The ApiAdminDashboardOverviewGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardOverviewGet200Response}
+     */
+    ApiAdminDashboardOverviewGet200Response,
+
+    /**
+     * The ApiAdminDashboardTimeseriesGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardTimeseriesGet200Response}
+     */
+    ApiAdminDashboardTimeseriesGet200Response,
+
+    /**
+     * The ApiAdminDashboardTrendsGet200Response model constructor.
+     * @property {module:model/ApiAdminDashboardTrendsGet200Response}
+     */
+    ApiAdminDashboardTrendsGet200Response,
 
     /**
      * The ApiAdminModelPost200Response model constructor.
@@ -821,6 +874,72 @@ export {
      * @property {module:model/VoConversationDetailVO}
      */
     VoConversationDetailVO,
+
+    /**
+     * The VoDashboardActivity model constructor.
+     * @property {module:model/VoDashboardActivity}
+     */
+    VoDashboardActivity,
+
+    /**
+     * The VoDashboardCard model constructor.
+     * @property {module:model/VoDashboardCard}
+     */
+    VoDashboardCard,
+
+    /**
+     * The VoDashboardChannelUsageItem model constructor.
+     * @property {module:model/VoDashboardChannelUsageItem}
+     */
+    VoDashboardChannelUsageItem,
+
+    /**
+     * The VoDashboardChannelUsageVO model constructor.
+     * @property {module:model/VoDashboardChannelUsageVO}
+     */
+    VoDashboardChannelUsageVO,
+
+    /**
+     * The VoDashboardNameCount model constructor.
+     * @property {module:model/VoDashboardNameCount}
+     */
+    VoDashboardNameCount,
+
+    /**
+     * The VoDashboardOverviewVO model constructor.
+     * @property {module:model/VoDashboardOverviewVO}
+     */
+    VoDashboardOverviewVO,
+
+    /**
+     * The VoDashboardTimeseriesPoint model constructor.
+     * @property {module:model/VoDashboardTimeseriesPoint}
+     */
+    VoDashboardTimeseriesPoint,
+
+    /**
+     * The VoDashboardTimeseriesSeries model constructor.
+     * @property {module:model/VoDashboardTimeseriesSeries}
+     */
+    VoDashboardTimeseriesSeries,
+
+    /**
+     * The VoDashboardTimeseriesVO model constructor.
+     * @property {module:model/VoDashboardTimeseriesVO}
+     */
+    VoDashboardTimeseriesVO,
+
+    /**
+     * The VoDashboardTrendPoint model constructor.
+     * @property {module:model/VoDashboardTrendPoint}
+     */
+    VoDashboardTrendPoint,
+
+    /**
+     * The VoDashboardTrendVO model constructor.
+     * @property {module:model/VoDashboardTrendVO}
+     */
+    VoDashboardTrendVO,
 
     /**
      * The VoGetFaviconVO model constructor.

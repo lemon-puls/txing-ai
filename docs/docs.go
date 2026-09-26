@@ -1304,6 +1304,298 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/dashboard/activities": {
+            "get": {
+                "description": "最近的会话创建与工作流执行（按时间倒序）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "最近活动",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "返回条数（默认 20）",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/vo.DashboardActivity"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/assistant-usage": {
+            "get": {
+                "description": "近 N 天预设（助手）会话数 TOP N",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "助手使用排行",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "统计天数（默认 30）",
+                        "name": "days",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "返回条数（默认 10）",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/vo.DashboardNameCount"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/channel-usage": {
+            "get": {
+                "description": "按渠道聚合的 LLM 请求数/错误率/延迟（进程内口径，自启动起）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "LLM 渠道用量",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.DashboardChannelUsageVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/model-usage": {
+            "get": {
+                "description": "近 N 天按模型聚合的会话数占比",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "模型使用占比",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "统计天数（默认 30）",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/vo.DashboardNameCount"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/overview": {
+            "get": {
+                "description": "统计卡片：今日对话数/今日活跃用户（DB 口径，对比昨日同期）+ LLM 平均响应/Token 消耗（进程内运行时指标口径）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "控制台总览",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.DashboardOverviewVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/timeseries": {
+            "get": {
+                "description": "进程内运行时指标时序：metric=http（QPM/时延）| runtime（协程/内存）| llm（QPM/时延/TTFT/Token）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "运行时监控时序",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "http",
+                        "description": "http | runtime | llm（默认 http）",
+                        "name": "metric",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "1h",
+                        "description": "1h | 6h | 24h（默认 1h）",
+                        "name": "window",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.DashboardTimeseriesVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/dashboard/trends": {
+            "get": {
+                "description": "按日（range=365 时按月）聚合的对话数与活跃用户数",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "控制台"
+                ],
+                "summary": "对话趋势",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 7,
+                        "description": "天数：7/30/365（默认 7）",
+                        "name": "range",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.DashboardTrendVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/model": {
             "post": {
                 "description": "创建新的模型",
@@ -6898,6 +7190,188 @@ const docTemplate = `{
                 },
                 "userId": {
                     "type": "integer"
+                }
+            }
+        },
+        "vo.DashboardActivity": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "detail": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardCard": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "note": {
+                    "description": "口径说明",
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "trendPercent": {
+                    "description": "与昨日同期对比（%），无对比口径时为 null",
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardChannelUsageItem": {
+            "type": "object",
+            "properties": {
+                "avgLatencyMs": {
+                    "type": "number"
+                },
+                "channel": {
+                    "type": "string"
+                },
+                "errorRate": {
+                    "type": "number"
+                },
+                "errors": {
+                    "type": "integer"
+                },
+                "p95LatencyMs": {
+                    "type": "number"
+                },
+                "requests": {
+                    "type": "integer"
+                }
+            }
+        },
+        "vo.DashboardChannelUsageVO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.DashboardChannelUsageItem"
+                    }
+                },
+                "sinceStart": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardNameCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardOverviewVO": {
+            "type": "object",
+            "properties": {
+                "cards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.DashboardCard"
+                    }
+                },
+                "sinceStart": {
+                    "description": "进程内运行时数据起点（ISO 时间）",
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardTimeseriesPoint": {
+            "type": "object",
+            "properties": {
+                "ts": {
+                    "description": "unix 秒（槽起始）",
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "vo.DashboardTimeseriesSeries": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "分组值（如渠道名）",
+                    "type": "string"
+                },
+                "metric": {
+                    "description": "指标名（图表标题/分组用）",
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.DashboardTimeseriesPoint"
+                    }
+                }
+            }
+        },
+        "vo.DashboardTimeseriesVO": {
+            "type": "object",
+            "properties": {
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.DashboardTimeseriesSeries"
+                    }
+                },
+                "stepSeconds": {
+                    "type": "integer"
+                }
+            }
+        },
+        "vo.DashboardTrendPoint": {
+            "type": "object",
+            "properties": {
+                "activeUsers": {
+                    "type": "integer"
+                },
+                "conversations": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.DashboardTrendVO": {
+            "type": "object",
+            "properties": {
+                "granularity": {
+                    "description": "day | month",
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/vo.DashboardTrendPoint"
+                    }
                 }
             }
         },

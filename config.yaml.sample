@@ -96,3 +96,22 @@ wiki:
   rate_limit_per_ip_per_hour: 10
   # 全站每日提问总量上限（可选，默认 200）
   daily_quota: 200
+
+# 可插拔可观测性（docs/observability_design.md）
+observability:
+  # 总开关：false 时所有埋点即时 no-op（热生效，无需重启）
+  enabled: true
+  # 采样频率：registry 快照间隔
+  sample_interval: 15s
+  # 环形缓冲槽粒度（重启生效）
+  slot_interval: 1m
+  # 内存保留时长（<=48h，重启清零；长期运营统计走 MySQL 业务表聚合）
+  retention: 24h
+  # 时序数上限（基数防御，超出丢弃新序列并告警）
+  max_series: 2000
+  # 外部抓取模式：暴露标准 /metrics 供 Prometheus/VictoriaMetrics 抓取
+  external:
+    # 路由注册在启动时，改动需重启生效
+    enabled: false
+    # 非空时 /metrics 校验 Authorization: Bearer <token>
+    bearer_token: ""

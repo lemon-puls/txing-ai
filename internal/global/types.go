@@ -55,6 +55,16 @@ type Chunk struct {
 	BranchID string `json:"branch_id,omitempty"`
 	// 执行日志信息
 	ExecutionLog *ExecutionLogInfo `json:"execution_log,omitempty"`
+	// Token 用量（流末尾上报，best-effort：adapter 尽力填充；
+	// 仅用于观测埋点，不随 WsMessageResponse 下发客户端）
+	Usage *UsageInfo `json:"usage,omitempty"`
+}
+
+// UsageInfo token 用量信息
+type UsageInfo struct {
+	PromptTokens     int64 `json:"prompt_tokens,omitempty"`
+	CompletionTokens int64 `json:"completion_tokens,omitempty"`
+	TotalTokens      int64 `json:"total_tokens,omitempty"`
 }
 
 // ExecutionLogInfo 执行日志信息

@@ -97,6 +97,8 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 		Model:    conf.Model,
 		Messages: messages,
 		Stream:   true,
+		// 末 chunk 携带 token 用量（观测统计用；部分第三方兼容端点可能不支持，主流均可）
+		StreamOptions: &openai.StreamOptions{IncludeUsage: true},
 	}
 
 	// 设置可选参数
@@ -137,6 +139,21 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 				}
 				log.Error("stream recv error", zap.Error(err))
 				return fmt.Errorf("stream recv error: %v", err)
+			}
+
+			// token 用量：IncludeUsage 时末 chunk 的 Choices 为空、Usage 非空，
+			// 需在 Choices 守卫前处理（观测层 WrapHook 拦截后不会下发下游）
+			if response.Usage != nil && response.Usage.TotalTokens > 0 {
+				if err := callback(&global.Chunk{
+					Usage: &global.UsageInfo{
+						PromptTokens:     int64(response.Usage.PromptTokens),
+						CompletionTokens: int64(response.Usage.CompletionTokens),
+						TotalTokens:      int64(response.Usage.TotalTokens),
+					},
+				}); err != nil {
+					log.Error("callback error", zap.Error(err))
+					return fmt.Errorf("callback error: %v", err)
+				}
 			}
 
 			if len(response.Choices) > 0 {

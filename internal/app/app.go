@@ -12,6 +12,7 @@ import (
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
 	"txing-ai/internal/middleware"
+	obs "txing-ai/internal/observability"
 	"txing-ai/internal/route"
 	"txing-ai/internal/tool/mcp"
 	"txing-ai/internal/utils"
@@ -30,6 +31,7 @@ type Server interface {
 type server struct {
 	impl        *http.Server
 	resProvider iface.ResourceProvider
+	obsStop     func()
 }
 
 // serverPort 服务监听端口（/ Service listen port）
@@ -51,6 +53,11 @@ func (s *server) Start() {
 }
 
 func (s *server) Shutdown(ctx context.Context) error {
+	// 停 observability 采样（best-effort 收尾采样落槽）
+	if s.obsStop != nil {
+		s.obsStop()
+	}
+
 	err := s.resProvider.GetRedisClient().Close()
 	if err != nil {
 		log.Error("redis client close error", zap.Error(err))
@@ -107,10 +114,16 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 		log.Error("初始化旅游攻略工作流种子数据失败", zap.Error(err))
 	}
 
+	// 初始化可观测性（构建指标实现；enabled 热生效，external 端点 startup 决策）
+	obs.Setup(appConfig.ObservabilityConfig)
+
 	// 注册全局中间（局部中间件在具体的路由处注册）
 	middleware.RegisterMiddleware(engine, db, redisClient, cosClient, factory)
 	// 注册路由
 	route.Register(engine, resProvider)
+
+	// 启动指标采样协程（周期 Gather → 环形缓冲）
+	obsStop := obs.StartSampler()
 
 	// 端口在包级 serverPort 定义（确保先于 LoadConfig 的 flag.Parse 注册）
 	flag.Parse()
@@ -125,5 +138,6 @@ func New(ctx context.Context, appConfig *global.AppConfig) Server {
 
 	return &server{
 		impl:        srv,
-		resProvider: resProvider}
+		resProvider: resProvider,
+		obsStop:     obsStop}
 }

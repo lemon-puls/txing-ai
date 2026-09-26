@@ -22,6 +22,12 @@ import ApiAdminAboutReasonPost200Response from '../model/ApiAdminAboutReasonPost
 import ApiAdminAboutSkillPost200Response from '../model/ApiAdminAboutSkillPost200Response';
 import ApiAdminAboutTimelinePost200Response from '../model/ApiAdminAboutTimelinePost200Response';
 import ApiAdminChannelPost200Response from '../model/ApiAdminChannelPost200Response';
+import ApiAdminDashboardActivitiesGet200Response from '../model/ApiAdminDashboardActivitiesGet200Response';
+import ApiAdminDashboardAssistantUsageGet200Response from '../model/ApiAdminDashboardAssistantUsageGet200Response';
+import ApiAdminDashboardChannelUsageGet200Response from '../model/ApiAdminDashboardChannelUsageGet200Response';
+import ApiAdminDashboardOverviewGet200Response from '../model/ApiAdminDashboardOverviewGet200Response';
+import ApiAdminDashboardTimeseriesGet200Response from '../model/ApiAdminDashboardTimeseriesGet200Response';
+import ApiAdminDashboardTrendsGet200Response from '../model/ApiAdminDashboardTrendsGet200Response';
 import ApiAdminModelPost200Response from '../model/ApiAdminModelPost200Response';
 import ApiAdminOpsChatSessionsIdGet200Response from '../model/ApiAdminOpsChatSessionsIdGet200Response';
 import ApiAdminWebsitesFaviconPost200Response from '../model/ApiAdminWebsitesFaviconPost200Response';
@@ -1630,6 +1636,329 @@ export default class DefaultApi {
      */
     apiAdminChannelPost(data) {
       return this.apiAdminChannelPostWithHttpInfo(data)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 最近活动
+     * 最近的会话创建与工作流执行（按时间倒序）
+     * @param {Object} opts Optional parameters
+     * @param {Number} [limit = 20)] 返回条数（默认 20）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardActivitiesGet200Response} and HTTP response
+     */
+    apiAdminDashboardActivitiesGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'limit': opts['limit']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardActivitiesGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/activities', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 最近活动
+     * 最近的会话创建与工作流执行（按时间倒序）
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.limit 返回条数（默认 20） (default to 20)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardActivitiesGet200Response}
+     */
+    apiAdminDashboardActivitiesGet(opts) {
+      return this.apiAdminDashboardActivitiesGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 助手使用排行
+     * 近 N 天预设（助手）会话数 TOP N
+     * @param {Object} opts Optional parameters
+     * @param {Number} [days = 30)] 统计天数（默认 30）
+     * @param {Number} [limit = 10)] 返回条数（默认 10）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardAssistantUsageGet200Response} and HTTP response
+     */
+    apiAdminDashboardAssistantUsageGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'days': opts['days'],
+        'limit': opts['limit']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardAssistantUsageGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/assistant-usage', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 助手使用排行
+     * 近 N 天预设（助手）会话数 TOP N
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.days 统计天数（默认 30） (default to 30)
+     * @param {Number} opts.limit 返回条数（默认 10） (default to 10)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardAssistantUsageGet200Response}
+     */
+    apiAdminDashboardAssistantUsageGet(opts) {
+      return this.apiAdminDashboardAssistantUsageGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * LLM 渠道用量
+     * 按渠道聚合的 LLM 请求数/错误率/延迟（进程内口径，自启动起）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardChannelUsageGet200Response} and HTTP response
+     */
+    apiAdminDashboardChannelUsageGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardChannelUsageGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/channel-usage', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * LLM 渠道用量
+     * 按渠道聚合的 LLM 请求数/错误率/延迟（进程内口径，自启动起）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardChannelUsageGet200Response}
+     */
+    apiAdminDashboardChannelUsageGet() {
+      return this.apiAdminDashboardChannelUsageGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 模型使用占比
+     * 近 N 天按模型聚合的会话数占比
+     * @param {Object} opts Optional parameters
+     * @param {Number} [days = 30)] 统计天数（默认 30）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardAssistantUsageGet200Response} and HTTP response
+     */
+    apiAdminDashboardModelUsageGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'days': opts['days']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardAssistantUsageGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/model-usage', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 模型使用占比
+     * 近 N 天按模型聚合的会话数占比
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.days 统计天数（默认 30） (default to 30)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardAssistantUsageGet200Response}
+     */
+    apiAdminDashboardModelUsageGet(opts) {
+      return this.apiAdminDashboardModelUsageGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 控制台总览
+     * 统计卡片：今日对话数/今日活跃用户（DB 口径，对比昨日同期）+ LLM 平均响应/Token 消耗（进程内运行时指标口径）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardOverviewGet200Response} and HTTP response
+     */
+    apiAdminDashboardOverviewGetWithHttpInfo() {
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardOverviewGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/overview', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 控制台总览
+     * 统计卡片：今日对话数/今日活跃用户（DB 口径，对比昨日同期）+ LLM 平均响应/Token 消耗（进程内运行时指标口径）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardOverviewGet200Response}
+     */
+    apiAdminDashboardOverviewGet() {
+      return this.apiAdminDashboardOverviewGetWithHttpInfo()
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 运行时监控时序
+     * 进程内运行时指标时序：metric=http（QPM/时延）| runtime（协程/内存）| llm（QPM/时延/TTFT/Token）
+     * @param {Object} opts Optional parameters
+     * @param {String} [metric = 'http')] http | runtime | llm（默认 http）
+     * @param {String} [window = '1h')] 1h | 6h | 24h（默认 1h）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardTimeseriesGet200Response} and HTTP response
+     */
+    apiAdminDashboardTimeseriesGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'metric': opts['metric'],
+        'window': opts['window']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardTimeseriesGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/timeseries', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 运行时监控时序
+     * 进程内运行时指标时序：metric=http（QPM/时延）| runtime（协程/内存）| llm（QPM/时延/TTFT/Token）
+     * @param {Object} opts Optional parameters
+     * @param {String} opts.metric http | runtime | llm（默认 http） (default to 'http')
+     * @param {String} opts.window 1h | 6h | 24h（默认 1h） (default to '1h')
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardTimeseriesGet200Response}
+     */
+    apiAdminDashboardTimeseriesGet(opts) {
+      return this.apiAdminDashboardTimeseriesGetWithHttpInfo(opts)
+        .then(function(response_and_data) {
+          return response_and_data.data;
+        });
+    }
+
+
+    /**
+     * 对话趋势
+     * 按日（range=365 时按月）聚合的对话数与活跃用户数
+     * @param {Object} opts Optional parameters
+     * @param {Number} [range = 7)] 天数：7/30/365（默认 7）
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with an object containing data of type {@link module:model/ApiAdminDashboardTrendsGet200Response} and HTTP response
+     */
+    apiAdminDashboardTrendsGetWithHttpInfo(opts) {
+      opts = opts || {};
+      let postBody = null;
+
+      let pathParams = {
+      };
+      let queryParams = {
+        'range': opts['range']
+      };
+      let headerParams = {
+      };
+      let formParams = {
+      };
+
+      let authNames = [];
+      let contentTypes = [];
+      let accepts = ['application/json'];
+      let returnType = ApiAdminDashboardTrendsGet200Response;
+      return this.apiClient.callApi(
+        '/api/admin/dashboard/trends', 'GET',
+        pathParams, queryParams, headerParams, formParams, postBody,
+        authNames, contentTypes, accepts, returnType, null
+      );
+    }
+
+    /**
+     * 对话趋势
+     * 按日（range=365 时按月）聚合的对话数与活跃用户数
+     * @param {Object} opts Optional parameters
+     * @param {Number} opts.range 天数：7/30/365（默认 7） (default to 7)
+     * @return {Promise} a {@link https://www.promisejs.org/|Promise}, with data of type {@link module:model/ApiAdminDashboardTrendsGet200Response}
+     */
+    apiAdminDashboardTrendsGet(opts) {
+      return this.apiAdminDashboardTrendsGetWithHttpInfo(opts)
         .then(function(response_and_data) {
           return response_and_data.data;
         });

@@ -35,6 +35,13 @@ Method | HTTP request | Description
 [**apiAdminChannelIdPut**](DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
 [**apiAdminChannelListGet**](DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
 [**apiAdminChannelPost**](DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
+[**apiAdminDashboardActivitiesGet**](DefaultApi.md#apiAdminDashboardActivitiesGet) | **GET** /api/admin/dashboard/activities | 最近活动
+[**apiAdminDashboardAssistantUsageGet**](DefaultApi.md#apiAdminDashboardAssistantUsageGet) | **GET** /api/admin/dashboard/assistant-usage | 助手使用排行
+[**apiAdminDashboardChannelUsageGet**](DefaultApi.md#apiAdminDashboardChannelUsageGet) | **GET** /api/admin/dashboard/channel-usage | LLM 渠道用量
+[**apiAdminDashboardModelUsageGet**](DefaultApi.md#apiAdminDashboardModelUsageGet) | **GET** /api/admin/dashboard/model-usage | 模型使用占比
+[**apiAdminDashboardOverviewGet**](DefaultApi.md#apiAdminDashboardOverviewGet) | **GET** /api/admin/dashboard/overview | 控制台总览
+[**apiAdminDashboardTimeseriesGet**](DefaultApi.md#apiAdminDashboardTimeseriesGet) | **GET** /api/admin/dashboard/timeseries | 运行时监控时序
+[**apiAdminDashboardTrendsGet**](DefaultApi.md#apiAdminDashboardTrendsGet) | **GET** /api/admin/dashboard/trends | 对话趋势
 [**apiAdminModelIdDelete**](DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 [**apiAdminModelIdPut**](DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 [**apiAdminModelPost**](DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
@@ -1486,6 +1493,320 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## apiAdminDashboardActivitiesGet
+
+> ApiAdminDashboardActivitiesGet200Response apiAdminDashboardActivitiesGet(opts)
+
+最近活动
+
+最近的会话创建与工作流执行（按时间倒序）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'limit': 20 // Number | 返回条数（默认 20）
+};
+apiInstance.apiAdminDashboardActivitiesGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **Number**| 返回条数（默认 20） | [optional] [default to 20]
+
+### Return type
+
+[**ApiAdminDashboardActivitiesGet200Response**](ApiAdminDashboardActivitiesGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardAssistantUsageGet
+
+> ApiAdminDashboardAssistantUsageGet200Response apiAdminDashboardAssistantUsageGet(opts)
+
+助手使用排行
+
+近 N 天预设（助手）会话数 TOP N
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'days': 30, // Number | 统计天数（默认 30）
+  'limit': 10 // Number | 返回条数（默认 10）
+};
+apiInstance.apiAdminDashboardAssistantUsageGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **days** | **Number**| 统计天数（默认 30） | [optional] [default to 30]
+ **limit** | **Number**| 返回条数（默认 10） | [optional] [default to 10]
+
+### Return type
+
+[**ApiAdminDashboardAssistantUsageGet200Response**](ApiAdminDashboardAssistantUsageGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardChannelUsageGet
+
+> ApiAdminDashboardChannelUsageGet200Response apiAdminDashboardChannelUsageGet()
+
+LLM 渠道用量
+
+按渠道聚合的 LLM 请求数/错误率/延迟（进程内口径，自启动起）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminDashboardChannelUsageGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ApiAdminDashboardChannelUsageGet200Response**](ApiAdminDashboardChannelUsageGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardModelUsageGet
+
+> ApiAdminDashboardAssistantUsageGet200Response apiAdminDashboardModelUsageGet(opts)
+
+模型使用占比
+
+近 N 天按模型聚合的会话数占比
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'days': 30 // Number | 统计天数（默认 30）
+};
+apiInstance.apiAdminDashboardModelUsageGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **days** | **Number**| 统计天数（默认 30） | [optional] [default to 30]
+
+### Return type
+
+[**ApiAdminDashboardAssistantUsageGet200Response**](ApiAdminDashboardAssistantUsageGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardOverviewGet
+
+> ApiAdminDashboardOverviewGet200Response apiAdminDashboardOverviewGet()
+
+控制台总览
+
+统计卡片：今日对话数/今日活跃用户（DB 口径，对比昨日同期）+ LLM 平均响应/Token 消耗（进程内运行时指标口径）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+apiInstance.apiAdminDashboardOverviewGet().then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ApiAdminDashboardOverviewGet200Response**](ApiAdminDashboardOverviewGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardTimeseriesGet
+
+> ApiAdminDashboardTimeseriesGet200Response apiAdminDashboardTimeseriesGet(opts)
+
+运行时监控时序
+
+进程内运行时指标时序：metric&#x3D;http（QPM/时延）| runtime（协程/内存）| llm（QPM/时延/TTFT/Token）
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'metric': "'http'", // String | http | runtime | llm（默认 http）
+  'window': "'1h'" // String | 1h | 6h | 24h（默认 1h）
+};
+apiInstance.apiAdminDashboardTimeseriesGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **metric** | **String**| http | runtime | llm（默认 http） | [optional] [default to &#39;http&#39;]
+ **window** | **String**| 1h | 6h | 24h（默认 1h） | [optional] [default to &#39;1h&#39;]
+
+### Return type
+
+[**ApiAdminDashboardTimeseriesGet200Response**](ApiAdminDashboardTimeseriesGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## apiAdminDashboardTrendsGet
+
+> ApiAdminDashboardTrendsGet200Response apiAdminDashboardTrendsGet(opts)
+
+对话趋势
+
+按日（range&#x3D;365 时按月）聚合的对话数与活跃用户数
+
+### Example
+
+```javascript
+import TxingAiApi from 'txing_ai_api';
+
+let apiInstance = new TxingAiApi.DefaultApi();
+let opts = {
+  'range': 7 // Number | 天数：7/30/365（默认 7）
+};
+apiInstance.apiAdminDashboardTrendsGet(opts).then((data) => {
+  console.log('API called successfully. Returned data: ' + data);
+}, (error) => {
+  console.error(error);
+});
+
+```
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **range** | **Number**| 天数：7/30/365（默认 7） | [optional] [default to 7]
+
+### Return type
+
+[**ApiAdminDashboardTrendsGet200Response**](ApiAdminDashboardTrendsGet200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 
