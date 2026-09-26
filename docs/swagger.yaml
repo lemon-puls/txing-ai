@@ -1523,6 +1523,126 @@ definitions:
       userId:
         type: integer
     type: object
+  vo.DashboardActivity:
+    properties:
+      action:
+        type: string
+      detail:
+        type: string
+      status:
+        type: string
+      time:
+        type: string
+      user:
+        type: string
+    type: object
+  vo.DashboardCard:
+    properties:
+      key:
+        type: string
+      note:
+        description: 口径说明
+        type: string
+      title:
+        type: string
+      trendPercent:
+        description: 与昨日同期对比（%），无对比口径时为 null
+        type: number
+      unit:
+        type: string
+      value:
+        type: string
+    type: object
+  vo.DashboardChannelUsageItem:
+    properties:
+      avgLatencyMs:
+        type: number
+      channel:
+        type: string
+      errorRate:
+        type: number
+      errors:
+        type: integer
+      p95LatencyMs:
+        type: number
+      requests:
+        type: integer
+    type: object
+  vo.DashboardChannelUsageVO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/vo.DashboardChannelUsageItem'
+        type: array
+      sinceStart:
+        type: string
+    type: object
+  vo.DashboardNameCount:
+    properties:
+      count:
+        type: integer
+      name:
+        type: string
+    type: object
+  vo.DashboardOverviewVO:
+    properties:
+      cards:
+        items:
+          $ref: '#/definitions/vo.DashboardCard'
+        type: array
+      sinceStart:
+        description: 进程内运行时数据起点（ISO 时间）
+        type: string
+    type: object
+  vo.DashboardTimeseriesPoint:
+    properties:
+      ts:
+        description: unix 秒（槽起始）
+        type: integer
+      value:
+        type: number
+    type: object
+  vo.DashboardTimeseriesSeries:
+    properties:
+      key:
+        description: 分组值（如渠道名）
+        type: string
+      metric:
+        description: 指标名（图表标题/分组用）
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/vo.DashboardTimeseriesPoint'
+        type: array
+    type: object
+  vo.DashboardTimeseriesVO:
+    properties:
+      series:
+        items:
+          $ref: '#/definitions/vo.DashboardTimeseriesSeries'
+        type: array
+      stepSeconds:
+        type: integer
+    type: object
+  vo.DashboardTrendPoint:
+    properties:
+      activeUsers:
+        type: integer
+      conversations:
+        type: integer
+      date:
+        type: string
+    type: object
+  vo.DashboardTrendVO:
+    properties:
+      granularity:
+        description: day | month
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/vo.DashboardTrendPoint'
+        type: array
+    type: object
   vo.GetFaviconVO:
     properties:
       favicon:
@@ -2726,6 +2846,178 @@ paths:
       summary: 获取渠道列表
       tags:
       - 渠道管理
+  /api/admin/dashboard/activities:
+    get:
+      description: 最近的会话创建与工作流执行（按时间倒序）
+      parameters:
+      - default: 20
+        description: 返回条数（默认 20）
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/vo.DashboardActivity'
+                  type: array
+              type: object
+      summary: 最近活动
+      tags:
+      - 控制台
+  /api/admin/dashboard/assistant-usage:
+    get:
+      description: 近 N 天预设（助手）会话数 TOP N
+      parameters:
+      - default: 30
+        description: 统计天数（默认 30）
+        in: query
+        name: days
+        type: integer
+      - default: 10
+        description: 返回条数（默认 10）
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/vo.DashboardNameCount'
+                  type: array
+              type: object
+      summary: 助手使用排行
+      tags:
+      - 控制台
+  /api/admin/dashboard/channel-usage:
+    get:
+      description: 按渠道聚合的 LLM 请求数/错误率/延迟（进程内口径，自启动起）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.DashboardChannelUsageVO'
+              type: object
+      summary: LLM 渠道用量
+      tags:
+      - 控制台
+  /api/admin/dashboard/model-usage:
+    get:
+      description: 近 N 天按模型聚合的会话数占比
+      parameters:
+      - default: 30
+        description: 统计天数（默认 30）
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/vo.DashboardNameCount'
+                  type: array
+              type: object
+      summary: 模型使用占比
+      tags:
+      - 控制台
+  /api/admin/dashboard/overview:
+    get:
+      description: 统计卡片：今日对话数/今日活跃用户（DB 口径，对比昨日同期）+ LLM 平均响应/Token 消耗（进程内运行时指标口径）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.DashboardOverviewVO'
+              type: object
+      summary: 控制台总览
+      tags:
+      - 控制台
+  /api/admin/dashboard/timeseries:
+    get:
+      description: 进程内运行时指标时序：metric=http（QPM/时延）| runtime（协程/内存）| llm（QPM/时延/TTFT/Token）
+      parameters:
+      - default: http
+        description: http | runtime | llm（默认 http）
+        in: query
+        name: metric
+        type: string
+      - default: 1h
+        description: 1h | 6h | 24h（默认 1h）
+        in: query
+        name: window
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.DashboardTimeseriesVO'
+              type: object
+      summary: 运行时监控时序
+      tags:
+      - 控制台
+  /api/admin/dashboard/trends:
+    get:
+      description: 按日（range=365 时按月）聚合的对话数与活跃用户数
+      parameters:
+      - default: 7
+        description: 天数：7/30/365（默认 7）
+        in: query
+        name: range
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.DashboardTrendVO'
+              type: object
+      summary: 对话趋势
+      tags:
+      - 控制台
   /api/admin/model:
     post:
       consumes:

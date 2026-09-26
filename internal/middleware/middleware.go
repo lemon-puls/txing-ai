@@ -12,6 +12,9 @@ import (
 
 func RegisterMiddleware(app *gin.Engine, db *gorm.DB, redis *redis.Client, cosClient *utils.COSClient, agentFactory agent.AgentFactory) {
 
+	// 指标中间件放首位：panic 被 Recovery abort 后仍能按最终状态码计数，时延含全部中间件开销
+	app.Use(Metrics())
+
 	app.Use(LoggerWithZap(zap.L(), time.DateTime, false))
 
 	app.Use(BuiltinMiddleWare(db, redis, cosClient, agentFactory))

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"txing-ai/internal/global"
+	obs "txing-ai/internal/observability"
 )
 
 // NodeExecutionLog 节点执行日志
@@ -25,6 +26,10 @@ type NodeExecutionLog struct {
 func SendExecutionLog(callback func(chunk *global.Chunk) error, execLog *NodeExecutionLog) {
 	if callback == nil || execLog == nil {
 		return
+	}
+	// 观测：节点终态计数与耗时（running 事件不记）；此为全部节点执行日志的唯一漏斗
+	if execLog.Status != "" && execLog.Status != "running" {
+		obs.WorkflowNode(execLog.NodeType, execLog.Status, float64(execLog.Duration)/1000)
 	}
 	callback(&global.Chunk{
 		NodeId:     execLog.NodeID,

@@ -8,6 +8,7 @@ import (
 	"txing-ai/internal/global"
 	"txing-ai/internal/global/logging/log"
 	"txing-ai/internal/iface"
+	obs "txing-ai/internal/observability"
 	"txing-ai/internal/service/chat"
 	"txing-ai/internal/service/conversation"
 	presetservice "txing-ai/internal/service/preset"
@@ -79,6 +80,9 @@ func Chat(c *gin.Context, resProvider iface.ResourceProvider) {
 
 	// 实例化 Connection
 	buf := utils.NewConnection(webSocket, userId != -1, 10)
+	// 观测：在线 WS 连接数（Handle 阻塞至断连，defer 覆盖 panic 路径防 gauge 泄漏）
+	obs.WSConnect()
+	defer obs.WSDisconnect()
 	// 设置消息处理函数并且启动消息处理协程
 	buf.Handle(func(msg *dto.WsMessageRequest) error {
 		switch msg.Type {

@@ -128,12 +128,30 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 						Reasoning_content string `json:"reasoning_content"`
 					} `json:"delta"`
 				} `json:"choices"`
+				// token 用量（best-effort）：多数 OpenAI 兼容网关在末 chunk 附带
+				Usage *struct {
+					PromptTokens     int64 `json:"prompt_tokens"`
+					CompletionTokens int64 `json:"completion_tokens"`
+					TotalTokens      int64 `json:"total_tokens"`
+				} `json:"usage"`
 			}
 
 			if err := json.Unmarshal([]byte(dataLine), &data); err != nil {
 				// 如果 JSON 解析失败，可能是数据不完整，继续累积 buffer
 				buffer = line + "\n" + buffer
 				continue
+			}
+
+			// token 用量上报（观测层 WrapHook 拦截后不会下发下游）
+			if data.Usage != nil && data.Usage.TotalTokens > 0 {
+				if err := callback(&global.Chunk{Usage: &global.UsageInfo{
+					PromptTokens:     data.Usage.PromptTokens,
+					CompletionTokens: data.Usage.CompletionTokens,
+					TotalTokens:      data.Usage.TotalTokens,
+				}}); err != nil {
+					log.Error("callback error", zap.Error(err))
+					return err
+				}
 			}
 
 			// 处理消息块

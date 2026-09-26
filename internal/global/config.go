@@ -38,6 +38,7 @@ type AppConfig struct {
 	*LocalUploadConfig `mapstructure:"local_upload"`
 	*OpsAgentConfig    `mapstructure:"ops_agent"`
 	*WikiConfig        `mapstructure:"wiki"`
+	*ObservabilityConfig `mapstructure:"observability"`
 }
 
 type ServerConfig struct {
@@ -156,6 +157,30 @@ type WikiConfig struct {
 	RateLimitPerIPPerHour int `mapstructure:"rate_limit_per_ip_per_hour"`
 	// 全站每日问答总量上限，<=0 时使用默认值
 	DailyQuota int `mapstructure:"daily_quota"`
+}
+
+// ObservabilityConfig 可观测性配置（docs/observability_design.md）
+type ObservabilityConfig struct {
+	// 总开关：false 时所有埋点即时 no-op（热生效）
+	Enabled bool `mapstructure:"enabled"`
+	// 采样频率（registry.Gather 间隔）
+	SampleInterval time.Duration `mapstructure:"sample_interval"`
+	// 环形缓冲槽粒度（重启生效）
+	SlotInterval time.Duration `mapstructure:"slot_interval"`
+	// 内存保留时长（<=48h，重启清零；长期统计走 MySQL 业务表聚合）
+	Retention time.Duration `mapstructure:"retention"`
+	// 序列数上限（基数防御）
+	MaxSeries int `mapstructure:"max_series"`
+	// external 外部抓取模式
+	External *ObservabilityExternalConfig `mapstructure:"external"`
+}
+
+// ObservabilityExternalConfig 外部 Prometheus/VictoriaMetrics 抓取配置
+type ObservabilityExternalConfig struct {
+	// 暴露 /metrics 端点（路由注册在启动时，改后需重启）
+	Enabled bool `mapstructure:"enabled"`
+	// 非空时 /metrics 校验 Authorization: Bearer <token>
+	BearerToken string `mapstructure:"bearer_token"`
 }
 
 func LoadConfig() *AppConfig {

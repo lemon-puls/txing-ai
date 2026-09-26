@@ -92,6 +92,15 @@ func (c ChatClient) StreamChat(ctx context.Context, conf *adaptercommon.ChatConf
 			return err
 		}
 
+		// token 用量（best-effort）：Bot API 的 usage 可能挂在 Usage 或 BotUsage.ModelUsage，
+		// 两种都读，谁有值用谁；不主动设 stream_options（Bot 端点行为未验证）
+		if usage := extractUsage(&recv); usage != nil {
+			if err := callback(usage); err != nil {
+				log.Error("callback error", zap.Error(err))
+				return err
+			}
+		}
+
 		if len(recv.Choices) > 0 {
 			var reasoningContent string
 			if recv.Choices[0].Delta.ReasoningContent != nil {
@@ -129,6 +138,40 @@ func NewChatClient(endpoint, apiKey string) *ChatClient {
 		ApiKey:   apiKey,
 		client:   client,
 	}
+}
+
+// extractUsage 提取 token 用量：优先 Usage（标准 chat 端点），
+// 回退汇总 BotUsage.ModelUsage（Bot 端点）；无值返回 nil
+func extractUsage(recv *model.BotChatCompletionStreamResponse) *global.Chunk {
+	if recv == nil {
+		return nil
+	}
+	if recv.Usage != nil && recv.Usage.TotalTokens > 0 {
+		return &global.Chunk{Usage: &global.UsageInfo{
+			PromptTokens:     int64(recv.Usage.PromptTokens),
+			CompletionTokens: int64(recv.Usage.CompletionTokens),
+			TotalTokens:      int64(recv.Usage.TotalTokens),
+		}}
+	}
+	if recv.BotUsage != nil {
+		var prompt, completion, total int64
+		for _, mu := range recv.BotUsage.ModelUsage {
+			if mu == nil {
+				continue
+			}
+			prompt += int64(mu.PromptTokens)
+			completion += int64(mu.CompletionTokens)
+			total += int64(mu.TotalTokens)
+		}
+		if total > 0 {
+			return &global.Chunk{Usage: &global.UsageInfo{
+				PromptTokens:     prompt,
+				CompletionTokens: completion,
+				TotalTokens:      total,
+			}}
+		}
+	}
+	return nil
 }
 
 var _ adaptercommon.ChatRequester = (*ChatClient)(nil)

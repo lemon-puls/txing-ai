@@ -150,6 +150,13 @@ Class | Method | HTTP request | Description
 *TxingAiApi.DefaultApi* | [**apiAdminChannelIdPut**](docs/DefaultApi.md#apiAdminChannelIdPut) | **PUT** /api/admin/channel/{id} | 更新渠道
 *TxingAiApi.DefaultApi* | [**apiAdminChannelListGet**](docs/DefaultApi.md#apiAdminChannelListGet) | **GET** /api/admin/channel/list | 获取渠道列表
 *TxingAiApi.DefaultApi* | [**apiAdminChannelPost**](docs/DefaultApi.md#apiAdminChannelPost) | **POST** /api/admin/channel | 创建渠道
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardActivitiesGet**](docs/DefaultApi.md#apiAdminDashboardActivitiesGet) | **GET** /api/admin/dashboard/activities | 最近活动
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardAssistantUsageGet**](docs/DefaultApi.md#apiAdminDashboardAssistantUsageGet) | **GET** /api/admin/dashboard/assistant-usage | 助手使用排行
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardChannelUsageGet**](docs/DefaultApi.md#apiAdminDashboardChannelUsageGet) | **GET** /api/admin/dashboard/channel-usage | LLM 渠道用量
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardModelUsageGet**](docs/DefaultApi.md#apiAdminDashboardModelUsageGet) | **GET** /api/admin/dashboard/model-usage | 模型使用占比
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardOverviewGet**](docs/DefaultApi.md#apiAdminDashboardOverviewGet) | **GET** /api/admin/dashboard/overview | 控制台总览
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardTimeseriesGet**](docs/DefaultApi.md#apiAdminDashboardTimeseriesGet) | **GET** /api/admin/dashboard/timeseries | 运行时监控时序
+*TxingAiApi.DefaultApi* | [**apiAdminDashboardTrendsGet**](docs/DefaultApi.md#apiAdminDashboardTrendsGet) | **GET** /api/admin/dashboard/trends | 对话趋势
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdDelete**](docs/DefaultApi.md#apiAdminModelIdDelete) | **DELETE** /api/admin/model/{id} | 删除模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelIdPut**](docs/DefaultApi.md#apiAdminModelIdPut) | **PUT** /api/admin/model/{id} | 更新模型
 *TxingAiApi.DefaultApi* | [**apiAdminModelPost**](docs/DefaultApi.md#apiAdminModelPost) | **POST** /api/admin/model | 创建模型
@@ -244,6 +251,12 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiAdminAboutSkillPost200Response](docs/ApiAdminAboutSkillPost200Response.md)
  - [TxingAiApi.ApiAdminAboutTimelinePost200Response](docs/ApiAdminAboutTimelinePost200Response.md)
  - [TxingAiApi.ApiAdminChannelPost200Response](docs/ApiAdminChannelPost200Response.md)
+ - [TxingAiApi.ApiAdminDashboardActivitiesGet200Response](docs/ApiAdminDashboardActivitiesGet200Response.md)
+ - [TxingAiApi.ApiAdminDashboardAssistantUsageGet200Response](docs/ApiAdminDashboardAssistantUsageGet200Response.md)
+ - [TxingAiApi.ApiAdminDashboardChannelUsageGet200Response](docs/ApiAdminDashboardChannelUsageGet200Response.md)
+ - [TxingAiApi.ApiAdminDashboardOverviewGet200Response](docs/ApiAdminDashboardOverviewGet200Response.md)
+ - [TxingAiApi.ApiAdminDashboardTimeseriesGet200Response](docs/ApiAdminDashboardTimeseriesGet200Response.md)
+ - [TxingAiApi.ApiAdminDashboardTrendsGet200Response](docs/ApiAdminDashboardTrendsGet200Response.md)
  - [TxingAiApi.ApiAdminModelPost200Response](docs/ApiAdminModelPost200Response.md)
  - [TxingAiApi.ApiAdminOpsChatSessionsIdGet200Response](docs/ApiAdminOpsChatSessionsIdGet200Response.md)
  - [TxingAiApi.ApiAdminWebsitesFaviconPost200Response](docs/ApiAdminWebsitesFaviconPost200Response.md)
@@ -342,6 +355,17 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.VoAttachmentVO](docs/VoAttachmentVO.md)
  - [TxingAiApi.VoChannelVO](docs/VoChannelVO.md)
  - [TxingAiApi.VoConversationDetailVO](docs/VoConversationDetailVO.md)
+ - [TxingAiApi.VoDashboardActivity](docs/VoDashboardActivity.md)
+ - [TxingAiApi.VoDashboardCard](docs/VoDashboardCard.md)
+ - [TxingAiApi.VoDashboardChannelUsageItem](docs/VoDashboardChannelUsageItem.md)
+ - [TxingAiApi.VoDashboardChannelUsageVO](docs/VoDashboardChannelUsageVO.md)
+ - [TxingAiApi.VoDashboardNameCount](docs/VoDashboardNameCount.md)
+ - [TxingAiApi.VoDashboardOverviewVO](docs/VoDashboardOverviewVO.md)
+ - [TxingAiApi.VoDashboardTimeseriesPoint](docs/VoDashboardTimeseriesPoint.md)
+ - [TxingAiApi.VoDashboardTimeseriesSeries](docs/VoDashboardTimeseriesSeries.md)
+ - [TxingAiApi.VoDashboardTimeseriesVO](docs/VoDashboardTimeseriesVO.md)
+ - [TxingAiApi.VoDashboardTrendPoint](docs/VoDashboardTrendPoint.md)
+ - [TxingAiApi.VoDashboardTrendVO](docs/VoDashboardTrendVO.md)
  - [TxingAiApi.VoGetFaviconVO](docs/VoGetFaviconVO.md)
  - [TxingAiApi.VoGetPresignedURLVO](docs/VoGetPresignedURLVO.md)
  - [TxingAiApi.VoLoginVO](docs/VoLoginVO.md)
