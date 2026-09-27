@@ -1,7 +1,7 @@
 <template>
   <div class="welcome-container">
-    <!-- 顶部导航栏 -->
-    <div class="nav-header">
+    <!-- 顶部导航栏（沿用原结构：logo / GitHub / 用户头像） -->
+    <header class="nav-header">
       <div class="nav-content">
         <div class="nav-left">
           <div class="logo">
@@ -17,571 +17,414 @@
           <UserAvatar />
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- 动态背景 -->
-    <div class="animated-background">
-      <div class="light"></div>
-    </div>
-
-    <!-- 粒子动画背景 -->
-    <div class="particles">
-      <div
-        v-for="particle in particles"
-        :key="particle.id"
-        class="particle"
-        :style="particle.style"
-      ></div>
-    </div>
+    <!-- 流光极光背景（WebGL，随指针弯曲） -->
+    <AuroraRibbons class="hero-bg" :speed="55" :intensity="65" :warp="45" />
+    <!-- 文字可读性 scrim：中心柔和压暗，边缘透出光带 -->
+    <div class="hero-scrim" aria-hidden="true"></div>
 
     <!-- 主要内容 -->
-    <div class="content">
-      <h1 class="main-title">
-        <span class="gradient-text">Txing AI</span>
-        <div class="subtitle">
-          <span class="typing-text"></span>
-          <span class="cursor">|</span>
-        </div>
-      </h1>
+    <main class="content">
+      <p class="brand-line">TXING · AI ASSISTANT</p>
+      <h1 class="main-title">Txing AI</h1>
+      <p class="subtitle">智能助手，让我们都有光明的未来</p>
 
-      <div class="cards-container">
-        <!-- 聊天入口 -->
-        <div
-          class="entrance-card chat-card"
-          :class="{ 'card-hover': hoveredCard === 'chat' }"
-          @click="navigateToChat"
-          @mouseenter="handleHover('chat')"
-          @mouseleave="handleHover(null)"
-        >
-          <div class="card-content">
-            <el-icon class="card-icon"><ChatRound /></el-icon>
-            <h2>开启聊天</h2>
-            <p>与 AI 对话，探索无限可能</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
+      <!-- 直接提问：回车带入新对话（chat 页读取 query.prompt 预填） -->
+      <form class="prompt-box" @submit.prevent="goChat">
+        <el-icon class="prompt-icon"><Search /></el-icon>
+        <input
+          v-model="prompt"
+          class="prompt-input"
+          type="text"
+          placeholder="问问 Txing AI…"
+          autocomplete="off"
+          aria-label="向 Txing AI 提问"
+        />
+        <button type="submit" class="prompt-send" aria-label="开始对话">
+          <el-icon><Promotion /></el-icon>
+        </button>
+      </form>
 
-        <!-- 市场入口 -->
-        <div
-          class="entrance-card market-card"
-          :class="{ 'card-hover': hoveredCard === 'market' }"
-          @click="navigateToMarket"
-          @mouseenter="handleHover('market')"
-          @mouseleave="handleHover(null)"
+      <!-- 四个入口（与旧版目标一致，重做视觉：pill + hover 聚光） -->
+      <nav ref="entriesRef" class="entries" @pointermove="trackSpot" @pointerleave="clearSpot">
+        <button
+          v-for="e in entries"
+          :key="e.key"
+          type="button"
+          class="entry"
+          @click="e.go()"
         >
-          <div class="card-content">
-            <el-icon class="card-icon"><Shop /></el-icon>
-            <h2>AI 助手市场</h2>
-            <p>更多 AI 助手，提升工作效率</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
-
-        <!-- 网站导航入口 -->
-        <div
-          class="entrance-card websites-card"
-          :class="{ 'card-hover': hoveredCard === 'websites' }"
-          @click="navigateToWebsites"
-          @mouseenter="handleHover('websites')"
-          @mouseleave="handleHover(null)"
-        >
-          <div class="card-content">
-            <el-icon class="card-icon"><Link /></el-icon>
-            <h2>网站导航</h2>
-            <p>精选优质站点，发现实用工具、AI 与开源资源</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
-
-        <!-- AI 应用市场入口 -->
-        <div
-          class="entrance-card workflow-card"
-          :class="{ 'card-hover': hoveredCard === 'workflow' }"
-          @click="navigateToWorkflow"
-          @mouseenter="handleHover('workflow')"
-          @mouseleave="handleHover(null)"
-        >
-          <div class="card-content">
-            <el-icon class="card-icon"><Share /></el-icon>
-            <h2>AI 应用市场</h2>
-            <p>发现并使用 AI 应用，自动化任务</p>
-            <div class="card-action">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-          <div class="card-overlay"></div>
-        </div>
-      </div>
-    </div>
+          <el-icon class="entry-icon"><component :is="e.icon" /></el-icon>
+          <span>{{ e.label }}</span>
+        </button>
+      </nav>
+    </main>
   </div>
 </template>
 
 <script setup name="WelcomePage">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ChatRound,
-  Shop,
-  ArrowRight,
-  Link,
-  Share
-} from '@element-plus/icons-vue'
+import { ChatRound, Shop, Link, Share, Search, Promotion } from '@element-plus/icons-vue'
+import { useThemeStore } from '@/stores/theme'
+import AuroraRibbons from '@/components/AuroraRibbons.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
+// 与 chat/assistant/websites 页一致：进入页面即应用主题（setup 调用，首帧前挂 dark class 防闪白）
+// Same as other pages: apply the stored theme in setup (dark class lands before first paint)
+const themeStore = useThemeStore()
+themeStore.initTheme()
+
 const router = useRouter()
-const hoveredCard = ref(null)
-const particles = ref([])
+const prompt = ref('')
 
+// 四个入口与旧版目标完全一致，仅重做视觉 / same four destinations as before, visuals only
+const entries = [
+  { key: 'chat', label: '开启聊天', icon: ChatRound, go: () => router.push('/chat') },
+  { key: 'market', label: 'AI 助手市场', icon: Shop, go: () => router.push('/assistant') },
+  { key: 'websites', label: '网站导航', icon: Link, go: () => router.push('/websites') },
+  { key: 'workflow', label: 'AI 应用市场', icon: Share, go: () => router.push('/workflow') }
+]
 
-// 打字效果相关变量
-const text = '智能助手，让我们都有光明的未来'
-const typingSpeed = 150 // 打字速度（毫秒）
-const eraseSpeed = 100  // 删除速度（毫秒）
-const delayBetweenLoops = 2000 // 循环之间的延迟（毫秒）
-let currentText = ''
-let isTyping = true
-let currentIndex = 0
-
-// 生成随机数在指定范围内
-const random = (min, max) => Math.random() * (max - min) + min
-
-// 初始化粒子
-const initParticles = () => {
-  const particlesArray = []
-  for (let i = 0; i < 20; i++) {
-    particlesArray.push({
-      id: i,
-      style: {
-        width: `${random(1, 4)}px`,
-        height: `${random(1, 4)}px`,
-        left: `${random(0, 100)}%`,
-        top: `${random(0, 100)}%`,
-        animationDelay: `${random(-8000, 0)}ms`,
-        animationDuration: `${random(3000, 15000)}ms`,
-        opacity: random(0.1, 0.5)
-      }
-    })
-  }
-  particles.value = particlesArray
+// 回车/发送：非空时把输入带入新对话（对象传参由 vue-router 自动编码）
+// Enter/send: carry the text into a fresh chat (vue-router encodes object queries)
+const goChat = () => {
+  const text = prompt.value.trim()
+  router.push(text
+    ? { path: '/chat', query: { newChat: 'true', prompt: text } }
+    : { path: '/chat', query: { newChat: 'true' } })
 }
 
-// 打字效果函数
-const typeText = () => {
-  const typingElement = document.querySelector('.typing-text')
-  if (!typingElement) return
-
-  if (isTyping) {
-    if (currentIndex < text.length) {
-      currentText += text[currentIndex]
-      typingElement.textContent = currentText
-      currentIndex++
-      setTimeout(typeText, typingSpeed)
-    } else {
-      isTyping = false
-      setTimeout(typeText, delayBetweenLoops)
-    }
-  } else {
-    if (currentText.length > 0) {
-      currentText = currentText.slice(0, -1)
-      typingElement.textContent = currentText
-      setTimeout(typeText, eraseSpeed)
-    } else {
-      isTyping = true
-      currentIndex = 0
-      setTimeout(typeText, delayBetweenLoops)
-    }
-  }
+// 入口行聚光：指针坐标写入 CSS 变量，::after 单个径向渐变消费（仅 hover 设备启用）
+// Entry spotlight: pointer coords go into CSS vars feeding one radial gradient (::after), hover devices only
+const entriesRef = ref(null)
+const canHover = window.matchMedia('(hover: hover)').matches
+const trackSpot = (e) => {
+  if (!canHover || !entriesRef.value) return
+  const r = entriesRef.value.getBoundingClientRect()
+  entriesRef.value.style.setProperty('--mx', `${e.clientX - r.left}px`)
+  entriesRef.value.style.setProperty('--my', `${e.clientY - r.top}px`)
 }
-
-onMounted(() => {
-  initParticles()
-  typeText() // 启动打字效果
-})
-
-const handleHover = (card) => {
-  hoveredCard.value = card
+const clearSpot = () => {
+  entriesRef.value?.style.removeProperty('--mx')
+  entriesRef.value?.style.removeProperty('--my')
 }
-
-const navigateToChat = () => {
-  router.push('/chat')
-}
-
-const navigateToMarket = () => {
-  router.push('/assistant')
-}
-
-const navigateToWebsites = () => {
-  router.push('/websites')
-}
-
-const navigateToWorkflow = () => {
-  router.push('/workflow')
-}
+// 本页无任何 setTimeout/setInterval/requestAnimationFrame —— 旧版打字机定时器泄漏从根上消除
+// No timers at all on this page — the old typewriter timer leak is gone by design
 </script>
 
 <style scoped lang="scss">
 .welcome-container {
-  min-height: 100vh;
-  width: 100%;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #0f0f1a;
-  overflow: hidden;
+  height: 100vh;
+  height: 100dvh; // 移动端地址栏收展不跳动 / avoids iOS chrome jump
+  overflow: hidden; // 对抗全局 #app overflow:scroll / counters the global scrollable #app
+  background: var(--bg-primary);
 }
 
-// 导航栏样式
+// 背景层
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+// 可读性 scrim：介于画布与内容之间 / readability scrim between canvas and content
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 46%,
+    color-mix(in srgb, var(--bg-primary) 42%, transparent),
+    transparent 70%
+  );
+}
+
+// 顶部导航（透明浮在流光上）
 .nav-header {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
+  z-index: 3;
   height: 64px;
-  z-index: 100;
-
-  .nav-content {
-    max-width: 1200px;
-    height: 100%;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .nav-left {
-      display: flex;
-      align-items: center;
-
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .logo-text {
-          font-size: 24px;
-          font-weight: bold;
-          background: linear-gradient(45deg, #2B5EFF, #1E88E5);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-      }
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-
-      .github-link {
-        display: flex;
-        align-items: center;
-        color: rgba(255, 255, 255, 0.7);
-        transition: color 0.3s ease;
-
-        &:hover {
-          color: var(--el-color-primary);
-        }
-
-        .nav-icon {
-          font-size: 24px;
-        }
-      }
-
-      .user-info {
-        .user-avatar {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          cursor: pointer;
-          padding: 2px;
-          border-radius: 50%;
-          transition: background-color 0.3s ease;
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.1);
-          }
-
-          .el-icon--right {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-          }
-        }
-      }
-    }
-  }
 }
-
-// 调整内容区域的上边距，为导航栏留出空间
-.content {
-  padding-top: 64px;
-}
-
-// 动态背景
-.animated-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-
-  .light {
-    position: absolute;
-    width: 150vmax;
-    height: 150vmax;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(
-      circle,
-      rgba(43, 94, 255, 0.15) 0%,
-      rgba(30, 136, 229, 0.15) 30%,
-      rgba(3, 169, 244, 0.15) 70%
-    );
-    animation: rotate 20s linear infinite;
-  }
-}
-
-// 粒子动画
-.particles {
-  position: absolute;
-  width: 100%;
+.nav-content {
+  max-width: 1200px;
   height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(45deg, #2b5eff, #1e88e5, #03a9f4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.github-link {
+  display: inline-flex;
+  color: var(--text-secondary);
+  transition: color 0.2s;
 
-  .particle {
-    position: absolute;
-    background: linear-gradient(45deg, rgba(43, 94, 255, 0.5), rgba(3, 169, 244, 0.5));
-    border-radius: 50%;
-    animation: float 8s infinite;
+  &:hover {
+    color: var(--text-primary);
   }
+}
+.nav-icon {
+  display: block;
+}
+
+// 主内容
+.content {
+  position: relative;
+  z-index: 2;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 96px 24px 48px;
+  text-align: center;
+}
+
+.brand-line {
+  margin: 0 0 14px;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 .main-title {
-  margin-bottom: 60px;
-  text-align: center;
-
-  .gradient-text {
-    font-size: 4em;
-    font-weight: bold;
-    background: linear-gradient(45deg, #2B5EFF, #1E88E5, #03A9F4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: hue-rotate 6s linear infinite;
-  }
-
-  .subtitle {
-    margin-top: 20px;
-    font-size: 1.5em;
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: normal;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 2px;
-
-    .cursor {
-      display: inline-block;
-      animation: blink 1s infinite;
-      color: var(--el-color-primary);
-      font-weight: 200;
-    }
-  }
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  background: linear-gradient(45deg, #2b5eff, #1e88e5, #03a9f4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.cards-container {
+.subtitle {
+  margin: 14px 0 36px;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+// 提问输入框（玻璃胶囊 + 品牌聚焦环）
+.prompt-box {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  height: 52px;
+  padding: 0 8px 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 22%, transparent);
+  }
+}
+.prompt-icon {
+  font-size: 18px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.prompt-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--text-primary);
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+}
+.prompt-send {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
-  perspective: 1000px;
+  background: var(--el-color-primary);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 35%, transparent);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: none;
+  }
 }
 
-.entrance-card {
+// 入口行（pill + 聚光）
+.entries {
   position: relative;
-  width: 300px;
-  height: 320px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 999px;
 
-  &.card-hover {
-    transform: translateY(-10px) rotateX(5deg) rotateY(5deg);
-    box-shadow: 0 20px 40px rgba(43, 94, 255, 0.2);
-
-    .card-overlay {
-      opacity: 1;
-    }
-
-    .card-icon {
-      transform: translateY(-10px) scale(1.1);
-    }
-
-    .card-action {
-      transform: translateX(5px);
-      opacity: 1;
-    }
-  }
-
-  .card-content {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-align: center;
-  }
-
-  .card-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    color: #2B5EFF;
-  }
-
-  h2 {
-    font-size: 24px;
-    margin: 20px 0;
-    background: linear-gradient(45deg, #2B5EFF, #1E88E5);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  p {
-    font-size: 16px;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.6;
-    margin-bottom: 20px;
-  }
-
-  .card-action {
-    font-size: 24px;
-    color: #1E88E5;
-    opacity: 0;
-    transition: all 0.3s ease;
-  }
-
-  .card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      45deg,
-      rgba(43, 94, 255, 0.1) 0%,
-      rgba(30, 136, 229, 0.1) 50%,
-      rgba(3, 169, 244, 0.1) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-
-  &::before {
+  // 聚光层：跟随 --mx/--my 的单个径向渐变，hover 时淡入
+  &::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    inset: 0;
+    border-radius: inherit;
     pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+    background: radial-gradient(
+      140px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--el-color-primary) 10%, transparent),
+      transparent 70%
+    );
   }
-}
 
-// 动画关键帧
-@keyframes rotate {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-20px) translateX(10px);
-  }
-}
-
-@keyframes hue-rotate {
-  from {
-    filter: hue-rotate(0deg);
-  }
-  to {
-    filter: hue-rotate(360deg);
-  }
-}
-
-// 添加光标闪烁动画
-@keyframes blink {
-  0%, 100% {
+  &:hover::after {
     opacity: 1;
   }
-  50% {
-    opacity: 0;
+}
+.entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+
+  .entry-icon {
+    font-size: 16px;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--el-color-primary) 40%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 60%, transparent);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 12%, transparent);
   }
 }
 
-// 响应式设计
-@media screen and (max-width: 768px) {
-  .main-title {
-    margin-bottom: 40px;
+// 入场动画（CSS only，首屏内容无需 IntersectionObserver）
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.brand-line,
+.main-title,
+.subtitle,
+.prompt-box,
+.entries {
+  animation: fade-rise 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.brand-line { animation-delay: 0.05s; }
+.main-title { animation-delay: 0.12s; }
+.subtitle { animation-delay: 0.22s; }
+.prompt-box { animation-delay: 0.32s; }
+.entries { animation-delay: 0.42s; }
 
-    .gradient-text {
-      font-size: 2.5em;
+@media (prefers-reduced-motion: reduce) {
+  .brand-line,
+  .main-title,
+  .subtitle,
+  .prompt-box,
+  .entries {
+    animation: none;
+  }
+}
+
+// 响应式
+@media (max-width: 768px) {
+  .content {
+    padding: 88px 20px 40px;
+  }
+  .prompt-box {
+    max-width: 100%;
+  }
+  .entries {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: 420px;
+    border-radius: 20px;
+
+    .entry {
+      justify-content: flex-start;
     }
 
-    .subtitle {
-      font-size: 1.2em;
+    &::after {
+      border-radius: 20px;
     }
   }
-
-  .cards-container {
-    gap: 20px;
+}
+@media (max-width: 480px) {
+  .subtitle {
+    font-size: 1.05rem;
+    margin-bottom: 28px;
   }
-
-  .entrance-card {
-    width: calc(100% - 40px);
-    height: 300px;
-
-    .card-icon {
-      font-size: 48px;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin: 15px 0;
-    }
-
-    p {
-      font-size: 14px;
-    }
+  .entries {
+    gap: 8px;
+  }
+  .entry {
+    padding: 9px 14px;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .hero-scrim {
+    background: radial-gradient(
+      ellipse 100% 60% at 50% 46%,
+      color-mix(in srgb, var(--bg-primary) 46%, transparent),
+      transparent 72%
+    );
   }
 }
 </style>
