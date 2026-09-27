@@ -21,49 +21,52 @@
 
     <!-- 流光极光背景（WebGL，随指针弯曲） -->
     <AuroraRibbons class="hero-bg" :speed="55" :intensity="65" :warp="45" />
-    <!-- 点阵地球（WebGL，自转 + 色源光波；浮在流光之上、scrim 之下） -->
-    <!-- Dotted globe (WebGL, auto-rotate + color-source waves; over the aurora, under the scrim) -->
-    <div class="hero-globe-wrap" aria-hidden="true">
-      <DottedGlobe class="hero-globe" :speed="32" :intensity="58" :dot-size="46" />
-    </div>
-    <!-- 文字可读性 scrim：中心柔和压暗，边缘透出光带 -->
+    <!-- 文字可读性 scrim：柔和压暗左侧文案区，右侧留给地球 -->
     <div class="hero-scrim" aria-hidden="true"></div>
 
-    <!-- 主要内容 -->
-    <main class="content">
-      <p class="brand-line">TXING · AI ASSISTANT</p>
-      <h1 class="main-title">Txing AI</h1>
-      <p class="subtitle">智能助手，让我们都有光明的未来</p>
+    <!-- 主要内容：左文案 + 右完整地球 -->
+    <main class="hero-main">
+      <div class="content">
+        <p class="brand-line">TXING · AI ASSISTANT</p>
+        <h1 class="main-title">Txing AI</h1>
+        <p class="subtitle">智能助手，让我们都有光明的未来</p>
 
-      <!-- 直接提问：回车带入新对话（chat 页读取 query.prompt 预填） -->
-      <form class="prompt-box" @submit.prevent="goChat">
-        <el-icon class="prompt-icon"><Search /></el-icon>
-        <input
-          v-model="prompt"
-          class="prompt-input"
-          type="text"
-          placeholder="问问 Txing AI…"
-          autocomplete="off"
-          aria-label="向 Txing AI 提问"
-        />
-        <button type="submit" class="prompt-send" aria-label="开始对话">
-          <el-icon><Promotion /></el-icon>
-        </button>
-      </form>
+        <!-- 直接提问：回车带入新对话（chat 页读取 query.prompt 预填） -->
+        <form class="prompt-box" @submit.prevent="goChat">
+          <el-icon class="prompt-icon"><Search /></el-icon>
+          <input
+            v-model="prompt"
+            class="prompt-input"
+            type="text"
+            placeholder="问问 Txing AI…"
+            autocomplete="off"
+            aria-label="向 Txing AI 提问"
+          />
+          <button type="submit" class="prompt-send" aria-label="开始对话">
+            <el-icon><Promotion /></el-icon>
+          </button>
+        </form>
 
-      <!-- 四个入口（与旧版目标一致，重做视觉：pill + hover 聚光） -->
-      <nav ref="entriesRef" class="entries" @pointermove="trackSpot" @pointerleave="clearSpot">
-        <button
-          v-for="e in entries"
-          :key="e.key"
-          type="button"
-          class="entry"
-          @click="e.go()"
-        >
-          <el-icon class="entry-icon"><component :is="e.icon" /></el-icon>
-          <span>{{ e.label }}</span>
-        </button>
-      </nav>
+        <!-- 四个入口（与旧版目标一致，重做视觉：pill + hover 聚光） -->
+        <nav ref="entriesRef" class="entries" @pointermove="trackSpot" @pointerleave="clearSpot">
+          <button
+            v-for="e in entries"
+            :key="e.key"
+            type="button"
+            class="entry"
+            @click="e.go()"
+          >
+            <el-icon class="entry-icon"><component :is="e.icon" /></el-icon>
+            <span>{{ e.label }}</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- 点阵地球（WebGL，完整呈现：自转 + 色源光波 + 指针姿态） -->
+      <!-- Dotted globe (WebGL, shown in full: auto-rotate + color-source waves + pointer attitude) -->
+      <div class="globe-side" aria-hidden="true">
+        <DottedGlobe class="hero-globe" :speed="28" :intensity="64" :dot-size="44" />
+      </div>
     </main>
   </div>
 </template>
@@ -136,36 +139,43 @@ const clearSpot = () => {
   z-index: 0;
 }
 
-// 点阵地球：底边裁切的「升起的星球」，压在流光之上、scrim 之下
-// Dotted globe: a planet rising, cropped by the bottom edge — over the aurora, under the scrim
-.hero-globe-wrap {
-  --globe: min(82vh, 840px);
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--globe) * -0.6);
-  z-index: 1;
-  width: var(--globe);
-  height: var(--globe);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-.hero-globe {
-  width: 100%;
-  height: 100%;
-  animation: globe-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
-}
-
-// 可读性 scrim：介于画布与内容之间 / readability scrim between canvas and content
+// 可读性 scrim：压暗左侧文案区，右侧留给地球 / dim the copy zone on the left, keep the right for the globe
 .hero-scrim {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 70% 55% at 50% 46%,
-    color-mix(in srgb, var(--bg-primary) 42%, transparent),
+    ellipse 60% 55% at 28% 46%,
+    color-mix(in srgb, var(--bg-primary) 45%, transparent),
     transparent 70%
   );
+}
+
+// 主区：左文案 + 右完整地球 / hero split: copy left, full globe right
+.hero-main {
+  position: relative;
+  z-index: 3;
+  max-width: 1200px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 96px 24px 48px;
+  display: flex;
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+}
+
+// 点阵地球：完整呈现 / the dotted globe shown in full
+.globe-side {
+  flex-shrink: 0;
+  width: min(38vw, 52vh, 540px);
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+.hero-globe {
+  width: 100%;
+  height: 100%;
+  animation: globe-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
 }
 
 // 顶部导航（透明浮在流光上）
@@ -212,17 +222,14 @@ const clearSpot = () => {
   display: block;
 }
 
-// 主内容
+// 文案列（桌面左对齐，窄屏回中）/ copy column (left-aligned on desktop, re-centered when the globe hides)
 .content {
-  position: relative;
-  z-index: 3;
-  min-height: 100%;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 96px 24px 48px;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .brand-line {
@@ -322,7 +329,7 @@ const clearSpot = () => {
   margin-top: 28px;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
   padding: 6px;
   border-radius: 999px;
@@ -351,7 +358,7 @@ const clearSpot = () => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
+  padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid transparent;
   background: transparent;
@@ -419,13 +426,28 @@ const clearSpot = () => {
 }
 
 // 响应式
-@media (max-width: 768px) {
-  // 小屏让位给入口网格与提问框，星球仅在大屏呈现
-  // Small screens give the room to the entry grid and prompt box; globe is desktop-only
-  .hero-globe-wrap {
+// ≤1023：地球退场，文案回中（scrim 对准中央）/ globe bows out, copy re-centers (scrim follows)
+@media (max-width: 1023px) {
+  .globe-side {
     display: none;
   }
   .content {
+    align-items: center;
+    text-align: center;
+  }
+  .entries {
+    justify-content: center;
+  }
+  .hero-scrim {
+    background: radial-gradient(
+      ellipse 70% 55% at 50% 46%,
+      color-mix(in srgb, var(--bg-primary) 42%, transparent),
+      transparent 70%
+    );
+  }
+}
+@media (max-width: 768px) {
+  .hero-main {
     padding: 88px 20px 40px;
   }
   .prompt-box {

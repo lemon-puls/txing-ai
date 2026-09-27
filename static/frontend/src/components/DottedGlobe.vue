@@ -16,7 +16,7 @@ import landMaskUrl from '@/assets/images/land-mask.png'
 // ===== 观感常量 =====
 // Look-and-feel constants
 const MAX_DPR = 1.5 // 点/线渲染轻量，可承受 1.5 / points+lines are light enough for 1.5
-const SPHERE_FIT = 0.93 // 球半径占画布半宽（裁剪空间）/ sphere radius in clip units
+const SPHERE_FIT = 0.88 // 球半径占画布半宽；留 12% 边距让光晕自然衰减，防画布裁切出矩形边 / sphere radius in clip units; 12% margin so the halo decays before the canvas edge
 const CAM_DIST = 2.7 // 相机距离（球半径 = 1）/ camera distance in sphere radii
 const YAW0 = 0.4 // 初始经度对准 -23°（originkit 默认视角）/ face lon -23° like originkit
 const POINT_CANDIDATES = 42000 // Fibonacci 候选数（约 1/3 落在陆地）/ Fibonacci candidates (~1/3 on land)
@@ -151,15 +151,17 @@ precision highp float;
 precision mediump float;
 #endif
 
+uniform float uFit; // 球半径（裁剪空间）/ sphere radius in clip units
 uniform float uIntensity;
 uniform vec3 uRim;
 varying vec2 vP;
 
 void main(){
   float r = length(vP);
-  float x = (r - 0.93) * 5.5;
-  float halo = exp(-x * x); // 球缘光晕（勿加球内平铺光晕：那是难看的色块）/ limb halo (no inner flat bloom: it reads as an ugly disc)
-  float a = halo * 0.5 * uIntensity;
+  // 球缘光晕：指数急衰减，画布边缘处幅值已不可见（高斯宽尾会被画布裁出矩形边）
+  // Limb halo: steep exponential decay, invisible at the canvas edge (a wide gaussian tail gets cropped into rectangle edges)
+  float halo = exp(-abs(r - uFit) * 26.0);
+  float a = halo * 0.55 * uIntensity;
   gl_FragColor = vec4(uRim * a, a); // 预乘 over / premultiplied over
 }
 `
@@ -398,6 +400,7 @@ const draw = () => {
 
   // 先大气光晕 / atmosphere halo first
   gl.useProgram(progRim)
+  gl.uniform1f(locRim.uFit, SPHERE_FIT)
   gl.uniform1f(locRim.uIntensity, uni.intensity)
   gl.uniform3f(locRim.uRim, uni.rim[0], uni.rim[1], uni.rim[2])
   gl.bindBuffer(gl.ARRAY_BUFFER, bufTri)
@@ -491,8 +494,8 @@ watchEffect(() => {
   const dark = isDark.value
   const pal = dark ? DARK_PALETTE : LIGHT_PALETTE
   uni.speed = clampN(props.speed, 0, 100) / 100
-  // 亮色下压低亮度 / tame brightness on light theme
-  uni.intensity = (clampN(props.intensity, 0, 100) / 100) * (dark ? 1.0 : 0.85)
+  // 亮色下略压亮度 / slightly tame brightness on light theme
+  uni.intensity = (clampN(props.intensity, 0, 100) / 100) * (dark ? 1.0 : 0.95)
   uni.dotPx = (clampN(props.dotSize, 0, 100) / 50) * 3 // 50 → 700px 画布下 3px / 50 → 3px at the 700px baseline
   uni.lean = clampN(props.lean, 0, 100) / 100
   uni.land = parseColor(pal.land, [0.84, 0.89, 1, 1])
@@ -554,7 +557,7 @@ onMounted(() => {
   aPosMain = gl.getAttribLocation(progMain, 'a_pos')
   aSeedMain = gl.getAttribLocation(progMain, 'a_seed')
   gl.useProgram(progRim)
-  locRim = cacheLocs(progRim, ['uIntensity', 'uRim'])
+  locRim = cacheLocs(progRim, ['uFit', 'uIntensity', 'uRim'])
   aPosRim = gl.getAttribLocation(progRim, 'a_pos')
 
   bufPoints = gl.createBuffer()
