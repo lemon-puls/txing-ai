@@ -55,38 +55,36 @@
           </div>
         </div>
         <div class="empty-title">运营助手</div>
-        <div class="empty-desc">
-          提供一个网站或 GitHub 仓库地址，我会自动抓取信息并生成录入提案，确认后才会写入数据库。
-        </div>
+        <div class="empty-desc">{{ pageMeta.desc }}</div>
 
         <!-- 三步流程示意 -->
         <div class="flow-steps">
           <div class="flow-step">
-            <span class="step-icon"><el-icon :size="12"><Link /></el-icon></span>
-            粘贴网址
+            <span class="step-icon"><el-icon :size="12"><component :is="pageMeta.steps[0].icon" /></el-icon></span>
+            {{ pageMeta.steps[0].label }}
           </div>
           <el-icon :size="12" class="step-arrow"><ArrowRight /></el-icon>
           <div class="flow-step">
-            <span class="step-icon accent"><el-icon :size="12"><Search /></el-icon></span>
-            AI 抓取解析
+            <span class="step-icon accent"><el-icon :size="12"><component :is="pageMeta.steps[1].icon" /></el-icon></span>
+            {{ pageMeta.steps[1].label }}
           </div>
           <el-icon :size="12" class="step-arrow"><ArrowRight /></el-icon>
           <div class="flow-step">
             <span class="step-icon success"><el-icon :size="12"><CircleCheck /></el-icon></span>
-            确认入库
+            {{ pageMeta.steps[2].label }}
           </div>
         </div>
 
         <!-- 示例引导 -->
         <div class="empty-examples">
           <div
-            v-for="example in examples"
+            v-for="example in pageMeta.examples"
             :key="example"
             class="example-chip"
             role="button"
             @click="sendMessage(example)"
           >
-            <span class="chip-icon"><el-icon :size="13"><Link /></el-icon></span>
+            <span class="chip-icon"><el-icon :size="13"><MagicStick /></el-icon></span>
             <span class="chip-text">{{ example }}</span>
             <el-icon :size="12" class="chip-arrow"><TopRight /></el-icon>
           </div>
@@ -134,13 +132,40 @@
               <ToolCallItem v-for="tc in msg.toolCalls" :key="tc.id" :tool-call="tc" />
             </div>
 
-            <!-- 网站录入提案卡片 -->
+            <!-- 结构化提案卡片（按 proposal.type 分发） -->
             <WebsiteProposalCard
-              v-if="msg.proposal"
+              v-if="msg.proposal?.type === 'website'"
               :proposal="msg.proposal"
               :proposal-status="msg.proposalStatus"
               :proposal-message="msg.proposalMessage"
               :confirmed="msg.proposalStatus === 'confirmed'"
+              @confirmed="handleProposalConfirmed"
+            />
+            <ModelProposalCard
+              v-else-if="msg.proposal?.type === 'model'"
+              :proposal="msg.proposal"
+              :proposal-status="msg.proposalStatus"
+              :proposal-message="msg.proposalMessage"
+              :confirmed="msg.proposalStatus === 'confirmed'"
+              :original="props.context?.draft || null"
+              @confirmed="handleProposalConfirmed"
+            />
+            <ChannelProposalCard
+              v-else-if="msg.proposal?.type === 'channel'"
+              :proposal="msg.proposal"
+              :proposal-status="msg.proposalStatus"
+              :proposal-message="msg.proposalMessage"
+              :confirmed="msg.proposalStatus === 'confirmed'"
+              :original="props.context?.draft || null"
+              @confirmed="handleProposalConfirmed"
+            />
+            <PresetProposalCard
+              v-else-if="msg.proposal?.type === 'preset'"
+              :proposal="msg.proposal"
+              :proposal-status="msg.proposalStatus"
+              :proposal-message="msg.proposalMessage"
+              :confirmed="msg.proposalStatus === 'confirmed'"
+              :original="props.context?.draft || null"
               @confirmed="handleProposalConfirmed"
             />
 
@@ -182,7 +207,7 @@
           :rows="2"
           resize="none"
           :disabled="sending"
-          placeholder="输入网站或 GitHub 地址，例如：https://github.com/cloudwego/eino"
+          :placeholder="pageMeta.placeholder"
           @keydown.enter.exact.prevent="handleSend"
         />
         <div class="composer-footer">
@@ -220,14 +245,17 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus } from '@element-plus/icons-vue'
+import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus, Link, Search, EditPen, CircleCheck } from '@element-plus/icons-vue'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
 import { defaultApi } from '@/api'
 import { getRelativeTime } from '@/utils/timeUtils'
 import ToolCallItem from '@/components/chat/ToolCallItem.vue'
 import WebsiteProposalCard from './WebsiteProposalCard.vue'
+import ModelProposalCard from './ModelProposalCard.vue'
+import ChannelProposalCard from './ChannelProposalCard.vue'
+import PresetProposalCard from './PresetProposalCard.vue'
 
 const props = defineProps({
   // 页面上下文，注入后端系统提示词，如 { page: 'websites', draft: { url } }
@@ -236,11 +264,78 @@ const props = defineProps({
 
 const emit = defineEmits(['inserted'])
 
-// 示例引导语
-const examples = [
-  '收录 https://github.com/cloudwego/eino',
-  '收录 https://gorm.io/docs/'
-]
+// ===== 页面差异化文案（空状态引导 / 输入框占位）=====
+// page 与后端 internal/tool/ops 的 OpsPage 常量对应
+const PAGE_META = {
+  websites: {
+    desc: '提供一个网站或 GitHub 仓库地址，我会自动抓取信息并生成录入提案，确认后才会写入数据库。',
+    steps: [
+      { icon: Link, label: '粘贴网址' },
+      { icon: Search, label: 'AI 抓取解析' },
+      { icon: CircleCheck, label: '确认入库' }
+    ],
+    examples: [
+      '收录 https://github.com/cloudwego/eino',
+      '收录 https://gorm.io/docs/'
+    ],
+    placeholder: '输入网站或 GitHub 地址，例如：https://github.com/cloudwego/eino'
+  },
+  models: {
+    desc: '描述模型名称或特点，我会补全模型资料并生成录入提案；也可以优化已有模型的描述与标签，确认后才会写入数据库。',
+    steps: [
+      { icon: EditPen, label: '描述模型' },
+      { icon: Search, label: 'AI 补全校验' },
+      { icon: CircleCheck, label: '确认入库' }
+    ],
+    examples: [
+      '新增一个支持联网搜索的 GLM-5 模型',
+      '优化「DeepSeek」模型的介绍'
+    ],
+    placeholder: '描述要录入或优化的模型，例如：新增一个高上下文的 Kimi K2'
+  },
+  channels: {
+    desc: '描述渠道信息，我会搭建渠道配置与模型映射提案（密钥需要你在确认卡片中手动填写）；也可以优化已有渠道配置，确认后才会写入数据库。',
+    steps: [
+      { icon: EditPen, label: '描述渠道' },
+      { icon: Search, label: 'AI 搭建校验' },
+      { icon: CircleCheck, label: '确认入库' }
+    ],
+    examples: [
+      '新增一个 polo 渠道，支持 gpt-4o',
+      '帮我优化名称含「polo」的渠道'
+    ],
+    placeholder: '描述要录入或优化的渠道，例如：新增一个火星引擎渠道'
+  },
+  presets: {
+    desc: '描述助手定位，我会生成名称、简介、标签与系统提示词提案；也可以优化已有助手的上下文设定，确认后才会写入数据库。',
+    steps: [
+      { icon: EditPen, label: '描述助手' },
+      { icon: Search, label: 'AI 生成校验' },
+      { icon: CircleCheck, label: '确认入库' }
+    ],
+    examples: [
+      '新增一个英文写作助手',
+      '优化「编程助手」的上下文设定'
+    ],
+    placeholder: '描述要录入或优化的助手，例如：新增一个前端开发助手'
+  }
+}
+
+const pageMeta = computed(() => PAGE_META[props.context?.page] || PAGE_META.websites)
+
+// 提案确认提示文案（按提案类型）
+const CONFIRM_TOASTS = {
+  website: '网站已录入',
+  model: '模型已保存',
+  channel: '渠道已保存',
+  preset: '助手已保存'
+}
+const CONFIRM_NOTICES = {
+  website: '✅ 提案已确认，网站录入完成。',
+  model: '✅ 提案已确认，模型保存完成。',
+  channel: '✅ 提案已确认，渠道保存完成。',
+  preset: '✅ 提案已确认，助手保存完成。'
+}
 
 // 对话消息：{ role, content, reasoning, reasoningExpanded, toolCalls[], proposal, proposalStatus, proposalMessage, error, interrupted, streaming }
 const messages = ref([])
@@ -579,23 +674,27 @@ const stopStreaming = () => {
 }
 
 const handleProposalConfirmed = () => {
-  ElMessage.success('网站已录入')
+  const msg = messages.value[messages.value.length - 1]
+  const proposalType = msg?.proposal?.type || 'website'
+  const toast = CONFIRM_TOASTS[proposalType] || CONFIRM_TOASTS.website
+  const notice = CONFIRM_NOTICES[proposalType] || CONFIRM_NOTICES.website
+
+  ElMessage.success(toast)
   emit('inserted')
   // 本地置为已确认，防止回放后二次确认
-  const msg = messages.value[messages.value.length - 1]
   if (msg && msg.role === 'assistant' && msg.proposal) {
     msg.proposalStatus = 'confirmed'
   }
   // 追加一条本地提示，明确提案已完成
-  messages.value.push({ role: 'assistant', content: '✅ 提案已确认，网站录入完成。', streaming: false, toolCalls: [], reasoning: '', reasoningExpanded: false, proposal: null, proposalStatus: '', proposalMessage: '', error: '', interrupted: false })
+  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], reasoning: '', reasoningExpanded: false, proposal: null, proposalStatus: '', proposalMessage: '', error: '', interrupted: false })
   scrollToBottom()
 
-  // 持久化确认状态（失败不影响本地 UI，数据库侧有 URL 查重兜底）
+  // 持久化确认状态（失败不影响本地 UI，数据库侧有重名/URL 查重兜底）
   if (currentSessionId.value) {
     defaultApi
       .apiAdminOpsChatSessionsIdAppendPost(currentSessionId.value, {
         role: 'assistant',
-        content: '✅ 提案已确认，网站录入完成。',
+        content: notice,
         markProposalConfirmed: true
       })
       .catch((error) => console.warn('持久化提案确认状态失败:', error))

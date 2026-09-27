@@ -185,7 +185,7 @@ func AppendOpsSession(c *gin.Context) {
 	if req.MarkProposalConfirmed {
 		for i := len(session.FormattedMessages) - 1; i >= 0; i-- {
 			m := &session.FormattedMessages[i]
-			if m.Proposal != nil && m.ProposalStatus != "" && m.ProposalStatus != "confirmed" {
+			if len(m.Proposal) > 0 && m.ProposalStatus != "" && m.ProposalStatus != "confirmed" {
 				m.ProposalStatus = "confirmed"
 				break
 			}

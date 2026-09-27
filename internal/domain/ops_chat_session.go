@@ -24,17 +24,6 @@ type OpsChatToolCall struct {
 	Status string `json:"status"` // running/completed/failed/interrupted
 }
 
-// OpsChatProposal 网站录入提案（tool/ops.WebsiteProposal 的 domain 镜像：
-// internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层做字段拷贝）
-type OpsChatProposal struct {
-	Type        string `json:"type"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Url         string `json:"url"`
-	Avatar      string `json:"avatar,omitempty"`
-	Tags        string `json:"tags"`
-}
-
 // OpsChatMessage 运营助手会话消息（富结构：含工具调用与提案卡片，需在刷新后完整回放）
 // ProposalStatus 取 ok|duplicate|confirmed，confirmed 表示提案已确认入库，前端据此禁用确认按钮
 type OpsChatMessage struct {
@@ -42,10 +31,14 @@ type OpsChatMessage struct {
 	Content          string             `json:"content"`
 	Reasoning        string             `json:"reasoning,omitempty"`
 	ToolCalls        []OpsChatToolCall  `json:"toolCalls,omitempty"`
-	Proposal         *OpsChatProposal   `json:"proposal,omitempty"`
-	ProposalStatus   string             `json:"proposalStatus,omitempty"`
-	ProposalMessage  string             `json:"proposalMessage,omitempty"`
-	Error            string             `json:"error,omitempty"`
+	// Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，
+	// 前端按 type 字段分发渲染卡片；历史数据为网站提案的扁平结构，同样兼容。
+	// internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）
+	// swaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象
+	Proposal        json.RawMessage `json:"proposal,omitempty" swaggertype:"object"`
+	ProposalStatus  string          `json:"proposalStatus,omitempty"`
+	ProposalMessage string          `json:"proposalMessage,omitempty"`
+	Error           string          `json:"error,omitempty"`
 	// Interrupted 表示本次回复被用户主动中断（内容为已生成的部分）
 	Interrupted bool `json:"interrupted,omitempty"`
 	// Confirmed 标记提案确认完成的提示消息（前端本地产生，经 append 接口持久化）
@@ -105,7 +98,7 @@ func (s *OpsChatSession) AppendUserMessage(content string) {
 // 内容、思考、工具调用、提案、错误全空时跳过（与用户端 AddMessageFromAssistant 一致）
 func (s *OpsChatSession) AppendAssistantMessage(msg OpsChatMessage) {
 	if msg.Content == "" && msg.Reasoning == "" && len(msg.ToolCalls) == 0 &&
-		msg.Proposal == nil && msg.Error == "" {
+		len(msg.Proposal) == 0 && msg.Error == "" {
 		log.Error("ops assistant response is empty, skip AppendAssistantMessage")
 		return
 	}

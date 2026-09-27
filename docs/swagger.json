@@ -1885,7 +1885,7 @@
         },
         "/api/admin/ops/chat/stream": {
             "post": {
-                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId",
+                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（网站/模型/渠道/助手 录入或优化提案，确认后才走现有管理接口入库）；会话由服务端持久化，首帧返回 sessionId。工具集按请求中的 context.page 门控",
                 "consumes": [
                     "application/json"
                 ],
@@ -5010,7 +5010,8 @@
                     "type": "boolean"
                 },
                 "proposal": {
-                    "$ref": "#/definitions/domain.OpsChatProposal"
+                    "description": "Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，\n前端按 type 字段分发渲染卡片；历史数据为网站提案的扁平结构，同样兼容。\ninternal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）\nswaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象",
+                    "type": "object"
                 },
                 "proposalMessage": {
                     "type": "string"
@@ -5030,29 +5031,6 @@
                     "items": {
                         "$ref": "#/definitions/domain.OpsChatToolCall"
                     }
-                }
-            }
-        },
-        "domain.OpsChatProposal": {
-            "type": "object",
-            "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "url": {
-                    "type": "string"
                 }
             }
         },

@@ -38,7 +38,7 @@ const proposalOnlyPlaceholder = "（生成了录入提案）"
 
 // ChatStream 运营助手 SSE 对话
 // @Summary 运营助手流式对话
-// @Description 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId
+// @Description 管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（网站/模型/渠道/助手 录入或优化提案，确认后才走现有管理接口入库）；会话由服务端持久化，首帧返回 sessionId。工具集按请求中的 context.page 门控
 // @Tags 运营助手
 // @Accept json
 // @Produce text/event-stream
@@ -110,7 +110,7 @@ func ChatStream(ctx *gin.Context) {
 	startTime := time.Now()
 	var (
 		toolCallRecords   []map[string]string
-		capturedProposal  *ops.WebsiteProposal
+		capturedProposal  json.RawMessage
 		capturedStatus    string
 		capturedMessage   string
 		streamedContent   string
@@ -139,9 +139,7 @@ func ChatStream(ctx *gin.Context) {
 			}
 		}
 		if capturedProposal != nil {
-			if pJSON, err := json.Marshal(capturedProposal); err == nil {
-				opLog.Proposal = string(pJSON)
-			}
+			opLog.Proposal = string(capturedProposal)
 		}
 		if err := db.Create(&opLog).Error; err != nil {
 			log.Error("保存运营助手审计日志失败", zap.Error(err))
@@ -178,8 +176,12 @@ func ChatStream(ctx *gin.Context) {
 	// 首帧回传会话ID，前端据此绑定后续请求
 	_ = writeFrame(map[string]interface{}{"type": "session", "sessionId": session.Id})
 
-	// 工具集按请求构造，捕获当前请求的 DB / COS / userId
-	tools := ops.ProvideOpsTools(ops.OpsToolDeps{DB: db, COS: cosClient, UserID: userId})
+	// 工具集按请求构造并按页面门控，捕获当前请求的 DB / COS / userId
+	pageName := ""
+	if req.Context != nil {
+		pageName = req.Context.Page
+	}
+	tools := ops.ProvideOpsTools(ops.OpsToolDeps{DB: db, COS: cosClient, UserID: userId}, pageName)
 	modelResolver := resolver.NewChannelModelResolver(db)
 
 	// chunk → SSE 帧分发
@@ -211,25 +213,27 @@ func ChatStream(ctx *gin.Context) {
 				return err
 			}
 
-			// 拦截网站提案：服务端解析校验后以独立帧下发
-			if chunk.ToolName == ops.WebsitePreviewToolName && chunk.ToolStatus == "completed" {
-				var previewPayload struct {
-					Status   string               `json:"status"`
-					Message  string               `json:"message"`
-					Proposal *ops.WebsiteProposal `json:"proposal"`
-				}
-				if err := json.Unmarshal([]byte(chunk.ToolResult), &previewPayload); err != nil {
-					log.Warn("解析网站提案失败", zap.String("toolResult", chunk.ToolResult), zap.Error(err))
-					return nil
-				}
-				if previewPayload.Proposal != nil {
-					capturedProposal = previewPayload.Proposal
-					capturedStatus = previewPayload.Status
-					capturedMessage = previewPayload.Message
-					return writeFrame(map[string]interface{}{
-						"type": "proposal", "proposal": previewPayload.Proposal,
-						"status": previewPayload.Status, "message": previewPayload.Message,
-					})
+			// 拦截预览工具提案：按注册表识别工具名，服务端解析校验后以独立帧下发
+			if chunk.ToolStatus == "completed" {
+				if _, isPreview := ops.PreviewToolProposalTypes[chunk.ToolName]; isPreview {
+					var previewPayload struct {
+						Status   string          `json:"status"`
+						Message  string          `json:"message"`
+						Proposal json.RawMessage `json:"proposal"`
+					}
+					if err := json.Unmarshal([]byte(chunk.ToolResult), &previewPayload); err != nil {
+						log.Warn("解析提案失败", zap.String("toolResult", chunk.ToolResult), zap.Error(err))
+						return nil
+					}
+					if len(previewPayload.Proposal) > 0 {
+						capturedProposal = previewPayload.Proposal
+						capturedStatus = previewPayload.Status
+						capturedMessage = previewPayload.Message
+						return writeFrame(map[string]interface{}{
+							"type": "proposal", "proposal": previewPayload.Proposal,
+							"status": previewPayload.Status, "message": previewPayload.Message,
+						})
+					}
 				}
 			}
 			return nil
@@ -262,7 +266,7 @@ func ChatStream(ctx *gin.Context) {
 		SystemPrompt:     systemPrompt,
 		History:          history,
 		AllTools:         tools,
-		ToolNames:        []string{ops.WebsiteFetchToolName, ops.WebsitePreviewToolName},
+		ToolNames:        ops.PageToolNames(pageName),
 		MaxToolRounds:    maxRounds,
 		EmitFinalContent: true,
 		Stream:           true,
@@ -275,8 +279,8 @@ func ChatStream(ctx *gin.Context) {
 		Reasoning: streamedReasoning,
 		ToolCalls: liveToolCalls,
 	}
-	if capturedProposal != nil {
-		assistantMsg.Proposal = toDomainProposal(capturedProposal)
+	if len(capturedProposal) > 0 {
+		assistantMsg.Proposal = capturedProposal
 		assistantMsg.ProposalStatus = capturedStatus
 		assistantMsg.ProposalMessage = capturedMessage
 	}
@@ -363,16 +367,4 @@ func upsertLiveToolCall(list *[]domain.OpsChatToolCall, chunk *global.Chunk) {
 		Result: chunk.ToolResult,
 		Status: chunk.ToolStatus,
 	})
-}
-
-// toDomainProposal 将 tool 层提案转换为 domain 镜像结构（tool→domain 不可反向 import）
-func toDomainProposal(p *ops.WebsiteProposal) *domain.OpsChatProposal {
-	return &domain.OpsChatProposal{
-		Type:        p.Type,
-		Name:        p.Name,
-		Description: p.Description,
-		Url:         p.Url,
-		Avatar:      p.Avatar,
-		Tags:        p.Tags,
-	}
 }

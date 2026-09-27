@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       '/api': {
         // 多 worktree 并行开发时后端端口不同，可用环境变量覆盖（默认 8081）
-        target: process.env.VITE_PROXY_TARGET || 'http://localhost:8081',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true,
         ws: true,
         rewrite: (path) => path,
