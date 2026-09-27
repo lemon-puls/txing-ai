@@ -419,12 +419,13 @@ const buildGrid = () => {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(seg), gl.STATIC_DRAW)
 }
 
-// 国界描线：解码烘焙数据（量化 Int16 → 单位球坐标）/ country outlines: decode baked data (quantized Int16 → unit-sphere coords)
+// 国界描线：解码烘焙数据（量化 Uint16 → 单位球坐标；lonQ 最大 36000 超出 Int16，勿改回）
+// Country outlines: decode baked data (quantized Uint16 → unit-sphere coords; lonQ peaks at 36000, past Int16 range)
 const buildOutlines = () => {
   const bin = atob(OUTLINE_SEGS_B64)
   const bytes = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  const q = new Int16Array(bytes.buffer)
+  const q = new Uint16Array(bytes.buffer)
   const verts = new Float32Array(OUTLINE_SEG_COUNT * 6)
   const d2r = Math.PI / 180
   for (let i = 0; i < OUTLINE_SEG_COUNT; i++) {
