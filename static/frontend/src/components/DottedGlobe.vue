@@ -9,6 +9,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue'
 import landMaskUrl from '@/assets/images/land-mask.png'
+import { OUTLINE_SEG_COUNT, OUTLINE_SEGS_B64 } from './data/globe-outlines.js'
 
 // 陆地标定：Natural Earth 110m land（公有领域）烘焙的等距圆柱 PNG，运行时采样出陆地点
 // Land mask: equirectangular PNG baked from Natural Earth 110m land (public domain), sampled for land points
@@ -16,9 +17,11 @@ import landMaskUrl from '@/assets/images/land-mask.png'
 // ===== 观感常量 =====
 // Look-and-feel constants
 const MAX_DPR = 1.5 // 点/线渲染轻量，可承受 1.5 / points+lines are light enough for 1.5
-const SPHERE_FIT = 0.88 // 球半径占画布半宽；留 12% 边距让光晕自然衰减，防画布裁切出矩形边 / sphere radius in clip units; 12% margin so the halo decays before the canvas edge
 const CAM_DIST = 2.7 // 相机距离（球半径 = 1）/ camera distance in sphere radii
-const YAW0 = 0.4 // 初始经度对准 -23°（originkit 默认视角）/ face lon -23° like originkit
+const YAW0 = 0.4 // 初始经度对准 -23°（originkit initialLongitude 默认）/ face lon -23° (originkit initialLongitude)
+const TILT0 = 0.4014 // 初始俯仰 23°（originkit initialLatitude 默认）/ initial pitch 23° (originkit initialLatitude)
+const HALF_PI = Math.PI / 2
+const SPHERE_FIT = 0.88 // 球半径占画布半宽；留 12% 边距让光晕自然衰减，防画布裁切出矩形边 / sphere radius in clip units; 12% margin so the halo decays before the canvas edge
 const POINT_CANDIDATES = 42000 // Fibonacci 候选数（约 1/3 落在陆地）/ Fibonacci candidates (~1/3 on land)
 const GA = Math.PI * (3 - Math.sqrt(5)) // 黄金角分布 / golden-angle spacing
 
@@ -27,6 +30,7 @@ attribute vec3 a_pos;
 attribute float a_seed;
 
 uniform float uYaw;      // 自转相位（含拖拽/惯性）/ rotation phase (drag & momentum included)
+uniform float uPitch;    // 俯仰相位（含拖拽/惯性）/ pitch phase (drag & momentum included)
 uniform float uDist;     // 相机距离 / camera distance
 uniform float uFit;      // 球半径 → 裁剪空间缩放 / sphere radius → clip scale
 uniform float uDotPx;    // 点基准像素尺寸 / base point size in px
@@ -66,10 +70,10 @@ float srcGlow(vec3 n, float i, float t){
 }
 
 void main(){
-  // 自转（含拖拽/惯性）+ 地轴倾角 23.5°（无深度测试，背面仅变暗）
-  // Rotation (drag & momentum) + 23.5° axial tilt (no depth test; back side just dims)
+  // 自转 + 俯仰（均含拖拽/惯性，originkit 的双向 drag-to-spin；无深度测试，背面仅变暗）
+  // Yaw + pitch (both with drag & momentum, originkit's two-axis drag-to-spin; no depth test; back side just dims)
   vec3 n = a_pos;
-  vec3 p = rotX(rotY(n, uYaw), 0.41);
+  vec3 p = rotX(rotY(n, uYaw), uPitch);
   float w = uDist - p.z;
 
   vFacing = p.z;
@@ -108,7 +112,7 @@ precision mediump float;
 uniform float uIntensity;  // 整体亮度 / overall brightness
 uniform float uTime;       // 标记脉冲相位 / marker pulse phase
 uniform float uMode;
-uniform vec3 uLand, uGrid, uMarker, uC0, uC1, uC2;
+uniform vec3 uLand, uGrid, uOutline, uMarker, uC0, uC1, uC2;
 
 varying vec3 vGlow;
 varying float vFacing;
@@ -127,6 +131,11 @@ void main(){
     float soft = smoothstep(0.25, 0.02, d2); // 软圆点 / soft round sprite
     col = uLand + uC0 * vGlow.x + uC1 * vGlow.y + uC2 * vGlow.z;
     a = soft * facing * uIntensity * (0.55 + 0.45 * vSeed);
+  } else if (uMode > 2.5) {
+    // 国界描线：originkit 的白色轮廓（独立配色、不随点阵亮度缩放）
+    // Country outlines: originkit's white lines (own color, not scaled by dot brightness)
+    col = uOutline;
+    a = facing * 0.7;
   } else if (uMode > 1.5) {
     // 位置标记：实心核 + 固定细环 + 扩散脉冲，三层叠加（勿对负底数用 pow）
     // Marker: solid core + fixed thin ring + expanding pulse (no pow on negative base)
@@ -188,6 +197,7 @@ void main(){
 const LIGHT_PALETTE = {
   land: '#2b52c8',
   grid: '#8fb0e8',
+  outline: '#33549e',
   rim: '#2B5EFF',
   marker: '#0288d1',
   c0: '#2B5EFF',
@@ -197,6 +207,7 @@ const LIGHT_PALETTE = {
 const DARK_PALETTE = {
   land: '#d5e4ff',
   grid: '#3d5f9e',
+  outline: '#dbe8ff',
   rim: '#2B5EFF',
   marker: '#8bd4ff',
   c0: '#2B5EFF',
@@ -287,7 +298,7 @@ let themeMo = null
 const uni = {
   speed: 0.32, intensity: 0.58, dotPx: 2.8,
   land: [0.84, 0.89, 1, 1], grid: [0.24, 0.37, 0.62, 1], rim: [0.17, 0.37, 1, 1],
-  marker: [0.55, 0.83, 1, 1],
+  outline: [0.86, 0.91, 1, 1], marker: [0.55, 0.83, 1, 1],
   c0: [0.17, 0.37, 1, 1], c1: [0.12, 0.53, 0.9, 1], c2: [0.01, 0.66, 0.96, 1]
 }
 
@@ -304,9 +315,11 @@ let aSeedMain = -1
 let aPosRim = -1
 let bufPoints = null
 let bufGrid = null
+let bufOutline = null
 let bufTri = null
 let pointCount = 0
 let gridCount = 0
+let outlineCount = 0
 let pointsReady = false
 let reduced = false
 let coarsePtr = false
@@ -316,13 +329,16 @@ let running = false
 let raf = 0
 let last = 0
 let yaw = YAW0
+let pitch = TILT0 // 俯仰角，拖拽上下调整 / pitch, adjusted by vertical drag
 let drift = 0
 // 拖拽旋转（originkit 的 drag-to-spin + 惯性）/ drag-to-spin with momentum, like originkit
 let dragging = false
 let yawVel = 0 // 释放后的惯性角速度 / post-release angular momentum
+let pitchVel = 0 // 俯仰惯性角速度 / pitch angular momentum
 let hovering = false // stopOnHover：悬停暂停自转 / pause auto-rotation while hovered
 let rotBlend = 1 // 自转权重（悬停/拖拽时缓落 0）/ auto-rotation weight, eases to 0
 let lastDragX = 0
+let lastDragY = 0
 let lastDragT = 0
 // 当前位置标记 / current-location marker
 let markerPos = null // 单位球坐标 [x,y,z] / unit-sphere coords
@@ -403,6 +419,25 @@ const buildGrid = () => {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(seg), gl.STATIC_DRAW)
 }
 
+// 国界描线：解码烘焙数据（量化 Int16 → 单位球坐标）/ country outlines: decode baked data (quantized Int16 → unit-sphere coords)
+const buildOutlines = () => {
+  const bin = atob(OUTLINE_SEGS_B64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const q = new Int16Array(bytes.buffer)
+  const verts = new Float32Array(OUTLINE_SEG_COUNT * 6)
+  const d2r = Math.PI / 180
+  for (let i = 0; i < OUTLINE_SEG_COUNT; i++) {
+    const v1 = ll2v((q[i * 4] / 100 - 180) * d2r, (q[i * 4 + 1] / 100 - 90) * d2r)
+    const v2 = ll2v((q[i * 4 + 2] / 100 - 180) * d2r, (q[i * 4 + 3] / 100 - 90) * d2r)
+    verts.set(v1, i * 6)
+    verts.set(v2, i * 6 + 3)
+  }
+  outlineCount = OUTLINE_SEG_COUNT * 2
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufOutline)
+  gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW)
+}
+
 const draw = () => {
   if (!gl) return
   const canvas = canvasRef.value
@@ -437,6 +472,7 @@ const draw = () => {
   // 点阵与经纬网共用主 program / points and graticule share the main program
   gl.useProgram(progMain)
   gl.uniform1f(locMain.uYaw, yaw)
+  gl.uniform1f(locMain.uPitch, pitch)
   gl.uniform1f(locMain.uDist, CAM_DIST)
   gl.uniform1f(locMain.uFit, SPHERE_FIT * CAM_DIST)
   gl.uniform1f(locMain.uDotPx, uni.dotPx * (bh / 700)) // 700px 画布基准尺寸 / 700px baseline
@@ -456,6 +492,13 @@ const draw = () => {
   gl.bindBuffer(gl.ARRAY_BUFFER, bufGrid)
   gl.vertexAttribPointer(aPosMain, 3, gl.FLOAT, false, 0, 0)
   gl.drawArrays(gl.LINES, 0, gridCount)
+
+  // 国界描线（originkit 的白色轮廓）/ country outlines (originkit's white lines)
+  gl.uniform1f(locMain.uMode, 3)
+  gl.uniform3f(locMain.uOutline, uni.outline[0], uni.outline[1], uni.outline[2])
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufOutline)
+  gl.vertexAttribPointer(aPosMain, 3, gl.FLOAT, false, 0, 0)
+  gl.drawArrays(gl.LINES, 0, outlineCount)
 
   // 陆地点阵（单次 draw call）/ land dots (single draw call)
   if (pointsReady) {
@@ -483,8 +526,17 @@ const step = (dt) => {
   // Rotation: eases to a stop on hover/drag (stopOnHover); momentum decays exponentially after release
   rotBlend += (((dragging || hovering) ? 0 : 1) - rotBlend) * (1 - Math.exp(-3 * dt))
   if (!dragging) {
-    yaw = (yaw + (uni.speed * 0.13 * rotBlend + yawVel) * dt) % (Math.PI * 2)
+    // direction: left（originkit 默认）→ 表面向左移动 / surface drifts left (originkit's default direction)
+    yaw = (yaw + (yawVel - uni.speed * 0.13 * rotBlend) * dt) % (Math.PI * 2)
     yawVel *= Math.exp(-2.2 * dt)
+    if (pitchVel !== 0) {
+      pitch = clampN(pitch + pitchVel * dt, -HALF_PI, HALF_PI)
+      if (pitch === -HALF_PI || pitch === HALF_PI) {
+        pitchVel = 0 // 抵达极点即停 / stop at the poles
+      } else {
+        pitchVel *= Math.exp(-2.2 * dt)
+      }
+    }
   }
 
   // 时间累加而非 now*speed：调整 speed 不跳变；取模防精度劣化
@@ -533,6 +585,7 @@ watchEffect(() => {
   uni.land = parseColor(pal.land, [0.84, 0.89, 1, 1])
   uni.grid = parseColor(pal.grid, [0.24, 0.37, 0.62, 1])
   uni.rim = parseColor(pal.rim, [0.17, 0.37, 1, 1])
+  uni.outline = parseColor(pal.outline, [0.86, 0.91, 1, 1])
   uni.marker = parseColor(pal.marker, [0.55, 0.83, 1, 1])
   uni.c0 = parseColor(pal.c0, [0.17, 0.37, 1, 1])
   uni.c1 = parseColor(pal.c1, [0.12, 0.53, 0.9, 1])
@@ -546,7 +599,9 @@ const onPointerDown = (e) => {
   if (e.pointerType === 'mouse' && e.button !== 0) return
   dragging = true
   yawVel = 0
+  pitchVel = 0
   lastDragX = e.clientX
+  lastDragY = e.clientY
   lastDragT = performance.now()
   wrapRef.value?.classList.add('is-dragging')
   window.addEventListener('pointermove', onDragMove)
@@ -557,21 +612,27 @@ const onDragMove = (e) => {
   if (!dragging || !gl) return
   const el = wrapRef.value
   if (!el) return
-  // 按球面像素半径换算角位移：表面跟随光标 / angular step from the sphere's pixel radius: surface tracks the cursor
+  // 按球面像素半径换算角位移：表面跟随光标（横→自转，纵→俯仰）/ angular steps from the sphere's pixel radius: x→yaw, y→pitch
   const radiusPx = Math.max(1, (el.clientWidth * SPHERE_FIT) / 2)
   const dyaw = (e.clientX - lastDragX) / radiusPx
+  const dpitch = (e.clientY - lastDragY) / radiusPx
   yaw += dyaw
+  const prevPitch = pitch
+  pitch = clampN(pitch + dpitch, -HALF_PI, HALF_PI)
   const now = performance.now()
   const dt = Math.max(0.001, (now - lastDragT) / 1000)
-  // 指数平滑采样角速度作为释放惯性 / exponentially-smoothed angular velocity → release momentum
+  // 指数平滑采样角速度作为释放惯性 / exponentially-smoothed angular velocities → release momentum
   yawVel = yawVel * 0.7 + (dyaw / dt) * 0.3
+  pitchVel = pitchVel * 0.7 + ((pitch - prevPitch) / dt) * 0.3
   lastDragX = e.clientX
+  lastDragY = e.clientY
   lastDragT = now
   if (!running) drawOnce() // 减动效下拖拽也即时呈现 / drag still renders instantly under reduced motion
 }
 const onDragEnd = () => {
   dragging = false
   yawVel = clampN(yawVel, -3, 3)
+  pitchVel = clampN(pitchVel, -3, 3)
   wrapRef.value?.classList.remove('is-dragging')
   window.removeEventListener('pointermove', onDragMove)
   window.removeEventListener('pointerup', onDragEnd)
@@ -660,7 +721,7 @@ onMounted(() => {
     return
   }
   gl.useProgram(progMain)
-  locMain = cacheLocs(progMain, ['uYaw', 'uDist', 'uFit', 'uDotPx', 'uTime', 'uMode', 'uIntensity', 'uLand', 'uGrid', 'uMarker', 'uC0', 'uC1', 'uC2'])
+  locMain = cacheLocs(progMain, ['uYaw', 'uPitch', 'uDist', 'uFit', 'uDotPx', 'uTime', 'uMode', 'uIntensity', 'uLand', 'uGrid', 'uOutline', 'uMarker', 'uC0', 'uC1', 'uC2'])
   aPosMain = gl.getAttribLocation(progMain, 'a_pos')
   aSeedMain = gl.getAttribLocation(progMain, 'a_seed')
   gl.useProgram(progRim)
@@ -669,10 +730,12 @@ onMounted(() => {
 
   bufPoints = gl.createBuffer()
   bufGrid = gl.createBuffer()
+  bufOutline = gl.createBuffer()
   bufTri = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, bufTri)
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   buildGrid()
+  buildOutlines()
 
   // 陆地标定异步解码 → 采样出点阵；失败则仅保留经纬网与光晕
   // Land mask decodes async → sample into dots; on failure keep grid + halo only
@@ -742,6 +805,7 @@ onBeforeUnmount(() => {
   progRim = null
   bufPoints = null
   bufGrid = null
+  bufOutline = null
   bufTri = null
 })
 </script>
