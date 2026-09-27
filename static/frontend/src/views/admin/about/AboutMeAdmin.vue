@@ -1,1096 +1,573 @@
 <template>
-  <div class="about-admin-container">
+  <div ref="pageRootRef" class="about-admin">
+    <!-- ===== 页头（复刻 WebsiteList page-header 范式） ===== -->
     <div class="page-header">
-      <h2>关于我页面配置</h2>
-      <p class="page-desc">在这里维护 /about 页面的所有内容（Hero、Reasons、Skills、Projects、Timeline、Contact），前台会立即生效。</p>
+      <div class="header-left">
+        <div class="header-icon">
+          <el-icon :size="18"><UserFilled /></el-icon>
+        </div>
+        <div class="header-text">
+          <div class="header-title">关于我页面</div>
+          <div class="header-subtitle">维护前台 /about 个人主页全部内容，保存后立即生效</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <el-tooltip content="重新加载所有分区数据" placement="top">
+          <el-button circle :loading="refreshing" @click="refreshAll">
+            <el-icon><Refresh /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-button round @click="openFrontPage">
+          <el-icon class="btn-icon"><TopRight /></el-icon>
+          打开前台
+        </el-button>
+        <el-button round class="preview-btn" @click="previewVisible = true">
+          <el-icon class="btn-icon"><View /></el-icon>
+          预览前台
+        </el-button>
+      </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="about-tabs" type="border-card">
-      <!-- ==================== Hero 区 ==================== -->
-      <el-tab-pane label="Hero 顶部" name="hero">
-        <el-card>
-          <el-form :model="heroForm" label-width="120px" v-loading="heroLoading">
-            <el-form-item label="头像文字">
-              <el-input v-model="heroForm.avatarText" maxlength="5" show-word-limit placeholder="如 T" />
-            </el-form-item>
-            <el-form-item label="状态徽标">
-              <el-input v-model="heroForm.statusText" placeholder="如 Ready for New Challenges" />
-            </el-form-item>
-            <el-form-item label="主标题姓名">
-              <el-input v-model="heroForm.name" placeholder="如 Txing（用于打字机效果）" />
-            </el-form-item>
-            <el-form-item label="副标题">
-              <el-input v-model="heroForm.subtitle" placeholder="用于打字机效果的副标题" />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="saveHero">保存</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-tab-pane>
+    <!-- ===== 概览统计 chips + 空区块警示 ===== -->
+    <el-card class="stats-card" shadow="never">
+      <div class="stats-row">
+        <button
+          v-for="s in stats"
+          :key="s.key"
+          class="chip"
+          :class="{ active: activeId === sectionIdOf(s.key), empty: s.count === 0 }"
+          @click="scrollToSection(sectionIdOf(s.key))"
+        >
+          <el-icon v-if="s.count === 0" class="chip-warn-icon"><WarningFilled /></el-icon>
+          {{ s.label }} · {{ s.count }}
+        </button>
+        <span class="flex-spacer" />
+        <span class="stats-hint">点击跳转到对应分区</span>
+      </div>
+      <el-alert
+        v-if="emptySections.length"
+        class="empty-alert"
+        type="warning"
+        :closable="false"
+        show-icon
+        :title="`以下区块暂无内容，前台将不展示：${emptySections.map((s) => s.label).join('、')}`"
+      />
+    </el-card>
 
-      <!-- ==================== 浮动图标 ==================== -->
-      <el-tab-pane label="浮动图标" name="floating">
-        <div class="pane-toolbar">
-          <el-button type="primary" @click="openFloatingDialog()">新增浮动图标</el-button>
-        </div>
-        <el-table :data="floatingList" border v-loading="floatingLoading">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" label="名称" />
-          <el-table-column prop="symbol" label="符号">
-            <template #default="{ row }">
-              <span style="font-size: 20px">{{ row.symbol }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="sort" label="排序" width="100" />
-          <el-table-column label="操作" width="180">
-            <template #default="{ row }">
-              <el-button text type="primary" @click="openFloatingDialog(row)">编辑</el-button>
-              <el-button text type="danger" @click="deleteFloating(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
+    <!-- ===== 主体：左侧锚点导航 + 右侧分区 ===== -->
+    <div class="page-main">
+      <!-- 窄屏时的顶部横向锚点 -->
+      <div v-if="isNarrow" class="narrow-chips">
+        <button
+          v-for="sec in SECTIONS"
+          :key="sec.id"
+          class="chip"
+          :class="{ active: activeId === sec.id }"
+          @click="scrollToSection(sec.id)"
+        >
+          {{ sec.label }}
+        </button>
+      </div>
 
-      <!-- ==================== 为什么选择我 ==================== -->
-      <el-tab-pane label="为什么选择我" name="reasons">
-        <div class="pane-toolbar">
-          <el-button type="primary" @click="openReasonDialog()">新增卡片</el-button>
-        </div>
-        <el-table :data="reasonList" border v-loading="reasonLoading">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="emoji" label="图标" width="80">
-            <template #default="{ row }">
-              <span style="font-size: 20px">{{ row.emoji }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="desc" label="描述" show-overflow-tooltip />
-          <el-table-column prop="sort" label="排序" width="80" />
-          <el-table-column label="操作" width="180">
-            <template #default="{ row }">
-              <el-button text type="primary" @click="openReasonDialog(row)">编辑</el-button>
-              <el-button text type="danger" @click="deleteReason(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
+      <aside v-show="!isNarrow" class="anchor-nav">
+        <div class="nav-title">内容分区</div>
+        <button
+          v-for="sec in SECTIONS"
+          :key="sec.id"
+          class="nav-item"
+          :class="{ active: activeId === sec.id, 'nav-empty': countOf(sec.key) === 0 }"
+          @click="scrollToSection(sec.id)"
+        >
+          <el-icon class="nav-icon"><component :is="resolveIcon(sec.icon) || 'Document'" /></el-icon>
+          <span class="nav-label">{{ sec.label }}</span>
+          <span v-if="countOf(sec.key) > 0" class="nav-count">{{ countOf(sec.key) }}</span>
+          <el-tooltip v-else content="暂无内容" placement="right">
+            <span class="nav-dot" />
+          </el-tooltip>
+        </button>
+      </aside>
 
-      <!-- ==================== 核心能力 ==================== -->
-      <el-tab-pane label="核心能力" name="skills">
-        <div class="pane-toolbar">
-          <el-button type="primary" @click="openSkillDialog()">新增技能</el-button>
-        </div>
-        <el-table :data="skillList" border v-loading="skillLoading">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="category" label="分类" />
-          <el-table-column prop="iconKey" label="图标Key" width="140" />
-          <el-table-column label="标签">
-            <template #default="{ row }">
-              <el-tag
-                v-for="t in row.tags || []"
-                :key="t"
-                size="small"
-                style="margin-right: 4px"
-              >{{ t }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="level" label="熟练度" width="100" />
-          <el-table-column prop="sort" label="排序" width="80" />
-          <el-table-column label="操作" width="180">
-            <template #default="{ row }">
-              <el-button text type="primary" @click="openSkillDialog(row)">编辑</el-button>
-              <el-button text type="danger" @click="deleteSkill(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
+      <div class="sections">
+        <HeroSection :data="hero" @changed="() => onSectionChanged('hero')" />
+        <FloatingIconSection :list="lists.floating" @changed="() => onSectionChanged('floating')" />
+        <ReasonSection :list="lists.reasons" @changed="() => onSectionChanged('reasons')" />
+        <SkillSection :list="lists.skills" @changed="() => onSectionChanged('skills')" />
+        <ProjectSection :list="lists.projects" @changed="() => onSectionChanged('projects')" />
+        <TimelineSection :list="lists.timeline" @changed="() => onSectionChanged('timeline')" />
+        <ContactSection :data="contact" @changed="() => onSectionChanged('contact')" />
+      </div>
+    </div>
 
-      <!-- ==================== 精选作品 ==================== -->
-      <el-tab-pane label="精选作品" name="projects">
-        <div class="pane-toolbar">
-          <el-button type="primary" @click="openProjectDialog()">新增项目</el-button>
-        </div>
-        <el-table :data="projectList" border v-loading="projectLoading">
-          <el-table-column prop="id" label="ID" width="60" />
-          <el-table-column prop="name" label="项目名" width="160" />
-          <el-table-column prop="iconKey" label="图标" width="120" />
-          <el-table-column prop="gradient" label="渐变" width="80" />
-          <el-table-column prop="badge" label="角标" width="100" />
-          <el-table-column prop="category" label="类别" width="90">
-            <template #default="{ row }">
-              <el-tag :type="row.category === 'personal' ? 'success' : 'primary'" size="small" effect="light" round>
-                {{ row.category === 'personal' ? '个人' : '公司' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="link" label="链接" show-overflow-tooltip />
-          <el-table-column prop="sort" label="排序" width="70" />
-          <el-table-column label="操作" width="180" fixed="right">
-            <template #default="{ row }">
-              <el-button text type="primary" @click="openProjectDialog(row)">编辑</el-button>
-              <el-button text type="danger" @click="deleteProject(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
-      <!-- ==================== 成长轨迹 ==================== -->
-      <el-tab-pane label="成长轨迹" name="timeline">
-        <div class="pane-toolbar">
-          <el-button type="primary" @click="openTimelineDialog()">新增时间线</el-button>
-        </div>
-        <el-table :data="timelineList" border v-loading="timelineLoading">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="time" label="时间" width="160" />
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="desc" label="描述" show-overflow-tooltip />
-          <el-table-column prop="sort" label="排序" width="80" />
-          <el-table-column label="操作" width="180">
-            <template #default="{ row }">
-              <el-button text type="primary" @click="openTimelineDialog(row)">编辑</el-button>
-              <el-button text type="danger" @click="deleteTimeline(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-tab-pane>
-
-      <!-- ==================== 联系区 ==================== -->
-      <el-tab-pane label="联系区" name="contact">
-        <el-card>
-          <el-form :model="contactForm" label-width="120px" v-loading="contactLoading">
-            <el-form-item label="标题">
-              <el-input v-model="contactForm.title" />
-            </el-form-item>
-            <el-form-item label="描述">
-              <el-input v-model="contactForm.desc" type="textarea" :rows="3" />
-            </el-form-item>
-            <el-form-item label="链接">
-              <div class="link-list">
-                <div
-                  v-for="(link, idx) in contactForm.links"
-                  :key="idx"
-                  class="link-row"
-                >
-                  <el-input
-                    v-model="link.iconKey"
-                    placeholder="图标Key，如 Message/Github"
-                    style="width: 180px"
-                  />
-                  <el-input
-                    v-model="link.label"
-                    placeholder="链接名称"
-                    style="width: 200px"
-                  />
-                  <el-input
-                    v-model="link.url"
-                    placeholder="URL（http:// 或 mailto:）"
-                    style="flex: 1"
-                  />
-                  <el-button
-                    type="danger"
-                    text
-                    @click="contactForm.links.splice(idx, 1)"
-                  >删除</el-button>
-                </div>
-                <el-button @click="contactForm.links.push({ iconKey: '', label: '', url: '' })">
-                  + 添加链接
-                </el-button>
-              </div>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="saveContact">保存</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
-
-    <!-- ==================== 浮动图标对话框 ==================== -->
-    <el-dialog
-      v-model="floatingDialogVisible"
-      :title="floatingForm.id ? '编辑浮动图标' : '新增浮动图标'"
-      width="480px"
-    >
-      <el-form :model="floatingForm" label-width="80px">
-        <el-form-item label="名称">
-          <el-input v-model="floatingForm.name" />
-        </el-form-item>
-        <el-form-item label="符号">
-          <el-input v-model="floatingForm.symbol" placeholder="emoji 或字符" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="floatingForm.sort" :min="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="floatingDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveFloating">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ==================== Reason 对话框 ==================== -->
-    <el-dialog
-      v-model="reasonDialogVisible"
-      :title="reasonForm.id ? '编辑卡片' : '新增卡片'"
-      width="640px"
-    >
-      <el-form :model="reasonForm" label-width="100px">
-        <el-form-item label="Emoji">
-          <el-input v-model="reasonForm.emoji" maxlength="5" />
-        </el-form-item>
-        <el-form-item label="标题">
-          <el-input v-model="reasonForm.title" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="reasonForm.desc" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input
-            :model-value="(reasonForm.tags || []).join(',')"
-            @update:model-value="(v) => (reasonForm.tags = v ? v.split(',').map(s => s.trim()).filter(Boolean) : [])"
-            placeholder="多个标签用英文逗号分隔"
-          />
-        </el-form-item>
-        <el-form-item label="统计数据">
-          <div class="stats-list">
-            <div
-              v-for="(stat, idx) in reasonForm.stats || []"
-              :key="idx"
-              class="stat-row"
-            >
-              <el-input v-model="stat.value" placeholder="数值，如 10+" style="width: 120px" />
-              <el-input v-model="stat.label" placeholder="标签名" style="flex: 1" />
-              <el-button text type="danger" @click="reasonForm.stats.splice(idx, 1)">删除</el-button>
-            </div>
-            <el-button @click="(reasonForm.stats = reasonForm.stats || []).push({ value: '', label: '' })">
-              + 添加统计
-            </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="reasonForm.sort" :min="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="reasonDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveReason">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ==================== Skill 对话框 ==================== -->
-    <el-dialog
-      v-model="skillDialogVisible"
-      :title="skillForm.id ? '编辑技能' : '新增技能'"
-      width="560px"
-    >
-      <el-form :model="skillForm" label-width="100px">
-        <el-form-item label="分类">
-          <el-input v-model="skillForm.category" />
-        </el-form-item>
-        <el-form-item label="图标Key">
-          <el-select v-model="skillForm.iconKey" filterable placeholder="选择图标">
-            <el-option
-              v-for="icon in AVAILABLE_ICONS"
-              :key="icon.key"
-              :label="icon.label"
-              :value="icon.key"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input
-            :model-value="(skillForm.tags || []).join(',')"
-            @update:model-value="(v) => (skillForm.tags = v ? v.split(',').map(s => s.trim()).filter(Boolean) : [])"
-            placeholder="多个标签用英文逗号分隔"
-          />
-        </el-form-item>
-        <el-form-item label="熟练度">
-          <el-slider v-model="skillForm.level" :min="0" :max="100" show-input />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="skillForm.sort" :min="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="skillDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveSkill">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ==================== Project 对话框 ==================== -->
-    <el-dialog
-      v-model="projectDialogVisible"
-      :title="projectForm.id ? '编辑项目' : '新增项目'"
-      width="780px"
-      top="5vh"
-    >
-      <el-form :model="projectForm" label-width="100px">
-        <el-form-item label="项目名">
-          <el-input v-model="projectForm.name" />
-        </el-form-item>
-        <el-form-item label="图标Key">
-          <el-select v-model="projectForm.iconKey" filterable placeholder="选择图标">
-            <el-option
-              v-for="icon in AVAILABLE_ICONS"
-              :key="icon.key"
-              :label="icon.label"
-              :value="icon.key"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="渐变编号">
-          <el-input-number v-model="projectForm.gradient" :min="1" :max="6" />
-          <span class="form-tip">1-6，对应前台不同的渐变色</span>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="projectForm.desc" type="textarea" :rows="2" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input
-            :model-value="(projectForm.tags || []).join(',')"
-            @update:model-value="(v) => (projectForm.tags = v ? v.split(',').map(s => s.trim()).filter(Boolean) : [])"
-            placeholder="多个标签用英文逗号分隔"
-          />
-        </el-form-item>
-        <el-form-item label="跳转链接">
-          <el-input v-model="projectForm.link" placeholder="https://..." />
-        </el-form-item>
-        <el-form-item label="角标">
-          <el-input v-model="projectForm.badge" placeholder="如 旗舰项目" />
-        </el-form-item>
-        <el-form-item label="类别">
-          <el-select v-model="projectForm.category" style="width: 200px">
-            <el-option label="公司项目" value="company" />
-            <el-option label="个人项目" value="personal" />
-          </el-select>
-          <span class="form-tip">前台精选作品支持按公司/个人切换查看</span>
-        </el-form-item>
-        <el-form-item label="亮点">
-          <el-input
-            :model-value="(projectForm.highlights || []).join('\n')"
-            @update:model-value="(v) => (projectForm.highlights = v ? v.split('\n').map(s => s.trim()).filter(Boolean) : [])"
-            type="textarea"
-            :rows="3"
-            placeholder="每行一个亮点"
-          />
-        </el-form-item>
-        <el-form-item label="封面轮播">
-          <div class="media-list">
-            <div
-              v-for="(m, idx) in projectForm.coverMedia || []"
-              :key="idx"
-              class="media-row"
-            >
-              <MediaUploader
-                v-model="m.url"
-                media-type="all"
-                :locked-type="m.type"
-                :width="240"
-                :height="120"
-                placeholder="点击上传封面"
-                :max-size="50"
-                @change="(info) => onCoverUploaded(idx, info)"
-              />
-              <span class="form-tip">{{ m.type === 'video' ? '视频' : '图片' }}</span>
-              <el-button text :disabled="idx === 0" @click="moveCoverMedia(idx, -1)">上移</el-button>
-              <el-button text :disabled="idx === (projectForm.coverMedia || []).length - 1" @click="moveCoverMedia(idx, 1)">下移</el-button>
-              <el-button text type="danger" @click="removeCoverMedia(idx)">删除</el-button>
-            </div>
-            <el-button @click="addCoverMediaRow">+ 添加封面（图片/视频，可多项按顺序轮播）</el-button>
-            <p class="form-tip">项目卡片左侧大图区按此顺序轮播；未配置时回退为渐变+图标</p>
-          </div>
-        </el-form-item>
-        <el-form-item label="媒体列表">
-          <div class="media-list">
-            <div
-              v-for="(m, idx) in projectForm.media || []"
-              :key="idx"
-              class="media-row"
-            >
-              <el-select v-model="m.type" style="width: 90px" @change="onMediaTypeChange(m)">
-                <el-option label="图片" value="image" />
-                <el-option label="视频" value="video" />
-              </el-select>
-              <MediaUploader
-                v-model="m.url"
-                :media-type="m.type"
-                :locked-type="m.type"
-                :width="240"
-                :height="120"
-                :placeholder="`点击上传${m.type === 'video' ? '视频' : '图片'}`"
-                :max-size="50"
-                @change="(info) => onMediaUploaded(idx, info)"
-              />
-              <el-input v-model="m.caption" placeholder="说明" style="width: 200px" />
-              <el-button text type="danger" @click="removeMedia(idx)">删除</el-button>
-            </div>
-            <el-button @click="addMediaRow">+ 添加媒体</el-button>
-            <p class="form-tip">支持上传图片或视频，超过 50MB 会被限制（详情展开区展示）</p>
-          </div>
-        </el-form-item>
-        <el-form-item label="技术栈">
-          <div class="tech-list">
-            <div
-              v-for="(t, idx) in projectForm.techStack || []"
-              :key="idx"
-              class="tech-row"
-            >
-              <el-input v-model="t.icon" placeholder="emoji" style="width: 60px" />
-              <el-input v-model="t.name" placeholder="技术名" style="flex: 1" />
-              <el-button text type="danger" @click="projectForm.techStack.splice(idx, 1)">删除</el-button>
-            </div>
-            <el-button @click="(projectForm.techStack = projectForm.techStack || []).push({ name: '', icon: '' })">
-              + 添加技术栈
-            </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="系统架构">
-          <!-- 架构总览（选填）：前端在项目详情中独立展示，支持收起与放大查看 -->
-          <!-- Architecture overview (optional): rendered standalone in project detail, collapsible & zoomable -->
-          <el-input
-            v-model="projectForm.architecture"
-            type="textarea"
-            :rows="6"
-            placeholder="项目架构总览（选填，留空则前端不展示该区块）&#10;支持 Markdown 与 ```mermaid 代码块（自动渲染为架构图），建议结构：```mermaid 架构图 + **分层说明** 列表"
-          />
-        </el-form-item>
-        <el-form-item label="核心功能">
-          <div class="feature-list">
-            <div
-              v-for="(f, idx) in projectForm.features || []"
-              :key="idx"
-              class="feature-row"
-            >
-              <div class="feature-row-main">
-                <el-input v-model="f.icon" placeholder="emoji" style="width: 60px" />
-                <el-input v-model="f.title" placeholder="标题" style="width: 200px" />
-                <el-input v-model="f.desc" placeholder="描述" style="flex: 1" />
-                <el-button text type="danger" @click="projectForm.features.splice(idx, 1)">删除</el-button>
-              </div>
-              <!-- 详细内容（前端点击展开，支持 Markdown 与 Mermaid 图表） -->
-              <!-- Detail content (expanded on the front page, Markdown + Mermaid supported) -->
-              <el-input
-                v-model="f.detail"
-                type="textarea"
-                :rows="4"
-                placeholder="详细内容（选填，支持 Markdown：## 标题、- 列表、**加粗**、`代码`、> 引用；```mermaid 代码块会渲染为图表）"
-              />
-            </div>
-            <el-button @click="(projectForm.features = projectForm.features || []).push({ icon: '', title: '', desc: '' })">
-              + 添加功能
-            </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="projectForm.sort" :min="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="projectDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveProject">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ==================== Timeline 对话框 ==================== -->
-    <el-dialog
-      v-model="timelineDialogVisible"
-      :title="timelineForm.id ? '编辑时间线' : '新增时间线'"
-      width="560px"
-    >
-      <el-form :model="timelineForm" label-width="100px">
-        <el-form-item label="时间范围">
-          <el-input v-model="timelineForm.time" placeholder="如 2024 - 至今" />
-        </el-form-item>
-        <el-form-item label="标题">
-          <el-input v-model="timelineForm.title" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="timelineForm.desc" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input
-            :model-value="(timelineForm.tags || []).join(',')"
-            @update:model-value="(v) => (timelineForm.tags = v ? v.split(',').map(s => s.trim()).filter(Boolean) : [])"
-            placeholder="多个标签用英文逗号分隔"
-          />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="timelineForm.sort" :min="0" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="timelineDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveTimeline">保存</el-button>
-      </template>
-    </el-dialog>
+    <PreviewDrawer v-model="previewVisible" :reload-token="previewToken" />
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+<script setup name="AboutMeAdmin">
+// 关于我页面配置：分区单页 + 锚点导航 + scrollspy + 实时预览
+// About page admin: sectioned page + anchor nav + scrollspy + live preview
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Refresh, TopRight, View, UserFilled, WarningFilled } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
-import { AVAILABLE_ICONS } from '@/utils/iconResolver.js'
-import MediaUploader from '@/components/common/MediaUploader.vue'
+import { resolveIcon } from '@/utils/iconResolver.js'
+import { SECTIONS, SECTION_IDS, previewUrl } from './constants'
+import PreviewDrawer from './components/PreviewDrawer.vue'
+import HeroSection from './components/HeroSection.vue'
+import FloatingIconSection from './components/FloatingIconSection.vue'
+import ReasonSection from './components/ReasonSection.vue'
+import SkillSection from './components/SkillSection.vue'
+import ProjectSection from './components/ProjectSection.vue'
+import TimelineSection from './components/TimelineSection.vue'
+import ContactSection from './components/ContactSection.vue'
 
-const activeTab = ref('hero')
-
-// ==================== Hero ====================
-const heroForm = reactive({
-  id: 0,
-  avatarText: 'T',
-  statusText: '',
-  name: '',
-  subtitle: ''
+// ==================== 数据：父组件统一加载并持有，子组件写入后 emit changed 分区 reload ====================
+const lists = reactive({
+  floating: [],
+  reasons: [],
+  skills: [],
+  projects: [],
+  timeline: []
 })
-const heroLoading = ref(false)
-const loadHero = async () => {
-  heroLoading.value = true
-  try {
+const hero = ref(null)
+const contact = ref(null)
+
+const loaders = {
+  hero: async () => {
     const res = await defaultApi.apiAdminAboutHeroGet()
-    if (res?.code === 0 && res.data) {
-      Object.assign(heroForm, res.data)
-    }
-  } finally {
-    heroLoading.value = false
-  }
-}
-const saveHero = async () => {
-  try {
-    const payload = {
-      avatarText: heroForm.avatarText,
-      statusText: heroForm.statusText,
-      name: heroForm.name,
-      subtitle: heroForm.subtitle
-    }
-    const res = await defaultApi.apiAdminAboutHeroPut(payload)
-    if (res?.code === 0) {
-      ElMessage.success('保存成功')
-    } else {
-      ElMessage.error(res?.msg || '保存失败')
-    }
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-
-// ==================== Floating Icon ====================
-const floatingList = ref([])
-const floatingLoading = ref(false)
-const floatingDialogVisible = ref(false)
-const floatingForm = reactive({ id: 0, name: '', symbol: '', sort: 0 })
-
-const loadFloating = async () => {
-  floatingLoading.value = true
-  try {
+    if (res?.code === 0) hero.value = res.data || null
+  },
+  floating: async () => {
     const res = await defaultApi.apiAdminAboutFloatingIconListGet(1, 200, {})
-    if (res?.code === 0) floatingList.value = res.data?.records || []
-  } finally {
-    floatingLoading.value = false
-  }
-}
-const openFloatingDialog = (row) => {
-  Object.assign(floatingForm, { id: 0, name: '', symbol: '', sort: 0 })
-  if (row) Object.assign(floatingForm, row)
-  floatingDialogVisible.value = true
-}
-const saveFloating = async () => {
-  try {
-    if (floatingForm.id) {
-      const res = await defaultApi.apiAdminAboutFloatingIconIdPut(floatingForm.id, floatingForm)
-      if (res?.code === 0) ElMessage.success('更新成功')
-    } else {
-      const res = await defaultApi.apiAdminAboutFloatingIconPost(floatingForm)
-      if (res?.code === 0) ElMessage.success('创建成功')
-    }
-    floatingDialogVisible.value = false
-    loadFloating()
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-const deleteFloating = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定删除浮动图标 "${row.name}" ?`, '提示', { type: 'warning' })
-    const res = await defaultApi.apiAdminAboutFloatingIconIdDelete(row.id)
-    if (res?.code === 0) {
-      ElMessage.success('删除成功')
-      loadFloating()
-    }
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// ==================== Reason ====================
-const reasonList = ref([])
-const reasonLoading = ref(false)
-const reasonDialogVisible = ref(false)
-const reasonForm = reactive({
-  id: 0,
-  emoji: '',
-  title: '',
-  desc: '',
-  tags: [],
-  stats: [],
-  sort: 0
-})
-
-const loadReasons = async () => {
-  reasonLoading.value = true
-  try {
+    if (res?.code === 0) lists.floating = res.data?.records || []
+  },
+  reasons: async () => {
     const res = await defaultApi.apiAdminAboutReasonListGet(1, 200, {})
-    if (res?.code === 0) reasonList.value = res.data?.records || []
-  } finally {
-    reasonLoading.value = false
-  }
-}
-const openReasonDialog = (row) => {
-  Object.assign(reasonForm, { id: 0, emoji: '', title: '', desc: '', tags: [], stats: [], sort: 0 })
-  if (row) {
-    Object.assign(reasonForm, row)
-    reasonForm.tags = row.tags || []
-    reasonForm.stats = row.stats || []
-  }
-  reasonDialogVisible.value = true
-}
-const saveReason = async () => {
-  try {
-    const payload = {
-      emoji: reasonForm.emoji,
-      title: reasonForm.title,
-      desc: reasonForm.desc,
-      tags: reasonForm.tags || [],
-      stats: reasonForm.stats || [],
-      sort: reasonForm.sort
-    }
-    if (reasonForm.id) {
-      const res = await defaultApi.apiAdminAboutReasonIdPut(reasonForm.id, payload)
-      if (res?.code === 0) ElMessage.success('更新成功')
-    } else {
-      const res = await defaultApi.apiAdminAboutReasonPost(payload)
-      if (res?.code === 0) ElMessage.success('创建成功')
-    }
-    reasonDialogVisible.value = false
-    loadReasons()
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-const deleteReason = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定删除卡片 "${row.title}" ?`, '提示', { type: 'warning' })
-    const res = await defaultApi.apiAdminAboutReasonIdDelete(row.id)
-    if (res?.code === 0) {
-      ElMessage.success('删除成功')
-      loadReasons()
-    }
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// ==================== Skill ====================
-const skillList = ref([])
-const skillLoading = ref(false)
-const skillDialogVisible = ref(false)
-const skillForm = reactive({ id: 0, category: '', iconKey: '', tags: [], level: 0, sort: 0 })
-
-const loadSkills = async () => {
-  skillLoading.value = true
-  try {
+    if (res?.code === 0) lists.reasons = res.data?.records || []
+  },
+  skills: async () => {
     const res = await defaultApi.apiAdminAboutSkillListGet(1, 200, {})
-    if (res?.code === 0) skillList.value = res.data?.records || []
-  } finally {
-    skillLoading.value = false
-  }
-}
-const openSkillDialog = (row) => {
-  Object.assign(skillForm, { id: 0, category: '', iconKey: '', tags: [], level: 0, sort: 0 })
-  if (row) {
-    Object.assign(skillForm, row)
-    skillForm.tags = row.tags || []
-  }
-  skillDialogVisible.value = true
-}
-const saveSkill = async () => {
-  try {
-    const payload = {
-      category: skillForm.category,
-      iconKey: skillForm.iconKey,
-      tags: skillForm.tags || [],
-      level: skillForm.level,
-      sort: skillForm.sort
-    }
-    if (skillForm.id) {
-      const res = await defaultApi.apiAdminAboutSkillIdPut(skillForm.id, payload)
-      if (res?.code === 0) ElMessage.success('更新成功')
-    } else {
-      const res = await defaultApi.apiAdminAboutSkillPost(payload)
-      if (res?.code === 0) ElMessage.success('创建成功')
-    }
-    skillDialogVisible.value = false
-    loadSkills()
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-const deleteSkill = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定删除技能 "${row.category}" ?`, '提示', { type: 'warning' })
-    const res = await defaultApi.apiAdminAboutSkillIdDelete(row.id)
-    if (res?.code === 0) {
-      ElMessage.success('删除成功')
-      loadSkills()
-    }
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// ==================== Project ====================
-const projectList = ref([])
-const projectLoading = ref(false)
-const projectDialogVisible = ref(false)
-const projectForm = reactive({
-  id: 0,
-  name: '',
-  desc: '',
-  iconKey: '',
-  gradient: 1,
-  tags: [],
-  link: '',
-  badge: '',
-  category: 'company',
-  highlights: [],
-  media: [],
-  coverMedia: [],
-  techStack: [],
-  features: [],
-  architecture: '',
-  sort: 0
-})
-
-const loadProjects = async () => {
-  projectLoading.value = true
-  try {
+    if (res?.code === 0) lists.skills = res.data?.records || []
+  },
+  projects: async () => {
     const res = await defaultApi.apiAdminAboutProjectListGet(1, 200, {})
-    if (res?.code === 0) projectList.value = res.data?.records || []
-  } finally {
-    projectLoading.value = false
-  }
-}
-const openProjectDialog = async (row) => {
-  Object.assign(projectForm, {
-    id: 0, name: '', desc: '', iconKey: '', gradient: 1,
-    tags: [], link: '', badge: '', category: 'company', highlights: [], media: [], coverMedia: [], techStack: [], features: [], architecture: '', sort: 0
-  })
-  if (row && row.id) {
-    try {
-      const res = await defaultApi.apiAdminAboutProjectIdGet(row.id)
-      if (res?.code === 0) {
-        Object.assign(projectForm, res.data)
-        projectForm.tags = res.data.tags || []
-        projectForm.highlights = res.data.highlights || []
-        projectForm.media = res.data.media || []
-        projectForm.coverMedia = res.data.coverMedia || []
-        projectForm.techStack = res.data.techStack || []
-        projectForm.features = res.data.features || []
-        projectForm.architecture = res.data.architecture || ''
-      }
-    } catch (e) {
-      ElMessage.error('加载项目失败')
-      return
-    }
-  }
-  projectDialogVisible.value = true
-}
-const saveProject = async () => {
-  try {
-    const payload = {
-      name: projectForm.name,
-      desc: projectForm.desc,
-      iconKey: projectForm.iconKey,
-      gradient: String(projectForm.gradient || 1),
-      tags: projectForm.tags || [],
-      link: projectForm.link,
-      badge: projectForm.badge,
-      category: projectForm.category || 'company',
-      highlights: projectForm.highlights || [],
-      // 只提交 key（URL 由后端读取时签名生成，避免落库过期签名地址）
-      media: (projectForm.media || []).map(({ type, key, caption }) => ({ type, key, caption })),
-      coverMedia: (projectForm.coverMedia || []).map(({ type, key }) => ({ type, key })),
-      techStack: projectForm.techStack || [],
-      features: projectForm.features || [],
-      architecture: projectForm.architecture || '',
-      sort: projectForm.sort
-    }
-    if (projectForm.id) {
-      const res = await defaultApi.apiAdminAboutProjectIdPut(projectForm.id, payload)
-      if (res?.code === 0) ElMessage.success('更新成功')
-    } else {
-      const res = await defaultApi.apiAdminAboutProjectPost(payload)
-      if (res?.code === 0) ElMessage.success('创建成功')
-    }
-    projectDialogVisible.value = false
-    loadProjects()
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-const deleteProject = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定删除项目 "${row.name}" ?`, '提示', { type: 'warning' })
-    const res = await defaultApi.apiAdminAboutProjectIdDelete(row.id)
-    if (res?.code === 0) {
-      ElMessage.success('删除成功')
-      loadProjects()
-    }
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// 媒体行辅助函数：新增/删除/类型切换/上传完成回调
-// Media row helpers: add/remove/change-type/uploaded callback
-const addMediaRow = () => {
-  if (!projectForm.media) projectForm.media = []
-  projectForm.media.push({ type: 'image', url: '', caption: '' })
-}
-const removeMedia = (idx) => {
-  projectForm.media.splice(idx, 1)
-}
-// 切换类型时清空旧 URL，避免出现类型与资源不匹配
-const onMediaTypeChange = (m) => {
-  m.url = ''
-}
-// 上传成功后回填 key/type/caption（key 落库，url 仅用于预览）
-const onMediaUploaded = (idx, info) => {
-  const m = projectForm.media[idx]
-  if (!m) return
-  m.type = info.type
-  m.key = info.key || ''
-  m.url = info.url
-  if (info.caption) m.caption = info.caption
-}
-
-// 封面轮播行辅助函数：新增/删除/排序/上传回调（图片/视频混合）
-// Cover carousel row helpers: add/remove/reorder/uploaded callback (mixed image/video)
-const addCoverMediaRow = () => {
-  if (!projectForm.coverMedia) projectForm.coverMedia = []
-  projectForm.coverMedia.push({ type: '', key: '', url: '' })
-}
-const removeCoverMedia = (idx) => {
-  projectForm.coverMedia.splice(idx, 1)
-}
-const moveCoverMedia = (idx, dir) => {
-  const list = projectForm.coverMedia
-  const target = idx + dir
-  if (target < 0 || target >= list.length) return
-  const [row] = list.splice(idx, 1)
-  list.splice(target, 0, row)
-}
-const onCoverUploaded = (idx, info) => {
-  const m = projectForm.coverMedia[idx]
-  if (!m) return
-  m.type = info.type
-  m.key = info.key || ''
-  m.url = info.url
-}
-
-// ==================== Timeline ====================
-const timelineList = ref([])
-const timelineLoading = ref(false)
-const timelineDialogVisible = ref(false)
-const timelineForm = reactive({ id: 0, time: '', title: '', desc: '', tags: [], sort: 0 })
-
-const loadTimelines = async () => {
-  timelineLoading.value = true
-  try {
+    if (res?.code === 0) lists.projects = res.data?.records || []
+  },
+  timeline: async () => {
     const res = await defaultApi.apiAdminAboutTimelineListGet(1, 200, {})
-    if (res?.code === 0) timelineList.value = res.data?.records || []
-  } finally {
-    timelineLoading.value = false
-  }
-}
-const openTimelineDialog = (row) => {
-  Object.assign(timelineForm, { id: 0, time: '', title: '', desc: '', tags: [], sort: 0 })
-  if (row) {
-    Object.assign(timelineForm, row)
-    timelineForm.tags = row.tags || []
-  }
-  timelineDialogVisible.value = true
-}
-const saveTimeline = async () => {
-  try {
-    const payload = {
-      time: timelineForm.time,
-      title: timelineForm.title,
-      desc: timelineForm.desc,
-      tags: timelineForm.tags || [],
-      sort: timelineForm.sort
-    }
-    if (timelineForm.id) {
-      const res = await defaultApi.apiAdminAboutTimelineIdPut(timelineForm.id, payload)
-      if (res?.code === 0) ElMessage.success('更新成功')
-    } else {
-      const res = await defaultApi.apiAdminAboutTimelinePost(payload)
-      if (res?.code === 0) ElMessage.success('创建成功')
-    }
-    timelineDialogVisible.value = false
-    loadTimelines()
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
-  }
-}
-const deleteTimeline = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定删除时间线 "${row.title}" ?`, '提示', { type: 'warning' })
-    const res = await defaultApi.apiAdminAboutTimelineIdDelete(row.id)
-    if (res?.code === 0) {
-      ElMessage.success('删除成功')
-      loadTimelines()
-    }
-  } catch (e) {
-    if (e !== 'cancel') ElMessage.error('删除失败')
-  }
-}
-
-// ==================== Contact ====================
-const contactForm = reactive({
-  title: '',
-  desc: '',
-  links: []
-})
-const contactLoading = ref(false)
-const loadContact = async () => {
-  contactLoading.value = true
-  try {
+    if (res?.code === 0) lists.timeline = res.data?.records || []
+  },
+  contact: async () => {
     const res = await defaultApi.apiAdminAboutContactGet()
-    if (res?.code === 0 && res.data) {
-      contactForm.title = res.data.title || ''
-      contactForm.desc = res.data.desc || ''
-      contactForm.links = res.data.links || []
-    }
-  } finally {
-    contactLoading.value = false
-  }
-}
-const saveContact = async () => {
-  try {
-    const res = await defaultApi.apiAdminAboutContactPut({
-      title: contactForm.title,
-      desc: contactForm.desc,
-      links: contactForm.links
-    })
-    if (res?.code === 0) {
-      ElMessage.success('保存成功')
-    } else {
-      ElMessage.error(res?.msg || '保存失败')
-    }
-  } catch (e) {
-    ElMessage.error('保存失败：' + (e?.body?.msg || e.message))
+    if (res?.code === 0) contact.value = res.data || null
   }
 }
 
-// ==================== Init ====================
+const refreshing = ref(false)
+const loadAll = async () => {
+  refreshing.value = true
+  await Promise.all(Object.values(loaders).map((fn) => fn().catch(() => {})))
+  refreshing.value = false
+}
+const refreshAll = () => {
+  loadAll()
+  ElMessage.success('已刷新')
+}
+
+// 分区数据变更：分区 reload + 预览 iframe 刷新
+// section mutated: reload that section and bump the preview token
+const previewToken = ref(0)
+const onSectionChanged = (key) => {
+  loaders[key]?.()?.catch(() => {})
+  previewToken.value++
+}
+
+// ==================== 概览统计 ====================
+const stats = computed(() => [
+  { key: 'floating', label: '浮动图标', count: lists.floating.length },
+  { key: 'reasons', label: '选择理由', count: lists.reasons.length },
+  { key: 'skills', label: '核心能力', count: lists.skills.length },
+  { key: 'projects', label: '精选作品', count: lists.projects.length },
+  { key: 'timeline', label: '成长轨迹', count: lists.timeline.length },
+  { key: 'contact', label: '联系链接', count: (contact.value?.links || []).length }
+])
+const emptySections = computed(() => stats.value.filter((s) => s.count === 0))
+
+const sectionIdOf = (key) => SECTIONS.find((s) => s.key === key)?.id || ''
+// hero 是单例区块（不在 stats chips 中）：有数据即为 1，避免导航上误显示「暂无内容」警示点
+// hero is a singleton (not in stats chips): treat presence as 1 so the nav dot doesn't misfire
+const countOf = (key) =>
+  key === 'hero' ? (hero.value ? 1 : 0) : (stats.value.find((s) => s.key === key)?.count ?? null)
+
+// ==================== 锚点导航 + scrollspy ====================
+// 注意：滚动容器是 el-main（AdminLayout .main），不是 window —— IntersectionObserver 必须指定 root
+// the scroll container is el-main, not the window — pass it as the observer root
+const pageRootRef = ref(null)
+const activeId = ref(SECTION_IDS[0])
+const navLockUntil = ref(0)
+const visibleMap = new Map()
+let observer = null
+let resizeObserver = null
+let scrollRoot = null
+
+const isNarrow = ref(false)
+
 onMounted(() => {
-  loadHero()
-  loadFloating()
-  loadReasons()
-  loadSkills()
-  loadProjects()
-  loadTimelines()
-  loadContact()
+  scrollRoot = pageRootRef.value?.closest('.main') || null
+  const root = scrollRoot
+  observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => visibleMap.set(e.target.id, e.isIntersecting))
+      // 点击导航后的锁定窗口内不更新高亮，避免与平滑滚动竞争
+      // suppress highlight updates right after a nav click (smooth-scroll race)
+      if (Date.now() < navLockUntil.value) return
+      // 滚动容器触底时最后一个分区（联系区）可能进不了观察窗口，强制高亮末项
+      // when scrolled to the bottom the last section can't enter the observation window — force it
+      if (scrollRoot && scrollRoot.scrollHeight - scrollRoot.scrollTop - scrollRoot.clientHeight < 4) {
+        activeId.value = SECTION_IDS[SECTION_IDS.length - 1]
+        return
+      }
+      const first = SECTION_IDS.find((id) => visibleMap.get(id))
+      if (first) activeId.value = first
+    },
+    { root, rootMargin: '-88px 0px -55% 0px', threshold: [0, 0.05] }
+  )
+  SECTION_IDS.forEach((id) => {
+    const el = document.getElementById(id)
+    if (el) observer.observe(el)
+  })
+
+  // 窄屏判断监听页面根宽（侧边栏折叠不触发 window resize，media query 感知不到）
+  // watch the page root width: sidebar collapse doesn't fire window resize
+  if (pageRootRef.value) {
+    resizeObserver = new ResizeObserver(([entry]) => {
+      isNarrow.value = entry.contentRect.width < 1200
+    })
+    resizeObserver.observe(pageRootRef.value)
+  }
 })
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  resizeObserver?.disconnect()
+})
+
+const scrollToSection = (id) => {
+  if (!id) return
+  activeId.value = id
+  navLockUntil.value = Date.now() + 700
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+// ==================== 预览 ====================
+const previewVisible = ref(false)
+const openFrontPage = () => window.open(previewUrl, '_blank')
+
+onMounted(loadAll)
 </script>
 
 <style lang="scss" scoped>
-.about-admin-container {
+.about-admin {
   padding: 0;
 }
 
+// ===== 页头 =====
 .page-header {
-  margin-bottom: 16px;
-
-  h2 {
-    margin: 0 0 8px 0;
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  .page-desc {
-    margin: 0;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-  }
-}
-
-.about-tabs {
-  background: var(--el-bg-color);
-  border-radius: 8px;
-}
-
-.pane-toolbar {
-  margin-bottom: 16px;
-}
-
-.form-tip {
-  margin-left: 12px;
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-
-.link-list,
-.stats-list,
-.media-list,
-.tech-list,
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.link-row,
-.stat-row,
-.media-row,
-.tech-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-}
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 
-// 亮点行：上面一行基础信息，下面详细内容 textarea
-// Feature row: basic info on top, detail textarea below
-.feature-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-
-  .feature-row-main {
+  .header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
-    width: 100%;
+    gap: 12px;
+  }
+
+  .header-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+    box-shadow: 0 4px 12px var(--el-color-primary-light-8);
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+    // 显式主题变量：admin 全局给 main 继承的硬编码深色在暗色下不可读
+    // explicit token: the hardcoded inherited color is unreadable in dark mode
+    color: var(--el-text-color-primary);
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-top: 2px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    :deep(.el-button) {
+      padding: 10px 20px;
+
+      .btn-icon {
+        margin-right: 4px;
+      }
+    }
   }
 }
 
-.media-row {
-  flex-wrap: wrap;
+// 预览前台：渐变 CTA（与 WebsiteList ai-btn 同款）
+// gradient CTA for the preview action
+.preview-btn {
+  border: none !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary)) !important;
+  box-shadow: 0 2px 10px var(--el-color-primary-light-7);
+
+  &:hover {
+    opacity: 0.88;
+  }
 }
 
-:deep(.el-tabs__content) {
-  padding: 16px;
+// ===== 概览统计卡 =====
+.stats-card {
+  margin-bottom: 16px;
+  border-radius: 14px;
+
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .flex-spacer {
+      flex: 1;
+    }
+
+    .stats-hint {
+      font-size: 12px;
+      color: var(--el-text-color-placeholder);
+    }
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--el-text-color-regular);
+    background: var(--el-fill-color-light);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .chip-warn-icon {
+      color: var(--el-color-warning);
+    }
+
+    &:hover {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+
+    &.active {
+      color: #fff;
+      background: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+
+      .chip-warn-icon {
+        color: rgb(255 255 255 / 85%);
+      }
+    }
+
+    // 空区块警示态
+    // warning state for empty sections
+    &.empty {
+      color: var(--el-color-warning);
+      background: var(--el-color-warning-light-9);
+
+      &:hover {
+        background: var(--el-color-warning-light-8);
+      }
+
+      &.active {
+        color: #fff;
+        background: var(--el-color-warning);
+        border-color: var(--el-color-warning);
+      }
+    }
+  }
+
+  .empty-alert {
+    margin-top: 10px;
+    border-radius: 8px;
+  }
 }
 
-:deep(.el-card) {
-  border-radius: 8px;
+// ===== 主体布局 =====
+// 注意：sticky 祖先链上禁止任何 overflow，否则左侧导航粘性失效
+// never set overflow on sticky ancestors or the anchor nav loses stickiness
+.page-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.anchor-nav {
+  position: sticky;
+  top: 16px;
+  width: 176px;
+  flex-shrink: 0;
+  padding: 10px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 14px;
+  background: var(--el-bg-color);
+  box-shadow: var(--el-box-shadow-light);
+
+  .nav-title {
+    padding: 6px 10px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--el-text-color-secondary);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    margin-bottom: 2px;
+    font-size: 13px;
+    color: var(--el-text-color-regular);
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+
+    .nav-icon {
+      color: var(--el-text-color-secondary);
+      flex-shrink: 0;
+    }
+
+    .nav-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-count {
+      min-width: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      line-height: 18px;
+      text-align: center;
+      color: var(--el-text-color-secondary);
+      background: var(--el-fill-color);
+    }
+
+    .nav-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--el-color-warning);
+    }
+
+    &:hover {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+
+      .nav-icon {
+        color: var(--el-color-primary);
+      }
+    }
+
+    &.active {
+      color: var(--el-color-primary);
+      font-weight: 600;
+      background: var(--el-color-primary-light-9);
+      box-shadow: inset 3px 0 0 var(--el-color-primary);
+
+      .nav-icon {
+        color: var(--el-color-primary);
+      }
+
+      .nav-count {
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-8);
+      }
+    }
+  }
+}
+
+// 窄屏顶部横向锚点
+.narrow-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+
+  .chip {
+    flex-shrink: 0;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: var(--el-text-color-regular);
+    background: var(--el-fill-color-light);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+
+    &.active {
+      color: #fff;
+      background: var(--el-color-primary);
+      border-color: var(--el-color-primary);
+    }
+  }
+}
+
+.sections {
+  flex: 1;
+  min-width: 0;
+  // 分区间距：各区块组件的兄弟位置夹着抽屉的 el-overlay 占位节点，
+  // 相邻选择器(.about-section + .about-section)永不匹配 → 用 flex gap 保证间隔；
+  // 隐藏(display:none)与 fixed 定位的 overlay 不产生 flex 盒子，gap 不受抽屉开关影响
+  // flex gap: drawer overlays interleave between section siblings and break the
+  // adjacent-sibling margin; hidden/fixed overlays generate no flex boxes
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 </style>
