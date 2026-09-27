@@ -21,6 +21,11 @@
 
     <!-- 流光极光背景（WebGL，随指针弯曲） -->
     <AuroraRibbons class="hero-bg" :speed="55" :intensity="65" :warp="45" />
+    <!-- 点阵地球（WebGL，自转 + 色源光波；浮在流光之上、scrim 之下） -->
+    <!-- Dotted globe (WebGL, auto-rotate + color-source waves; over the aurora, under the scrim) -->
+    <div class="hero-globe-wrap" aria-hidden="true">
+      <DottedGlobe class="hero-globe" :speed="32" :intensity="58" :dot-size="46" />
+    </div>
     <!-- 文字可读性 scrim：中心柔和压暗，边缘透出光带 -->
     <div class="hero-scrim" aria-hidden="true"></div>
 
@@ -69,6 +74,7 @@ import { useRouter } from 'vue-router'
 import { ChatRound, Shop, Link, Share, Search, Promotion } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
 import AuroraRibbons from '@/components/AuroraRibbons.vue'
+import DottedGlobe from '@/components/DottedGlobe.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
 // 与 chat/assistant/websites 页一致：进入页面即应用主题（setup 调用，首帧前挂 dark class 防闪白）
@@ -130,11 +136,30 @@ const clearSpot = () => {
   z-index: 0;
 }
 
+// 点阵地球：底边裁切的「升起的星球」，压在流光之上、scrim 之下
+// Dotted globe: a planet rising, cropped by the bottom edge — over the aurora, under the scrim
+.hero-globe-wrap {
+  --globe: min(82vh, 840px);
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--globe) * -0.6);
+  z-index: 1;
+  width: var(--globe);
+  height: var(--globe);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.hero-globe {
+  width: 100%;
+  height: 100%;
+  animation: globe-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
+}
+
 // 可读性 scrim：介于画布与内容之间 / readability scrim between canvas and content
 .hero-scrim {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   background: radial-gradient(
     ellipse 70% 55% at 50% 46%,
@@ -149,7 +174,7 @@ const clearSpot = () => {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 3;
+  z-index: 4;
   height: 64px;
 }
 .nav-content {
@@ -190,7 +215,7 @@ const clearSpot = () => {
 // 主内容
 .content {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -359,6 +384,16 @@ const clearSpot = () => {
     transform: none;
   }
 }
+@keyframes globe-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .brand-line,
 .main-title,
 .subtitle,
@@ -377,13 +412,19 @@ const clearSpot = () => {
   .main-title,
   .subtitle,
   .prompt-box,
-  .entries {
+  .entries,
+  .hero-globe {
     animation: none;
   }
 }
 
 // 响应式
 @media (max-width: 768px) {
+  // 小屏让位给入口网格与提问框，星球仅在大屏呈现
+  // Small screens give the room to the entry grid and prompt box; globe is desktop-only
+  .hero-globe-wrap {
+    display: none;
+  }
   .content {
     padding: 88px 20px 40px;
   }
