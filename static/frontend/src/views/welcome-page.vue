@@ -62,9 +62,9 @@
         </nav>
       </div>
 
-      <!-- 点阵地球（WebGL，完整呈现：自转 + 色源光波 + 指针姿态） -->
-      <!-- Dotted globe (WebGL, shown in full: auto-rotate + color-source waves + pointer attitude) -->
-      <div class="globe-side" aria-hidden="true">
+      <!-- 点阵地球（WebGL，完整呈现：自转、可拖拽、光点标记当前位置） -->
+      <!-- Dotted globe (WebGL, shown in full: rotating, draggable, with a pulsing marker at the current location) -->
+      <div class="globe-side">
         <DottedGlobe class="hero-globe" :speed="28" :intensity="64" :dot-size="44" />
       </div>
     </main>
@@ -165,12 +165,11 @@ const clearSpot = () => {
   gap: clamp(32px, 5vw, 72px);
 }
 
-// 点阵地球：完整呈现 / the dotted globe shown in full
+// 点阵地球：完整呈现（可拖拽交互）/ the dotted globe shown in full (interactive, draggable)
 .globe-side {
   flex-shrink: 0;
   width: min(38vw, 52vh, 540px);
   aspect-ratio: 1;
-  pointer-events: none;
 }
 .hero-globe {
   width: 100%;

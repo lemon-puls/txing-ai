@@ -1,7 +1,7 @@
 <template>
-  <!-- 点阵地球装饰层（WebGL 着色器渲染，纯装饰，不拦截交互；originkit Globe 效果的自研移植） -->
-  <!-- Dotted-globe decorative layer (WebGL shader, decorative only, never intercepts input; an original port of originkit's Globe) -->
-  <div ref="wrapRef" class="dotted-globe" aria-hidden="true">
+  <!-- 点阵地球（WebGL 着色器渲染；originkit Globe 的自研移植：自转、拖拽惯性、悬停暂停、位置标记） -->
+  <!-- Dotted globe (WebGL; an original port of originkit's Globe: rotation, drag momentum, hover pause, location marker) -->
+  <div ref="wrapRef" class="dotted-globe" role="img" aria-label="点阵地球：自转中，可拖拽旋转，光点标记当前位置">
     <canvas ref="canvasRef" class="dotted-globe-canvas"></canvas>
   </div>
 </template>
@@ -26,14 +26,12 @@ const VERT_SRC = `
 attribute vec3 a_pos;
 attribute float a_seed;
 
-uniform float uYaw;       // 自转相位 / auto-rotation phase
-uniform float uLeanYaw;   // 指针带来的轻微偏航 / pointer-driven yaw
-uniform float uLeanTilt;  // 指针带来的轻微俯仰 / pointer-driven tilt
-uniform float uDist;      // 相机距离 / camera distance
-uniform float uFit;       // 球半径 → 裁剪空间缩放 / sphere radius → clip scale
-uniform float uDotPx;     // 点基准像素尺寸 / base point size in px
-uniform float uTime;      // 色源光波相位 / color-source wave phase
-uniform float uMode;      // 0=点阵 1=经纬线 / 0=points 1=graticule
+uniform float uYaw;      // 自转相位（含拖拽/惯性）/ rotation phase (drag & momentum included)
+uniform float uDist;     // 相机距离 / camera distance
+uniform float uFit;      // 球半径 → 裁剪空间缩放 / sphere radius → clip scale
+uniform float uDotPx;    // 点基准像素尺寸 / base point size in px
+uniform float uTime;     // 色源光波相位 / color-source wave phase
+uniform float uMode;     // 0=点阵 1=经纬线 2=位置标记 / 0=points 1=graticule 2=location marker
 
 varying vec3 vGlow;    // 三色源各自的光强 / per-source glow
 varying float vFacing; // 朝向相机的分量 / facing toward camera
@@ -68,14 +66,15 @@ float srcGlow(vec3 n, float i, float t){
 }
 
 void main(){
-  // 自转 + 地轴倾角 23.5° + 指针轻微姿态偏转（无深度测试，背面仅变暗）
-  // Auto-rotation + 23.5° axial tilt + subtle pointer attitude (no depth test; back side just dims)
+  // 自转（含拖拽/惯性）+ 地轴倾角 23.5°（无深度测试，背面仅变暗）
+  // Rotation (drag & momentum) + 23.5° axial tilt (no depth test; back side just dims)
   vec3 n = a_pos;
-  vec3 p = rotX(rotY(n, uYaw + uLeanYaw), 0.41 + uLeanTilt);
+  vec3 p = rotX(rotY(n, uYaw), 0.41);
   float w = uDist - p.z;
 
   vFacing = p.z;
   vSeed = a_seed;
+  vGlow = vec3(0.0);
 
   if (uMode < 0.5) {
     float g0 = srcGlow(n, 0.0, uTime);
@@ -86,8 +85,12 @@ void main(){
     p *= 1.0 + (g0 + g1 + g2) * 0.012;
     w = uDist - p.z;
     gl_PointSize = uDotPx * (uDist / w) * (0.82 + 0.36 * a_seed);
+  } else if (uMode > 1.5) {
+    // 位置标记：稍抬离球面，放大成精灵 / location marker: lifted off the surface, sized as a sprite
+    p *= 1.004;
+    w = uDist - p.z;
+    gl_PointSize = uDotPx * 7.0 * (uDist / w);
   } else {
-    vGlow = vec3(0.0);
     gl_PointSize = 1.0;
   }
 
@@ -103,8 +106,9 @@ precision mediump float;
 #endif
 
 uniform float uIntensity;  // 整体亮度 / overall brightness
+uniform float uTime;       // 标记脉冲相位 / marker pulse phase
 uniform float uMode;
-uniform vec3 uLand, uGrid, uC0, uC1, uC2;
+uniform vec3 uLand, uGrid, uMarker, uC0, uC1, uC2;
 
 varying vec3 vGlow;
 varying float vFacing;
@@ -123,6 +127,19 @@ void main(){
     float soft = smoothstep(0.25, 0.02, d2); // 软圆点 / soft round sprite
     col = uLand + uC0 * vGlow.x + uC1 * vGlow.y + uC2 * vGlow.z;
     a = soft * facing * uIntensity * (0.55 + 0.45 * vSeed);
+  } else if (uMode > 1.5) {
+    // 位置标记：实心核 + 固定细环 + 扩散脉冲，三层叠加（勿对负底数用 pow）
+    // Marker: solid core + fixed thin ring + expanding pulse (no pow on negative base)
+    vec2 q = gl_PointCoord - 0.5;
+    float r = length(q) * 2.0;
+    float core = smoothstep(0.30, 0.20, r);
+    float e = (r - 0.52) * 14.0;
+    float fix = exp(-e * e) * 0.6;
+    float ph = fract(uTime * 2.7);
+    float d = (r - ph * 0.95) * 9.0;
+    float pulse = exp(-d * d) * (1.0 - ph);
+    col = uMarker;
+    a = (core + fix + pulse * 0.85) * facing; // 不随 intensity 缩放：信息标记始终清晰 / informational marker stays crisp
   } else {
     col = uGrid;
     a = facing * uIntensity * 0.3;
@@ -172,6 +189,7 @@ const LIGHT_PALETTE = {
   land: '#2b52c8',
   grid: '#8fb0e8',
   rim: '#2B5EFF',
+  marker: '#0288d1',
   c0: '#2B5EFF',
   c1: '#1E88E5',
   c2: '#03A9F4'
@@ -180,6 +198,7 @@ const DARK_PALETTE = {
   land: '#d5e4ff',
   grid: '#3d5f9e',
   rim: '#2B5EFF',
+  marker: '#8bd4ff',
   c0: '#2B5EFF',
   c1: '#1E88E5',
   c2: '#03A9F4'
@@ -191,7 +210,6 @@ const props = defineProps({
   speed: { type: Number, default: 32 },     // 自转速度 0-100 / rotation speed
   intensity: { type: Number, default: 58 }, // 点阵亮度 0-100 / dot brightness
   dotSize: { type: Number, default: 46 },   // 点尺寸 0-100 / dot size
-  lean: { type: Number, default: 30 },      // 指针姿态偏转 0-100 / pointer attitude sway
   grid: { type: Boolean, default: true }    // 15° 经纬网 / 15° graticule
 })
 
@@ -267,8 +285,9 @@ let themeMo = null
 // 每帧 uniform 快照：props + 主题 → 数值（watchEffect 中重算，渲染循环只读）
 // Per-frame uniform snapshot: props + theme → numbers (rebuilt in watchEffect, read-only in the loop)
 const uni = {
-  speed: 0.32, intensity: 0.58, dotPx: 2.8, lean: 0.3,
+  speed: 0.32, intensity: 0.58, dotPx: 2.8,
   land: [0.84, 0.89, 1, 1], grid: [0.24, 0.37, 0.62, 1], rim: [0.17, 0.37, 1, 1],
+  marker: [0.55, 0.83, 1, 1],
   c0: [0.17, 0.37, 1, 1], c1: [0.12, 0.53, 0.9, 1], c2: [0.01, 0.66, 0.96, 1]
 }
 
@@ -298,9 +317,15 @@ let raf = 0
 let last = 0
 let yaw = YAW0
 let drift = 0
-let strength = 0
-const lean = { x: 0, y: 0 }
-const ptr = { x: 0, y: 0, inside: false }
+// 拖拽旋转（originkit 的 drag-to-spin + 惯性）/ drag-to-spin with momentum, like originkit
+let dragging = false
+let yawVel = 0 // 释放后的惯性角速度 / post-release angular momentum
+let hovering = false // stopOnHover：悬停暂停自转 / pause auto-rotation while hovered
+let rotBlend = 1 // 自转权重（悬停/拖拽时缓落 0）/ auto-rotation weight, eases to 0
+let lastDragX = 0
+let lastDragT = 0
+// 当前位置标记 / current-location marker
+let markerPos = null // 单位球坐标 [x,y,z] / unit-sphere coords
 let io = null
 
 // 两套 program 各自缓存 uniform 位置（attribute 必须走 getAttribLocation）
@@ -412,8 +437,6 @@ const draw = () => {
   // 点阵与经纬网共用主 program / points and graticule share the main program
   gl.useProgram(progMain)
   gl.uniform1f(locMain.uYaw, yaw)
-  gl.uniform1f(locMain.uLeanYaw, lean.x * 0.3 * strength * uni.lean)
-  gl.uniform1f(locMain.uLeanTilt, -lean.y * 0.26 * strength * uni.lean)
   gl.uniform1f(locMain.uDist, CAM_DIST)
   gl.uniform1f(locMain.uFit, SPHERE_FIT * CAM_DIST)
   gl.uniform1f(locMain.uDotPx, uni.dotPx * (bh / 700)) // 700px 画布基准尺寸 / 700px baseline
@@ -443,19 +466,29 @@ const draw = () => {
     gl.vertexAttribPointer(aSeedMain, 1, gl.FLOAT, false, 16, 12)
     gl.drawArrays(gl.POINTS, 0, pointCount)
   }
+
+  // 当前位置标记（单顶点常量属性，无需缓冲）/ location marker (single vertex via constant attributes, no buffer)
+  if (markerPos) {
+    gl.uniform1f(locMain.uMode, 2)
+    gl.uniform3f(locMain.uMarker, uni.marker[0], uni.marker[1], uni.marker[2])
+    gl.disableVertexAttribArray(aPosMain)
+    gl.vertexAttrib3f(aPosMain, markerPos[0], markerPos[1], markerPos[2])
+    gl.vertexAttrib1f(aSeedMain, 0.9)
+    gl.drawArrays(gl.POINTS, 0, 1)
+  }
 }
 
 const step = (dt) => {
-  // 指针姿态偏转双指数趋近（CloudSky 同款公式）；离开缓归中性
-  // Pointer attitude eases exponentially (CloudSky's formula); drifts home on leave
-  const k = 1 - Math.exp(-40 * 0.12 * dt)
-  lean.x += ((ptr.inside ? ptr.x : 0) - lean.x) * k
-  lean.y += ((ptr.inside ? ptr.y : 0) - lean.y) * k
-  strength += ((ptr.inside ? 1 : 0) - strength) * (1 - Math.exp(-2.5 * dt))
+  // 自转：悬停/拖拽时缓停（stopOnHover）；释放后惯性指数衰减
+  // Rotation: eases to a stop on hover/drag (stopOnHover); momentum decays exponentially after release
+  rotBlend += (((dragging || hovering) ? 0 : 1) - rotBlend) * (1 - Math.exp(-3 * dt))
+  if (!dragging) {
+    yaw = (yaw + (uni.speed * 0.13 * rotBlend + yawVel) * dt) % (Math.PI * 2)
+    yawVel *= Math.exp(-2.2 * dt)
+  }
 
   // 时间累加而非 now*speed：调整 speed 不跳变；取模防精度劣化
   // Accumulate time instead of now*speed (no jump when speed changes); wrap to avoid precision decay
-  yaw = (yaw + dt * uni.speed * 0.13) % (Math.PI * 2)
   drift = (drift + dt * uni.speed * 0.55) % 1000
   draw()
 }
@@ -497,25 +530,59 @@ watchEffect(() => {
   // 亮色下略压亮度 / slightly tame brightness on light theme
   uni.intensity = (clampN(props.intensity, 0, 100) / 100) * (dark ? 1.0 : 0.95)
   uni.dotPx = (clampN(props.dotSize, 0, 100) / 50) * 3 // 50 → 700px 画布下 3px / 50 → 3px at the 700px baseline
-  uni.lean = clampN(props.lean, 0, 100) / 100
   uni.land = parseColor(pal.land, [0.84, 0.89, 1, 1])
   uni.grid = parseColor(pal.grid, [0.24, 0.37, 0.62, 1])
   uni.rim = parseColor(pal.rim, [0.17, 0.37, 1, 1])
+  uni.marker = parseColor(pal.marker, [0.55, 0.83, 1, 1])
   uni.c0 = parseColor(pal.c0, [0.17, 0.37, 1, 1])
   uni.c1 = parseColor(pal.c1, [0.12, 0.53, 0.9, 1])
   uni.c2 = parseColor(pal.c2, [0.01, 0.66, 0.96, 1])
   redrawIfIdle()
 })
 
-// 指针姿态：window 级监听，相对视口中心取偏转目标
-// Pointer attitude: window-level listeners, tilt target relative to viewport center
-const onPointerMove = (e) => {
-  ptr.x = e.clientX / Math.max(1, window.innerWidth) - 0.5
-  ptr.y = e.clientY / Math.max(1, window.innerHeight) - 0.5
-  ptr.inside = true
+// 拖拽旋转：按住拖动 → 球面跟随；释放 → 惯性滚动（originkit 的 drag-to-spin）
+// Drag-to-spin: the surface follows the pointer; momentum on release (originkit's drag-to-spin)
+const onPointerDown = (e) => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  dragging = true
+  yawVel = 0
+  lastDragX = e.clientX
+  lastDragT = performance.now()
+  wrapRef.value?.classList.add('is-dragging')
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', onDragEnd)
+  window.addEventListener('pointercancel', onDragEnd)
 }
-const onPointerGone = () => {
-  ptr.inside = false
+const onDragMove = (e) => {
+  if (!dragging || !gl) return
+  const el = wrapRef.value
+  if (!el) return
+  // 按球面像素半径换算角位移：表面跟随光标 / angular step from the sphere's pixel radius: surface tracks the cursor
+  const radiusPx = Math.max(1, (el.clientWidth * SPHERE_FIT) / 2)
+  const dyaw = (e.clientX - lastDragX) / radiusPx
+  yaw += dyaw
+  const now = performance.now()
+  const dt = Math.max(0.001, (now - lastDragT) / 1000)
+  // 指数平滑采样角速度作为释放惯性 / exponentially-smoothed angular velocity → release momentum
+  yawVel = yawVel * 0.7 + (dyaw / dt) * 0.3
+  lastDragX = e.clientX
+  lastDragT = now
+  if (!running) drawOnce() // 减动效下拖拽也即时呈现 / drag still renders instantly under reduced motion
+}
+const onDragEnd = () => {
+  dragging = false
+  yawVel = clampN(yawVel, -3, 3)
+  wrapRef.value?.classList.remove('is-dragging')
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', onDragEnd)
+  window.removeEventListener('pointercancel', onDragEnd)
+}
+// stopOnHover：悬停暂停自转，离开恢复（仅精确指针）/ stopOnHover: pause auto-rotation while hovered (fine pointers only)
+const onHoverEnter = (e) => {
+  if (e.pointerType === 'mouse') hovering = true
+}
+const onHoverLeave = (e) => {
+  if (e.pointerType === 'mouse') hovering = false
 }
 const onResize = () => {
   if (!running) drawOnce()
@@ -531,6 +598,46 @@ const onIntersect = (entries) => {
 }
 const onThemeChange = () => {
   isDark.value = document.documentElement.classList.contains('dark')
+}
+
+// ===== 当前位置标记 =====
+// Current-location marker
+// 时区 → 城市坐标（Geolocation 被拒/不可用时的兜底）/ timezone → city coords (fallback when geolocation is denied/unavailable)
+const TZ_COORDS = {
+  'Asia/Shanghai': [31.23, 121.47], 'Asia/Urumqi': [43.83, 87.62],
+  'Asia/Hong_Kong': [22.32, 114.17], 'Asia/Macau': [22.2, 113.55],
+  'Asia/Taipei': [25.03, 121.53], 'Asia/Tokyo': [35.68, 139.69],
+  'Asia/Seoul': [37.57, 126.98], 'Asia/Singapore': [1.35, 103.82],
+  'Asia/Bangkok': [13.76, 100.5], 'Asia/Jakarta': [-6.21, 106.85],
+  'Asia/Kuala_Lumpur': [3.14, 101.69], 'Asia/Manila': [14.6, 120.98],
+  'Asia/Ho_Chi_Minh': [10.82, 106.63], 'Asia/Kolkata': [28.61, 77.21],
+  'Asia/Karachi': [24.86, 67.01], 'Asia/Dubai': [25.2, 55.27],
+  'Asia/Riyadh': [24.71, 46.68], 'Asia/Tehran': [35.69, 51.39],
+  'Europe/Istanbul': [41.01, 28.98], 'Europe/London': [51.51, -0.13],
+  'Europe/Paris': [48.86, 2.35], 'Europe/Berlin': [52.52, 13.4],
+  'Europe/Moscow': [55.76, 37.62], 'Europe/Madrid': [40.42, -3.7],
+  'Europe/Rome': [41.9, 12.5], 'Europe/Amsterdam': [52.37, 4.9],
+  'America/New_York': [40.71, -74.01], 'America/Chicago': [41.88, -87.63],
+  'America/Denver': [39.74, -104.99], 'America/Los_Angeles': [34.05, -118.24],
+  'America/Vancouver': [49.28, -123.12], 'America/Toronto': [43.65, -79.38],
+  'America/Mexico_City': [19.43, -99.13], 'America/Sao_Paulo': [-23.55, -46.63],
+  'America/Argentina/Buenos_Aires': [-34.6, -58.38],
+  'Australia/Sydney': [-33.87, 151.21], 'Australia/Perth': [-31.95, 115.86],
+  'Pacific/Auckland': [-36.85, 174.76], 'Africa/Cairo': [30.04, 31.24],
+  'Africa/Johannesburg': [-26.2, 28.05], 'Africa/Lagos': [6.52, 3.38],
+  'Africa/Nairobi': [-1.29, 36.82]
+}
+const setMarkerLatLon = (lat, lon) => {
+  markerPos = ll2v((lon * Math.PI) / 180, (lat * Math.PI) / 180)
+  redrawIfIdle()
+}
+const locateByTimezone = () => {
+  try {
+    const c = TZ_COORDS[Intl.DateTimeFormat().resolvedOptions().timeZone]
+    if (c) setMarkerLatLon(c[0], c[1])
+  } catch (err) {
+    // 无时区信息则不显示标记 / no timezone info: skip the marker
+  }
 }
 
 onMounted(() => {
@@ -553,7 +660,7 @@ onMounted(() => {
     return
   }
   gl.useProgram(progMain)
-  locMain = cacheLocs(progMain, ['uYaw', 'uLeanYaw', 'uLeanTilt', 'uDist', 'uFit', 'uDotPx', 'uTime', 'uMode', 'uIntensity', 'uLand', 'uGrid', 'uC0', 'uC1', 'uC2'])
+  locMain = cacheLocs(progMain, ['uYaw', 'uDist', 'uFit', 'uDotPx', 'uTime', 'uMode', 'uIntensity', 'uLand', 'uGrid', 'uMarker', 'uC0', 'uC1', 'uC2'])
   aPosMain = gl.getAttribLocation(progMain, 'a_pos')
   aSeedMain = gl.getAttribLocation(progMain, 'a_seed')
   gl.useProgram(progRim)
@@ -582,18 +689,29 @@ onMounted(() => {
   }
   img.src = landMaskUrl
 
+  // 当前位置：Geolocation 授权优先，被拒/不可用回退时区推断
+  // Current location: geolocation first; timezone inference when denied/unavailable
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setMarkerLatLon(pos.coords.latitude, pos.coords.longitude),
+      locateByTimezone,
+      { timeout: 8000, maximumAge: 600000 }
+    )
+  } else {
+    locateByTimezone()
+  }
+
   reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   coarsePtr = window.matchMedia('(hover: none)').matches
   dprCap = coarsePtr ? 1.25 : MAX_DPR
 
   window.addEventListener('resize', onResize, { passive: true })
-  // 触屏与减动效环境不挂指针监听：星球仅自转
-  // Touch and reduced-motion skip pointer listeners: the globe only auto-rotates
-  if (!reduced && !coarsePtr) {
-    window.addEventListener('pointermove', onPointerMove, { passive: true })
-    window.addEventListener('blur', onPointerGone)
-    document.documentElement.addEventListener('mouseleave', onPointerGone)
-  }
+  // 拖拽旋转随时可用（含触屏与减动效）；悬停暂停仅对精确指针生效
+  // Drag is always available (touch & reduced motion included); hover-pause applies to fine pointers only
+  const el = wrapRef.value
+  el.addEventListener('pointerdown', onPointerDown)
+  el.addEventListener('pointerenter', onHoverEnter)
+  el.addEventListener('pointerleave', onHoverLeave)
 
   // 主题跟随
   // Theme tracking
@@ -611,10 +729,12 @@ onBeforeUnmount(() => {
   stopLoop()
   io?.disconnect()
   themeMo?.disconnect()
+  const el = wrapRef.value
+  el?.removeEventListener('pointerdown', onPointerDown)
+  el?.removeEventListener('pointerenter', onHoverEnter)
+  el?.removeEventListener('pointerleave', onHoverLeave)
   window.removeEventListener('resize', onResize)
-  window.removeEventListener('pointermove', onPointerMove)
-  window.removeEventListener('blur', onPointerGone)
-  document.documentElement.removeEventListener('mouseleave', onPointerGone)
+  onDragEnd() // 卸载时若在拖拽，解绑 window 监听 / unmount mid-drag: unbind the window listeners
   // 释放 WebGL 上下文 / release the GL context
   gl?.getExtension('WEBGL_lose_context')?.loseContext()
   gl = null
@@ -631,7 +751,12 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  pointer-events: none;
+  cursor: grab; // 可拖拽旋转 / draggable
+  touch-action: none; // 触屏拖拽归地球而不是页面 / touch drags spin the globe, not the page
+
+  &.is-dragging {
+    cursor: grabbing;
+  }
 }
 
 .dotted-globe-canvas {
