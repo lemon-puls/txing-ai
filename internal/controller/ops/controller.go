@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"go.uber.org/zap"
 
@@ -110,9 +113,7 @@ func ChatStream(ctx *gin.Context) {
 	startTime := time.Now()
 	var (
 		toolCallRecords   []map[string]string
-		capturedProposal  json.RawMessage
-		capturedStatus    string
-		capturedMessage   string
+		capturedProposals []domain.OpsChatProposalItem
 		streamedContent   string
 		streamedReasoning string
 		liveToolCalls     []domain.OpsChatToolCall
@@ -138,8 +139,13 @@ func ChatStream(ctx *gin.Context) {
 				opLog.ToolCalls = string(tcJSON)
 			}
 		}
-		if capturedProposal != nil {
-			opLog.Proposal = string(capturedProposal)
+		if len(capturedProposals) > 0 {
+			// 单提案保持扁平结构（兼容既有审计查询），批量时存数组
+			if len(capturedProposals) == 1 {
+				opLog.Proposal = string(capturedProposals[0].Proposal)
+			} else if arr, err := json.Marshal(capturedProposals); err == nil {
+				opLog.Proposal = string(arr)
+			}
 		}
 		if err := db.Create(&opLog).Error; err != nil {
 			log.Error("保存运营助手审计日志失败", zap.Error(err))
@@ -226,9 +232,12 @@ func ChatStream(ctx *gin.Context) {
 						return nil
 					}
 					if len(previewPayload.Proposal) > 0 {
-						capturedProposal = previewPayload.Proposal
-						capturedStatus = previewPayload.Status
-						capturedMessage = previewPayload.Message
+						// 批量录入：每次 preview 结果独立收集并发帧（前端在消息内追加卡片，不覆盖）
+						capturedProposals = append(capturedProposals, domain.OpsChatProposalItem{
+							Proposal: previewPayload.Proposal,
+							Status:   previewPayload.Status,
+							Message:  previewPayload.Message,
+						})
 						return writeFrame(map[string]interface{}{
 							"type": "proposal", "proposal": previewPayload.Proposal,
 							"status": previewPayload.Status, "message": previewPayload.Message,
@@ -272,17 +281,14 @@ func ChatStream(ctx *gin.Context) {
 		Stream:           true,
 	}, req.Content, callback)
 
-	// 流后组装助手消息并落库（对齐用户端 SaveResponse 时点；错误/中断路径也持久化）
+	// 流后组装助手消息并落库（对齐用户端 SaveResponse 时点；错误/中断路径也持久化）。
+	// 一条回复只落一条消息，批量提案以数组挂在消息上（回放时消息内部渲染多张卡片）
 	assistantMsg := domain.OpsChatMessage{
 		Role:      "assistant",
 		Content:   streamedContent,
 		Reasoning: streamedReasoning,
 		ToolCalls: liveToolCalls,
-	}
-	if len(capturedProposal) > 0 {
-		assistantMsg.Proposal = capturedProposal
-		assistantMsg.ProposalStatus = capturedStatus
-		assistantMsg.ProposalMessage = capturedMessage
+		Proposals: capturedProposals,
 	}
 	if err != nil {
 		opLog.Error = err.Error()
@@ -340,13 +346,81 @@ func buildOpsHistory(messages []domain.OpsChatMessage) []*schema.Message {
 		if m.Content == "" && m.Error != "" {
 			continue
 		}
-		content := m.Content
+		// 剥离历史消息开头的英文开场白：留在历史里会被当作 few-shot 模仿，导致回复继续以英文开场
+		content := strings.TrimSpace(stripLatinOpening(m.Content))
 		if content == "" {
-			content = proposalOnlyPlaceholder
+			if len(m.Proposals) > 0 {
+				content = proposalOnlyPlaceholder
+			} else if m.Content == "" {
+				continue // 无正文无提案的消息（仅工具调用）用占位保证格式
+			} else {
+				content = "（上一轮助手回复）"
+			}
 		}
 		history = append(history, schema.AssistantMessage(content, nil))
 	}
 	return history
+}
+
+// stripLatinOpening 剥离文本开头第一个汉字之前的纯英文开场白
+// stripLatinOpening removes a leading Latin-only opening sentence before the first CJK char.
+// 例："I'll check existing models first.两个模型均无重名…" → "两个模型均无重名…"；
+// 以模型名开头的内容（如 "GLM-5 与…"、"mimo flash pro 是…"）保持原样。
+// 判据：前缀含 ≥2 个英文单词且命中英文停用词（虚词/常见开场词），避免误伤模型名。
+func stripLatinOpening(content string) string {
+	idx := strings.IndexFunc(content, func(r rune) bool {
+		return unicode.Is(unicode.Han, r)
+	})
+	switch {
+	case idx == 0:
+		return content // 以汉字开头，无英文前缀
+	case idx < 0:
+		// 整条无汉字：仅当内容像英文句子时整条剥除
+		if looksLikeLatinSentence(content) {
+			return ""
+		}
+		return content
+	default:
+		if looksLikeLatinSentence(content[:idx]) {
+			return content[idx:]
+		}
+		return content
+	}
+}
+
+// latinStopWords 常见英文虚词与开场词（小而准，命中即视为英文句子而非模型名罗列）
+var latinStopWords = map[string]bool{
+	"the": true, "and": true, "for": true, "with": true, "this": true, "that": true,
+	"will": true, "would": true, "can": true, "could": true, "let": true, "now": true,
+	"first": true, "then": true, "both": true, "from": true, "have": true, "has": true,
+	"are": true, "was": true, "not": true, "but": true, "about": true, "into": true,
+	"start": true, "starting": true, "check": true, "checking": true, "generate": true,
+	"generating": true, "already": true, "been": true, "two": true, "new": true,
+}
+
+// looksLikeLatinSentence 判断文本是否像英文句子：≥2 个长度 ≥3 的英文单词且至少命中一个停用词
+func looksLikeLatinSentence(s string) bool {
+	words := 0
+	for _, w := range strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) }) {
+		if utf8.RuneCountInString(w) < 3 {
+			continue
+		}
+		latin := true
+		for _, r := range w {
+			if r >= 0x2E80 { // CJK 及东亚文字区起点
+				latin = false
+				break
+			}
+		}
+		if !latin {
+			continue
+		}
+		words++
+		if words >= 2 && latinStopWords[strings.ToLower(w)] {
+			return true
+		}
+	}
+	return false
 }
 
 // upsertLiveToolCall 按 ToolCallId 更新或追加工具调用记录（running → completed 各一帧）

@@ -29,6 +29,8 @@ type OpsChatSessionListReq struct {
 type OpsChatAppendReq struct {
 	Role    string `json:"role" binding:"required,oneof=assistant" example:"assistant"`
 	Content string `json:"content" binding:"required,max=8000" example:"✅ 提案已确认，网站录入完成。"`
-	// 是否将最后一条未确认的提案标记为已确认
+	// 是否将未确认的提案标记为已确认
 	MarkProposalConfirmed bool `json:"markProposalConfirmed"`
+	// 被确认提案的 name（批量录入时精确匹配；为空时回退为"最后一条未确认提案"）
+	ProposalName string `json:"proposalName,omitempty" example:"deepseek-v3"`
 }

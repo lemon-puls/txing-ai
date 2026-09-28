@@ -132,42 +132,44 @@
               <ToolCallItem v-for="tc in msg.toolCalls" :key="tc.id" :tool-call="tc" />
             </div>
 
-            <!-- 结构化提案卡片（按 proposal.type 分发） -->
-            <WebsiteProposalCard
-              v-if="msg.proposal?.type === 'website'"
-              :proposal="msg.proposal"
-              :proposal-status="msg.proposalStatus"
-              :proposal-message="msg.proposalMessage"
-              :confirmed="msg.proposalStatus === 'confirmed'"
-              @confirmed="handleProposalConfirmed"
-            />
-            <ModelProposalCard
-              v-else-if="msg.proposal?.type === 'model'"
-              :proposal="msg.proposal"
-              :proposal-status="msg.proposalStatus"
-              :proposal-message="msg.proposalMessage"
-              :confirmed="msg.proposalStatus === 'confirmed'"
-              :original="props.context?.draft || null"
-              @confirmed="handleProposalConfirmed"
-            />
-            <ChannelProposalCard
-              v-else-if="msg.proposal?.type === 'channel'"
-              :proposal="msg.proposal"
-              :proposal-status="msg.proposalStatus"
-              :proposal-message="msg.proposalMessage"
-              :confirmed="msg.proposalStatus === 'confirmed'"
-              :original="props.context?.draft || null"
-              @confirmed="handleProposalConfirmed"
-            />
-            <PresetProposalCard
-              v-else-if="msg.proposal?.type === 'preset'"
-              :proposal="msg.proposal"
-              :proposal-status="msg.proposalStatus"
-              :proposal-message="msg.proposalMessage"
-              :confirmed="msg.proposalStatus === 'confirmed'"
-              :original="props.context?.draft || null"
-              @confirmed="handleProposalConfirmed"
-            />
+            <!-- 结构化提案卡片（按 proposal.type 分发；一条消息可携带多张提案，批量录入时逐张渲染） -->
+            <template v-for="(item, pIndex) in msg.proposals" :key="pIndex">
+              <WebsiteProposalCard
+                v-if="item.proposal?.type === 'website'"
+                :proposal="item.proposal"
+                :proposal-status="item.proposalStatus"
+                :proposal-message="item.proposalMessage"
+                :confirmed="item.proposalStatus === 'confirmed'"
+                @confirmed="handleProposalConfirmed(msg, item)"
+              />
+              <ModelProposalCard
+                v-else-if="item.proposal?.type === 'model'"
+                :proposal="item.proposal"
+                :proposal-status="item.proposalStatus"
+                :proposal-message="item.proposalMessage"
+                :confirmed="item.proposalStatus === 'confirmed'"
+                :original="props.context?.draft || null"
+                @confirmed="handleProposalConfirmed(msg, item)"
+              />
+              <ChannelProposalCard
+                v-else-if="item.proposal?.type === 'channel'"
+                :proposal="item.proposal"
+                :proposal-status="item.proposalStatus"
+                :proposal-message="item.proposalMessage"
+                :confirmed="item.proposalStatus === 'confirmed'"
+                :original="props.context?.draft || null"
+                @confirmed="handleProposalConfirmed(msg, item)"
+              />
+              <PresetProposalCard
+                v-else-if="item.proposal?.type === 'preset'"
+                :proposal="item.proposal"
+                :proposal-status="item.proposalStatus"
+                :proposal-message="item.proposalMessage"
+                :confirmed="item.proposalStatus === 'confirmed'"
+                :original="props.context?.draft || null"
+                @confirmed="handleProposalConfirmed(msg, item)"
+              />
+            </template>
 
             <!-- 错误提示 -->
             <div v-if="msg.error" class="msg-error">
@@ -337,7 +339,8 @@ const CONFIRM_NOTICES = {
   preset: '✅ 提案已确认，助手保存完成。'
 }
 
-// 对话消息：{ role, content, reasoning, reasoningExpanded, toolCalls[], proposal, proposalStatus, proposalMessage, error, interrupted, streaming }
+// 对话消息：{ role, content, reasoning, reasoningExpanded, toolCalls[], proposals[], error, interrupted, streaming }
+// proposals 为本条消息携带的提案卡片数组 [{ proposal, proposalStatus, proposalMessage }]（批量录入一条消息多张卡片）
 const messages = ref([])
 const input = ref('')
 const sending = ref(false)
@@ -361,7 +364,10 @@ const scrollToBottom = () => {
 }
 
 // 消息长度变化时滚动到底部（字段需判空：user 消息没有 toolCalls，读取 undefined 会中断调度队列导致渲染冻结）
-watch(() => messages.value.map(m => (m.content || '').length + (m.reasoning || '').length + (m.toolCalls || []).length), scrollToBottom)
+watch(
+  () => messages.value.map(m => (m.content || '').length + (m.reasoning || '').length + (m.toolCalls || []).length + (m.proposals || []).length),
+  scrollToBottom
+)
 
 // ===== 会话历史 =====
 
@@ -378,9 +384,11 @@ const normalizeMessage = (m) => ({
     result: tc.result || '',
     status: tc.status || 'completed'
   })),
-  proposal: m.proposal || null,
-  proposalStatus: m.proposalStatus || '',
-  proposalMessage: m.proposalMessage || '',
+  proposals: (m.proposals || []).map(p => ({
+    proposal: p.proposal || null,
+    proposalStatus: p.proposalStatus || '',
+    proposalMessage: p.proposalMessage || ''
+  })),
   error: m.error || '',
   interrupted: !!m.interrupted,
   streaming: false
@@ -511,9 +519,7 @@ const currentAssistant = () => {
       reasoning: '',
       reasoningExpanded: false,
       toolCalls: [],
-      proposal: null,
-      proposalStatus: '',
-      proposalMessage: '',
+      proposals: [],
       error: '',
       interrupted: false,
       streaming: true
@@ -579,10 +585,14 @@ const handleFrame = (frame) => {
       break
     }
     case 'proposal': {
+      // 批量录入：提案卡片追加进当前流式消息的 proposals 数组（一条消息渲染多张卡片，不切断消息流）
       const msg = currentAssistant()
-      msg.proposal = frame.proposal
-      msg.proposalStatus = frame.status || 'ok'
-      msg.proposalMessage = frame.message || ''
+      msg.proposals.push({
+        proposal: frame.proposal,
+        proposalStatus: frame.status || 'ok',
+        proposalMessage: frame.message || ''
+      })
+      waitingFirst.value = false
       break
     }
     case 'error': {
@@ -603,7 +613,7 @@ const finalizeAssistant = () => {
   if (msg && msg.role === 'assistant') {
     msg.streaming = false
     // 空消息（无内容无工具无提案）直接移除
-    if (!msg.content && !msg.reasoning && !msg.toolCalls.length && !msg.proposal && !msg.error && !msg.interrupted) {
+    if (!msg.content && !msg.reasoning && !msg.toolCalls.length && !(msg.proposals && msg.proposals.length) && !msg.error && !msg.interrupted) {
       messages.value.pop()
     }
   }
@@ -627,9 +637,7 @@ const createUserMessage = (text) => ({
   reasoning: '',
   reasoningExpanded: false,
   toolCalls: [],
-  proposal: null,
-  proposalStatus: '',
-  proposalMessage: '',
+  proposals: [],
   error: '',
   interrupted: false,
   streaming: false
@@ -673,29 +681,31 @@ const stopStreaming = () => {
   finalizeAssistant()
 }
 
-const handleProposalConfirmed = () => {
-  const msg = messages.value[messages.value.length - 1]
-  const proposalType = msg?.proposal?.type || 'website'
+// msg / item 由模板传入（confirm 事件所在的消息与提案项），批量提案时精确标记被确认的那张
+const handleProposalConfirmed = (msg, item) => {
+  const proposalType = item?.proposal?.type || 'website'
   const toast = CONFIRM_TOASTS[proposalType] || CONFIRM_TOASTS.website
   const notice = CONFIRM_NOTICES[proposalType] || CONFIRM_NOTICES.website
 
   ElMessage.success(toast)
   emit('inserted')
   // 本地置为已确认，防止回放后二次确认
-  if (msg && msg.role === 'assistant' && msg.proposal) {
-    msg.proposalStatus = 'confirmed'
+  if (item) {
+    item.proposalStatus = 'confirmed'
   }
   // 追加一条本地提示，明确提案已完成
-  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], reasoning: '', reasoningExpanded: false, proposal: null, proposalStatus: '', proposalMessage: '', error: '', interrupted: false })
+  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], proposals: [], reasoning: '', reasoningExpanded: false, error: '', interrupted: false })
   scrollToBottom()
 
-  // 持久化确认状态（失败不影响本地 UI，数据库侧有重名/URL 查重兜底）
+  // 持久化确认状态（失败不影响本地 UI，数据库侧有重名/URL 查重兜底）；
+  // proposalName 让后端在多条提案中精确匹配被确认的那张
   if (currentSessionId.value) {
     defaultApi
       .apiAdminOpsChatSessionsIdAppendPost(currentSessionId.value, {
         role: 'assistant',
         content: notice,
-        markProposalConfirmed: true
+        markProposalConfirmed: true,
+        proposalName: item?.proposal?.name || ''
       })
       .catch((error) => console.warn('持久化提案确认状态失败:', error))
   }

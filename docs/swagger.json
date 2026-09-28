@@ -5010,7 +5010,7 @@
                     "type": "boolean"
                 },
                 "proposal": {
-                    "description": "Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，\n前端按 type 字段分发渲染卡片；历史数据为网站提案的扁平结构，同样兼容。\ninternal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）\nswaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象",
+                    "description": "Proposal/ProposalStatus/ProposalMessage 为旧版单提案字段，仅用于反序列化历史数据；\nQueryOpsChatSessionById 加载时经 NormalizeProposals 统一并入 Proposals，保存后即落为新结构",
                     "type": "object"
                 },
                 "proposalMessage": {
@@ -5018,6 +5018,13 @@
                 },
                 "proposalStatus": {
                     "type": "string"
+                },
+                "proposals": {
+                    "description": "Proposals 本条消息携带的全部提案卡片",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.OpsChatProposalItem"
+                    }
                 },
                 "reasoning": {
                     "type": "string"
@@ -5031,6 +5038,21 @@
                     "items": {
                         "$ref": "#/definitions/domain.OpsChatToolCall"
                     }
+                }
+            }
+        },
+        "domain.OpsChatProposalItem": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "proposal": {
+                    "description": "Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，\n前端按 type 字段分发渲染卡片。\ninternal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）\nswaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象",
+                    "type": "object"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -5779,8 +5801,13 @@
                     "example": "✅ 提案已确认，网站录入完成。"
                 },
                 "markProposalConfirmed": {
-                    "description": "是否将最后一条未确认的提案标记为已确认",
+                    "description": "是否将未确认的提案标记为已确认",
                     "type": "boolean"
+                },
+                "proposalName": {
+                    "description": "被确认提案的 name（批量录入时精确匹配；为空时回退为\"最后一条未确认提案\"）",
+                    "type": "string",
+                    "example": "deepseek-v3"
                 },
                 "role": {
                     "type": "string",

@@ -1,6 +1,7 @@
 package ops
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"txing-ai/internal/domain"
@@ -181,13 +182,27 @@ func AppendOpsSession(c *gin.Context) {
 		return
 	}
 
-	// 将最后一条未确认的提案标记为已确认（从尾向前找，命中即止）
+	// 将未确认的提案标记为已确认：优先按前端传来的提案 name 精确匹配
+	// （批量录入一条消息可携带多张提案卡片），未传 name 时回退为最后一条未确认提案
 	if req.MarkProposalConfirmed {
+	matched:
 		for i := len(session.FormattedMessages) - 1; i >= 0; i-- {
 			m := &session.FormattedMessages[i]
-			if len(m.Proposal) > 0 && m.ProposalStatus != "" && m.ProposalStatus != "confirmed" {
-				m.ProposalStatus = "confirmed"
-				break
+			for j := len(m.Proposals) - 1; j >= 0; j-- {
+				item := &m.Proposals[j]
+				if len(item.Proposal) == 0 || item.Status == "" || item.Status == "confirmed" {
+					continue
+				}
+				if req.ProposalName != "" {
+					var named struct {
+						Name string `json:"name"`
+					}
+					if err := json.Unmarshal(item.Proposal, &named); err == nil && named.Name != "" && named.Name != req.ProposalName {
+						continue
+					}
+				}
+				item.Status = "confirmed"
+				break matched
 			}
 		}
 	}

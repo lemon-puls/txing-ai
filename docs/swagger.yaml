@@ -14,15 +14,18 @@ definitions:
         type: boolean
       proposal:
         description: |-
-          Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，
-          前端按 type 字段分发渲染卡片；历史数据为网站提案的扁平结构，同样兼容。
-          internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）
-          swaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象
+          Proposal/ProposalStatus/ProposalMessage 为旧版单提案字段，仅用于反序列化历史数据；
+          QueryOpsChatSessionById 加载时经 NormalizeProposals 统一并入 Proposals，保存后即落为新结构
         type: object
       proposalMessage:
         type: string
       proposalStatus:
         type: string
+      proposals:
+        description: Proposals 本条消息携带的全部提案卡片
+        items:
+          $ref: '#/definitions/domain.OpsChatProposalItem'
+        type: array
       reasoning:
         type: string
       role:
@@ -32,6 +35,20 @@ definitions:
         items:
           $ref: '#/definitions/domain.OpsChatToolCall'
         type: array
+    type: object
+  domain.OpsChatProposalItem:
+    properties:
+      message:
+        type: string
+      proposal:
+        description: |-
+          Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，
+          前端按 type 字段分发渲染卡片。
+          internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）
+          swaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象
+        type: object
+      status:
+        type: string
     type: object
   domain.OpsChatToolCall:
     properties:
@@ -551,8 +568,12 @@ definitions:
         maxLength: 8000
         type: string
       markProposalConfirmed:
-        description: 是否将最后一条未确认的提案标记为已确认
+        description: 是否将未确认的提案标记为已确认
         type: boolean
+      proposalName:
+        description: 被确认提案的 name（批量录入时精确匹配；为空时回退为"最后一条未确认提案"）
+        example: deepseek-v3
+        type: string
       role:
         enum:
         - assistant
