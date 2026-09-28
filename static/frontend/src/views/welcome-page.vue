@@ -72,7 +72,7 @@
 </template>
 
 <script setup name="WelcomePage">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChatRound, Shop, Link, Share, Search, Promotion } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
@@ -80,10 +80,21 @@ import AuroraRibbons from '@/components/AuroraRibbons.vue'
 import DottedGlobe from '@/components/DottedGlobe.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
-// 与 chat/assistant/websites 页一致：进入页面即应用主题（setup 调用，首帧前挂 dark class 防闪白）
-// Same as other pages: apply the stored theme in setup (dark class lands before first paint)
 const themeStore = useThemeStore()
-themeStore.initTheme()
+// 欢迎页是深色系作品（流光 + 点阵星球）：锁定深色呈现，离开时恢复用户偏好；localStorage 不覆写
+// The welcome page is a dark-mode artwork (aurora + dotted globe): render locked dark and
+// restore the user's preference on leave — localStorage is never overwritten
+const preferredDark = themeStore.isDark
+if (!preferredDark) {
+  themeStore.isDark = true
+}
+themeStore.applyTheme()
+onBeforeUnmount(() => {
+  if (!preferredDark) {
+    themeStore.isDark = preferredDark
+    themeStore.applyTheme()
+  }
+})
 
 const router = useRouter()
 const prompt = ref('')
