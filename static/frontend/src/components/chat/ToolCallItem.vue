@@ -15,7 +15,7 @@
         <el-icon v-else-if="toolCall.status === 'interrupted'" :size="12"><Minus /></el-icon>
         <el-icon v-else :size="12"><Tools /></el-icon>
       </span>
-      <span class="tool-name">{{ toolCall.name }}</span>
+      <span class="tool-name" :title="toolCall.name">{{ toolLabel }}</span>
       <el-icon class="tool-expand-arrow" :size="12" :class="{ expanded }"><ArrowDown /></el-icon>
     </div>
 
@@ -45,6 +45,19 @@ const props = defineProps({
 })
 
 const expanded = ref(false)
+
+// 工具名 → 中文标签（未知工具回退显示原名，title 保留原始名便于排查）
+const TOOL_LABELS = {
+  model_list_tool: '查询模型列表',
+  model_preview_tool: '校验模型提案',
+  channel_list_tool: '查询渠道列表',
+  channel_preview_tool: '校验渠道提案',
+  preset_list_tool: '查询助手列表',
+  preset_preview_tool: '校验助手提案',
+  website_fetch_tool: '抓取网站信息',
+  website_preview_tool: '校验网站提案'
+}
+const toolLabel = computed(() => TOOL_LABELS[props.toolCall.name] || props.toolCall.name)
 
 // 前端显示兜底上限（防旧数据/异常路径的大文本卡渲染）
 const MAX_PREVIEW = 50000

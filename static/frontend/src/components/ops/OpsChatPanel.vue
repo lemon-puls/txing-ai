@@ -17,10 +17,21 @@
               历史会话
             </el-button>
           </template>
+          <div class="history-search">
+            <el-input
+              v-model="historyKeyword"
+              size="small"
+              clearable
+              placeholder="搜索会话标题"
+              :prefix-icon="Search"
+            />
+          </div>
           <div class="history-list">
-            <div v-if="sessions.length === 0" class="history-empty">暂无历史会话</div>
+            <div v-if="filteredSessions.length === 0" class="history-empty">
+              {{ historyKeyword.trim() ? '没有匹配的会话' : '暂无历史会话' }}
+            </div>
             <div
-              v-for="s in sessions"
+              v-for="s in filteredSessions"
               :key="s.id"
               class="history-item"
               :class="{ active: s.id === currentSessionId }"
@@ -394,6 +405,14 @@ const currentSessionId = ref(0)
 const sessionTitle = ref('')
 const sessions = ref([])
 const historyVisible = ref(false)
+const historyKeyword = ref('')
+
+// 历史会话按标题过滤
+const filteredSessions = computed(() => {
+  const kw = historyKeyword.value.trim().toLowerCase()
+  if (!kw) return sessions.value
+  return sessions.value.filter(s => (s.title || '').toLowerCase().includes(kw))
+})
 
 // 多轮历史由服务端持久化并构建，前端只传本次输入
 let controller = null
@@ -483,6 +502,9 @@ const loadSession = async (id) => {
     currentSessionId.value = detail.id
     sessionTitle.value = detail.title || ''
     messages.value = (detail.messages || []).map(normalizeMessage)
+    // 会话切换后重置滚动跟随（沿用旧状态会导致流式回复不自动滚动）
+    autoFollow.value = true
+    showScrollBtn.value = false
     scrollToBottom()
     return true
   } catch (error) {
@@ -506,11 +528,16 @@ const restoreLatestSession = async () => {
 
 onMounted(() => {
   restoreLatestSession()
+  // 抽屉打开（destroy-on-close 每次重建）自动聚焦输入框
+  nextTick(() => inputRef.value?.focus?.())
 })
 
-// 打开历史弹层时懒更新列表（标题/排序可能已变化）
+// 打开历史弹层时懒更新列表并清空过滤（标题/排序可能已变化）
 watch(historyVisible, (visible) => {
-  if (visible) loadSessions()
+  if (visible) {
+    historyKeyword.value = ''
+    loadSessions()
+  }
 })
 
 const switchSession = async (session) => {
@@ -529,7 +556,10 @@ const startNewSession = () => {
   currentSessionId.value = 0
   sessionTitle.value = ''
   messages.value = []
+  autoFollow.value = true
+  showScrollBtn.value = false
   historyVisible.value = false
+  nextTick(() => inputRef.value?.focus?.())
 }
 
 const handleDeleteSession = async (session) => {
@@ -1787,10 +1817,16 @@ onBeforeUnmount(stopStreaming)
 <style lang="scss">
 // 历史会话弹层（el-popover teleport 到 body，scoped 样式不生效，需全局；颜色全部用主题变量以适配暗色）
 .ops-history-popover {
+  .history-search {
+    margin: -6px -12px 0;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--el-border-color-extra-light);
+  }
+
   .history-list {
     max-height: 320px;
     overflow-y: auto;
-    margin: -6px -12px;
+    margin: 0 -12px -6px;
 
     &::-webkit-scrollbar {
       width: 6px;
