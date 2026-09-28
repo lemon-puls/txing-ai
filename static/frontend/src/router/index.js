@@ -283,14 +283,33 @@ const router = createRouter({
       meta: {
         title: '访问被拒绝'
       }
+    },
+    // 404 兜底：未匹配路径不再渲染永久空白页 / catch-all: unmatched paths no longer render a blank page forever
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('@/views/error/404.vue'),
+      meta: {
+        title: '页面不存在'
+      }
     }
   ],
 })
 
 
 
+// 路由懒加载期间的友好加载页：超 150ms 才显示，避免快速导航闪现
+// Friendly loading splash for lazy chunks: shown only after 150ms so fast navigations don't flash it
+let routeLoadingTimer = null
+const showAppLoading = () => document.getElementById('app-loading')?.classList.remove('is-hidden')
+const hideAppLoading = () => {
+  clearTimeout(routeLoadingTimer)
+  document.getElementById('app-loading')?.classList.add('is-hidden')
+}
+
 // 全局路由守卫
 router.beforeEach(async (to, from, next) => {
+  routeLoadingTimer = setTimeout(showAppLoading, 150)
   const userStore = useUserStore()
   const isLoggedIn = userStore.isLoggedIn
 
@@ -329,5 +348,9 @@ router.beforeEach(async (to, from, next) => {
   // Allow access in other cases
   next()
 })
+
+// 路由就绪/出错都要收起加载页 / hide the splash once the route resolves or errors
+router.afterEach(hideAppLoading)
+router.onError(hideAppLoading)
 
 export default router

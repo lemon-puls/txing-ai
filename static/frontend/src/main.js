@@ -38,3 +38,7 @@ app.use(router)
 app.use(ElementPlus)
 
 app.mount('#app')
+
+// 应用挂载完成，淡出启动加载页（元素保留，供路由懒加载复用）
+// App mounted: fade out the boot splash (element kept for lazy-route reuse)
+document.getElementById('app-loading')?.classList.add('is-hidden')
