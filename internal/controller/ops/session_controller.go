@@ -66,7 +66,27 @@ func GetOpsSessionList(c *gin.Context) {
 		return
 	}
 
+	// 回填各会话最近一次请求的页面标识（Context JSON 中的 page，copier 无法自动映射），
+	// 前端据此优先恢复与当前页面同页的会话，避免跨页串台
+	for i := range result.Data {
+		pageVO.Data[i].Page = extractSessionPage(result.Data[i].Context)
+	}
+
 	utils.OkWithData(c, pageVO)
+}
+
+// extractSessionPage 从会话的上下文 JSON 中提取页面标识（解析失败返回空串）
+func extractSessionPage(context string) string {
+	if context == "" {
+		return ""
+	}
+	var ctx struct {
+		Page string `json:"page"`
+	}
+	if err := json.Unmarshal([]byte(context), &ctx); err != nil {
+		return ""
+	}
+	return ctx.Page
 }
 
 // GetOpsSessionDetail 运营助手会话详情

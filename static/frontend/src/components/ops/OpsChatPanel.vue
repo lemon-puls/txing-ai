@@ -39,7 +39,10 @@
               @click="switchSession(s)"
             >
               <div class="history-info">
-                <div class="history-title">{{ s.title || '未命名会话' }}</div>
+                <div class="history-title">
+                  <span class="history-title-text">{{ s.title || '未命名会话' }}</span>
+                  <span v-if="PAGE_LABELS[s.page]" class="history-page-tag">{{ PAGE_LABELS[s.page] }}</span>
+                </div>
                 <div class="history-time">{{ getRelativeTime(s.updateTime) }}</div>
               </div>
               <el-icon :size="14" class="history-delete" @click.stop="handleDeleteSession(s)">
@@ -373,6 +376,14 @@ const PAGE_META = {
 
 const pageMeta = computed(() => PAGE_META[props.context?.page] || PAGE_META.websites)
 
+// 会话列表的页面徽标文案（与后端 OpsPage 常量对应）
+const PAGE_LABELS = {
+  websites: '网站',
+  models: '模型',
+  channels: '渠道',
+  presets: '助手'
+}
+
 // 提案确认提示文案（按提案类型）
 const CONFIRM_TOASTS = {
   website: '网站已录入',
@@ -514,13 +525,15 @@ const loadSession = async (id) => {
   }
 }
 
-// 挂载时自动续接最近会话
+// 挂载时自动续接最近会话：优先与当前页面同页的会话，避免跨页串台（如模型页恢复了网站页的对话）
 const restoreLatestSession = async () => {
   try {
-    const response = await defaultApi.apiAdminOpsChatSessionsListPost({ pageSize: 1 })
+    const response = await defaultApi.apiAdminOpsChatSessionsListPost({ pageSize: 30 })
     if (response.code !== 0) return
-    const latest = response.data?.data?.[0]
-    if (latest) await loadSession(latest.id)
+    const list = response.data?.data || []
+    const page = props.context?.page || ''
+    const matched = page ? list.find(s => s.page === page) : list[0]
+    if (matched) await loadSession(matched.id)
   } catch (error) {
     console.warn('恢复运营助手会话失败:', error)
   }
@@ -1881,11 +1894,28 @@ onBeforeUnmount(stopStreaming)
     }
 
     .history-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
       font-size: 13px;
       color: var(--el-text-color-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+
+      .history-title-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .history-page-tag {
+        flex-shrink: 0;
+        font-size: 10px;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 999px;
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+      }
     }
 
     .history-time {

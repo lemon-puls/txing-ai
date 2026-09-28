@@ -9,6 +9,7 @@ import (
 type OpsChatSessionSimpleVO struct {
 	Id         int64     `json:"id"`         // 会话ID
 	Title      string    `json:"title"`      // 会话标题
+	Page       string    `json:"page"`       // 最近一次请求的页面标识（websites/models/channels/presets），供前端按页面恢复会话
 	CreateTime time.Time `json:"createTime"` // 创建时间
 	UpdateTime time.Time `json:"updateTime"` // 更新时间
 }
