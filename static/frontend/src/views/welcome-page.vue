@@ -7,14 +7,6 @@
           <div class="logo">
             <span class="logo-text">Txing AI</span>
           </div>
-          <!-- 菜单项与 HeaderLayout 功能页导航一一对应 / menu mirrors HeaderLayout's functional nav -->
-          <nav class="nav-menu">
-            <router-link to="/" class="menu-item" :class="{ active: $route.path === '/' }">首页</router-link>
-            <router-link to="/chat" class="menu-item" active-class="active">AI 对话</router-link>
-            <router-link to="/assistant" class="menu-item" active-class="active">AI 助手</router-link>
-            <router-link to="/websites" class="menu-item" active-class="active">网站导航</router-link>
-            <router-link to="/about" class="menu-item" active-class="active">关于作者</router-link>
-          </nav>
         </div>
         <div class="nav-right">
           <a href="https://github.com/lemon-puls/txing-ai" target="_blank" class="github-link">
@@ -82,7 +74,7 @@
 <script setup name="WelcomePage">
 import { onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChatRound, Shop, Link, Share, Search, Promotion } from '@element-plus/icons-vue'
+import { ChatRound, Shop, Link, Share, Search, Promotion, User } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/theme'
 import AuroraRibbons from '@/components/AuroraRibbons.vue'
 import DottedGlobe from '@/components/DottedGlobe.vue'
@@ -107,12 +99,14 @@ onBeforeUnmount(() => {
 const router = useRouter()
 const prompt = ref('')
 
-// 四个入口与旧版目标完全一致，仅重做视觉 / same four destinations as before, visuals only
+// 功能入口与顶部导航一一对应（同标签同去向）；首页即本页，无需入口
+// Entries mirror the top nav one-to-one (same labels, same destinations); home is this page
 const entries = [
-  { key: 'chat', label: '开启聊天', icon: ChatRound, go: () => router.push('/chat') },
-  { key: 'market', label: 'AI 助手市场', icon: Shop, go: () => router.push('/assistant') },
+  { key: 'chat', label: 'AI 对话', icon: ChatRound, go: () => router.push('/chat') },
+  { key: 'assistant', label: 'AI 助手', icon: Shop, go: () => router.push('/assistant') },
   { key: 'websites', label: '网站导航', icon: Link, go: () => router.push('/websites') },
-  { key: 'workflow', label: 'AI 应用市场', icon: Share, go: () => router.push('/workflow') }
+  { key: 'workflow', label: 'AI 应用市场', icon: Share, go: () => router.push('/workflow') },
+  { key: 'about', label: '关于作者', icon: User, go: () => router.push('/about') }
 ]
 
 // 回车/发送：非空时把输入带入新对话（对象传参由 vue-router 自动编码）
@@ -221,43 +215,6 @@ const clearSpot = () => {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-}
-// 深色 Hero 适配的菜单：默认次级色，悬停提亮，激活项品牌渐变下划线
-// Dark-hero menu: secondary by default, brighter on hover, brand-gradient underline when active
-.nav-menu {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-
-  .menu-item {
-    font-size: 15px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 6px 0;
-    position: relative;
-    transition: color 0.25s ease;
-
-    &:hover,
-    &.active {
-      color: var(--text-primary);
-    }
-
-    &.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      border-radius: 2px;
-      background: linear-gradient(45deg, #2b5eff, #1e88e5, #03a9f4);
-    }
-  }
 }
 .nav-right {
   display: flex;
@@ -385,7 +342,7 @@ const clearSpot = () => {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
   padding: 6px;
   border-radius: 999px;
 
@@ -412,18 +369,18 @@ const clearSpot = () => {
 .entry {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 6px;
+  padding: 10px 12px;
   border-radius: 999px;
   border: 1px solid transparent;
   background: transparent;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s, box-shadow 0.2s;
 
   .entry-icon {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   &:hover {
@@ -502,10 +459,6 @@ const clearSpot = () => {
   }
 }
 @media (max-width: 768px) {
-  // 小屏收起菜单项，保留 logo 与头像 / collapse menu items on small screens, keep logo + avatar
-  .nav-menu {
-    display: none;
-  }
   .hero-main {
     padding: 88px 20px 40px;
   }
