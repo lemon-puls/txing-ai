@@ -59,10 +59,12 @@
               allow-create
               default-first-option
               size="small"
-              placeholder="支持的模型，输入可新建"
+              placeholder="支持的模型，从已录入模型中选择"
+              :loading="modelsLoading"
             >
-              <el-option v-for="m in form.models" :key="m" :label="m" :value="m" />
+              <el-option v-for="m in modelOptions" :key="m" :label="m" :value="m" />
             </el-select>
+            <span class="secret-hint">仅平台已录入的模型可路由，如需新模型请先在模型管理页录入</span>
             <span v-if="originalHint('models')" class="original-hint">{{ originalHint('models') }}</span>
           </div>
         </div>
@@ -164,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowRight, Check } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
@@ -202,6 +204,26 @@ const form = ref({
 })
 
 const mappings = computed(() => props.proposal.mappings || [])
+
+// ===== 可选模型（平台已录入的模型，供下拉选择）=====
+const modelOptions = ref([])
+const modelsLoading = ref(false)
+
+const loadModelOptions = async () => {
+  modelsLoading.value = true
+  try {
+    const response = await defaultApi.apiModelListGet(1, 200, { orderBy: 'id', order: 'desc' })
+    if (response.code === 0 && response.data) {
+      modelOptions.value = (response.data.records || []).map(m => m.name).filter(Boolean)
+    }
+  } catch (error) {
+    console.warn('加载可选模型列表失败:', error)
+  } finally {
+    modelsLoading.value = false
+  }
+}
+
+onMounted(loadModelOptions)
 
 // 创建模式：密钥必填（由管理员手动输入）
 const secretInput = ref('')

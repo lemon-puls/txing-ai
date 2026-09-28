@@ -833,12 +833,26 @@ const handleKeydown = (e) => {
   }
 }
 
-const handleSend = () => {
+// 疑似密钥/长凭证：sk- 前缀、32 位以上连续十六进制、或其他 40+ 连续凭证样式字符串
+const SECRET_PATTERN = /(sk-[A-Za-z0-9_-]{12,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9_-]{40,})/
+
+const handleSend = async () => {
   const text = input.value.trim()
-  if (text && !sending.value) {
-    input.value = ''
-    sendMessage(text)
+  if (!text || sending.value) return
+  // 密钥粘贴防护：对话内容会持久化到会话记录，密钥应在提案确认卡片中填写
+  if (SECRET_PATTERN.test(text)) {
+    try {
+      await ElMessageBox.confirm(
+        '消息中疑似包含 API 密钥或长凭证，发送后会存入会话记录。建议不要在对话中粘贴密钥（密钥应在提案确认卡片的密钥输入框中填写），已泄露的密钥请尽快到服务商后台重置。确定要发送吗？',
+        '检测到疑似密钥',
+        { confirmButtonText: '仍要发送', cancelButtonText: '修改消息', type: 'warning' }
+      )
+    } catch {
+      return
+    }
   }
+  input.value = ''
+  sendMessage(text)
 }
 
 // 统一消息形状：补齐所有字段，避免模板/watch 读取缺失字段出错

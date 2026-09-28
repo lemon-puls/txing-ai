@@ -52,6 +52,8 @@ type channelItem struct {
 type channelListResult struct {
 	Total    int64         `json:"total"`
 	Channels []channelItem `json:"channels"`
+	// 平台已录入的模型名列表：渠道提案的 models 与映射 sourceModel 只能从中选择
+	AvailableModels []string `json:"availableModels"`
 }
 
 // channelPreviewRequest channel_preview_tool 请求参数（LLM 拟提交的渠道配置）。
@@ -81,6 +83,8 @@ type channelPreviewResult struct {
 	Original *channelItem `json:"original,omitempty"`
 	// 重复记录的 ID（duplicate 时返回）
 	ExistingID int64 `json:"existingId,omitempty"`
+	// 平台已录入的模型名（invalid 且因模型未录入时返回，便于 LLM 同轮自我纠正）
+	AvailableModels []string `json:"availableModels,omitempty"`
 }
 
 // listChannels 查询渠道列表（只读，密钥脱敏），供 LLM 了解已有渠道、避免重复录入
@@ -112,7 +116,30 @@ func (d OpsToolDeps) listChannels(ctx context.Context, req *channelListRequest) 
 	for _, c := range channels {
 		items = append(items, channelItemFromDomain(c))
 	}
-	return channelListResult{Total: total, Channels: items}, nil
+
+	available, err := d.listAvailableModels()
+	if err != nil {
+		return channelListResult{}, err
+	}
+	return channelListResult{Total: total, Channels: items, AvailableModels: available}, nil
+}
+
+// maxAvailableModels 可选模型名上限（防御模型表异常膨胀拖垮上下文）
+const maxAvailableModels = 200
+
+// listAvailableModels 查询平台已录入的模型名列表（渠道提案的 models 只能从中选择）
+func (d OpsToolDeps) listAvailableModels() ([]string, error) {
+	var names []string
+	if err := d.DB.Model(&domain.Model{}).Order("id ASC").Limit(maxAvailableModels).Pluck("name", &names).Error; err != nil {
+		return nil, fmt.Errorf("查询可选模型列表失败: %w", err)
+	}
+	trimmed := make([]string, 0, len(names))
+	for _, n := range names {
+		if n = strings.TrimSpace(n); n != "" {
+			trimmed = append(trimmed, n)
+		}
+	}
+	return trimmed, nil
 }
 
 // previewChannel 校验并规范化渠道提案（只读，不写库）
@@ -128,6 +155,7 @@ func (d OpsToolDeps) previewChannel(ctx context.Context, req *channelPreviewRequ
 	if len(req.Models) == 0 {
 		return channelPreviewResult{Status: "invalid", Message: "至少需要配置 1 个支持的模型"}, nil
 	}
+	req.Models = normalizeModels(req.Models)
 
 	// 渠道类型：创建时必须是管理页可选类型；优化时保持原值透传（避免误改存量渠道的类型），
 	// 非已知类型仅附加警告
@@ -171,6 +199,31 @@ func (d OpsToolDeps) previewChannel(ctx context.Context, req *channelPreviewRequ
 		}
 		item := channelItemFromDomain(existing)
 		original = &item
+	}
+
+	// 模型必须在平台模型管理中已录入：防止 LLM 编造模型名导致用户请求路由不到可用渠道。
+	// 优化提案时原渠道已引用的模型放行（兼容历史上可能已删除的模型，避免未改动字段被拦下）
+	if d.DB != nil {
+		var allow []string
+		if original != nil {
+			allow = original.Models
+		}
+		unknown, err := d.unknownModels(req.Models, allow)
+		if err != nil {
+			return channelPreviewResult{}, err
+		}
+		if len(unknown) > 0 {
+			available, _ := d.listAvailableModels()
+			return channelPreviewResult{
+				Status: "invalid",
+				Message: fmt.Sprintf(
+					"以下模型未在平台模型管理中录入：%s。渠道的模型列表只能从已录入模型（availableModels）中选择；"+
+						"若确实需要新模型，请提示管理员先到模型管理页录入，再回到本页生成渠道提案",
+					strings.Join(unknown, "、"),
+				),
+				AvailableModels: available,
+			}, nil
+		}
 	}
 
 	// 名称查重（只读查询；优化时排除自身）
@@ -253,6 +306,51 @@ func countSecretKeys(secret string) int {
 		}
 	}
 	return count
+}
+
+// normalizeModels 去除首尾空白、剔除空项并去重（保序）
+func normalizeModels(models []string) []string {
+	out := make([]string, 0, len(models))
+	seen := make(map[string]bool, len(models))
+	for _, m := range models {
+		m = strings.TrimSpace(m)
+		if m == "" || seen[m] {
+			continue
+		}
+		seen[m] = true
+		out = append(out, m)
+	}
+	return out
+}
+
+// unknownModels 返回 models 中未在平台模型表录入的名字（去重、保序）；
+// allow 中的名字放行（优化提案时用于放行原渠道已引用的模型）
+func (d OpsToolDeps) unknownModels(models, allow []string) ([]string, error) {
+	var names []string
+	if err := d.DB.Model(&domain.Model{}).Limit(maxAvailableModels).Pluck("name", &names).Error; err != nil {
+		return nil, fmt.Errorf("查询可选模型列表失败: %w", err)
+	}
+	known := make(map[string]bool, len(names))
+	for _, n := range names {
+		known[strings.TrimSpace(n)] = true
+	}
+	allowed := make(map[string]bool, len(allow))
+	for _, n := range allow {
+		allowed[n] = true
+	}
+	var unknown []string
+	seen := make(map[string]bool, len(models))
+	for _, m := range models {
+		m = strings.TrimSpace(m)
+		if m == "" || seen[m] {
+			continue
+		}
+		seen[m] = true
+		if !known[m] && !allowed[m] {
+			unknown = append(unknown, m)
+		}
+	}
+	return unknown, nil
 }
 
 // knownChannelType 是否为管理页可选的渠道类型

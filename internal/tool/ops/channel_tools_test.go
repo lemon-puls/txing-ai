@@ -164,3 +164,29 @@ func TestPreviewChannelUpdateTypePassthrough(t *testing.T) {
 		t.Fatal("knownChannelType 集合判断不符合预期")
 	}
 }
+
+// TestNormalizeModels 模型列表规范化：去空白、剔空、去重（保序）
+func TestNormalizeModels(t *testing.T) {
+	cases := []struct {
+		name  string
+		in    []string
+		want  []string
+	}{
+		{name: "去空白与空项", in: []string{" gpt-4o ", "", "glm-5"}, want: []string{"gpt-4o", "glm-5"}},
+		{name: "去重保序", in: []string{"glm-5", "gpt-4o", "glm-5"}, want: []string{"glm-5", "gpt-4o"}},
+		{name: "全空输入", in: []string{"", "  "}, want: []string{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := normalizeModels(tc.in)
+			if len(got) != len(tc.want) {
+				t.Fatalf("normalizeModels(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("normalizeModels(%v) = %v, want %v", tc.in, got, tc.want)
+				}
+			}
+		})
+	}
+}

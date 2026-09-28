@@ -76,6 +76,7 @@ func ProvideOpsTools(deps OpsToolDeps, page string) []tool.BaseTool {
 			ChannelPreviewToolName,
 			"在向管理员呈现之前，校验并规范化渠道录入/优化提案。"+
 				"传入你拟提交的名称/类型/服务地址/模型列表/优先级/权重/重试/状态/映射；优化已有渠道时必须带上 id。"+
+				"模型列表只能从 channel_list_tool 返回的 availableModels 中选择，未在平台录入的模型会被本工具拒绝。"+
 				"本工具没有密钥参数：密钥由管理员在确认卡片中手动填写。"+
 				"工具会校验字段约束、映射结构与查重，并返回规范化的提案 JSON。"+
 				"呈现提案之前必须调用本工具；系统会把返回的提案 JSON 自动渲染为预览卡片，不要在回复中粘贴 JSON。",
