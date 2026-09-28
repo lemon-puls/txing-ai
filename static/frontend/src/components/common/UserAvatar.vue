@@ -5,7 +5,7 @@
   </el-button>
 
   <!-- 已登录状态显示头像下拉菜单 -->
-  <el-dropdown v-else trigger="click">
+  <el-dropdown v-else trigger="click" popper-class="user-menu-popper">
     <div class="user-avatar">
       <el-avatar :size="32" :src="userStore.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
       <el-icon class="el-icon--right"><CaretBottom /></el-icon>
@@ -106,4 +106,60 @@ const handleLoginSuccess = () => {
     color: var(--el-text-color-secondary);
   }
 }
-</style> 
+</style>
+
+<style lang="scss">
+// 头像下拉 popper 挂在 body 下（teleported），必须用全局作用域定制
+// The dropdown popper teleports to <body>, so it needs a global scope
+.el-popper.user-menu-popper {
+  // 玻璃卡片：圆角 + 毛玻璃 + 细边 + 柔和投影 / glass card: rounded, blurred, hairline border, soft shadow
+  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+  border-radius: 14px;
+  padding: 6px;
+  min-width: 150px;
+  box-shadow: 0 12px 32px color-mix(in srgb, #000 28%, transparent);
+
+  // 玻璃卡片不带箭头更干净 / no arrow on the glass card
+  .el-popper__arrow {
+    display: none;
+  }
+
+  .el-dropdown-menu {
+    background: transparent;
+    padding: 0;
+  }
+
+  .el-dropdown-menu__item {
+    gap: 10px;
+    margin: 2px 0;
+    padding: 8px 12px;
+    border-radius: 9px;
+    color: var(--text-primary);
+    transition: background-color 0.18s, color 0.18s;
+
+    .el-icon {
+      color: var(--text-secondary);
+      transition: color 0.18s;
+    }
+
+    &:not(.is-disabled):hover,
+    &:not(.is-disabled):focus {
+      background: color-mix(in srgb, var(--el-color-primary) 12%, transparent);
+      color: var(--el-color-primary);
+
+      .el-icon {
+        color: var(--el-color-primary);
+      }
+    }
+  }
+
+  // 分隔线更轻 / lighter dividers
+  .el-dropdown-menu__item--divided {
+    margin-top: 4px;
+    border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  }
+}
+</style>
