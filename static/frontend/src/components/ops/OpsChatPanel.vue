@@ -193,10 +193,19 @@
           <div v-if="msg.streaming && msg.content" class="streaming-cursor"><span class="cursor"></span></div>
 
           <!-- 消息操作栏（完成后 hover 显示） -->
-          <div v-if="!msg.streaming && msg.content" class="msg-actions">
-            <button class="action-btn" title="复制" @click="copyMessage(msg)">
+          <div v-if="!msg.streaming && (msg.content || msg.error)" class="msg-actions">
+            <button v-if="msg.content" class="action-btn" title="复制" @click="copyMessage(msg)">
               <el-icon :size="13"><CopyDocument /></el-icon>
               复制
+            </button>
+            <button
+              v-if="canRegenerate(msg, msgIndex)"
+              class="action-btn"
+              :title="msg.error ? '重试' : '重新生成'"
+              @click="regenerate(msg, msgIndex)"
+            >
+              <el-icon :size="13"><RefreshRight /></el-icon>
+              {{ msg.error ? '重试' : '重新生成' }}
             </button>
             <span v-if="msg.durationMs" class="action-meta">耗时 {{ formatDuration(msg.durationMs) }}</span>
           </div>
@@ -276,7 +285,7 @@
 <script setup>
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus, Link, Search, EditPen, CircleCheck, CopyDocument } from '@element-plus/icons-vue'
+import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus, Link, Search, EditPen, CircleCheck, CopyDocument, RefreshRight } from '@element-plus/icons-vue'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
 import { defaultApi } from '@/api'
 import { getRelativeTime } from '@/utils/timeUtils'
@@ -445,6 +454,7 @@ const normalizeMessage = (m) => ({
   })),
   error: m.error || '',
   interrupted: !!m.interrupted,
+  confirmed: !!m.confirmed,
   durationMs: m.durationMs || 0,
   streaming: false
 })
@@ -578,6 +588,7 @@ const currentAssistant = () => {
       proposals: [],
       error: '',
       interrupted: false,
+      confirmed: false,
       durationMs: 0,
       streaming: true
     }
@@ -719,6 +730,56 @@ const formatDuration = (ms) => {
   return `${m}m${s}s`
 }
 
+// 回退中标记：防止回退请求期间重复点击导致多轮回退
+const rewinding = ref(false)
+
+// 是否可重新生成：仅最后一条助手消息、非确认提示、无已确认提案、本轮存在用户提问
+const canRegenerate = (msg, index) =>
+  !sending.value &&
+  !rewinding.value &&
+  index === messages.value.length - 1 &&
+  !msg.confirmed &&
+  !(msg.proposals || []).some(p => p.proposalStatus === 'confirmed') &&
+  messages.value.slice(0, index).some(m => m.role === 'user')
+
+// 重新生成/失败重试：服务端回退最后一轮问答（避免历史与界面出现重复轮次），再重发原问题
+const regenerate = async (msg, index) => {
+  if (sending.value || rewinding.value) return
+  // 定位本轮的用户提问（该助手消息前最近的用户消息）
+  let userIdx = -1
+  for (let i = index - 1; i >= 0; i--) {
+    if (messages.value[i].role === 'user') {
+      userIdx = i
+      break
+    }
+  }
+  if (userIdx < 0 || !messages.value[userIdx].content) return
+  const question = messages.value[userIdx].content
+
+  rewinding.value = true
+  try {
+    if (currentSessionId.value) {
+      const response = await defaultApi.apiAdminOpsChatSessionsIdAppendPost(currentSessionId.value, {
+        role: 'assistant',
+        content: '',
+        rewindLastRound: true
+      })
+      if (response.code !== 0) {
+        ElMessage.error(response.message || '操作失败')
+        return
+      }
+    }
+    // 本地同步移除该轮（从用户提问起全部移除），随后按普通发送流程重发
+    messages.value = messages.value.slice(0, userIdx)
+    sendMessage(question)
+  } catch (error) {
+    console.error('回退运营助手会话失败:', error)
+    ElMessage.error('操作失败，请稍后重试')
+  } finally {
+    rewinding.value = false
+  }
+}
+
 // 键盘发送：Enter 发送，Shift+Enter 换行；
 // 输入法组词中的回车（isComposing/keyCode 229）是确认候选词，不能触发发送
 const handleKeydown = (e) => {
@@ -748,6 +809,7 @@ const createUserMessage = (text) => ({
   proposals: [],
   error: '',
   interrupted: false,
+  confirmed: false,
   durationMs: 0,
   streaming: false
 })
@@ -806,7 +868,7 @@ const handleProposalConfirmed = (msg, item) => {
     item.proposalStatus = 'confirmed'
   }
   // 追加一条本地提示，明确提案已完成
-  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], proposals: [], reasoning: '', reasoningExpanded: false, reasoningAuto: false, error: '', interrupted: false, durationMs: 0 })
+  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], proposals: [], reasoning: '', reasoningExpanded: false, reasoningAuto: false, error: '', interrupted: false, confirmed: true, durationMs: 0 })
   scrollToBottom()
 
   // 持久化确认状态（失败不影响本地 UI，数据库侧有重名/URL 查重兜底）；

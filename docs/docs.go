@@ -1841,7 +1841,7 @@ const docTemplate = `{
         },
         "/api/admin/ops/chat/sessions/{id}/append": {
             "post": {
-                "description": "持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认",
+                "description": "持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将未确认提案置为已确认；rewindLastRound 时回退最后一轮问答（重新生成/失败重试用）",
                 "consumes": [
                     "application/json"
                 ],
@@ -5798,7 +5798,6 @@ const docTemplate = `{
         "dto.OpsChatAppendReq": {
             "type": "object",
             "required": [
-                "content",
                 "role"
             ],
             "properties": {
@@ -5815,6 +5814,10 @@ const docTemplate = `{
                     "description": "被确认提案的 name（批量录入时精确匹配；为空时回退为\"最后一条未确认提案\"）",
                     "type": "string",
                     "example": "deepseek-v3"
+                },
+                "rewindLastRound": {
+                    "description": "回退最后一轮问答（重新生成/失败重试前调用）：移除末尾的助手消息与其对应用户消息；\n为 true 时 Content 可为空（不追加任何消息）",
+                    "type": "boolean"
                 },
                 "role": {
                     "type": "string",
