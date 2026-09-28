@@ -44,8 +44,9 @@
       </div>
     </div>
 
-    <!-- 消息列表 -->
-    <div ref="listRef" class="message-list">
+    <!-- 消息列表（list-wrap 承载「回到底部」悬浮按钮的定位） -->
+    <div class="list-wrap">
+    <div ref="listRef" class="message-list" @scroll="handleListScroll">
       <!-- 空状态引导 -->
       <div v-if="messages.length === 0" class="empty-guide">
         <div class="hero">
@@ -96,6 +97,9 @@
         <!-- 用户消息 -->
         <div v-if="msg.role === 'user'" class="message-row user">
           <div class="bubble user-bubble">{{ msg.content }}</div>
+          <button class="copy-btn" title="复制" @click="copyMessage(msg)">
+            <el-icon :size="13"><CopyDocument /></el-icon>
+          </button>
         </div>
 
         <!-- 助手消息 -->
@@ -103,6 +107,7 @@
           <div class="assistant-avatar">
             <el-icon :size="15"><MagicStick /></el-icon>
           </div>
+          <div class="assistant-main">
           <div class="bubble assistant-bubble">
             <!-- 思考过程（可折叠） -->
             <div
@@ -113,7 +118,7 @@
               <div
                 class="reasoning-toggle"
                 role="button"
-                @click="msg.reasoningExpanded = !msg.reasoningExpanded"
+                @click="toggleReasoning(msg)"
               >
                 <el-icon :size="12"><Opportunity /></el-icon>
                 <span>{{ msg.streaming && !msg.content ? '深度思考中…' : '思考过程' }}</span>
@@ -124,8 +129,8 @@
               <div v-show="msg.reasoningExpanded" class="reasoning-content">{{ msg.reasoning }}</div>
             </div>
 
-            <!-- 正文（流式追加） -->
-            <div v-if="msg.content" class="msg-content">{{ msg.content }}<span v-if="msg.streaming" class="cursor"></span></div>
+            <!-- 正文（流式追加，markdown 渲染） -->
+            <div v-if="msg.content" class="msg-content" v-html="renderMarkdown(msg.content)"></div>
 
             <!-- 工具调用过程 -->
             <div v-if="msg.toolCalls.length" class="tool-calls">
@@ -183,6 +188,19 @@
               已中断，仅保留已生成内容
             </div>
           </div>
+
+          <!-- 流式光标（正文下方） -->
+          <div v-if="msg.streaming && msg.content" class="streaming-cursor"><span class="cursor"></span></div>
+
+          <!-- 消息操作栏（完成后 hover 显示） -->
+          <div v-if="!msg.streaming && msg.content" class="msg-actions">
+            <button class="action-btn" title="复制" @click="copyMessage(msg)">
+              <el-icon :size="13"><CopyDocument /></el-icon>
+              复制
+            </button>
+            <span v-if="msg.durationMs" class="action-meta">耗时 {{ formatDuration(msg.durationMs) }}</span>
+          </div>
+          </div>
         </div>
       </template>
 
@@ -200,22 +218,31 @@
       </div>
     </div>
 
+    <!-- 回到底部悬浮按钮（用户上翻后出现） -->
+    <transition name="fade">
+      <button v-show="showScrollBtn" class="scroll-bottom-btn" title="回到底部" @click="scrollToBottom(true)">
+        <el-icon :size="14"><ArrowDown /></el-icon>
+      </button>
+    </transition>
+    </div>
+
     <!-- 输入区 -->
     <div class="input-area">
       <div class="composer" :class="{ sending }">
         <el-input
+          ref="inputRef"
           v-model="input"
           type="textarea"
-          :rows="2"
+          :autosize="{ minRows: 2, maxRows: 6 }"
           resize="none"
           :disabled="sending"
           :placeholder="pageMeta.placeholder"
-          @keydown.enter.exact.prevent="handleSend"
+          @keydown="handleKeydown"
         />
         <div class="composer-footer">
           <span class="input-hint">
             <el-icon :size="12"><CircleCheck /></el-icon>
-            AI 不会直接写入数据，提案需人工确认
+            提案需人工确认 · Enter 发送 / Shift+Enter 换行
           </span>
           <el-button
             v-if="sending"
@@ -249,10 +276,11 @@
 <script setup>
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus, Link, Search, EditPen, CircleCheck } from '@element-plus/icons-vue'
+import { MagicStick, ArrowDown, WarningFilled, Clock, Plus, Delete, Minus, Link, Search, EditPen, CircleCheck, CopyDocument } from '@element-plus/icons-vue'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
 import { defaultApi } from '@/api'
 import { getRelativeTime } from '@/utils/timeUtils'
+import { renderMarkdown, copyText } from '@/utils/markdown'
 import ToolCallItem from '@/components/chat/ToolCallItem.vue'
 import WebsiteProposalCard from './WebsiteProposalCard.vue'
 import ModelProposalCard from './ModelProposalCard.vue'
@@ -339,13 +367,18 @@ const CONFIRM_NOTICES = {
   preset: '✅ 提案已确认，助手保存完成。'
 }
 
-// 对话消息：{ role, content, reasoning, reasoningExpanded, toolCalls[], proposals[], error, interrupted, streaming }
+// 对话消息：{ role, content, reasoning, reasoningExpanded, reasoningAuto, toolCalls[], proposals[], error, interrupted, streaming, durationMs }
 // proposals 为本条消息携带的提案卡片数组 [{ proposal, proposalStatus, proposalMessage }]（批量录入一条消息多张卡片）
 const messages = ref([])
 const input = ref('')
 const sending = ref(false)
 const waitingFirst = ref(false)
 const listRef = ref(null)
+const inputRef = ref(null)
+
+// 智能滚动：用户贴近底部时自动跟随；上翻阅读时不拽动，仅显示「回到底部」按钮
+const autoFollow = ref(true)
+const showScrollBtn = ref(false)
 
 // 会话持久化状态
 const currentSessionId = ref(0)
@@ -356,17 +389,37 @@ const historyVisible = ref(false)
 // 多轮历史由服务端持久化并构建，前端只传本次输入
 let controller = null
 
-const scrollToBottom = () => {
+const scrollToBottom = (smooth = false) => {
   nextTick(() => {
     const el = listRef.value
-    if (el) el.scrollTop = el.scrollHeight
+    if (!el) return
+    if (smooth) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    } else {
+      el.scrollTop = el.scrollHeight
+    }
   })
 }
 
-// 消息长度变化时滚动到底部（字段需判空：user 消息没有 toolCalls，读取 undefined 会中断调度队列导致渲染冻结）
+const handleListScroll = () => {
+  const el = listRef.value
+  if (!el) return
+  autoFollow.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  showScrollBtn.value = !autoFollow.value
+}
+
+// 消息长度变化时按需滚动（字段需判空：user 消息没有 toolCalls，读取 undefined 会中断调度队列导致渲染冻结）
 watch(
   () => messages.value.map(m => (m.content || '').length + (m.reasoning || '').length + (m.toolCalls || []).length + (m.proposals || []).length),
-  scrollToBottom
+  () => {
+    if (autoFollow.value) {
+      showScrollBtn.value = false
+      scrollToBottom()
+    } else if (sending.value) {
+      // 流式期间用户上翻阅读：不打断，仅提示有新内容
+      showScrollBtn.value = true
+    }
+  }
 )
 
 // ===== 会话历史 =====
@@ -377,6 +430,7 @@ const normalizeMessage = (m) => ({
   content: m.content || '',
   reasoning: m.reasoning || '',
   reasoningExpanded: false,
+  reasoningAuto: false,
   toolCalls: (m.toolCalls || []).map(tc => ({
     id: tc.id,
     name: tc.name,
@@ -391,6 +445,7 @@ const normalizeMessage = (m) => ({
   })),
   error: m.error || '',
   interrupted: !!m.interrupted,
+  durationMs: m.durationMs || 0,
   streaming: false
 })
 
@@ -518,15 +573,23 @@ const currentAssistant = () => {
       content: '',
       reasoning: '',
       reasoningExpanded: false,
+      reasoningAuto: false,
       toolCalls: [],
       proposals: [],
       error: '',
       interrupted: false,
+      durationMs: 0,
       streaming: true
     }
     messages.value.push(msg)
   }
   return msg
+}
+
+// 思考过程折叠开关（用户手动操作后取消「自动收起」标记）
+const toggleReasoning = (msg) => {
+  msg.reasoningExpanded = !msg.reasoningExpanded
+  msg.reasoningAuto = false
 }
 
 const handleFrame = (frame) => {
@@ -547,8 +610,15 @@ const handleFrame = (frame) => {
       if (frame.content) msg.content += frame.content
       if (frame.reasoningContent) {
         msg.reasoning += frame.reasoningContent
-        // 思考阶段自动展开，正文出现后由用户手动控制
-        if (!msg.content) msg.reasoningExpanded = true
+        // 思考阶段自动展开，正文出现后自动收起（用户手动操作过则不再干预）
+        if (!msg.content) {
+          msg.reasoningExpanded = true
+          msg.reasoningAuto = true
+        }
+      }
+      if (frame.content && msg.reasoningAuto) {
+        msg.reasoningExpanded = false
+        msg.reasoningAuto = false
       }
       waitingFirst.value = false
       break
@@ -600,9 +670,15 @@ const handleFrame = (frame) => {
       msg.error = frame.error || '执行失败'
       break
     }
-    case 'end':
+    case 'end': {
+      // 服务端回传总耗时，挂到当前助手消息上展示
+      const msg = messages.value[messages.value.length - 1]
+      if (msg && msg.role === 'assistant' && frame.durationMs) {
+        msg.durationMs = frame.durationMs
+      }
       finalizeAssistant()
       break
+    }
     default:
       break
   }
@@ -620,6 +696,37 @@ const finalizeAssistant = () => {
   sending.value = false
   waitingFirst.value = false
   controller = null
+  // 回归输入框，方便连续追问（主流对话产品的默认行为）
+  nextTick(() => inputRef.value?.focus?.())
+}
+
+// 复制消息正文
+const copyMessage = async (msg) => {
+  const ok = await copyText(msg.content || '')
+  if (ok) {
+    ElMessage.success('已复制')
+  } else {
+    ElMessage.error('复制失败')
+  }
+}
+
+// 耗时格式化：60s 内显示秒，超过显示分秒
+const formatDuration = (ms) => {
+  if (!ms || ms <= 0) return ''
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
+  const m = Math.floor(ms / 60000)
+  const s = Math.round((ms % 60000) / 1000)
+  return `${m}m${s}s`
+}
+
+// 键盘发送：Enter 发送，Shift+Enter 换行；
+// 输入法组词中的回车（isComposing/keyCode 229）是确认候选词，不能触发发送
+const handleKeydown = (e) => {
+  if (e.isComposing || e.keyCode === 229) return
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault()
+    handleSend()
+  }
 }
 
 const handleSend = () => {
@@ -636,10 +743,12 @@ const createUserMessage = (text) => ({
   content: text,
   reasoning: '',
   reasoningExpanded: false,
+  reasoningAuto: false,
   toolCalls: [],
   proposals: [],
   error: '',
   interrupted: false,
+  durationMs: 0,
   streaming: false
 })
 
@@ -648,7 +757,10 @@ const sendMessage = async (text) => {
   messages.value.push(createUserMessage(text))
   sending.value = true
   waitingFirst.value = true
-  scrollToBottom()
+  // 用户主动发送后强制跟随滚动，保证提问与回答可见
+  autoFollow.value = true
+  showScrollBtn.value = false
+  scrollToBottom(true)
 
   // 多轮历史由服务端从持久化会话构建，这里只传本次输入
   // fetchSSEWithAuth 是 async 函数，须 await 拿到 AbortController（否则存的是 Promise，停止按钮失效）
@@ -694,7 +806,7 @@ const handleProposalConfirmed = (msg, item) => {
     item.proposalStatus = 'confirmed'
   }
   // 追加一条本地提示，明确提案已完成
-  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], proposals: [], reasoning: '', reasoningExpanded: false, error: '', interrupted: false })
+  messages.value.push({ role: 'assistant', content: notice, streaming: false, toolCalls: [], proposals: [], reasoning: '', reasoningExpanded: false, reasoningAuto: false, error: '', interrupted: false, durationMs: 0 })
   scrollToBottom()
 
   // 持久化确认状态（失败不影响本地 UI，数据库侧有重名/URL 查重兜底）；
@@ -722,6 +834,15 @@ onBeforeUnmount(stopStreaming)
   min-height: 0;
 }
 
+// 列表外层：承载「回到底部」按钮的定位
+.list-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
 .message-list {
   flex: 1;
   min-height: 0;
@@ -744,6 +865,42 @@ onBeforeUnmount(stopStreaming)
       background: var(--el-border-color-light);
     }
   }
+}
+
+// 回到底部悬浮按钮
+.scroll-bottom-btn {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+  color: var(--el-text-color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  transition: color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    color: var(--el-color-primary);
+    border-color: var(--el-color-primary-light-5);
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 // ===== 空状态引导 =====
@@ -971,6 +1128,92 @@ onBeforeUnmount(stopStreaming)
   50% { box-shadow: 0 2px 8px var(--el-color-primary-light-5); }
 }
 
+// 用户消息 hover 复制按钮
+.message-row.user {
+  .copy-btn {
+    margin-left: 6px;
+    align-self: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+  }
+
+  &:hover .copy-btn {
+    opacity: 1;
+  }
+}
+
+// 助手消息主体（气泡 + 底部操作栏）
+.assistant-main {
+  min-width: 0;
+  max-width: min(92%, 640px);
+  display: flex;
+  flex-direction: column;
+
+  // 宽度上限移到 main 上统一控制，气泡随内容撑满 main
+  .assistant-bubble {
+    max-width: 100%;
+  }
+}
+
+// 消息操作栏（hover 行显示）
+.msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border: none;
+    background: transparent;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      color: var(--el-color-primary);
+      background: var(--el-color-primary-light-9);
+    }
+  }
+
+  .action-meta {
+    margin-left: 4px;
+    font-size: 11px;
+    color: var(--el-text-color-placeholder);
+  }
+}
+
+.message-row.assistant:hover .msg-actions {
+  opacity: 1;
+}
+
+// 流式光标行（正文下方）
+.streaming-cursor {
+  padding: 3px 4px 0;
+}
+
 .bubble {
   max-width: min(92%, 640px);
   font-size: 14px;
@@ -1035,8 +1278,175 @@ onBeforeUnmount(stopStreaming)
   }
 }
 
+// 正文（markdown 渲染）：空白由 markdown 排版接管
+// v-html 注入的 DOM 无 scope 属性，需用 :deep 匹配
 .msg-content {
-  white-space: pre-wrap;
+  white-space: normal;
+
+  :deep(.markdown-body) {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--el-text-color-primary);
+    word-break: break-word;
+
+    > *:first-child { margin-top: 0; }
+    > *:last-child { margin-bottom: 0; }
+
+    p {
+      margin: 0 0 8px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      margin: 14px 0 8px;
+      font-weight: 600;
+      line-height: 1.4;
+
+      &:first-child { margin-top: 0; }
+    }
+
+    h1 { font-size: 17px; }
+    h2 { font-size: 16px; }
+    h3 { font-size: 15px; }
+    h4, h5, h6 { font-size: 14px; }
+
+    ul, ol {
+      margin: 4px 0 10px;
+      padding-left: 22px;
+
+      li {
+        margin: 3px 0;
+
+        &::marker {
+          color: var(--el-text-color-secondary);
+        }
+      }
+
+      p {
+        margin: 0 0 4px;
+      }
+    }
+
+    // 行内代码
+    code:not(pre code) {
+      padding: 1px 6px;
+      margin: 0 1px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+      background: var(--el-fill-color);
+      color: var(--el-color-primary);
+    }
+
+    // 代码块（结构与 chat 页一致：语言标签 + 复制按钮）
+    pre.code-block {
+      background: #282c34;
+      margin: 10px 0;
+      padding: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+
+      .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 8px 0 12px;
+        background: #21252b;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        height: 34px;
+
+        .code-lang {
+          color: #abb2bf;
+          font-size: 11px;
+          font-weight: 500;
+          background: rgba(255, 255, 255, 0.1);
+          padding: 1px 7px;
+          border-radius: 4px;
+          letter-spacing: 0.5px;
+        }
+
+        .copy-button {
+          background: transparent;
+          border: none;
+          color: #abb2bf;
+          padding: 4px 10px;
+          font-size: 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+          }
+        }
+      }
+
+      code {
+        display: block;
+        padding: 12px 14px;
+        overflow-x: auto;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        background: transparent;
+      }
+    }
+
+    blockquote {
+      margin: 8px 0;
+      padding: 2px 12px;
+      border-left: 3px solid var(--el-border-color);
+      color: var(--el-text-color-secondary);
+
+      p {
+        margin: 4px 0;
+      }
+    }
+
+    table {
+      margin: 8px 0;
+      border-collapse: collapse;
+      font-size: 13px;
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+
+      th, td {
+        border: 1px solid var(--el-border-color-lighter);
+        padding: 5px 10px;
+        text-align: left;
+      }
+
+      th {
+        background: var(--el-fill-color-light);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+    }
+
+    a {
+      color: var(--el-color-primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    hr {
+      margin: 12px 0;
+      border: none;
+      border-top: 1px solid var(--el-border-color-lighter);
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+  }
 }
 
 // 流式光标
@@ -1295,6 +1705,18 @@ onBeforeUnmount(stopStreaming)
 
     .panel-toolbar {
       border-bottom-color: #363637;
+    }
+
+    .scroll-bottom-btn {
+      border-color: #363637;
+      box-shadow: none;
+    }
+
+    .message-row.user .copy-btn,
+    .msg-actions .action-btn {
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
     }
   }
 }

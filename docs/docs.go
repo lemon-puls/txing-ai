@@ -5005,6 +5005,10 @@ const docTemplate = `{
                 "content": {
                     "type": "string"
                 },
+                "durationMs": {
+                    "description": "DurationMs 本次回复总耗时（毫秒），随消息持久化，回放时可展示",
+                    "type": "integer"
+                },
                 "error": {
                     "type": "string"
                 },

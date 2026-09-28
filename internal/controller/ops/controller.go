@@ -284,11 +284,12 @@ func ChatStream(ctx *gin.Context) {
 	// 流后组装助手消息并落库（对齐用户端 SaveResponse 时点；错误/中断路径也持久化）。
 	// 一条回复只落一条消息，批量提案以数组挂在消息上（回放时消息内部渲染多张卡片）
 	assistantMsg := domain.OpsChatMessage{
-		Role:      "assistant",
-		Content:   streamedContent,
-		Reasoning: streamedReasoning,
-		ToolCalls: liveToolCalls,
-		Proposals: capturedProposals,
+		Role:       "assistant",
+		Content:    streamedContent,
+		Reasoning:  streamedReasoning,
+		ToolCalls:  liveToolCalls,
+		Proposals:  capturedProposals,
+		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 	if err != nil {
 		opLog.Error = err.Error()
@@ -316,7 +317,7 @@ func ChatStream(ctx *gin.Context) {
 	opLog.Status = auditStatusSuccess
 	opLog.Output = result
 	appendAndSaveSession(db, session, assistantMsg)
-	_ = writeFrame(map[string]interface{}{"type": "end", "end": true})
+	_ = writeFrame(map[string]interface{}{"type": "end", "end": true, "durationMs": assistantMsg.DurationMs})
 }
 
 // appendAndSaveSession 持久化助手消息，失败只记日志不阻断响应

@@ -52,6 +52,8 @@ type OpsChatMessage struct {
 	Error     string                `json:"error,omitempty"`
 	// Interrupted 表示本次回复被用户主动中断（内容为已生成的部分）
 	Interrupted bool `json:"interrupted,omitempty"`
+	// DurationMs 本次回复总耗时（毫秒），随消息持久化，回放时可展示
+	DurationMs int64 `json:"durationMs,omitempty" swaggertype:"integer"`
 	// Confirmed 标记提案确认完成的提示消息（前端本地产生，经 append 接口持久化）
 	Confirmed bool `json:"confirmed,omitempty"`
 }
