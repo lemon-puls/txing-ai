@@ -7,6 +7,14 @@
           <div class="logo">
             <span class="logo-text">Txing AI</span>
           </div>
+          <!-- 菜单项与 HeaderLayout 功能页导航一一对应 / menu mirrors HeaderLayout's functional nav -->
+          <nav class="nav-menu">
+            <router-link to="/" class="menu-item" :class="{ active: $route.path === '/' }">首页</router-link>
+            <router-link to="/chat" class="menu-item" active-class="active">AI 对话</router-link>
+            <router-link to="/assistant" class="menu-item" active-class="active">AI 助手</router-link>
+            <router-link to="/websites" class="menu-item" active-class="active">网站导航</router-link>
+            <router-link to="/about" class="menu-item" active-class="active">关于作者</router-link>
+          </nav>
         </div>
         <div class="nav-right">
           <a href="https://github.com/lemon-puls/txing-ai" target="_blank" class="github-link">
@@ -213,6 +221,43 @@ const clearSpot = () => {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+// 深色 Hero 适配的菜单：默认次级色，悬停提亮，激活项品牌渐变下划线
+// Dark-hero menu: secondary by default, brighter on hover, brand-gradient underline when active
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+
+  .menu-item {
+    font-size: 15px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 0;
+    position: relative;
+    transition: color 0.25s ease;
+
+    &:hover,
+    &.active {
+      color: var(--text-primary);
+    }
+
+    &.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(45deg, #2b5eff, #1e88e5, #03a9f4);
+    }
+  }
 }
 .nav-right {
   display: flex;
@@ -457,6 +502,10 @@ const clearSpot = () => {
   }
 }
 @media (max-width: 768px) {
+  // 小屏收起菜单项，保留 logo 与头像 / collapse menu items on small screens, keep logo + avatar
+  .nav-menu {
+    display: none;
+  }
   .hero-main {
     padding: 88px 20px 40px;
   }
