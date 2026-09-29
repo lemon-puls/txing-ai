@@ -4,8 +4,9 @@
 
 <style>
 #app {
-  //height: 100%;
   width: 100%;
-  overflow: scroll;
+  /* auto: 内容不溢出时不强制渲染滚动条（scroll 会在加载期画出诡异的空轨道）
+     auto: no forced scrollbars when content fits (scroll paints phantom tracks while loading) */
+  overflow: auto;
 }
 </style>

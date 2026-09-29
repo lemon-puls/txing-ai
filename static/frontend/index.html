@@ -5,9 +5,60 @@
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Txing AI</title>
+    <script>
+      // 提前应用存储的主题，消除深色用户的首屏白闪 / apply the stored theme early to avoid a white flash for dark users
+      try {
+        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
+    <style>
+      /* 首屏启动与路由懒加载共用品牌加载页 / brand splash shared by first boot and lazy route loads */
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #f6f8fc;
+        transition: opacity 0.25s ease;
+      }
+      html.dark #app-loading {
+        background: #0f1115;
+      }
+      #app-loading.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #app-loading .app-loading-spinner {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 3px solid rgba(64, 158, 255, 0.18);
+        border-top-color: #409eff;
+        animation: app-loading-spin 0.9s linear infinite;
+      }
+      #app-loading .app-loading-text {
+        color: #86909c;
+        font-size: 14px;
+        letter-spacing: 0.05em;
+      }
+      html.dark #app-loading .app-loading-text {
+        color: #a3a6ad;
+      }
+      @keyframes app-loading-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="app-loading" aria-hidden="true">
+      <div class="app-loading-spinner"></div>
+      <div class="app-loading-text">Txing AI 加载中…</div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

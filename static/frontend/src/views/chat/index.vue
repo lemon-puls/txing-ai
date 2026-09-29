@@ -2083,9 +2083,21 @@ const isCurrentStreamingMessage = (message) => {
   return currentStreamingMessage && currentStreamingMessage.id === message.id
 }
 
+// 欢迎页预填后是否需要聚焦编辑器（initEditor 中消费，一次性）
+// Whether to focus the editor after a welcome-prompt prefill (consumed once in initEditor)
+let welcomePromptFocus = false
+
 // 监听系统主题变化
 onMounted(async () => {
   hljs.highlightAll()
+
+  // 欢迎页带来的预填提示词（必须在下方 router.replace 清空 query 前读取；vue-router 已自动解码，勿再 decodeURIComponent）
+  // Prefill prompt handed over from the welcome page (must be read before router.replace clears the query; vue-router already decoded it)
+  const welcomePrompt = route.query.prompt
+  if (typeof welcomePrompt === 'string' && welcomePrompt.trim()) {
+    messageInput.value = welcomePrompt
+    welcomePromptFocus = true
+  }
 
   // 清空进行中消息缓存
   conversationStore.clearLastMessageMap()
@@ -2282,6 +2294,18 @@ const initEditor = () => {
     el.innerText = messageInput.value
   }
   editorInitialized = true
+  // 欢迎页带 prompt 进入时聚焦编辑器并把光标移到末尾（选区模式同 handleAppSelect）
+  // Focus and move the caret to the end when arriving with a welcome prompt (same selection pattern as handleAppSelect)
+  if (welcomePromptFocus) {
+    welcomePromptFocus = false
+    el.focus()
+    const range = document.createRange()
+    const sel = window.getSelection()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    sel.removeAllRanges()
+    sel.addRange(range)
+  }
 }
 
 // 自动调整编辑器高度
