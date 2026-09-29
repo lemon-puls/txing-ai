@@ -1,0 +1,49 @@
+// AI 录入抽屉（运营助手）共享样式
+// drawer 内容不生效 scoped，需全局样式；由各管理页的非 scoped 样式块引入：
+//   <style lang="scss">@import '@/styles/ops-drawer.scss';</style>
+// WebsiteList.vue 内嵌了一份相同规则，两处需同步维护。
+.ops-drawer {
+  .el-drawer__header {
+    margin-bottom: 0;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  .el-drawer__body {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .ops-drawer-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    .title-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+      box-shadow: 0 2px 8px var(--el-color-primary-light-8);
+    }
+
+    .title-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--el-text-color-primary);
+
+      small {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}

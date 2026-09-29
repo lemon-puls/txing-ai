@@ -1841,7 +1841,7 @@ const docTemplate = `{
         },
         "/api/admin/ops/chat/sessions/{id}/append": {
             "post": {
-                "description": "持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认",
+                "description": "持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将未确认提案置为已确认；rewindLastRound 时回退最后一轮问答（重新生成/失败重试用）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1888,7 +1888,7 @@ const docTemplate = `{
         },
         "/api/admin/ops/chat/stream": {
             "post": {
-                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId",
+                "description": "管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（网站/模型/渠道/助手 录入或优化提案，确认后才走现有管理接口入库）；会话由服务端持久化，首帧返回 sessionId。工具集按请求中的 context.page 门控",
                 "consumes": [
                     "application/json"
                 ],
@@ -5005,6 +5005,10 @@ const docTemplate = `{
                 "content": {
                     "type": "string"
                 },
+                "durationMs": {
+                    "description": "DurationMs 本次回复总耗时（毫秒），随消息持久化，回放时可展示",
+                    "type": "integer"
+                },
                 "error": {
                     "type": "string"
                 },
@@ -5013,13 +5017,21 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "proposal": {
-                    "$ref": "#/definitions/domain.OpsChatProposal"
+                    "description": "Proposal/ProposalStatus/ProposalMessage 为旧版单提案字段，仅用于反序列化历史数据；\nQueryOpsChatSessionById 加载时经 NormalizeProposals 统一并入 Proposals，保存后即落为新结构",
+                    "type": "object"
                 },
                 "proposalMessage": {
                     "type": "string"
                 },
                 "proposalStatus": {
                     "type": "string"
+                },
+                "proposals": {
+                    "description": "Proposals 本条消息携带的全部提案卡片",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.OpsChatProposalItem"
+                    }
                 },
                 "reasoning": {
                     "type": "string"
@@ -5036,25 +5048,17 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.OpsChatProposal": {
+        "domain.OpsChatProposalItem": {
             "type": "object",
             "properties": {
-                "avatar": {
+                "message": {
                     "type": "string"
                 },
-                "description": {
-                    "type": "string"
+                "proposal": {
+                    "description": "Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，\n前端按 type 字段分发渲染卡片。\ninternal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）\nswaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象",
+                    "type": "object"
                 },
-                "name": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "url": {
+                "status": {
                     "type": "string"
                 }
             }
@@ -5794,7 +5798,6 @@ const docTemplate = `{
         "dto.OpsChatAppendReq": {
             "type": "object",
             "required": [
-                "content",
                 "role"
             ],
             "properties": {
@@ -5804,7 +5807,16 @@ const docTemplate = `{
                     "example": "✅ 提案已确认，网站录入完成。"
                 },
                 "markProposalConfirmed": {
-                    "description": "是否将最后一条未确认的提案标记为已确认",
+                    "description": "是否将未确认的提案标记为已确认",
+                    "type": "boolean"
+                },
+                "proposalName": {
+                    "description": "被确认提案的 name（批量录入时精确匹配；为空时回退为\"最后一条未确认提案\"）",
+                    "type": "string",
+                    "example": "deepseek-v3"
+                },
+                "rewindLastRound": {
+                    "description": "回退最后一轮问答（重新生成/失败重试前调用）：移除末尾的助手消息与其对应用户消息；\n为 true 时 Content 可为空（不追加任何消息）",
                     "type": "boolean"
                 },
                 "role": {

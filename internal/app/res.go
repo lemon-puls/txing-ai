@@ -20,7 +20,7 @@ type resProvider struct {
 }
 
 func (p *resProvider) GetRedisClient() *redis.Client {
-	return p.GetRedisClient()
+	return p.redis
 }
 
 func (p *resProvider) GetDB() *gorm.DB {

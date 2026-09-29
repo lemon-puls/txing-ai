@@ -15,6 +15,10 @@
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
           <el-button type="success" @click="handleAdd">新增模型</el-button>
+          <el-button round class="ai-btn" @click="openOpsDrawer()">
+            <el-icon class="btn-icon"><MagicStick /></el-icon>
+            AI 录入
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -64,6 +68,10 @@
                 <el-icon><Edit /></el-icon>
                 编辑
               </el-button>
+              <el-button type="warning" @click="openOpsDrawer(model)">
+                <el-icon><MagicStick /></el-icon>
+                AI 优化
+              </el-button>
               <el-button
                 type="danger"
                 @click="handleDelete(model)"
@@ -95,6 +103,27 @@
         @current-change="handleCurrentChange"
       />
     </div>
+
+    <!-- AI 录入/优化抽屉：运营助手对话，提案确认后刷新列表（destroy-on-close 保证每次打开重新加载会话） -->
+    <el-drawer
+      v-model="opsDrawerVisible"
+      size="480px"
+      class="ops-drawer"
+      destroy-on-close
+    >
+      <template #header>
+        <span class="ops-drawer-title">
+          <span class="title-icon">
+            <el-icon :size="14"><MagicStick /></el-icon>
+          </span>
+          <span class="title-text">
+            AI 录入助手
+            <small>提案确认后才会入库</small>
+          </span>
+        </span>
+      </template>
+      <OpsChatPanel :context="opsContext" style="height: 100%" @inserted="loadModels" />
+    </el-drawer>
 
     <!-- 编辑/新增对话框 -->
     <el-dialog
@@ -172,10 +201,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp, Edit, Delete } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, Edit, Delete, MagicStick } from '@element-plus/icons-vue'
 import ImageUploader from '@/components/common/ImageUploader.vue'
+import OpsChatPanel from '@/components/ops/OpsChatPanel.vue'
 import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
@@ -205,6 +235,30 @@ const modelForm = ref({
   multimodal: false
 })
 const modelFormRef = ref(null)
+
+// AI 录入/优化抽屉（openOpsDrawer 带模型时为优化模式，draft 逐字段构建、不含无关字段）
+const opsDrawerVisible = ref(false)
+const opsDraft = ref(null)
+const opsContext = computed(() => {
+  const ctx = { page: 'models' }
+  if (opsDraft.value) ctx.draft = opsDraft.value
+  return ctx
+})
+
+const openOpsDrawer = (model) => {
+  opsDraft.value = model
+    ? {
+        id: model.id,
+        name: model.name || '',
+        description: model.description || '',
+        tag: model.tag || '',
+        high_context: !!model.high_context,
+        multimodal: !!model.multimodal,
+        default: !!model.default
+      }
+    : null
+  opsDrawerVisible.value = true
+}
 
 // 表单验证规则
 const modelRules = {
@@ -580,4 +634,21 @@ onMounted(() => {
   margin-top: 4px;
   line-height: 1.4;
 }
+
+// AI 录入按钮：渐变强化 CTA
+.ai-btn {
+  border: none !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary)) !important;
+  box-shadow: 0 2px 10px var(--el-color-primary-light-7);
+
+  &:hover {
+    opacity: 0.88;
+  }
+}
+</style>
+
+<style lang="scss">
+// AI 录入抽屉全局样式（drawer 内容不生效 scoped，抽成共享文件）
+@import '@/styles/ops-drawer.scss';
 </style>

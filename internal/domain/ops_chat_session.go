@@ -24,32 +24,54 @@ type OpsChatToolCall struct {
 	Status string `json:"status"` // running/completed/failed/interrupted
 }
 
-// OpsChatProposal 网站录入提案（tool/ops.WebsiteProposal 的 domain 镜像：
-// internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层做字段拷贝）
-type OpsChatProposal struct {
-	Type        string `json:"type"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Url         string `json:"url"`
-	Avatar      string `json:"avatar,omitempty"`
-	Tags        string `json:"tags"`
+// OpsChatProposalItem 单个预览提案（批量录入时一条回复可携带多张提案卡片）
+// Status 取 ok|duplicate|confirmed，confirmed 表示提案已确认入库，前端据此禁用确认按钮
+type OpsChatProposalItem struct {
+	// Proposal 结构化提案原始 JSON（website/model/channel/preset 各自的扁平结构，
+	// 前端按 type 字段分发渲染卡片。
+	// internal/tool/ops 反向依赖了 domain，这里不能 import tool 包，由 controller 层透传原始 JSON）
+	// swaggertype:object 让 swag 将 json.RawMessage 识别为任意 JSON 对象
+	Proposal json.RawMessage `json:"proposal" swaggertype:"object"`
+	Status   string          `json:"status,omitempty"`
+	Message  string          `json:"message,omitempty"`
 }
 
 // OpsChatMessage 运营助手会话消息（富结构：含工具调用与提案卡片，需在刷新后完整回放）
-// ProposalStatus 取 ok|duplicate|confirmed，confirmed 表示提案已确认入库，前端据此禁用确认按钮
 type OpsChatMessage struct {
 	Role             string             `json:"role"` // user/assistant
 	Content          string             `json:"content"`
 	Reasoning        string             `json:"reasoning,omitempty"`
 	ToolCalls        []OpsChatToolCall  `json:"toolCalls,omitempty"`
-	Proposal         *OpsChatProposal   `json:"proposal,omitempty"`
-	ProposalStatus   string             `json:"proposalStatus,omitempty"`
-	ProposalMessage  string             `json:"proposalMessage,omitempty"`
-	Error            string             `json:"error,omitempty"`
+	// Proposal/ProposalStatus/ProposalMessage 为旧版单提案字段，仅用于反序列化历史数据；
+	// QueryOpsChatSessionById 加载时经 NormalizeProposals 统一并入 Proposals，保存后即落为新结构
+	Proposal        json.RawMessage `json:"proposal,omitempty" swaggertype:"object"`
+	ProposalStatus  string          `json:"proposalStatus,omitempty"`
+	ProposalMessage string          `json:"proposalMessage,omitempty"`
+	// Proposals 本条消息携带的全部提案卡片
+	Proposals []OpsChatProposalItem `json:"proposals,omitempty"`
+	Error     string                `json:"error,omitempty"`
 	// Interrupted 表示本次回复被用户主动中断（内容为已生成的部分）
 	Interrupted bool `json:"interrupted,omitempty"`
+	// DurationMs 本次回复总耗时（毫秒），随消息持久化，回放时可展示
+	DurationMs int64 `json:"durationMs,omitempty" swaggertype:"integer"`
 	// Confirmed 标记提案确认完成的提示消息（前端本地产生，经 append 接口持久化）
 	Confirmed bool `json:"confirmed,omitempty"`
+}
+
+// NormalizeProposals 将旧版单提案字段并入 Proposals 数组（历史数据渐进迁移，
+// 加载即归一化，保存后统一为新结构）
+func (m *OpsChatMessage) NormalizeProposals() {
+	if len(m.Proposal) == 0 {
+		return
+	}
+	m.Proposals = append([]OpsChatProposalItem{{
+		Proposal: m.Proposal,
+		Status:   m.ProposalStatus,
+		Message:  m.ProposalMessage,
+	}}, m.Proposals...)
+	m.Proposal = nil
+	m.ProposalStatus = ""
+	m.ProposalMessage = ""
 }
 
 // OpsChatSession 运营助手会话（对齐用户端 Conversation 的持久化模式：
@@ -105,7 +127,7 @@ func (s *OpsChatSession) AppendUserMessage(content string) {
 // 内容、思考、工具调用、提案、错误全空时跳过（与用户端 AddMessageFromAssistant 一致）
 func (s *OpsChatSession) AppendAssistantMessage(msg OpsChatMessage) {
 	if msg.Content == "" && msg.Reasoning == "" && len(msg.ToolCalls) == 0 &&
-		msg.Proposal == nil && msg.Error == "" {
+		len(msg.Proposal) == 0 && len(msg.Proposals) == 0 && msg.Error == "" {
 		log.Error("ops assistant response is empty, skip AppendAssistantMessage")
 		return
 	}
@@ -167,6 +189,10 @@ func QueryOpsChatSessionById(db *gorm.DB, id int64) (*OpsChatSession, error) {
 		if err := json.Unmarshal([]byte(session.Messages), &session.FormattedMessages); err != nil {
 			log.Error("ops chat session unmarshal failed", zap.Int64("id", id), zap.Error(err))
 			return nil, err
+		}
+		// 旧版单提案字段统一并入 Proposals（保存后即落为新结构，下游只需处理数组）
+		for i := range session.FormattedMessages {
+			session.FormattedMessages[i].NormalizeProposals()
 		}
 	}
 	return &session, nil

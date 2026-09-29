@@ -21,6 +21,10 @@
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
           <el-button type="success" @click="handleAdd">新增助手</el-button>
+          <el-button round class="ai-btn" @click="openOpsDrawer()">
+            <el-icon class="btn-icon"><MagicStick /></el-icon>
+            AI 录入
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -111,6 +115,10 @@
                 </el-select>
               </el-form-item>
               <div class="form-actions">
+                <el-button round class="ai-btn" @click="openOpsDrawer(preset)">
+                  <el-icon class="btn-icon"><MagicStick /></el-icon>
+                  AI 优化
+                </el-button>
                 <el-button type="primary" @click="handleSave(preset)">保存</el-button>
                 <el-button type="danger" @click="handleDelete(preset)">删除</el-button>
               </div>
@@ -132,6 +140,27 @@
         @current-change="handleCurrentChange"
       />
     </div>
+
+    <!-- AI 录入/优化抽屉：运营助手对话，提案确认后刷新列表（destroy-on-close 保证每次打开重新加载会话） -->
+    <el-drawer
+      v-model="opsDrawerVisible"
+      size="480px"
+      class="ops-drawer"
+      destroy-on-close
+    >
+      <template #header>
+        <span class="ops-drawer-title">
+          <span class="title-icon">
+            <el-icon :size="14"><MagicStick /></el-icon>
+          </span>
+          <span class="title-text">
+            AI 录入助手
+            <small>提案确认后才会入库</small>
+          </span>
+        </span>
+      </template>
+      <OpsChatPanel :context="opsContext" style="height: 100%" @inserted="loadPresets" />
+    </el-drawer>
 
     <!-- 新增/编辑对话框 -->
     <el-dialog
@@ -227,12 +256,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, MagicStick } from '@element-plus/icons-vue'
 import VueCropper from 'vue-cropper/lib/vue-cropper.vue'
 import 'vue-cropper/dist/index.css'
 import ImageUploader from "@/components/common/ImageUploader.vue"
+import OpsChatPanel from '@/components/ops/OpsChatPanel.vue'
 import { defaultApi } from '@/api/index.js'
 
 // 搜索表单
@@ -279,6 +309,29 @@ const cropperVisible = ref(false)
 const cropperImage = ref('')
 const cropperRef = ref(null)
 const currentPreset = ref(null)
+
+// AI 录入/优化抽屉（openOpsDrawer 带助手时为优化模式，draft 逐字段构建、不含 avatar）
+const opsDrawerVisible = ref(false)
+const opsDraft = ref(null)
+const opsContext = computed(() => {
+  const ctx = { page: 'presets' }
+  if (opsDraft.value) ctx.draft = opsDraft.value
+  return ctx
+})
+
+const openOpsDrawer = (preset) => {
+  opsDraft.value = preset
+    ? {
+        id: preset.id,
+        name: preset.name || '',
+        description: preset.description || '',
+        context: preset.context || '',
+        official: !!preset.official,
+        tags: [...(preset.tags || [])]
+      }
+    : null
+  opsDrawerVisible.value = true
+}
 
 // 表单验证规则
 const presetRules = {
@@ -404,7 +457,8 @@ const handleSave = async (preset) => {
       tags: Array.isArray(preset.tags) ? preset.tags.join(',') : preset.tags
     }
 
-    const response = await defaultApi.apiAdminPresetIdPut(preset.id, formData)
+    // 注意用 apiPresetIdPut（apiAdminPresetIdPut 在生成的客户端中不存在）
+    const response = await defaultApi.apiPresetIdPut(preset.id, formData)
     if (response.code === 0) {
       ElMessage.success('保存成功')
       await loadPresets()
@@ -500,7 +554,7 @@ const handleUpdatePreset = async (preset) => {
       avatar = `${urlObj.origin}${urlObj.pathname}`
     }
 
-    const response = await defaultApi.apiAdminPresetIdPut(preset.id, {
+    const response = await defaultApi.apiPresetIdPut(preset.id, {
       avatar: avatar
     })
 
@@ -788,4 +842,21 @@ onMounted(() => {
     }
   }
 }
+
+// AI 录入按钮：渐变强化 CTA
+.ai-btn {
+  border: none !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary)) !important;
+  box-shadow: 0 2px 10px var(--el-color-primary-light-7);
+
+  &:hover {
+    opacity: 0.88;
+  }
+}
+</style>
+
+<style lang="scss">
+// AI 录入抽屉全局样式（drawer 内容不生效 scoped，抽成共享文件）
+@import '@/styles/ops-drawer.scss';
 </style>

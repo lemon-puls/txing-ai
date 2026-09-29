@@ -1,7 +1,9 @@
 package ops
 
 import (
+	"encoding/json"
 	"strconv"
+	"strings"
 
 	"txing-ai/internal/domain"
 	"txing-ai/internal/dto"
@@ -64,7 +66,27 @@ func GetOpsSessionList(c *gin.Context) {
 		return
 	}
 
+	// 回填各会话最近一次请求的页面标识（Context JSON 中的 page，copier 无法自动映射），
+	// 前端据此优先恢复与当前页面同页的会话，避免跨页串台
+	for i := range result.Data {
+		pageVO.Data[i].Page = extractSessionPage(result.Data[i].Context)
+	}
+
 	utils.OkWithData(c, pageVO)
+}
+
+// extractSessionPage 从会话的上下文 JSON 中提取页面标识（解析失败返回空串）
+func extractSessionPage(context string) string {
+	if context == "" {
+		return ""
+	}
+	var ctx struct {
+		Page string `json:"page"`
+	}
+	if err := json.Unmarshal([]byte(context), &ctx); err != nil {
+		return ""
+	}
+	return ctx.Page
 }
 
 // GetOpsSessionDetail 运营助手会话详情
@@ -145,7 +167,7 @@ func DeleteOpsSession(c *gin.Context) {
 
 // AppendOpsSession 追加运营助手会话消息
 // @Summary 追加运营助手会话消息
-// @Description 持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+// @Description 持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将未确认提案置为已确认；rewindLastRound 时回退最后一轮问答（重新生成/失败重试用）
 // @Tags 运营助手
 // @Accept json
 // @Produce json
@@ -168,6 +190,11 @@ func AppendOpsSession(c *gin.Context) {
 		utils.ValidateError(c, err)
 		return
 	}
+	// 回退模式下允许空 Content（不追加消息），普通追加仍要求非空
+	if !req.RewindLastRound && strings.TrimSpace(req.Content) == "" {
+		utils.ErrorWithMsg(c, "消息内容不能为空", nil)
+		return
+	}
 
 	db := utils.GetDBFromContext[*gorm.DB](c)
 
@@ -181,13 +208,50 @@ func AppendOpsSession(c *gin.Context) {
 		return
 	}
 
-	// 将最后一条未确认的提案标记为已确认（从尾向前找，命中即止）
+	// 回退最后一轮问答：移除末尾的助手消息（成功回复或失败/中断占位）与其对应用户消息。
+	// 重新生成/失败重试前由前端调用，随后重发原问题，避免会话历史与前端界面出现重复轮次
+	if req.RewindLastRound && len(session.FormattedMessages) > 0 {
+		msgs := session.FormattedMessages
+		if msgs[len(msgs)-1].Role == "assistant" {
+			msgs = msgs[:len(msgs)-1]
+		}
+		if len(msgs) > 0 && msgs[len(msgs)-1].Role == "user" {
+			msgs = msgs[:len(msgs)-1]
+		}
+		session.FormattedMessages = msgs
+		// 纯回退请求：保存后直接返回，不追加消息
+		if strings.TrimSpace(req.Content) == "" {
+			if err := session.Save(db); err != nil {
+				log.Error("保存运营助手会话失败", zap.Int64("sessionId", session.Id), zap.Error(err))
+				utils.ErrorWithCode(c, global.CodeServerInternalError, err)
+				return
+			}
+			utils.Ok(c)
+			return
+		}
+	}
+
+	// 将未确认的提案标记为已确认：优先按前端传来的提案 name 精确匹配
+	// （批量录入一条消息可携带多张提案卡片），未传 name 时回退为最后一条未确认提案
 	if req.MarkProposalConfirmed {
+	matched:
 		for i := len(session.FormattedMessages) - 1; i >= 0; i-- {
 			m := &session.FormattedMessages[i]
-			if m.Proposal != nil && m.ProposalStatus != "" && m.ProposalStatus != "confirmed" {
-				m.ProposalStatus = "confirmed"
-				break
+			for j := len(m.Proposals) - 1; j >= 0; j-- {
+				item := &m.Proposals[j]
+				if len(item.Proposal) == 0 || item.Status == "" || item.Status == "confirmed" {
+					continue
+				}
+				if req.ProposalName != "" {
+					var named struct {
+						Name string `json:"name"`
+					}
+					if err := json.Unmarshal(item.Proposal, &named); err == nil && named.Name != "" && named.Name != req.ProposalName {
+						continue
+					}
+				}
+				item.Status = "confirmed"
+				break matched
 			}
 		}
 	}
