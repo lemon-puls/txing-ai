@@ -440,7 +440,7 @@ const render = () => {
   // 场景内驱动（打字机/计数器/网络流/脉冲…）
   runSceneFx(idx, local)
   drawCanvas(idx, local)
-  updAudio() // 音频事件表触发 + 和弦/心跳推进
+  updAudio() // 音频事件表触发 + 和弦/低音/琶音推进
   // 控制条进度
   for (let i = 0; i < segFills.length; i++) {
     const p = i < idx ? 100 : i > idx ? 0 : (local / s.dur) * 100
@@ -519,79 +519,84 @@ const ctrlWake = () => {
 const ctrlLease = () => ctrlWake()
 
 // ───────────────────────── 音频引擎（Web Audio 全合成, 无素材文件）─────────────────────────
-// Audio engine: fully synthesized soundtrack. Pad chords + bass heartbeat + scene SFX
-// routed through: [padVoices / bassOsc] → musBus ┐
-//                 [one-shot SFX]        → sfxBus ├→ compressor → master → analyser → out
+// Audio engine: fully synthesized LIGHT soundtrack (music-box / kalimba feel):
+// C-major I-V-vi-IV pad + plucked arpeggio + light bass pulse + scene SFX
+// routed through: [padVoices / bassOsc / sfxPluck arp] → musBus ┐
+//                 [one-shot SFX]                → sfxBus ├→ compressor → master → analyser → out
 const audioOn = ref(true)  // 音效开关（用户意图）
 const audioLive = ref(false) // 音频是否真正出声（自动播放无手势时 AudioContext 挂起, 首次交互才激活）
 let AC = null
 let masterBus, musBus, sfxBus, compNode, analyser, lvlBuf
 let padFilter, padGain, padVoices = [], bassOsc, bassGain, noiseBuf
 let audioEvents = [], evIdx = 0, firedCount = 0
-let chordIdx = 0, bassNext = 0, endFaded = false, audioSyncing = false
+let chordIdx = 0, bassNext = 0, arpNext = 0, arpStep = 0, endFaded = false, audioSyncing = false
 let audioLevel = 0 // 输出电平（RMS）, 供开发验证
 
 // MIDI 音号 → 频率
 // MIDI note number → frequency
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12)
 
-// 每幕和声（Am → F → C → G → Am → F → C → Am 收束）+ 滤波亮度 / pad 响度
-// Per-scene chord, filter brightness and pad level — the narrative arc
+// 每幕和声: C 大调 I-V-vi-IV 轻快进行（C→G→Am→F→C→G→F→C 收束回主）+ 滤波亮度 / pad 响度
+// Per-scene chord: bright I-V-vi-IV in C major, resolved back to the tonic at the end
 const CHORDS = [
-  { n: [45, 52, 60, 71], cut: 900,  g: 0.15 }, // S1 开场     Am add9
-  { n: [41, 48, 57, 64], cut: 1000, g: 0.16 }, // S2 理念     F maj7
-  { n: [48, 55, 64, 62], cut: 1300, g: 0.17 }, // S3 渠道网关 C add9
-  { n: [43, 50, 59, 69], cut: 900,  g: 0.12 }, // S4 流式对话 G add9（避让, 突出打字声）
-  { n: [45, 52, 60, 67], cut: 950,  g: 0.14 }, // S5 工作流   Am add7
-  { n: [41, 48, 57, 67], cut: 1500, g: 0.18 }, // S6 Agent    F add9（最亮）
-  { n: [48, 55, 64, 71], cut: 1100, g: 0.16 }, // S7 架构     C maj7
-  { n: [45, 52, 60, 71], cut: 800,  g: 0.19 }  // S8 尾板     Am add9（回归收束）
+  { n: [48, 55, 64, 72], cut: 2200, g: 0.12 }, // S1 开场     C  (C3 G3 E4 C5)
+  { n: [43, 59, 62, 67], cut: 2000, g: 0.11 }, // S2 理念     G  (G2 B3 D4 G4)
+  { n: [45, 60, 64, 69], cut: 2400, g: 0.12 }, // S3 渠道网关 Am (A2 C4 E4 A4)
+  { n: [41, 57, 60, 65], cut: 1700, g: 0.10 }, // S4 流式对话 F  (F2 A3 C4 F4, 避让打字声)
+  { n: [48, 55, 64, 72], cut: 2200, g: 0.12 }, // S5 工作流   C
+  { n: [43, 59, 67, 74], cut: 2800, g: 0.14 }, // S6 Agent    G  (最亮, D5 顶音)
+  { n: [41, 57, 60, 65], cut: 2000, g: 0.12 }, // S7 架构     F
+  { n: [48, 55, 64, 72], cut: 2400, g: 0.16 }  // S8 尾板     C  (回归主和弦收束)
 ]
-// 低音心跳: 每幕的节拍间隔 / 峰值响度（网关段最带驱动感, 对话/工作流段让位给细节音效）
-// Bass heartbeat: interval & peak per scene
+// 低音: 短促轻点(快速衰减, 不再是沉重心跳), 网关段最带驱动感
+// Bass: short light pluck-style pulse instead of a heavy heartbeat
 const BASS_INT = [0.85, 0.85, 0.55, 1.1, 1.1, 0.7, 0.85, 1.4]
-const BASS_G   = [0.13, 0.14, 0.20, 0.09, 0.10, 0.16, 0.13, 0.15]
+const BASS_G   = [0.08, 0.08, 0.11, 0.05, 0.07, 0.10, 0.08, 0.09]
+// 卡林巴拨弦琶音层(轻快感的来源): 每幕的步进间隔 / 响度
+// Kalimba-style plucked arpeggio: the lightness carrier. Step interval & level per scene
+const ARP_INT = [0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.375]
+const ARP_G   = [0.07, 0.065, 0.075, 0.045, 0.07, 0.085, 0.065, 0.055]
 
 // 一次性音效事件表（按影片时间排序, 播放中逐个触发; seek 越过的不触发）
 // One-shot SFX event list on the film timeline
 const buildEvents = () => {
   const ev = []
   const push = (tt, k, f = 0, g = 0, p = 0) => ev.push({ t: tt, k, f, g, p })
-  // 幕转场 whoosh（每幕起点前 0.18s, 左右交替）
-  for (let i = 1; i < STARTS.length; i++) push(STARTS[i] - 0.18, 'whoosh', 0, 0.2, i % 2 ? 0.25 : -0.25)
-  // S1 开场: 标题落定低频 + 高频 shimmer
+  // 幕转场轻 whoosh（每幕起点前 0.18s, 左右交替, 气流感不压画面）
+  for (let i = 1; i < STARTS.length; i++) push(STARTS[i] - 0.18, 'whoosh', 0, 0.11, i % 2 ? 0.25 : -0.25)
+  // S1 开场: 标题落定(上行琶音) + 高频 sparkle
   push(0.55, 'boom')
-  push(1.3, 'blip', mtof(84), 0.045, -0.4)
-  push(2.5, 'blip', mtof(88), 0.04, 0.4)
-  push(3.9, 'blip', mtof(93), 0.035, -0.3)
+  push(1.3, 'blip', mtof(84), 0.04, -0.4)
+  push(2.5, 'blip', mtof(88), 0.035, 0.4)
+  push(3.9, 'blip', mtof(93), 0.03, -0.3)
   // S2 理念: 计数 tick 流 + 定格提示音
-  for (let tt = 0.5; tt < 2.7; tt += 0.11) push(STARTS[1] + tt, 'tick', 0, 0.04)
-  push(STARTS[1] + 3.1, 'blip', mtof(81), 0.08)
+  for (let tt = 0.5; tt < 2.7; tt += 0.11) push(STARTS[1] + tt, 'tick', 0, 0.032)
+  push(STARTS[1] + 3.1, 'blip', mtof(84), 0.07)
   // S4 对话: 打字 tick / 消息送达 / 代码行 blip（8 行渐升）/ 停止生成
   const S4 = STARTS[3]
-  for (let tt = 0.5; tt < 1.8; tt += 0.085) push(S4 + tt, 'tick', 0, 0.05)
-  push(S4 + 1.95, 'blip', mtof(79), 0.09)
-  for (let tt = 2.55; tt < 4.1; tt += 0.075) push(S4 + tt, 'tick', 0, 0.038)
-  for (let i = 0; i < 8; i++) push(S4 + 4.3 + i * 0.26, 'blip', 480 + i * 36, 0.07)
-  push(S4 + 6.45, 'blip', mtof(76), 0.08)
-  // S5 工作流: 节点五声音阶 blip + 分支 whoosh + 完成和弦
+  for (let tt = 0.5; tt < 1.8; tt += 0.085) push(S4 + tt, 'tick', 0, 0.04)
+  push(S4 + 1.95, 'blip', mtof(84), 0.08)
+  for (let tt = 2.55; tt < 4.1; tt += 0.075) push(S4 + tt, 'tick', 0, 0.03)
+  for (let i = 0; i < 8; i++) push(S4 + 4.3 + i * 0.26, 'blip', 520 + i * 40, 0.06)
+  push(S4 + 6.45, 'blip', mtof(76), 0.07)
+  // S5 工作流: 节点 C 大调五声音阶 blip + 分支轻 whoosh + 完成和弦
   const S5 = STARTS[4]
   const nodeT = [1.0, 1.55, 2.55, 2.6, 3.6, 4.4]
-  const nodeF = [69, 72, 76, 79, 81, 84].map(mtof) // A4 C5 E5 G5 A5 C6
-  nodeT.forEach((nt, i) => push(S5 + nt, 'blip', nodeF[i], 0.1))
-  ;[1.25, 2.25, 3.25].forEach((et, i) => push(S5 + et, 'whoosh', 0, 0.06, i % 2 ? 0.2 : -0.2))
-  push(S5 + 4.75, 'chime', 0, 0.12)
-  // S6 Agent: 轨道 ping 左右交替（六颗工具芯片）
+  const nodeF = [72, 74, 76, 79, 81, 84].map(mtof) // C5 D5 E5 G5 A5 C6
+  nodeT.forEach((nt, i) => push(S5 + nt, 'blip', nodeF[i], 0.09))
+  ;[1.25, 2.25, 3.25].forEach((et, i) => push(S5 + et, 'whoosh', 0, 0.045, i % 2 ? 0.2 : -0.2))
+  push(S5 + 4.75, 'chime', 0, 0.1)
+  // S6 Agent: 轨道 ping 左右交替（六颗工具芯片, C 大调五声）
   const S6 = STARTS[5]
-  ;[81, 84, 88, 81, 86, 91].forEach((m, i) => push(S6 + 0.6 + i, 'blip', mtof(m), 0.045, i % 2 ? 0.45 : -0.45))
-  // S7 架构: 分层上行动机 + 技术栈 shimmer
+  ;[84, 86, 88, 91, 93, 96].forEach((m, i) => push(S6 + 0.6 + i, 'blip', mtof(m), 0.04, i % 2 ? 0.45 : -0.45))
+  // S7 架构: 分层上行动机(C 大调五声) + 技术栈 shimmer
   const S7 = STARTS[6]
-  ;[0.5, 0.95, 1.4, 1.85, 2.3].forEach((lt, i) => push(S7 + lt, 'blip', mtof(60 + i * 4), 0.065))
-  push(S7 + 3.2, 'blip', mtof(88), 0.035, 0.3)
-  // S8 尾板: swell + 高音 shimmer（淡黑由 updAudio 里随画面收声）
+  ;[60, 64, 67, 72, 76].forEach((m, i) => push(S7 + 0.5 + i * 0.45, 'blip', mtof(m), 0.06))
+  push(S7 + 3.2, 'blip', mtof(88), 0.03, 0.3)
+  // S8 尾板: 上行琶音 swell + 高音 sparkle（淡黑由 updAudio 里随画面收声）
   push(STARTS[7] + 0.35, 'boom')
-  push(STARTS[7] + 1.2, 'blip', mtof(93), 0.04, 0.35)
-  push(STARTS[7] + 2.4, 'blip', mtof(96), 0.035, -0.35)
+  push(STARTS[7] + 1.2, 'blip', mtof(93), 0.035, 0.35)
+  push(STARTS[7] + 2.4, 'blip', mtof(96), 0.03, -0.35)
   ev.sort((a, b) => a.t - b.t)
   return ev
 }
@@ -600,16 +605,16 @@ const buildEvents = () => {
 // SFX synth units
 const sfxWhoosh = (when, g, pan) => {
   const src = AC.createBufferSource(); src.buffer = noiseBuf
-  const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.1
-  bp.frequency.setValueAtTime(220, when)
-  bp.frequency.exponentialRampToValueAtTime(2400, when + 0.5)
+  const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4
+  bp.frequency.setValueAtTime(500, when)
+  bp.frequency.exponentialRampToValueAtTime(1800, when + 0.34)
   const gn = AC.createGain()
   gn.gain.setValueAtTime(0.0001, when)
-  gn.gain.exponentialRampToValueAtTime(g, when + 0.16)
-  gn.gain.exponentialRampToValueAtTime(0.0001, when + 0.62)
+  gn.gain.exponentialRampToValueAtTime(g, when + 0.1)
+  gn.gain.exponentialRampToValueAtTime(0.0001, when + 0.42)
   const pn = AC.createStereoPanner(); pn.pan.value = pan
   src.connect(bp); bp.connect(gn); gn.connect(pn); pn.connect(sfxBus)
-  src.start(when); src.stop(when + 0.7)
+  src.start(when); src.stop(when + 0.5)
 }
 const sfxTick = (when, g) => {
   const src = AC.createBufferSource(); src.buffer = noiseBuf; src.playbackRate.value = 1.6
@@ -632,19 +637,33 @@ const sfxBlip = (when, f, g, pan = 0, dur = 0.16) => {
   o.connect(gn); o2.connect(g2); g2.connect(gn); gn.connect(pn); pn.connect(sfxBus)
   o.start(when); o2.start(when); o.stop(when + dur + 0.02); o2.stop(when + dur + 0.02)
 }
-const sfxBoom = (when) => {
-  const o = AC.createOscillator(); o.type = 'sine'
-  o.frequency.setValueAtTime(120, when)
-  o.frequency.exponentialRampToValueAtTime(45, when + 0.4)
+// 卡林巴式拨弦: 三角波 + 高八度正弦泛音, 快起急收（琶音层与标题落定共用）
+// Kalimba-style pluck: triangle + octave sine partial, fast attack & quick decay
+const sfxPluck = (when, f, g) => {
+  const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = f
+  const o2 = AC.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2
+  const g2 = AC.createGain(); g2.gain.value = 0.3
   const gn = AC.createGain()
   gn.gain.setValueAtTime(0.0001, when)
-  gn.gain.exponentialRampToValueAtTime(0.28, when + 0.03)
-  gn.gain.exponentialRampToValueAtTime(0.0001, when + 0.75)
+  gn.gain.exponentialRampToValueAtTime(g, when + 0.008)
+  gn.gain.exponentialRampToValueAtTime(0.0001, when + 0.38)
+  o.connect(gn); o2.connect(g2); g2.connect(gn); gn.connect(musBus)
+  o.start(when); o2.start(when); o.stop(when + 0.42); o2.stop(when + 0.42)
+}
+// 标题落定/尾板: 轻快上行琶音 + 柔和低音触底（替代沉重 boom）
+// Title card / finale: light ascending arpeggio with a soft bass touch
+const sfxBoom = (when) => {
+  ;[67, 72, 76].forEach((m, i) => sfxPluck(when + i * 0.06, mtof(m), 0.16))
+  const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = mtof(48) // C3 触底
+  const gn = AC.createGain()
+  gn.gain.setValueAtTime(0.0001, when)
+  gn.gain.exponentialRampToValueAtTime(0.18, when + 0.02)
+  gn.gain.exponentialRampToValueAtTime(0.0001, when + 0.35)
   o.connect(gn); gn.connect(sfxBus)
-  o.start(when); o.stop(when + 0.8)
+  o.start(when); o.stop(when + 0.4)
 }
 const sfxChime = (when, g) => {
-  ;[81, 84, 88, 93].forEach((m, i) => sfxBlip(when + i * 0.07, mtof(m), g, i % 2 ? 0.3 : -0.3, 0.5))
+  ;[76, 79, 84, 88].forEach((m, i) => sfxBlip(when + i * 0.07, mtof(m), g, i % 2 ? 0.3 : -0.3, 0.5))
 }
 const fireEv = (e) => {
   const when = AC.currentTime + 0.02
@@ -675,24 +694,24 @@ const ensureAudio = () => {
     noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate)
     const nd = noiseBuf.getChannelData(0)
     for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1
-    // pad: 4 声部 ×（三角波 + 失谐锯齿）→ 低通 → 慢 LFO 呼吸
+    // pad: 4 声部 ×（三角波 + 高八度正弦泛音）→ 低通 → 轻 LFO 呼吸（柔软无失谐毛刺）
     padFilter = AC.createBiquadFilter(); padFilter.type = 'lowpass'
     padFilter.frequency.value = CHORDS[0].cut; padFilter.Q.value = 0.6
     padGain = AC.createGain(); padGain.gain.value = CHORDS[0].g
     padFilter.connect(padGain); padGain.connect(musBus)
-    const lfo = AC.createOscillator(); lfo.frequency.value = 0.07
-    const lfoG = AC.createGain(); lfoG.gain.value = 260
+    const lfo = AC.createOscillator(); lfo.frequency.value = 0.3
+    const lfoG = AC.createGain(); lfoG.gain.value = 180
     lfo.connect(lfoG); lfoG.connect(padFilter.frequency); lfo.start()
     CHORDS[0].n.forEach((m) => {
       const f = mtof(m)
       const o1 = AC.createOscillator(); o1.type = 'triangle'; o1.frequency.value = f
-      const o2 = AC.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f; o2.detune.value = 7
-      const vg = AC.createGain(); vg.gain.value = 0.25
+      const o2 = AC.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2
+      const vg = AC.createGain(); vg.gain.value = 0.22
       o1.connect(vg); o2.connect(vg); vg.connect(padFilter)
       o1.start(); o2.start()
       padVoices.push({ o1, o2 })
     })
-    // 低音心跳: 正弦, 音高随幕根音滑移
+    // 轻点低音: 正弦, 音高随幕根音滑移
     bassOsc = AC.createOscillator(); bassOsc.type = 'sine'; bassOsc.frequency.value = mtof(CHORDS[0].n[0])
     bassGain = AC.createGain(); bassGain.gain.value = 0
     bassOsc.connect(bassGain); bassGain.connect(musBus); bassOsc.start()
@@ -727,6 +746,7 @@ const syncAudio = () => {
   setChord(idxAt(t), true)
   endFaded = idxAt(t) === scenes.length - 1 && t - STARTS[scenes.length - 1] > 5.0
   bassNext = t + 0.2
+  arpNext = t + 0.2; arpStep = 0
 }
 
 // 音量总控: 暂停/结束收声, 播放恢复
@@ -752,7 +772,7 @@ const toggleAudio = () => {
   }
 }
 
-// 每帧驱动: 事件触发 / 和弦推进 / 心跳调度 / 尾板收声 / 电平表
+// 每帧驱动: 事件触发 / 和弦推进 / 轻点低音与琶音调度 / 尾板收声 / 电平表
 // Per-frame audio driver
 const updAudio = () => {
   if (!AC) return
@@ -762,12 +782,17 @@ const updAudio = () => {
     while (evIdx < audioEvents.length && audioEvents[evIdx].t <= t) fireEv(audioEvents[evIdx++])
     setChord(idxAt(t))
     const bi = idxAt(t)
-    if (t >= bassNext) { // 心跳以影片时间为准, 暂停自然冻结
+    if (t >= bassNext) { // 轻点低音以影片时间为准, 暂停自然冻结
       bassNext = Math.max(bassNext + BASS_INT[bi], t + 0.05)
       bassGain.gain.cancelScheduledValues(now)
       bassGain.gain.setValueAtTime(0.0001, now)
-      bassGain.gain.exponentialRampToValueAtTime(BASS_G[bi], now + 0.02)
-      bassGain.gain.exponentialRampToValueAtTime(0.0001, now + Math.min(BASS_INT[bi] * 0.72, 0.5))
+      bassGain.gain.exponentialRampToValueAtTime(BASS_G[bi], now + 0.015)
+      bassGain.gain.exponentialRampToValueAtTime(0.0001, now + Math.min(BASS_INT[bi] * 0.55, 0.3))
+    }
+    if (t >= arpNext && !endFaded) { // 琶音步进: 根音高八度 → 三音 → 顶音 → 三音 循环
+      arpNext = Math.max(arpNext + ARP_INT[bi], t + 0.05)
+      const c = CHORDS[bi]
+      sfxPluck(now + 0.01, mtof([c.n[0] + 12, c.n[2], c.n[3], c.n[2]][arpStep++ % 4]), ARP_G[bi])
     }
     if (bi === scenes.length - 1 && t - STARTS[bi] > 5.0 && !endFaded) { // 尾板淡黑同步收声
       endFaded = true
