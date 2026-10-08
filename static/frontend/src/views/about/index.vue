@@ -198,6 +198,15 @@
                 </div>
               </el-carousel-item>
             </el-carousel>
+            <div v-else-if="isPromoProject(project)" class="promo-cover">
+              <i class="promo-cover-glow"></i>
+              <div class="promo-cover-mark">TXING&nbsp;AI</div>
+              <div class="promo-cover-sub">智 能 对 话 平 台</div>
+              <div class="promo-cover-play">
+                <el-icon><VideoPlay /></el-icon>
+                <span>观看介绍影片 · 55s</span>
+              </div>
+            </div>
             <div v-else class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
             </div>
@@ -235,6 +244,10 @@
                   <el-icon><Close /></el-icon>
                 </el-button>
               </div>
+
+              <!-- 项目介绍影片：Txing AI 智能对话平台专属，代码驱动的动态图形宣传片 -->
+              <!-- Project promo film: exclusive to Txing AI, a code-driven motion-graphics video -->
+              <TxingPromoVideo v-if="isPromoProject(project)" class="detail-promo" />
 
               <!-- Media Gallery -->
               <div class="media-gallery" v-if="project.media && project.media.length">
@@ -444,7 +457,8 @@ import {
   FullScreen,
   ZoomIn,
   ZoomOut,
-  Aim
+  Aim,
+  VideoPlay
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
@@ -453,6 +467,7 @@ import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamer
 import CloudSky from '@/components/CloudSky.vue'
 import FlickerText from '@/components/FlickerText.vue'
 import AskPanel from '@/components/wiki/AskPanel.vue'
+import TxingPromoVideo from '@/components/TxingPromoVideo.vue'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -735,6 +750,9 @@ const loadAboutSnapshot = async () => {
 
 // Project expand state
 const expandedProject = ref(null)
+// 介绍影片项目：Txing AI 智能对话平台（卡片海报 + 详情内嵌播放器）
+// Promo-film project: Txing AI (card poster + embedded player in the detail)
+const isPromoProject = (p) => (p?.name || '').includes('Txing AI 智能对话平台')
 // 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
 // Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
 const openFeature = ref(null)
@@ -1445,6 +1463,19 @@ const scrollToContact = () => {
 
   canvas {
     display: block;
+  }
+}
+
+// 影片海报封面光晕呼吸
+// Breathing glow for the promo-film poster cover
+@keyframes promoGlow {
+  from {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+  to {
+    transform: scale(1.08);
+    opacity: 1;
   }
 }
 
@@ -2344,6 +2375,73 @@ const scrollToContact = () => {
       }
     }
 
+    // 介绍影片海报封面（Txing AI 项目专属）：深空底 + 字标 + 播放胶囊
+    // Promo-film poster cover (Txing AI only): deep-space base + wordmark + play pill
+    .promo-cover {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background:
+        radial-gradient(120% 90% at 50% 0%, #0a1226 0%, #05070f 55%, #04060d 100%);
+      overflow: hidden;
+    }
+
+    .promo-cover-glow {
+      position: absolute;
+      width: 65%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(77, 163, 255, 0.28) 0%, rgba(168, 85, 247, 0.16) 45%, transparent 70%);
+      filter: blur(30px);
+      animation: promoGlow 6s ease-in-out infinite alternate;
+    }
+
+    .promo-cover-mark {
+      position: relative;
+      font-size: clamp(30px, 3.4vw, 46px);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      background: linear-gradient(110deg, #dfe9ff 20%, #9dc4ff 45%, #4da3ff 62%, #c9b2fb 82%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .promo-cover-sub {
+      position: relative;
+      font-size: clamp(12px, 1.1vw, 15px);
+      letter-spacing: 0.5em;
+      text-indent: 0.5em;
+      color: rgba(206, 224, 255, 0.72);
+    }
+
+    .promo-cover-play {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #eaf2ff;
+      border: 1px solid rgba(130, 168, 255, 0.45);
+      background: rgba(24, 40, 80, 0.55);
+      backdrop-filter: blur(6px);
+      transition: all 0.35s ease;
+    }
+
+    .project-image:hover .promo-cover-play {
+      border-color: rgba(124, 232, 255, 0.8);
+      box-shadow: 0 0 26px rgba(96, 200, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
     .project-badge {
       position: absolute;
       top: 16px;
@@ -2515,6 +2613,13 @@ const scrollToContact = () => {
         margin: 0;
         color: var(--el-text-color-primary);
       }
+    }
+
+    // 项目介绍影片播放器（Txing AI 项目专属）
+    // Project promo film player (Txing AI only)
+    :deep(.detail-promo) {
+      max-width: 900px;
+      margin: 0 auto 28px;
     }
 
     .media-gallery {
