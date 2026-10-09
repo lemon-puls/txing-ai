@@ -650,7 +650,8 @@ const updGate = (l) => {
 // 全部写成影片时间 l 的纯函数: seek/回跳/暂停下样式始终与时间一致
 // All drivers are pure functions of scene time l — seek-safe by construction
 
-// S3 后段: 概念图淡出 → 后台渠道管理页实拍淡入 + Ken Burns 缓推
+// S3 后段: 概念图淡出 → 后台渠道管理页实拍淡入 + Ken Burns 轻推
+// 视口已按截图纵横比定制, 推近幅度保持 ≤7%, 界面内容不被裁掉
 const updGateReal = (l) => {
   if (!sgRealEl || !sgGraphEl) return
   const o = clamp01((l - 4.3) / 0.8)
@@ -659,21 +660,22 @@ const updGateReal = (l) => {
   sgGraphEl.style.opacity = (1 - clamp01((l - 4.1) / 0.6)).toFixed(3)
   if (o <= 0 || !sgRealImg) return
   const u = easeIO(clamp01((l - 4.3) / 3.6))
-  const k = (1.06 + 0.07 * u).toFixed(3)
-  const x = (1.6 - 3.2 * u).toFixed(2)
-  const y = (1.2 - 2.4 * u).toFixed(2)
+  const k = (1.02 + 0.02 * u).toFixed(3)
+  const x = (0.4 - 0.8 * u).toFixed(2)
+  const y = (0.3 - 0.6 * u).toFixed(2)
   sgRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
 }
 
 // S4 整场: 会话实拍双截图, 前段工具调用链, 3.9s 起交叉淡切到攻略总结+PDF 工件
+// 幅度压到 ~4% 内: 输入框/工具列表等界面元素保持完整可见
 const updChatReal = (l) => {
   if (!scShotAEl) return
   if (scShotBEl) scShotBEl.style.opacity = clamp01((l - 3.9) / 0.8).toFixed(3)
   const uA = easeIO(clamp01(l / 7.5))
-  scShotAEl.style.transform = `translate(-50%, -50%) scale(${(1.08 + 0.05 * uA).toFixed(3)}) translateY(${(-5 * uA).toFixed(2)}%)`
+  scShotAEl.style.transform = `translate(-50%, -50%) scale(${(1.02 + 0.02 * uA).toFixed(3)}) translateY(${(-0.8 * uA).toFixed(2)}%)`
   if (scShotBEl) {
     const uB = easeIO(clamp01((l - 3.9) / 3.6))
-    scShotBEl.style.transform = `translate(-50%, -50%) scale(${(1.12 - 0.06 * uB).toFixed(3)}) translateY(${(-7 + 7 * uB).toFixed(2)}%)`
+    scShotBEl.style.transform = `translate(-50%, -50%) scale(${(1.04 - 0.02 * uB).toFixed(3)}) translateY(${(-0.8 + 0.8 * uB).toFixed(2)}%)`
   }
 }
 
@@ -696,9 +698,9 @@ const updFlowReal = (l) => {
   }
   if (o <= 0 || !sfRealImg) return
   const u = easeIO(clamp01((l - 4.4) / 3.5))
-  const k = (1.14 - 0.06 * u).toFixed(3)
-  const x = (2 - 4 * u).toFixed(2)
-  const y = (2.4 - 4.8 * u).toFixed(2)
+  const k = (1.04 - 0.02 * u).toFixed(3)
+  const x = (0.4 - 0.8 * u).toFixed(2)
+  const y = (0.3 - 0.6 * u).toFixed(2)
   sfRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
 }
 
@@ -1206,11 +1208,10 @@ onBeforeUnmount(() => {
     will-change: transform;
   }
 }
-.sr-gate { left: 200px; top: 168px; width: 880px; height: 502px; }
-.sr-flow { left: 56px; top: 178px; width: 880px; height: 508px; }
-// 编辑器截图纵横比更扁, 放大留出缓推余量
-// The editor capture is wider — scale up for pan headroom
-.sr-flow .tpv-real-view img { width: 112%; }
+// 两处视口尺寸按截图纵横比定制(渠道页 1600×916, 编辑器页 1600×796), 截图完整显示不裁切
+// Both viewports are sized to each capture's aspect ratio — shots render complete, uncropped
+.sr-gate { left: 235px; top: 168px; width: 810px; height: 502px; }
+.sr-flow { left: 56px; top: 194px; width: 880px; height: 476px; }
 
 // ───────────────────────── S1 开场 ─────────────────────────
 .s-open { display: flex; align-items: center; justify-content: center; }
@@ -1372,11 +1373,13 @@ onBeforeUnmount(() => {
 .is-on .sg-chips .tpv-chip:nth-child(4) { animation-delay: 1.52s; }
 
 // ───────────────────────── S4 流式对话 ─────────────────────────
+// 窗口按会话截图纵横比(1600×796)定制宽度: 880→776, 内容区 776×386 ≈ 2.01, 截图完整不裁切
+// Window width matched to the capture's aspect ratio (1600×796): content box ≈ 2.01, fully visible
 .sc-win {
   position: absolute;
-  left: 200px;
+  left: 252px;
   top: 170px;
-  width: 880px;
+  width: 776px;
   height: 428px;
   border-radius: 16px;
   background: rgba(13, 21, 44, 0.72);
@@ -1413,7 +1416,7 @@ onBeforeUnmount(() => {
     top: 50%;
     width: 100%;
     height: auto;
-    transform: translate(-50%, -50%) scale(1.08);
+    transform: translate(-50%, -50%) scale(1.02);
     will-change: transform, opacity;
     &:nth-child(2) { opacity: 0; }
   }
