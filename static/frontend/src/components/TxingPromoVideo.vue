@@ -98,6 +98,18 @@
           <span class="tpv-chip">优先级 · 权重</span>
           <span class="tpv-chip">故障启停降级</span>
         </div>
+        <!-- 真实界面: 开发环境后台渠道管理页实拍, 场景后半段淡入 -->
+        <!-- Real UI: live capture of the admin channels page, fades in for the scene's second beat -->
+        <div class="tpv-real sr-gate" ref="sgRealRef">
+          <div class="tpv-real-bar">
+            <i></i><i></i><i></i>
+            <span class="tpv-real-url">txing.ai/admin/channels</span>
+            <span class="tpv-real-tag">真实界面</span>
+          </div>
+          <div class="tpv-real-view">
+            <img ref="sgRealImgRef" :src="shotChannels" alt="渠道管理真实界面" draggable="false" />
+          </div>
+        </div>
       </section>
 
       <!-- ══════════ S4 · WebSocket 流式对话 ══════════ -->
@@ -109,23 +121,14 @@
         <div class="sc-win">
           <div class="sc-bar">
             <i></i><i></i><i></i>
-            <span class="sc-bar-title">Txing AI · 新会话</span>
+            <span class="sc-bar-title">Txing AI · 广西北海一日游</span>
+            <span class="tpv-real-tag">真实记录</span>
           </div>
-          <div class="sc-msgs">
-            <div class="sc-row sc-row-user">
-              <div class="sc-bubble sc-user"><span ref="scUserRef"></span><i class="sc-caret"></i></div>
-            </div>
-            <div class="sc-row sc-row-ai">
-              <span class="sc-avatar">T</span>
-              <div class="sc-bubble sc-ai">
-                <span ref="scAiRef"></span>
-                <pre ref="scCodeRef" class="sc-code"></pre>
-              </div>
-            </div>
-          </div>
-          <div class="sc-input">
-            <span class="sc-wave"><i v-for="i in 28" :key="i"></i></span>
-            <span ref="scStopRef" class="sc-stop"><i></i>停止生成</span>
+          <!-- 真实会话记录实拍: 工具调用链 → 攻略总结 + PDF 工件, 交叉淡切 + Ken Burns -->
+          <!-- Real session capture: tool-call chain → summary + PDF artifacts, crossfade + Ken Burns -->
+          <div class="sc-shot">
+            <img ref="scShotARef" :src="shotChatAgents" alt="智能体工具调用真实界面" draggable="false" />
+            <img ref="scShotBRef" :src="shotChatSummary" alt="攻略总结与工件真实界面" draggable="false" />
           </div>
         </div>
         <div class="tpv-chips sc-chips">
@@ -168,6 +171,18 @@
           <div class="sf-node" style="left: 392px; top: 327px"><i></i><span>Code</span></div>
           <div class="sf-node" style="left: 592px; top: 217px"><i></i><span>Join</span></div>
           <div class="sf-node" style="left: 772px; top: 217px"><i></i><span>结束</span></div>
+        </div>
+        <!-- 真实界面: 工作流编辑器画布实拍(并行多源工作流), 场景后半段淡入并缓推 -->
+        <!-- Real UI: live capture of the workflow editor canvas, fades in with a slow push-in -->
+        <div class="tpv-real sr-flow" ref="sfRealRef">
+          <div class="tpv-real-bar">
+            <i></i><i></i><i></i>
+            <span class="tpv-real-url">txing.ai/admin/workflow/editor</span>
+            <span class="tpv-real-tag">真实界面</span>
+          </div>
+          <div class="tpv-real-view">
+            <img ref="sfRealImgRef" :src="shotWorkflow" alt="工作流编辑器真实界面" draggable="false" />
+          </div>
         </div>
         <aside class="sf-log">
           <p class="sf-log-title">执行日志</p>
@@ -291,6 +306,12 @@
 <script setup name="TxingPromoVideo">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import promoMusic from '@/assets/promo-music.mp3' // 配乐文件(Mixkit 免费授权, 头尾淡入淡出已烘入)
+// 真实界面截图(开发环境实拍, 见 components 同目录 assets/promo-shots/)
+// Real UI captures (taken from the running dev app), used for the "proof" beats of S3/S4/S5
+import shotChannels from '@/assets/promo-shots/shot-channels.jpg'
+import shotChatAgents from '@/assets/promo-shots/shot-chat-agents.jpg'
+import shotChatSummary from '@/assets/promo-shots/shot-chat-summary.jpg'
+import shotWorkflow from '@/assets/promo-shots/shot-workflow-editor.jpg'
 
 // ───────────────────────── 影片脚本配置 ─────────────────────────
 // Film script: per-scene duration (s). Total ≈ 55s.
@@ -339,21 +360,6 @@ const flowLogs = [
 // Edge pulse time windows, aligned with .sf-edge order
 const EDGE_T = [[1.0, 1.5], [2.0, 2.5], [2.05, 2.55], [3.0, 3.5], [3.05, 3.55], [3.9, 4.4]]
 
-// 对话场景的打字/流式脚本
-// Typing & streaming script for the chat scene
-const CHAT_USER = '用 Go 写一个令牌桶限流器'
-const CHAT_AI = '好的，这是一个基于令牌桶的限流器核心实现：'
-const CHAT_CODE = [
-  'func (b *Bucket) Allow() bool {',
-  '    b.fill(time.Now())',
-  '    if b.tokens >= 1 {',
-  '        b.tokens--',
-  '        return true',
-  '    }',
-  '    return false',
-  '}'
-]
-
 // ───────────────────────── 状态与元素 ─────────────────────────
 const rootRef = ref(null)
 const stageRef = ref(null)
@@ -361,12 +367,16 @@ const canvasRef = ref(null)
 const segsRef = ref(null)
 const sceneNameRef = ref(null)
 const timeCurRef = ref(null)
-const scUserRef = ref(null)
-const scAiRef = ref(null)
-const scCodeRef = ref(null)
-const scStopRef = ref(null)
 const sfElapsedRef = ref(null)
 const saOrbitRef = ref(null)
+// 真实界面层(S3/S5 整框淡入, S4 窗内双截图交叉淡切)
+// Real-UI layers: whole-frame fade for S3/S5, in-window crossfade for S4
+const sgRealRef = ref(null)
+const sgRealImgRef = ref(null)
+const sfRealRef = ref(null)
+const sfRealImgRef = ref(null)
+const scShotARef = ref(null)
+const scShotBRef = ref(null)
 
 const started = ref(false)
 const playing = ref(false)
@@ -391,6 +401,16 @@ let flowPaths = []
 let flowDots = []
 let flowNodes = []
 let agentChips = []
+// 真实界面层与被其替代的概念图 DOM（淡出用）
+// Real-UI elements and the concept DOM they replace (faded out)
+let sgGraphEl = null
+let sfGraphEl = null
+let sgRealEl = null
+let sgRealImg = null
+let sfRealEl = null
+let sfRealImg = null
+let scShotAEl = null
+let scShotBEl = null
 
 // ───────────────────────── 时钟引擎 ─────────────────────────
 const fmtTime = (s) => {
@@ -598,9 +618,9 @@ const clamp01 = (x) => Math.min(Math.max(x, 0), 1)
 
 const runSceneFx = (idx, l) => {
   if (idx === SCENE.vision) updVision(l)
-  else if (idx === SCENE.gate) updGate(l)
-  else if (idx === SCENE.chat) updChat(l)
-  else if (idx === SCENE.flow) updFlow(l)
+  else if (idx === SCENE.gate) { updGate(l); updGateReal(l) }
+  else if (idx === SCENE.chat) updChatReal(l)
+  else if (idx === SCENE.flow) { updFlow(l); updFlowReal(l) }
 }
 
 // S2 数字滚动
@@ -626,40 +646,60 @@ const updGate = (l) => {
   provEls.forEach((el, i) => el && el.classList.toggle('lit', i === k))
 }
 
-// S4 流式对话打字机
-let chatSig = ''
-const updChat = (l) => {
-  const uN = Math.floor(clamp01((l - 0.45) / 1.35) * CHAT_USER.length)
-  const aN = Math.floor(clamp01((l - 2.5) / 1.6) * CHAT_AI.length)
-  // full = 已完成的行数（0..CHAT_CODE.length），不能用 clamp01（会把行数压成 0/1）
-  // full = completed line count (0..CHAT_CODE.length); clamp01 would squash it to 0/1
-  const full = Math.min(Math.max(Math.floor((l - 4.3) / 0.26), 0), CHAT_CODE.length)
-  const part = clamp01(((l - 4.3) - full * 0.26) / 0.26)
-  const sig = uN + '|' + aN + '|' + full + '|' + Math.floor(part * 8)
-  if (sig === chatSig) return
-  chatSig = sig
-  if (scUserRef.value) scUserRef.value.textContent = CHAT_USER.slice(0, uN)
-  if (scAiRef.value) scAiRef.value.textContent = CHAT_AI.slice(0, aN)
-  if (scCodeRef.value) {
-    let html = ''
-    for (let i = 0; i < Math.min(full, CHAT_CODE.length); i++) html += codeLine(CHAT_CODE[i], 1)
-    if (full < CHAT_CODE.length && full >= 0) html += codeLine(CHAT_CODE[full] || '', part)
-    if (full >= CHAT_CODE.length) html = CHAT_CODE.map((c) => codeLine(c, 1)).join('')
-    if (scCodeRef.value.__sig !== sig) {
-      scCodeRef.value.innerHTML = html
-      scCodeRef.value.__sig = sig
-    }
-  }
-  if (scStopRef.value) scStopRef.value.classList.toggle('on', l > 6.4)
+// ── 真实界面层驱动 ────────────────────────────────────────────────
+// 全部写成影片时间 l 的纯函数: seek/回跳/暂停下样式始终与时间一致
+// All drivers are pure functions of scene time l — seek-safe by construction
+
+// S3 后段: 概念图淡出 → 后台渠道管理页实拍淡入 + Ken Burns 缓推
+const updGateReal = (l) => {
+  if (!sgRealEl || !sgGraphEl) return
+  const o = clamp01((l - 4.3) / 0.8)
+  sgRealEl.style.opacity = o.toFixed(3)
+  sgRealEl.style.visibility = o > 0 ? 'visible' : 'hidden'
+  sgGraphEl.style.opacity = (1 - clamp01((l - 4.1) / 0.6)).toFixed(3)
+  if (o <= 0 || !sgRealImg) return
+  const u = easeIO(clamp01((l - 4.3) / 3.6))
+  const k = (1.06 + 0.07 * u).toFixed(3)
+  const x = (1.6 - 3.2 * u).toFixed(2)
+  const y = (1.2 - 2.4 * u).toFixed(2)
+  sgRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
 }
-// 极简语法着色：关键字/布尔着紫，其余默认
-const codeLine = (line, ratio) => {
-  if (ratio <= 0) return ''
-  const cut = line.slice(0, Math.ceil(line.length * Math.min(ratio, 1)))
-  const colored = cut
-    .replace(/(func|if|return|time)/g, '<em>$1</em>')
-    .replace(/(true|false)/g, '<b>$1</b>')
-  return `<span class="cl">${colored}</span>`
+
+// S4 整场: 会话实拍双截图, 前段工具调用链, 3.9s 起交叉淡切到攻略总结+PDF 工件
+const updChatReal = (l) => {
+  if (!scShotAEl) return
+  if (scShotBEl) scShotBEl.style.opacity = clamp01((l - 3.9) / 0.8).toFixed(3)
+  const uA = easeIO(clamp01(l / 7.5))
+  scShotAEl.style.transform = `translate(-50%, -50%) scale(${(1.08 + 0.05 * uA).toFixed(3)}) translateY(${(-5 * uA).toFixed(2)}%)`
+  if (scShotBEl) {
+    const uB = easeIO(clamp01((l - 3.9) / 3.6))
+    scShotBEl.style.transform = `translate(-50%, -50%) scale(${(1.12 - 0.06 * uB).toFixed(3)}) translateY(${(-7 + 7 * uB).toFixed(2)}%)`
+  }
+}
+
+// S5 后段: SVG 概念图淡出 → 工作流编辑器画布实拍淡入 + 缓推(右侧执行日志不受影响, 继续跳动)
+// 注意: .sf-graph 的入场动画 fill-mode:both 会压过内联 opacity, 交叉淡切前须先摘掉动画
+// .sf-graph's entrance animation (fill both) overrides inline opacity — drop it before fading
+const updFlowReal = (l) => {
+  if (!sfRealEl || !sfGraphEl) return
+  const o = clamp01((l - 4.4) / 0.8)
+  sfRealEl.style.opacity = o.toFixed(3)
+  sfRealEl.style.visibility = o > 0 ? 'visible' : 'hidden'
+  if (l < 4.15) {
+    if (sfGraphEl.style.animation) {
+      sfGraphEl.style.animation = ''
+      sfGraphEl.style.opacity = ''
+    }
+  } else {
+    sfGraphEl.style.animation = 'none'
+    sfGraphEl.style.opacity = (1 - clamp01((l - 4.2) / 0.6)).toFixed(3)
+  }
+  if (o <= 0 || !sfRealImg) return
+  const u = easeIO(clamp01((l - 4.4) / 3.5))
+  const k = (1.14 - 0.06 * u).toFixed(3)
+  const x = (2 - 4 * u).toFixed(2)
+  const y = (2.4 - 4.8 * u).toFixed(2)
+  sfRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
 }
 
 // S5 工作流：进场时复位描边动画（CSS transition 驱动画线，JS 驱动脉冲点）
@@ -913,6 +953,15 @@ onMounted(() => {
   flowDots = Array.from(rootRef.value.querySelectorAll('.sf-dot'))
   flowNodes = Array.from(rootRef.value.querySelectorAll('.sf-node'))
   agentChips = Array.from(rootRef.value.querySelectorAll('.sa-chip'))
+  // 真实界面层: 整框(S3/S5)与窗内截图(S4), 以及被替代的概念图容器
+  sgGraphEl = sceneEls[SCENE.gate]?.querySelector('.sg-graph') || null
+  sfGraphEl = sceneEls[SCENE.flow]?.querySelector('.sf-graph') || null
+  sgRealEl = sgRealRef.value
+  sgRealImg = sgRealImgRef.value
+  sfRealEl = sfRealRef.value
+  sfRealImg = sfRealImgRef.value
+  scShotAEl = scShotARef.value
+  scShotBEl = scShotBRef.value
 
   // Agent 工具芯片按轨道坐标布点
   agentChips.forEach((el, i) => {
@@ -1099,6 +1148,69 @@ onBeforeUnmount(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes tpvFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+// ───────────────────────── 真实界面浏览器框 ─────────────────────────
+// 运行中产品实拍截图的展示框: 深色边框 + 红绿灯 + 地址 + 「真实界面」徽标
+// Frame for real app captures: dark bezel, traffic lights, URL, authenticity badge
+.tpv-real {
+  position: absolute;
+  border-radius: 16px;
+  background: rgba(10, 16, 34, 0.92);
+  border: 1px solid rgba(130, 168, 255, 0.22);
+  box-shadow: 0 34px 80px -30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(160, 190, 255, 0.12);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+}
+.tpv-real-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(130, 168, 255, 0.14);
+  i { width: 10px; height: 10px; border-radius: 50%; background: rgba(150, 175, 230, 0.3); }
+}
+.tpv-real-url {
+  margin-left: 10px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tpv-real-tag {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  color: #9fe8c8;
+  border: 1px solid rgba(120, 220, 170, 0.35);
+  background: rgba(40, 90, 70, 0.25);
+}
+.tpv-real-view {
+  position: relative;
+  overflow: hidden;
+  height: calc(100% - 38px);
+  img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: auto;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+}
+.sr-gate { left: 200px; top: 168px; width: 880px; height: 502px; }
+.sr-flow { left: 56px; top: 178px; width: 880px; height: 508px; }
+// 编辑器截图纵横比更扁, 放大留出缓推余量
+// The editor capture is wider — scale up for pan headroom
+.sr-flow .tpv-real-view img { width: 112%; }
 
 // ───────────────────────── S1 开场 ─────────────────────────
 .s-open { display: flex; align-items: center; justify-content: center; }
@@ -1288,123 +1400,23 @@ onBeforeUnmount(() => {
   i { width: 10px; height: 10px; border-radius: 50%; background: rgba(150, 175, 230, 0.3); }
 }
 .sc-bar-title { margin-left: 12px; font-size: 14px; letter-spacing: 0.08em; color: var(--dim); }
-.sc-msgs { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
-.sc-row { display: flex; }
-.sc-row-user { justify-content: flex-end; }
-.sc-row-ai { justify-content: flex-start; align-items: flex-start; gap: 10px; }
-.sc-avatar {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, var(--blue), var(--violet));
-  box-shadow: 0 4px 14px rgba(80, 140, 255, 0.4);
-  opacity: 0;
-}
-.is-on .sc-avatar { animation: tpvFadeIn 0.5s 2.45s both; }
-.sc-bubble {
-  max-width: 640px;
-  padding: 12px 16px;
-  border-radius: 13px;
-  font-size: 16.5px;
-  line-height: 1.55;
-  letter-spacing: 0.02em;
-}
-.sc-user {
-  background: linear-gradient(120deg, #2f6fdd, #3f7fe8);
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 8px 22px -8px rgba(47, 111, 221, 0.55);
-  opacity: 0;
-}
-.is-on .sc-user { animation: tpvRise 0.5s 0.5s var(--ease) both; }
-.sc-ai {
-  background: rgba(30, 44, 80, 0.65);
-  border: 1px solid rgba(130, 168, 255, 0.16);
-  border-bottom-left-radius: 4px;
-  min-width: 380px;
-  min-height: 44px;
-  opacity: 0;
-}
-.is-on .sc-ai { animation: tpvFadeIn 0.4s 2.4s both; }
-.sc-caret {
-  display: inline-block;
-  width: 2px;
-  height: 15px;
-  margin-left: 2px;
-  vertical-align: -2px;
-  background: var(--cyan);
-  animation: scBlinkCaret 0.85s steps(1) infinite;
-}
-@keyframes scBlinkCaret { 50% { opacity: 0; } }
-.sc-code {
-  margin: 10px 0 2px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: #0a1020;
-  border: 1px solid rgba(120, 150, 230, 0.14);
-  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-  font-size: 14px;
-  line-height: 1.62;
-  color: #c9d8f5;
-  min-height: 30px;
-  // 代码行由 innerHTML 动态注入, 无 data-v 属性, 必须用 :deep() 穿透
-  // Code lines are injected via innerHTML (no data-v attr) — must pierce with :deep()
-  :deep(.cl) { display: block; white-space: pre; }
-  :deep(em) { font-style: normal; color: #c792ea; }
-  :deep(b) { font-weight: 600; color: #82e8c0; }
-}
-.sc-input {
+.sc-bar .tpv-real-tag { margin-left: auto; }
+// 窗内真实会话截图: 双层叠放, 交叉淡切 + Ken Burns(驱动见 updChatReal)
+// In-window real captures: two stacked shots, crossfade + Ken Burns (driven by updChatReal)
+.sc-shot {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: 18px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  border-radius: 12px;
-  background: rgba(22, 34, 66, 0.6);
-  border: 1px solid rgba(130, 168, 255, 0.18);
-}
-.sc-wave {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 22px;
-  i {
-    width: 3px;
-    height: 30%;
-    border-radius: 2px;
-    background: linear-gradient(180deg, var(--cyan), var(--blue));
-    animation: scWave 1.1s ease-in-out infinite;
-    animation-play-state: inherit;
+  inset: 42px 0 0;
+  overflow: hidden;
+  img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: auto;
+    transform: translate(-50%, -50%) scale(1.08);
+    will-change: transform, opacity;
+    &:nth-child(2) { opacity: 0; }
   }
-  i:nth-child(3n) { animation-delay: 0.12s; height: 62%; }
-  i:nth-child(3n + 1) { animation-delay: 0.28s; height: 86%; }
-  i:nth-child(4n) { animation-delay: 0.42s; height: 44%; }
-}
-@keyframes scWave { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
-.sc-stop {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 14px;
-  color: #ffd9dd;
-  border: 1px solid rgba(255, 110, 130, 0.45);
-  background: rgba(120, 40, 60, 0.3);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.45s ease, transform 0.45s var(--ease);
-  i { width: 10px; height: 10px; border-radius: 2px; background: #ff7d92; }
-  &.on { opacity: 1; transform: translateY(0); }
 }
 .sc-chips { bottom: 52px; }
 .is-on .sc-chips .tpv-chip { animation-delay: 1.2s; }
