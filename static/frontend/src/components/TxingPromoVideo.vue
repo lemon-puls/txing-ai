@@ -264,15 +264,20 @@
         <svg v-if="!playing || ended" viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M8 5.14v14l11-7l-11-7Z"/></svg>
         <svg v-else viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M6 5h4v14H6V5Zm8 0h4v14h-4V5Z"/></svg>
       </button>
-      <div class="tpv-segs" ref="segsRef">
-        <button
-          v-for="(s, i) in scenes"
-          :key="s.id"
-          class="tpv-seg"
-          :data-name="s.name"
-          :aria-label="'跳转到 ' + s.name"
-          @click="seekToScene(i)"
-        ><i class="tpv-seg-fill"></i></button>
+      <!-- 连续单条进度条: 点击/拖动 seek, hover 浮出时间气泡 -->
+      <!-- Continuous scrubber: click/drag to seek, hover shows a time bubble -->
+      <div
+        class="tpv-track"
+        ref="trackRef"
+        role="slider"
+        aria-label="播放进度"
+        @pointerdown="onTrackDown"
+        @pointermove="onTrackMove"
+        @pointerup="onTrackUp"
+        @pointercancel="onTrackUp"
+      >
+        <i class="tpv-track-fill" ref="trackFillRef"></i>
+        <span class="tpv-track-tip" ref="trackTipRef">00:00</span>
       </div>
       <span class="tpv-scene-name" ref="sceneNameRef">开场</span>
       <span class="tpv-time"><b ref="timeCurRef">00:00</b>&nbsp;/&nbsp;{{ fmtTime(TOTAL) }}</span>
@@ -364,7 +369,9 @@ const EDGE_T = [[1.0, 1.5], [2.0, 2.5], [2.05, 2.55], [3.0, 3.5], [3.05, 3.55], 
 const rootRef = ref(null)
 const stageRef = ref(null)
 const canvasRef = ref(null)
-const segsRef = ref(null)
+const trackRef = ref(null)
+const trackFillRef = ref(null)
+const trackTipRef = ref(null)
 const sceneNameRef = ref(null)
 const timeCurRef = ref(null)
 const sfElapsedRef = ref(null)
@@ -395,7 +402,9 @@ let autoPaused = false    // 因滚出视口/切后台而自动暂停（回来�
 let destroyed = false
 
 let sceneEls = []
-let segFills = []
+let trackEl = null
+let trackFillEl = null
+let trackTipEl = null
 let provEls = []
 let flowPaths = []
 let flowDots = []
@@ -459,16 +468,13 @@ const tick = (ts) => {
 const render = () => {
   const idx = idxAt(t)
   activate(idx)
-  const s = scenes[idx]
   const local = t - STARTS[idx]
   // 场景内驱动（打字机/计数器/网络流/脉冲…）
   runSceneFx(idx, local)
   drawCanvas(idx, local)
-  // 控制条进度
-  for (let i = 0; i < segFills.length; i++) {
-    const p = i < idx ? 100 : i > idx ? 0 : (local / s.dur) * 100
-    segFills[i].style.width = p + '%'
-  }
+  // 控制条进度: 连续单条, 宽度即全片时间占比
+  // Scrubber progress: one continuous bar, width = fraction of total runtime
+  if (trackFillEl) trackFillEl.style.width = ((t / TOTAL) * 100).toFixed(2) + '%'
   if (timeCurRef.value) {
     const txt = fmtTime(t)
     if (timeCurRef.value.textContent !== txt) timeCurRef.value.textContent = txt
@@ -513,7 +519,39 @@ const seek = (time) => {
   syncAudio()
   if (playing.value) audioUnduck() // 分段跳转等手势交互: 顺带激活音频
 }
-const seekToScene = (i) => seek(STARTS[i] + 0.01)
+// 进度条拖动 seek: 按下先暂停(记住播放态), 拖动实时对表, 松手恢复
+// Scrubbing: pause on press (remembering state), seek live while dragging, resume on release
+const trackFrac = (e) => {
+  if (!trackEl) return 0
+  const r = trackEl.getBoundingClientRect()
+  return Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1)
+}
+let scrubbing = false
+let scrubWasPlaying = false
+const onTrackDown = (e) => {
+  scrubbing = true
+  scrubWasPlaying = playing.value
+  if (playing.value) pause()
+  ctrlLease()
+  trackEl?.setPointerCapture?.(e.pointerId)
+  seek(trackFrac(e) * TOTAL)
+}
+const onTrackMove = (e) => {
+  const f = trackFrac(e)
+  if (trackTipEl && trackEl) {
+    const w = trackEl.getBoundingClientRect().width
+    // 气泡限位在轨道内, 避免两端溢出
+    // Clamp the bubble inside the track so it never overflows the ends
+    trackTipEl.style.left = Math.min(Math.max(f * w, 26), Math.max(w - 26, 26)) + 'px'
+    trackTipEl.textContent = fmtTime(f * TOTAL)
+  }
+  if (scrubbing) seek(f * TOTAL)
+}
+const onTrackUp = () => {
+  if (!scrubbing) return
+  scrubbing = false
+  if (scrubWasPlaying && !ended.value) play()
+}
 
 const onKey = (e) => {
   if (e.key === ' ' || e.key === 'k') { e.preventDefault(); togglePlay() }
@@ -949,7 +987,9 @@ const onVis = () => (document.hidden ? autoPause() : autoResume())
 onMounted(() => {
   // 收集静态 DOM（模板一次性渲染，之后全部手工驱动）
   sceneEls = Array.from(rootRef.value.querySelectorAll('.tpv-scene'))
-  segFills = Array.from(segsRef.value.querySelectorAll('.tpv-seg-fill'))
+  trackEl = trackRef.value || null
+  trackFillEl = trackFillRef.value || null
+  trackTipEl = trackTipRef.value || null
   provEls = Array.from(rootRef.value.querySelectorAll('.sg-prov'))
   flowPaths = Array.from(rootRef.value.querySelectorAll('.sf-edge'))
   flowDots = Array.from(rootRef.value.querySelectorAll('.sf-dot'))
@@ -1725,17 +1765,16 @@ onBeforeUnmount(() => {
   transition: background 0.25s ease, color 0.25s ease;
   &:hover { background: rgba(130, 168, 255, 0.18); color: #fff; }
 }
-.tpv-segs { flex: 1; display: flex; gap: 5px; align-items: center; }
-.tpv-seg {
+// 连续单条进度条: 底轨 + 渐变已播填充, hover 增高并浮出滑块圆点与时间气泡
+// Continuous scrubber: base rail + gradient fill; hover grows it and shows knob + time bubble
+.tpv-track {
   position: relative;
   flex: 1;
-  height: 14px;
+  height: 16px;
   display: flex;
   align-items: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
   cursor: pointer;
+  touch-action: none;
   &::before {
     content: '';
     position: absolute;
@@ -1747,31 +1786,52 @@ onBeforeUnmount(() => {
     transition: height 0.15s ease;
   }
   &:hover::before { height: 7px; }
-  &:hover::after {
-    content: attr(data-name);
-    position: absolute;
-    bottom: 22px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 5px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    white-space: nowrap;
-    color: #fff;
-    background: rgba(8, 14, 30, 0.92);
-    border: 1px solid rgba(130, 168, 255, 0.3);
-    pointer-events: none;
-  }
 }
-.tpv-seg-fill {
-  position: relative;
-  display: block;
+.tpv-track-fill {
+  position: absolute;
+  left: 0;
   width: 0;
   height: 4px;
   border-radius: 2px;
   background: linear-gradient(90deg, var(--blue), var(--violet));
   pointer-events: none;
+  transition: height 0.15s ease;
+  // 滑块圆点挂在填充末端, hover 浮现
+  // Knob rides the fill's end, revealed on hover
+  &::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-50%) scale(0);
+    transition: transform 0.18s var(--ease);
+    box-shadow: 0 0 10px rgba(130, 168, 255, 0.65);
+  }
 }
+.tpv-track:hover .tpv-track-fill {
+  height: 7px;
+  &::after { transform: translateY(-50%) scale(1); }
+}
+.tpv-track-tip {
+  position: absolute;
+  bottom: 20px;
+  transform: translateX(-50%);
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(8, 14, 30, 0.92);
+  border: 1px solid rgba(130, 168, 255, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.tpv-track:hover .tpv-track-tip { opacity: 1; }
 .tpv-scene-name {
   flex: none;
   font-size: 13px;
