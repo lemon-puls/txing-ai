@@ -245,16 +245,51 @@
                 </el-button>
               </div>
 
-              <!-- 项目介绍影片：Txing AI 智能对话平台专属，代码驱动的动态图形宣传片 -->
-              <!-- Project promo film: exclusive to Txing AI, a code-driven motion-graphics video -->
-              <TxingPromoVideo v-if="isPromoProject(project)" class="detail-promo" />
+              <!-- 项目介绍影片：Txing AI 专属。顶部影片区可切换：理念影片（代码动画）/ 作品媒体里的视频（如产品宣传片 mp4） -->
+              <!-- Project promo film area (Txing AI only): switch between the code-driven concept film and mp4 films from project media -->
+              <div v-if="isPromoProject(project)" class="detail-promo-wrap">
+                <div class="promo-tabs" v-if="promoVideoItems(project).length">
+                  <button class="promo-tab" :class="{ active: promoTab === 'concept' }" @click="promoTab = 'concept'">
+                    <el-icon><VideoPlay /></el-icon>理念影片 · 55s
+                  </button>
+                  <button
+                    v-for="v in promoVideoItems(project)"
+                    :key="v.key"
+                    class="promo-tab"
+                    :class="{ active: promoTab === v.key }"
+                    @click="promoTab = v.key"
+                  >
+                    <el-icon><Film /></el-icon>{{ v.caption || '产品宣传片' }}
+                  </button>
+                </div>
+                <TxingPromoVideo v-if="promoTab === 'concept'" class="detail-promo" />
+                <video
+                  v-else
+                  :src="videoByKey(project, promoTab)?.url"
+                  class="detail-promo-video"
+                  controls
+                  autoplay
+                  playsinline
+                ></video>
+              </div>
 
               <!-- Media Gallery -->
               <div class="media-gallery" v-if="project.media && project.media.length">
                 <div class="gallery-scroll">
                   <div v-for="(media, mIndex) in project.media" :key="mIndex" class="media-item">
                     <img v-if="media.type === 'image'" :src="media.url" :alt="media.caption" @click="openMediaPreview(media)" />
-                    <video v-else-if="media.type === 'video'" :src="media.url" muted loop @mouseenter="$event.target.play()" @mouseleave="$event.target.pause()" />
+                    <video
+                      v-else-if="media.type === 'video'"
+                      :src="media.url"
+                      muted
+                      loop
+                      preload="metadata"
+                      playsinline
+                      @mouseenter="$event.target.play()"
+                      @mouseleave="$event.target.pause()"
+                      @click="openMediaPreview(media)"
+                    />
+                    <div v-if="media.type === 'video'" class="media-play-badge"><el-icon><VideoPlay /></el-icon></div>
                     <div class="media-caption">{{ media.caption }}</div>
                   </div>
                 </div>
@@ -458,7 +493,8 @@ import {
   ZoomIn,
   ZoomOut,
   Aim,
-  VideoPlay
+  VideoPlay,
+  Film
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
@@ -753,6 +789,11 @@ const expandedProject = ref(null)
 // 介绍影片项目：Txing AI 智能对话平台（卡片海报 + 详情内嵌播放器）
 // Promo-film project: Txing AI (card poster + embedded player in the detail)
 const isPromoProject = (p) => (p?.name || '').includes('Txing AI 智能对话平台')
+// 详情顶部影片切换：'concept' = 代码驱动理念影片；其余值 = 作品媒体里视频的 key
+// Top film switcher in detail: 'concept' = code-driven concept film; otherwise a video key from project media
+const promoTab = ref('concept')
+const promoVideoItems = (p) => (p?.media || []).filter((m) => m.type === 'video')
+const videoByKey = (p, key) => promoVideoItems(p).find((v) => v.key === key)
 // 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
 // Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
 const openFeature = ref(null)
@@ -768,6 +809,7 @@ const toggleProject = async (id) => {
   const next = expandedProject.value === id ? null : id
   expandedProject.value = next
   openFeature.value = null
+  promoTab.value = 'concept'
   openArch.value = next
   // 展开后渲染架构区与详情中的 Mermaid 图表
   // Render Mermaid diagrams in the architecture section & details after expanding
@@ -2615,11 +2657,62 @@ const scrollToContact = () => {
       }
     }
 
-    // 项目介绍影片播放器（Txing AI 项目专属）
-    // Project promo film player (Txing AI only)
-    :deep(.detail-promo) {
+    // 项目介绍影片区（Txing AI 专属）：胶囊 tab 在「理念影片 / 作品视频」间切换
+    // Project promo film area (Txing AI only): pill tabs switch between concept film and media videos
+    .detail-promo-wrap {
       max-width: 900px;
       margin: 0 auto 28px;
+
+      .promo-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .promo-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border: 1px solid var(--el-border-color);
+        border-radius: 999px;
+        background: var(--el-bg-color);
+        color: var(--el-text-color-regular);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.25s;
+
+        .el-icon {
+          font-size: 15px;
+        }
+
+        &:hover {
+          color: var(--el-color-primary);
+          border-color: var(--el-color-primary-light-5);
+        }
+
+        &.active {
+          background: var(--el-color-primary);
+          border-color: var(--el-color-primary);
+          color: #fff;
+          box-shadow: 0 4px 14px var(--el-color-primary-light-5);
+        }
+      }
+
+      :deep(.detail-promo) {
+        margin: 0;
+      }
+
+      .detail-promo-video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 16px;
+        background: #000;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+      }
     }
 
     .media-gallery {
@@ -2643,6 +2736,7 @@ const scrollToContact = () => {
       }
 
       .media-item {
+        position: relative;
         flex-shrink: 0;
         width: 280px;
         border-radius: 16px;
@@ -2655,6 +2749,27 @@ const scrollToContact = () => {
         &:hover {
           transform: scale(1.03);
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        // 视频缩略图中央的播放角标（点击缩略图进灯箱播放）
+        // Play badge over video thumbnails (click opens the lightbox player)
+        .media-play-badge {
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(4px);
+          border: 1.5px solid rgba(255, 255, 255, 0.75);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          pointer-events: none;
         }
 
         img, video {
