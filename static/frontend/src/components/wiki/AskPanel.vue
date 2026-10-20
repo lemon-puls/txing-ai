@@ -541,8 +541,8 @@ onBeforeUnmount(stop)
     justify-content: center;
     font-size: 34px;
     color: #fff;
-    background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
-    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    box-shadow: 0 12px 32px rgba(79, 70, 229, 0.35);
     animation: orb-breathe 3s ease-in-out infinite;
   }
 
@@ -555,8 +555,8 @@ onBeforeUnmount(stop)
 }
 
 @keyframes orb-breathe {
-  0%, 100% { box-shadow: 0 12px 28px rgba(99, 102, 241, 0.28); transform: scale(1); }
-  50% { box-shadow: 0 12px 44px rgba(99, 102, 241, 0.45); transform: scale(1.04); }
+  0%, 100% { box-shadow: 0 12px 28px rgba(79, 70, 229, 0.3); transform: scale(1); }
+  50% { box-shadow: 0 12px 44px rgba(79, 70, 229, 0.48); transform: scale(1.04); }
 }
 
 /* 消息气泡 */
@@ -569,11 +569,24 @@ onBeforeUnmount(stop)
 
     .msg-body {
       max-width: 78%;
-      background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
+      /* 深一档的蓝→靛：白字对比 5.2:1+，浅色页面上也清晰可读 */
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
       color: #fff;
+      font-weight: 500;
       border-radius: 16px 16px 4px 16px;
       padding: 10px 16px;
-      box-shadow: 0 6px 20px rgba(64, 158, 255, 0.25);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+    }
+
+    /* 正文层自带深灰文字色，须在用户气泡内翻白，否则深底深字不可读 */
+    .msg-content {
+      color: #fff;
+
+      :deep(a) { color: #bfd7ff; }
+      :deep(code) {
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+      }
     }
   }
 
@@ -586,10 +599,10 @@ onBeforeUnmount(stop)
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
       color: #fff;
       font-size: 17px;
-      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.28);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
     }
 
     .msg-body {
@@ -732,11 +745,11 @@ onBeforeUnmount(stop)
     border-radius: 14px;
     padding: 0 18px;
     border: none;
-    background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
     transition: all 0.25s;
 
     &:not(:disabled):hover {
-      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.4);
+      box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
       transform: translateY(-1px);
     }
 
