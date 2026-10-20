@@ -1,7 +1,7 @@
 <template>
   <div class="ask-panel">
     <div class="ask-card">
-      <!-- 极光氛围层：缓慢漂移的辉光，纯装饰 -->
+      <!-- 极光氛围层：缓慢漂移的淡彩辉光，纯装饰 -->
       <div class="ask-aurora aurora-a"></div>
       <div class="ask-aurora aurora-b"></div>
 
@@ -328,7 +328,7 @@ onBeforeUnmount(stop)
 </script>
 
 <style scoped lang="scss">
-/* ========== 舞台：深空 AI 控制台（呼应 Txing AI 品牌色） ========== */
+/* ========== 舞台：白玻璃拟态，与页面卡片同语言 ========== */
 .ask-panel {
   width: 100%;
 }
@@ -337,30 +337,26 @@ onBeforeUnmount(stop)
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-  border: 1px solid transparent;
-  /* 渐变描边：外圈蓝→青光边，内里深空底 */
-  background:
-    linear-gradient(160deg, #0a1226 0%, #070d1d 55%, #0a1730 100%) padding-box,
-    linear-gradient(135deg, rgba(64, 158, 255, 0.55), rgba(34, 211, 238, 0.28) 45%, rgba(99, 102, 241, 0.45)) border-box;
-  box-shadow:
-    0 24px 80px rgba(7, 18, 38, 0.35),
-    0 0 60px rgba(64, 158, 255, 0.1);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
-/* 极光氛围：两团缓慢漂移的辉光 */
+/* 极光氛围：两团缓慢漂移的淡彩辉光（浅色系） */
 .ask-aurora {
   position: absolute;
   border-radius: 50%;
   filter: blur(70px);
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.75;
 
   &.aurora-a {
     width: 480px;
     height: 480px;
     left: -140px;
     top: -180px;
-    background: radial-gradient(circle, rgba(64, 158, 255, 0.5), transparent 65%);
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.16), transparent 65%);
     animation: aurora-drift 16s ease-in-out infinite alternate;
   }
 
@@ -369,7 +365,7 @@ onBeforeUnmount(stop)
     height: 420px;
     right: -120px;
     bottom: -160px;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.36), transparent 65%);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.13), transparent 65%);
     animation: aurora-drift 20s ease-in-out infinite alternate-reverse;
   }
 }
@@ -392,7 +388,7 @@ onBeforeUnmount(stop)
   display: flex;
   flex-direction: column;
   padding: 36px 30px 28px;
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-right: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .ask-badge {
@@ -402,9 +398,9 @@ onBeforeUnmount(stop)
   gap: 6px;
   padding: 4px 14px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  color: #67e8f9;
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -415,7 +411,7 @@ onBeforeUnmount(stop)
   font-size: 27px;
   line-height: 1.35;
   font-weight: 800;
-  background: linear-gradient(120deg, #f8fafc, #7dd3fc);
+  background: linear-gradient(120deg, var(--el-text-color-primary, #1e293b), var(--el-color-primary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -425,7 +421,7 @@ onBeforeUnmount(stop)
   margin: 0;
   font-size: 13.5px;
   line-height: 1.7;
-  color: #94a3b8;
+  color: var(--el-text-color-secondary);
 }
 
 .ask-suggest {
@@ -437,7 +433,7 @@ onBeforeUnmount(stop)
     font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--el-text-color-placeholder);
   }
 
   .suggest-chip {
@@ -448,16 +444,16 @@ onBeforeUnmount(stop)
     margin-bottom: 10px;
     padding: 11px 14px;
     border-radius: 14px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    background: rgba(148, 163, 184, 0.06);
-    color: #cbd5e1;
+    border: 1px solid var(--el-border-color-lighter);
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--el-text-color-regular);
     font-size: 13.5px;
     text-align: left;
     cursor: pointer;
     transition: all 0.25s;
 
     .chip-spark {
-      color: #22d3ee;
+      color: var(--el-color-primary);
       font-size: 12px;
       transition: transform 0.25s;
     }
@@ -470,23 +466,24 @@ onBeforeUnmount(stop)
     .chip-arrow {
       flex-shrink: 0;
       font-size: 13px;
-      color: #22d3ee;
+      color: var(--el-color-primary);
       opacity: 0;
       transform: translateX(-6px);
       transition: all 0.25s;
     }
 
     &:hover:not(:disabled) {
-      border-color: rgba(34, 211, 238, 0.55);
-      background: rgba(34, 211, 238, 0.08);
-      color: #f0f9ff;
+      border-color: var(--el-color-primary-light-5);
+      background: #fff;
+      color: var(--el-text-color-primary);
       transform: translateX(4px);
+      box-shadow: 0 6px 18px var(--el-color-primary-light-8);
 
       .chip-arrow { opacity: 1; transform: translateX(0); }
       .chip-spark { transform: rotate(90deg) scale(1.2); }
     }
 
-    &:disabled { opacity: 0.45; cursor: not-allowed; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
 
@@ -497,9 +494,8 @@ onBeforeUnmount(stop)
   margin-top: 18px;
   padding: 10px 13px;
   border-radius: 12px;
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.22);
-  color: #fbbf24;
+  background: var(--el-color-warning-light-9);
+  color: var(--el-color-warning-dark-2);
   font-size: 12px;
   line-height: 1.6;
 
@@ -521,10 +517,11 @@ onBeforeUnmount(stop)
   display: flex;
   flex-direction: column;
   gap: 18px;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.04), rgba(34, 211, 238, 0.03));
 
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.25);
+    background: var(--el-border-color);
     border-radius: 3px;
   }
 }
@@ -544,8 +541,8 @@ onBeforeUnmount(stop)
     justify-content: center;
     font-size: 34px;
     color: #fff;
-    background: linear-gradient(135deg, #409eff, #22d3ee);
-    box-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
+    background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
     animation: orb-breathe 3s ease-in-out infinite;
   }
 
@@ -553,13 +550,13 @@ onBeforeUnmount(stop)
     margin: 0;
     font-size: 14.5px;
     line-height: 1.9;
-    color: #94a3b8;
+    color: var(--el-text-color-secondary);
   }
 }
 
 @keyframes orb-breathe {
-  0%, 100% { box-shadow: 0 0 28px rgba(34, 211, 238, 0.3); transform: scale(1); }
-  50% { box-shadow: 0 0 52px rgba(34, 211, 238, 0.5); transform: scale(1.04); }
+  0%, 100% { box-shadow: 0 12px 28px rgba(99, 102, 241, 0.28); transform: scale(1); }
+  50% { box-shadow: 0 12px 44px rgba(99, 102, 241, 0.45); transform: scale(1.04); }
 }
 
 /* 消息气泡 */
@@ -572,7 +569,7 @@ onBeforeUnmount(stop)
 
     .msg-body {
       max-width: 78%;
-      background: linear-gradient(135deg, #409eff, #6366f1);
+      background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
       color: #fff;
       border-radius: 16px 16px 4px 16px;
       padding: 10px 16px;
@@ -589,19 +586,20 @@ onBeforeUnmount(stop)
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #409eff, #22d3ee);
+      background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
       color: #fff;
       font-size: 17px;
-      box-shadow: 0 0 16px rgba(34, 211, 238, 0.3);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.28);
     }
 
     .msg-body {
       max-width: 82%;
-      background: rgba(148, 163, 184, 0.08);
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--el-border-color-lighter);
+      color: var(--el-text-color-regular);
       border-radius: 4px 16px 16px 16px;
       padding: 12px 16px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     }
   }
 }
@@ -623,9 +621,9 @@ onBeforeUnmount(stop)
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
-  background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.28);
-  color: #67e8f9;
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -635,12 +633,12 @@ onBeforeUnmount(stop)
   .el-icon { flex-shrink: 0; }
 }
 
-/* 正文（深色底配色） */
+/* 正文（浅色底配色） */
 .msg-content {
   font-size: 14px;
   line-height: 1.75;
   word-break: break-word;
-  color: #e2e8f0;
+  color: var(--el-text-color-regular);
 
   :deep(p) { margin: 0 0 8px; &:last-child { margin-bottom: 0; } }
   :deep(ul), :deep(ol) { margin: 4px 0 8px; padding-left: 20px; }
@@ -648,34 +646,32 @@ onBeforeUnmount(stop)
     margin: 14px 0 8px;
     font-size: 15.5px;
     font-weight: 600;
-    color: #f1f5f9;
+    color: var(--el-text-color-primary);
   }
   :deep(blockquote) {
     margin: 8px 0;
     padding: 4px 12px;
-    border-left: 3px solid rgba(34, 211, 238, 0.5);
-    color: #94a3b8;
+    border-left: 3px solid var(--el-color-primary-light-5);
+    color: var(--el-text-color-secondary);
   }
   :deep(hr) {
     border: none;
-    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    border-top: 1px solid var(--el-border-color-lighter);
     margin: 12px 0;
   }
-  :deep(a) { color: #38bdf8; }
+  :deep(a) { color: var(--el-color-primary); }
   :deep(code) {
-    background: rgba(148, 163, 184, 0.16);
-    color: #7dd3fc;
+    background: var(--el-fill-color);
     padding: 1px 6px;
     border-radius: 6px;
     font-size: 13px;
   }
   :deep(pre) {
-    background: #0b1220;
-    border: 1px solid rgba(148, 163, 184, 0.14);
+    background: var(--el-fill-color);
     border-radius: 10px;
     padding: 12px;
     overflow-x: auto;
-    code { background: transparent; padding: 0; color: #e2e8f0; }
+    code { background: transparent; padding: 0; }
   }
 
   // [[slug|标题]] 引用来源标签（utils/wikiMarkdown 转换）
@@ -684,11 +680,10 @@ onBeforeUnmount(stop)
     padding: 0 8px;
     margin: 0 2px;
     border-radius: 999px;
-    background: rgba(34, 211, 238, 0.12);
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    color: #67e8f9;
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
     font-size: 12px;
-    line-height: 19px;
+    line-height: 20px;
     white-space: nowrap;
 
     &::before { content: '📄 '; font-size: 11px; }
@@ -704,7 +699,7 @@ onBeforeUnmount(stop)
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #22d3ee;
+    background: var(--el-color-primary);
     animation: ask-bounce 1.2s infinite;
 
     &:nth-child(2) { animation-delay: 0.2s; }
@@ -716,7 +711,7 @@ onBeforeUnmount(stop)
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #f87171;
+  color: var(--el-color-danger);
   font-size: 13px;
 }
 
@@ -725,49 +720,35 @@ onBeforeUnmount(stop)
   display: flex;
   gap: 10px;
   padding: 16px 24px 22px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-top: 1px solid rgba(99, 102, 241, 0.12);
 
   :deep(.el-input__wrapper) {
     border-radius: 14px;
-    background: rgba(148, 163, 184, 0.08);
-    box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.22) inset;
+    background: rgba(255, 255, 255, 0.9);
     transition: box-shadow 0.25s;
-
-    .el-input__inner {
-      color: #f1f5f9;
-
-      &::placeholder { color: #64748b; }
-    }
-
-    &:hover { box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35) inset; }
-
-    &.is-focus {
-      box-shadow: 0 0 0 1.5px rgba(34, 211, 238, 0.6) inset, 0 0 18px rgba(34, 211, 238, 0.15);
-    }
   }
 
   .send-btn {
     border-radius: 14px;
     padding: 0 18px;
     border: none;
-    background: linear-gradient(135deg, #409eff, #22d3ee);
+    background: linear-gradient(135deg, var(--el-color-primary), #6366f1);
     transition: all 0.25s;
 
     &:not(:disabled):hover {
-      box-shadow: 0 0 20px rgba(34, 211, 238, 0.45);
+      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.4);
       transform: translateY(-1px);
     }
 
     &.is-disabled {
-      background: rgba(148, 163, 184, 0.15);
-      color: #64748b;
+      background: var(--el-fill-color);
+      color: var(--el-text-color-placeholder);
     }
   }
 
   .stop-btn {
-    background: rgba(248, 113, 113, 0.15);
-    border: 1px solid rgba(248, 113, 113, 0.45);
-    color: #f87171;
+    --el-button-bg-color: var(--el-color-danger);
+    --el-button-border-color: var(--el-color-danger);
   }
 }
 
@@ -785,7 +766,7 @@ onBeforeUnmount(stop)
 
   .ask-rail {
     border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
     padding: 28px 24px 22px;
   }
 
