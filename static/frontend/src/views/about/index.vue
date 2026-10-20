@@ -74,6 +74,16 @@
       </div>
     </section>
 
+    <!-- AI 问答 Section（LLM Wiki 知识库）：紧跟首屏，开场即可向 AI 发问 -->
+    <section id="ask" class="section ask-section">
+      <div class="section-header animate-on-scroll">
+        <h2 class="section-title">问问我吧</h2>
+        <div class="title-underline"></div>
+        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
+      </div>
+      <AskPanel />
+    </section>
+
     <!-- Why Choose Me Section -->
     <section class="section why-me-section">
       <div class="section-header animate-on-scroll">
@@ -372,16 +382,6 @@
           </transition>
         </div>
       </div>
-    </section>
-
-    <!-- AI 问答 Section（LLM Wiki 知识库）：紧跟精选作品，看完即可向 AI 发问 -->
-    <section id="ask" class="section ask-section">
-      <div class="section-header animate-on-scroll">
-        <h2 class="section-title">问问我吧</h2>
-        <div class="title-underline"></div>
-        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
-      </div>
-      <AskPanel />
     </section>
 
     <!-- Timeline Section -->
