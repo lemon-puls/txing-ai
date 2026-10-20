@@ -374,6 +374,16 @@
       </div>
     </section>
 
+    <!-- AI 问答 Section（LLM Wiki 知识库）：紧跟精选作品，看完即可向 AI 发问 -->
+    <section id="ask" class="section ask-section">
+      <div class="section-header animate-on-scroll">
+        <h2 class="section-title">问问我吧</h2>
+        <div class="title-underline"></div>
+        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
+      </div>
+      <AskPanel />
+    </section>
+
     <!-- Timeline Section -->
     <section class="section timeline-section">
       <div class="section-header animate-on-scroll">
@@ -398,16 +408,6 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- AI 问答 Section（LLM Wiki 知识库） -->
-    <section id="ask" class="section ask-section">
-      <div class="section-header animate-on-scroll">
-        <h2 class="section-title">问问我吧</h2>
-        <div class="title-underline"></div>
-        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
-      </div>
-      <AskPanel />
     </section>
 
     <!-- Contact Section -->
@@ -1546,6 +1546,11 @@ const scrollToContact = () => {
   padding: 80px 24px;
   max-width: 1100px;
   margin: 0 auto;
+}
+
+/* 问问问吧：交互主角，给更宽的舞台 */
+.ask-section {
+  max-width: 1280px;
 }
 
 .section-header {
