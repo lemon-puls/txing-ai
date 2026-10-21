@@ -39,6 +39,13 @@
 
         <!-- 右栏：聊天窗 -->
         <div class="ask-chat">
+          <!-- LLM Wiki 技术标签：聊天窗标题栏，常驻不随消息滚动 -->
+          <div class="chat-topbar">
+            <div class="wiki-tag">
+              <el-icon><Collection /></el-icon>
+              <span>LLM Wiki 知识库</span>
+            </div>
+          </div>
           <div class="ask-messages" ref="messagesEl">
             <!-- 欢迎态 -->
             <div v-if="messages.length === 0" class="ask-empty">
@@ -124,7 +131,7 @@ import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   ChatDotRound, InfoFilled, Loading, CircleCheck,
-  WarningFilled, Promotion, VideoPause, ArrowRight
+  WarningFilled, Promotion, VideoPause, ArrowRight, Collection
 } from '@element-plus/icons-vue'
 import aiAvatar from '@/assets/images/wiki-ai-avatar.png'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
@@ -504,6 +511,7 @@ onBeforeUnmount(stop)
 
 /* ========== 右栏：聊天窗 ========== */
 .ask-chat {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -511,11 +519,37 @@ onBeforeUnmount(stop)
   height: 640px;
 }
 
+/* 聊天窗标题栏：承载 LLM Wiki 标签，不随消息滚动 */
+.chat-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 12px 18px 0;
+}
+
+/* LLM Wiki 技术标签 */
+.wiki-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  color: var(--el-color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.08);
+
+  .el-icon { font-size: 13px; }
+}
+
 .ask-messages {
   flex: 1 1 0;
   min-height: 0; /* 允许被压缩，滚动收进内部 */
   overflow-y: auto;
-  padding: 26px 28px;
+  padding: 14px 28px 26px;
   display: flex;
   flex-direction: column;
   gap: 18px;
