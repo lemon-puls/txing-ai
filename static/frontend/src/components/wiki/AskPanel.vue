@@ -43,7 +43,7 @@
             <!-- 欢迎态 -->
             <div v-if="messages.length === 0" class="ask-empty">
               <div class="empty-orb">
-                <el-icon><Cpu /></el-icon>
+                <img :src="aiAvatar" alt="" />
               </div>
               <p class="empty-text">我是这份主页的 AI 分身<br />知识库实时检索，欢迎考我</p>
             </div>
@@ -55,7 +55,7 @@
               :class="`ask-msg--${msg.role}`"
             >
               <div class="msg-avatar" v-if="msg.role === 'assistant'">
-                <el-icon><Cpu /></el-icon>
+                <img :src="aiAvatar" alt="" />
               </div>
               <div class="msg-body">
                 <!-- 工具调用进度 -->
@@ -123,9 +123,10 @@
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  ChatDotRound, InfoFilled, Cpu, Loading, CircleCheck,
+  ChatDotRound, InfoFilled, Loading, CircleCheck,
   WarningFilled, Promotion, VideoPause, ArrowRight
 } from '@element-plus/icons-vue'
+import aiAvatar from '@/assets/images/wiki-ai-avatar.png'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
 import { renderWikiMarkdown } from '@/utils/wikiMarkdown'
 
@@ -527,7 +528,7 @@ onBeforeUnmount(stop)
   }
 }
 
-/* 欢迎态：AI 核心 + 引导语 */
+/* 欢迎态：AI 头像 + 引导语 */
 .ask-empty {
   margin: auto;
   text-align: center;
@@ -536,15 +537,18 @@ onBeforeUnmount(stop)
     width: 76px;
     height: 76px;
     margin: 0 auto 18px;
-    border-radius: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 34px;
-    color: #fff;
-    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #fff;
     box-shadow: 0 12px 32px rgba(79, 70, 229, 0.35);
     animation: orb-breathe 3s ease-in-out infinite;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
   }
 
   .empty-text {
@@ -596,14 +600,17 @@ onBeforeUnmount(stop)
       flex-shrink: 0;
       width: 34px;
       height: 34px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #2563eb, #4f46e5);
-      color: #fff;
-      font-size: 17px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #fff;
       box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
     }
 
     .msg-body {
