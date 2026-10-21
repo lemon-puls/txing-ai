@@ -380,7 +380,6 @@ onBeforeUnmount(stop)
   z-index: 1;
   display: grid;
   grid-template-columns: 320px 1fr;
-  min-height: 560px;
 }
 
 /* ========== 左栏 ========== */
@@ -507,11 +506,13 @@ onBeforeUnmount(stop)
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* 固定总高：消息再多也只在内层滚动，面板不被撑高 */
+  height: 640px;
 }
 
 .ask-messages {
-  flex: 1;
-  height: 480px;
+  flex: 1 1 0;
+  min-height: 0; /* 允许被压缩，滚动收进内部 */
   overflow-y: auto;
   padding: 26px 28px;
   display: flex;
@@ -797,7 +798,8 @@ onBeforeUnmount(stop)
     }
   }
 
-  .ask-messages { height: 360px; padding: 20px 18px; }
+  .ask-chat { height: auto; }
+  .ask-messages { flex: none; height: 360px; padding: 20px 18px; }
   .ask-input { padding: 14px 18px 18px; }
 }
 </style>
