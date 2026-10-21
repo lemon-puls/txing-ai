@@ -39,11 +39,14 @@
 
         <!-- 右栏：聊天窗 -->
         <div class="ask-chat">
-          <!-- LLM Wiki 技术标签：聊天窗标题栏，常驻不随消息滚动 -->
+          <!-- 聊天窗标题栏：LLM Wiki 知识库品牌位，常驻不随消息滚动 -->
           <div class="chat-topbar">
-            <div class="wiki-tag">
+            <div class="wiki-mark">
               <el-icon><Collection /></el-icon>
-              <span>LLM Wiki 知识库</span>
+            </div>
+            <div class="wiki-meta">
+              <span class="wiki-name">LLM Wiki 知识库</span>
+              <span class="wiki-status"><i class="status-dot"></i>在线 · 实时检索</span>
             </div>
           </div>
           <div class="ask-messages" ref="messagesEl">
@@ -519,30 +522,65 @@ onBeforeUnmount(stop)
   height: 640px;
 }
 
-/* 聊天窗标题栏：承载 LLM Wiki 标签，不随消息滚动 */
+/* 聊天窗标题栏：渐变浅底 + 发丝线，与消息区分层 */
 .chat-topbar {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 12px 18px 0;
+  gap: 10px;
+  padding: 12px 20px 11px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.07), rgba(34, 211, 238, 0.05) 55%, transparent);
 }
 
-/* LLM Wiki 技术标签 */
-.wiki-tag {
+/* 渐变图标位：与发送键 / AI 头像同一渐变语言 */
+.wiki-mark {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.wiki-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wiki-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--el-text-color-primary);
+}
+
+.wiki-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(99, 102, 241, 0.22);
-  color: var(--el-color-primary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.08);
+  gap: 5px;
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
 
-  .el-icon { font-size: 13px; }
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16); }
+  50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.28); }
 }
 
 .ask-messages {
