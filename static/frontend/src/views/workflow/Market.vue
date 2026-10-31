@@ -210,7 +210,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Search, ArrowRight, Grid, Star, Tools, Edit, Monitor, Reading, House, More,
@@ -219,6 +219,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { defaultApi } from '@/api'
+import { authResolvedTick, isAuthError } from '@/utils/authPrompt'
 
 defineOptions({
   name: 'WorkflowMarket'
@@ -336,11 +337,21 @@ const loadWorkflows = async () => {
     }
   } catch (error) {
     console.error('Load workflows error:', error)
-    ElMessage.error('获取应用列表失败')
+    // 登录类错误不重复报错：全局登录弹窗本身就是提示，登录成功后自动重载
+    // auth errors stay quiet: the global login dialog is the message, and we refetch on success
+    if (!isAuthError(error)) {
+      ElMessage.error('获取应用列表失败')
+    }
   } finally {
     loading.value = false
   }
 }
+
+// 全局登录弹窗登录成功后，自动重载本页数据（无需用户手动刷新）
+// after a successful re-login via the global dialog, reload automatically
+watch(authResolvedTick, () => {
+  loadWorkflows()
+})
 
 const handleSearch = () => {
   loadWorkflows()
