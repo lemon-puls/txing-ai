@@ -177,6 +177,8 @@ const save = async () => {
     justify-content: center;
 
     .hp-avatar-circle {
+      position: relative;
+      z-index: 1; // 压住下方铭牌上缘，复刻前台"铭牌塞进圆底后面"
       width: 96px;
       height: 96px;
       border-radius: 50%;
@@ -216,24 +218,37 @@ const save = async () => {
     }
   }
 
-  // 复刻前台状态行：头像下方大写字距小字 + 呼吸点（不再是胶囊底）
-  // mirrors the front status line: letter-spaced small caps + breathing dot under the avatar
+  // 复刻前台状态铭牌：白色小铭牌上缘塞进头像圆底后面（肖像姓名牌）
+  // mirrors the front status nameplate: white plaque tucked behind the circle's bottom
   .hp-status {
-    display: inline-flex;
+    position: relative;
+    z-index: 0;
+    // flex 容器 gap:14px 会先推开再负拉回：-24 = 塞进圆底后面 10px
+    // the flex gap pushes +14 first; -24 nets a 10px tuck behind the circle
+    margin: -24px auto 0;
+    padding: 13px 12px 7px;
+    width: fit-content;
+    max-width: 200px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 78%));
+    box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
+    color: #047857;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgb(255 255 255 / 92%);
+    justify-content: center;
+    gap: 6px;
 
     .hp-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 8px #4ade80;
+      flex-shrink: 0;
+      background: #10b981;
+      box-shadow: 0 0 8px rgb(16 185 129 / 80%);
     }
   }
 

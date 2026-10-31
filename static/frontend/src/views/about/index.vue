@@ -19,8 +19,8 @@
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
           </div>
-          <!-- 状态行：随文档流排在头像下方，不再悬浮压在照片上 -->
-          <!-- Status line: in normal flow under the avatar, no longer floating over the photo -->
+          <!-- 状态铭牌：上缘塞进头像圆底后面，像肖像下的姓名牌，不遮照片 -->
+          <!-- Status nameplate: top edge tucked behind the circle, like a plaque under a portrait -->
           <div v-if="heroData.statusText" class="status-line">
             <span class="status-dot"></span>
             {{ heroData.statusText }}
@@ -1663,6 +1663,9 @@ const scrollToContact = () => {
       justify-content: center;
       box-shadow: 0 10px 40px rgba(43, 94, 255, 0.4);
       position: relative;
+      // 高于下方铭牌，圆底把铭牌上缘"压"在身后
+      // above the nameplate so the circle's bottom tucks it behind
+      z-index: 1;
 
       .avatar-img {
         // 铺满圆形容器，不变形；置于文字层同层级（环在其上）
@@ -1698,29 +1701,44 @@ const scrollToContact = () => {
       }
     }
 
-    // 状态行：”签名档”式大写字距小字，替代旧的悬浮玻璃胶囊（胶囊会横切照片头像）
-    // Status line: signature-style letter-spaced small caps, replacing the old floating capsule (which cut across the photo)
+    // 状态铭牌：肖像下的”姓名牌”。上缘负 margin 塞进头像圆底之后（z 低于头像），
+    // 像底座一样从照片后面伸出来，完全不遮挡照片本身
+    // Status nameplate: a plaque under the portrait — its top edge slides behind the
+    // circle (lower z), so it reads as a pedestal emerging from behind the photo
     .status-line {
-      margin-top: 16px;
+      position: relative;
+      z-index: 0;
+      margin: -12px auto 0;
+      padding: 15px 14px 8px;
+      width: fit-content;
+      max-width: 190px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 78%));
+      backdrop-filter: blur(10px) saturate(1.4);
+      -webkit-backdrop-filter: blur(10px) saturate(1.4);
+      border: 1px solid rgb(255 255 255 / 90%);
+      box-shadow:
+        0 10px 22px rgb(15 23 42 / 12%),
+        inset 0 1px 0 rgb(255 255 255 / 80%);
+      color: #047857;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+      text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 9px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #0f766e;
-      // 天空底色上的可读性兜底：一层极淡白晕，不是背景框
-      // legibility on the sky: a faint white halo, not a box
-      text-shadow: 0 1px 8px rgba(255, 255, 255, 0.7);
-      white-space: nowrap;
+      gap: 6px;
 
-      // 暗色下入夜空：换亮绿，白晕改绿晕
-      // Dark theme: brighter green with a green halo
+      // 暗色下入夜：深色玻璃铭牌 + 亮绿文字
+      // Dark theme: dark glass plaque with brighter green text
       html.dark & {
+        background: linear-gradient(180deg, rgb(15 23 42 / 82%), rgb(15 23 42 / 62%));
+        border-color: rgb(255 255 255 / 10%);
+        box-shadow:
+          0 12px 28px rgb(0 0 0 / 40%),
+          inset 0 1px 0 rgb(255 255 255 / 8%);
         color: #6ee7b7;
-        text-shadow: 0 1px 10px rgba(16, 185, 129, 0.3);
       }
 
       .status-dot {
