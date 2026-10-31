@@ -1972,6 +1972,10 @@ const scrollToContact = () => {
 
 .why-me-card {
   position: relative;
+  // 显式建立层叠上下文：配合 .card-glow 的 z-index:-1，保证光晕垫在背景之上、内容之下
+  // Establish a stacking context explicitly: keeps .card-glow (z-index:-1) above the card
+  // background yet below its content
+  isolation: isolate;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   padding: 32px;
@@ -2000,6 +2004,11 @@ const scrollToContact = () => {
 
   .card-glow {
     position: absolute;
+    // z-index:-1：定位元素默认绘制在非定位兄弟内容之上，hover 光晕会把文字罩住；
+    // 沉到内容层之下、卡片背景之上，只做底光
+    // z-index:-1: positioned elements paint above non-positioned siblings by default,
+    // so the hover glow used to veil the text; sink it below content, above the background
+    z-index: -1;
     top: -50%;
     left: -50%;
     width: 200%;
