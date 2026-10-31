@@ -98,7 +98,9 @@ const handleLoginSuccess = () => {
   transition: all 0.3s ease;
 
   &:hover {
-    background: rgba(var(--el-color-primary-rgb), 0.1);
+    // color-mix 染色：--el-color-primary-rgb 在 setPrimaryColor 后是坏值（×255 bug）
+    // color-mix tint: --el-color-primary-rgb is corrupted after setPrimaryColor (×255 bug)
+    background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
   }
 
   .el-icon--right {
@@ -113,10 +115,16 @@ const handleLoginSuccess = () => {
 // The dropdown popper teleports to <body>, so it needs a global scope
 .el-popper.user-menu-popper {
   // 玻璃卡片：圆角 + 毛玻璃 + 细边 + 柔和投影 / glass card: rounded, blurred, hairline border, soft shadow
-  background: color-mix(in srgb, var(--bg-primary) 72%, transparent);
+  // 必须用 EP 全局变量：--bg-primary/--text-primary 只在调用了 themeStore.initTheme()
+  // 的页面注入（chat/websites/assistant/admin），about 等页未注入 → color-mix 整条失效、
+  // 背景全透明只剩 blur，菜单浮在天空上看不清。--el-bg-color 等由 EP 主题兜底，任何页面都有值
+  // Must use EP global vars: the custom vars are only injected on pages that call
+  // initTheme(); elsewhere color-mix fails wholesale, leaving a blur-only panel with
+  // no base color. EP vars carry theme defaults on every page.
+  background: color-mix(in srgb, var(--el-bg-color) 72%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--el-text-color-primary) 10%, transparent);
   border-radius: 14px;
   padding: 6px;
   min-width: 150px;
@@ -137,11 +145,11 @@ const handleLoginSuccess = () => {
     margin: 2px 0;
     padding: 8px 12px;
     border-radius: 9px;
-    color: var(--text-primary);
+    color: var(--el-text-color-primary);
     transition: background-color 0.18s, color 0.18s;
 
     .el-icon {
-      color: var(--text-secondary);
+      color: var(--el-text-color-secondary);
       transition: color 0.18s;
     }
 
@@ -159,7 +167,7 @@ const handleLoginSuccess = () => {
   // 分隔线更轻 / lighter dividers
   .el-dropdown-menu__item--divided {
     margin-top: 4px;
-    border-top: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--el-text-color-primary) 8%, transparent);
   }
 }
 </style>
