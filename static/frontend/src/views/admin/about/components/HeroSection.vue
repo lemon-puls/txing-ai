@@ -216,16 +216,17 @@ const save = async () => {
     }
   }
 
+  // 复刻前台状态行：头像下方大写字距小字 + 呼吸点（不再是胶囊底）
+  // mirrors the front status line: letter-spaced small caps + breathing dot under the avatar
   .hp-status {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 5px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    background: rgb(255 255 255 / 14%);
-    border: 1px solid rgb(255 255 255 / 22%);
-    backdrop-filter: blur(6px);
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 92%);
 
     .hp-dot {
       width: 7px;

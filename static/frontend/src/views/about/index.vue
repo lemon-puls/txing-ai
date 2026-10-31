@@ -19,7 +19,9 @@
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
           </div>
-          <div class="status-badge">
+          <!-- 状态行：随文档流排在头像下方，不再悬浮压在照片上 -->
+          <!-- Status line: in normal flow under the avatar, no longer floating over the photo -->
+          <div v-if="heroData.statusText" class="status-line">
             <span class="status-dot"></span>
             {{ heroData.statusText }}
           </div>
@@ -1649,7 +1651,7 @@ const scrollToContact = () => {
 
   .avatar-wrapper {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 
     .main-avatar {
       width: 140px;
@@ -1696,58 +1698,29 @@ const scrollToContact = () => {
       }
     }
 
-    .status-badge {
-      position: absolute;
-      bottom: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      // 毛玻璃胶囊：呼应云海/星空底幕的通透质感；品牌绿只留一线描边与呼吸光点，不再整块铺色
-      // Glass capsule: echoes the sky/space backdrop; emerald shrinks to a hairline ring and a breathing dot
-      padding: 7px 16px 7px 14px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
-      backdrop-filter: blur(12px) saturate(1.5);
-      -webkit-backdrop-filter: blur(12px) saturate(1.5);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      box-shadow:
-        0 8px 24px rgba(16, 185, 129, 0.22),
-        0 2px 8px rgba(15, 23, 42, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.65);
-      color: #047857;
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
+    // 状态行：”签名档”式大写字距小字，替代旧的悬浮玻璃胶囊（胶囊会横切照片头像）
+    // Status line: signature-style letter-spaced small caps, replacing the old floating capsule (which cut across the photo)
+    .status-line {
+      margin-top: 16px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      overflow: hidden;
-      animation: badge-bounce 3s ease-in-out infinite;
+      justify-content: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #0f766e;
+      // 天空底色上的可读性兜底：一层极淡白晕，不是背景框
+      // legibility on the sky: a faint white halo, not a box
+      text-shadow: 0 1px 8px rgba(255, 255, 255, 0.7);
+      white-space: nowrap;
 
-      // 掠过胶囊的绿调扫光（复用全局 shimmer 关键帧）
-      // A green-tinted sheen sweeping across the capsule (reuses the global shimmer keyframes)
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(105deg, transparent, rgba(52, 211, 153, 0.18), transparent);
-        animation: shimmer 3.5s ease-in-out infinite;
-        pointer-events: none;
-      }
-
-      // 暗色下沉入夜空：深色玻璃底 + 更亮的文字与描边
-      // Dark theme sinks into the night: darker glass, brighter text and ring
+      // 暗色下入夜空：换亮绿，白晕改绿晕
+      // Dark theme: brighter green with a green halo
       html.dark & {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.5));
-        border-color: rgba(52, 211, 153, 0.3);
-        box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.35),
-          0 0 18px rgba(16, 185, 129, 0.12),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
         color: #6ee7b7;
+        text-shadow: 0 1px 10px rgba(16, 185, 129, 0.3);
       }
 
       .status-dot {
@@ -1760,8 +1733,8 @@ const scrollToContact = () => {
         box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
         animation: pulse-dot 2s infinite;
 
-        // 外圈信号波：与主头像 pulse-ring 同语言的“在线心跳”
-        // Outer signal ring: an "online heartbeat" echoing the avatar's pulse-ring
+        // 外圈信号波：与主头像 pulse-ring 同语言的”在线心跳”
+        // Outer signal ring: an “online heartbeat” echoing the avatar's pulse-ring
         &::after {
           content: '';
           position: absolute;
@@ -3295,11 +3268,6 @@ const scrollToContact = () => {
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
-}
-
-@keyframes badge-bounce {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-4px); }
 }
 
 @keyframes dot-ping {
