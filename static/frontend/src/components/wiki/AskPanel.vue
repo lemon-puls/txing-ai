@@ -628,13 +628,13 @@ onBeforeUnmount(stop)
 
     .msg-body {
       max-width: 78%;
-      /* 深一档的蓝→靛：白字对比 5.2:1+，浅色页面上也清晰可读 */
-      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      /* 纯色深蓝：蓝→靛渐变太"AI 味"；白字对比 ~5.2:1，浅色页面上清晰可读 */
+      background: #2563eb;
       color: #fff;
       font-weight: 500;
       border-radius: 16px 16px 4px 16px;
       padding: 10px 16px;
-      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.3);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22);
     }
 
     /* 正文层自带深灰文字色，须在用户气泡内翻白，否则深底深字不可读 */
@@ -807,11 +807,12 @@ onBeforeUnmount(stop)
     border-radius: 14px;
     padding: 0 18px;
     border: none;
-    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    /* 纯色深蓝与用户气泡同语言；渐变已去（AI 味） */
+    background: #2563eb;
     transition: all 0.25s;
 
     &:not(:disabled):hover {
-      box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
       transform: translateY(-1px);
     }
 
@@ -821,9 +822,16 @@ onBeforeUnmount(stop)
     }
   }
 
+  /* 停止键：纯色 danger。注意不能只改 --el-button-bg-color——
+     .send-btn 的 background 会作为 background-image 盖在背景色上（曾因此紫色渐变盖住红） */
   .stop-btn {
-    --el-button-bg-color: var(--el-color-danger);
-    --el-button-border-color: var(--el-color-danger);
+    background: var(--el-color-danger);
+
+    &:not(:disabled):hover {
+      background: color-mix(in srgb, var(--el-color-danger) 88%, #000);
+      box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35);
+      transform: translateY(-1px);
+    }
   }
 }
 
