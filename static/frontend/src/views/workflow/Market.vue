@@ -1288,26 +1288,37 @@ $cat-colors: (
 // ====================
 // 暗色模式适配
 // ====================
-:global(.dark) {
-  .hero-section {
+// scoped 下必须用 html.dark & 写法（与 OpsChatPanel/AskPanel 一致）：
+// :global(.dark) 嵌套会被 sass+vue 编译器坍缩成裸 .dark 规则糊到 <html> 上，
+// 曾把整页染成 opacity:0.3 的白纱（切换到本页后再回首页必现）
+// Dark mode must use html.dark & in scoped blocks: :global(.dark) nesting
+// collapses into bare `.dark` rules that stain <html> itself (the white wash bug)
+.hero-section {
+  html.dark & {
     background: linear-gradient(180deg, #0a0a0a 0%, #141414 100%);
   }
+}
 
-  .hero-bg {
-    .hero-grid {
+.hero-bg {
+  .hero-grid {
+    html.dark & {
       background-image:
         linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
     }
+  }
 
-    .hero-aurora {
+  .hero-aurora {
+    html.dark & {
       opacity: 0.3;
     }
   }
+}
 
-  .search-box,
-  .category-item,
-  .app-card {
+.search-box,
+.category-item,
+.app-card {
+  html.dark & {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(12px);
@@ -1317,13 +1328,17 @@ $cat-colors: (
       border-color: rgba(255, 255, 255, 0.12);
     }
   }
+}
 
-  .hero-badge {
+.hero-badge {
+  html.dark & {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.08);
   }
+}
 
-  .hot-tag {
+.hot-tag {
+  html.dark & {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.08);
 
@@ -1331,8 +1346,10 @@ $cat-colors: (
       background: rgba(64, 158, 255, 0.1);
     }
   }
+}
 
-  .tag-pill {
+.tag-pill {
+  html.dark & {
     background: rgba(255, 255, 255, 0.06);
   }
 }
