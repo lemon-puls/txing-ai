@@ -125,7 +125,12 @@ export function renderMarkdown(content) {
 
   let result
   try {
-    result = `<div class="markdown-body">${marked(key)}</div>`
+    // 类名必须避开 .markdown-body：chat 页/about 编辑器全局引入了 github-markdown-css，
+    // 其 `.markdown-body { background-color: var(--bgColor-default) }` 会在路由懒加载注入后
+    // 染色所有同名类（系统深色时是 #0d1117，见 AskPanel 同类注释）。md-body 为本工具独有。
+    // The wrapper class must NOT be .markdown-body: chat/about pages import github-markdown-css
+    // globally, which paints every .markdown-body (near-black under dark OS scheme).
+    result = `<div class="md-body">${marked(key)}</div>`
   } catch (err) {
     console.error('Markdown rendering error:', err)
     result = key
