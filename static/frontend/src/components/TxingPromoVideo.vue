@@ -1,0 +1,1907 @@
+<template>
+  <!--
+    Txing AI 项目介绍影片（代码驱动的动态图形宣传片）
+    Code-driven motion-graphics promo film: 8 scenes / 55s, rAF clock + canvas FX + CSS choreography.
+    播放器外壳：自动播放 / 暂停 / 分段进度(可跳场景) / 重播 / 全屏，滚出视口自动暂停。
+  -->
+  <div
+    ref="rootRef"
+    class="tpv"
+    tabindex="0"
+    role="region"
+    aria-label="Txing AI 智能对话平台 · 项目介绍影片"
+    :class="{ 'is-paused': started && !playing && !ended, 'is-ended': ended, 'ctrl-hide': ctrlHide }"
+    @keydown="onKey"
+    @mouseenter="ctrlWake"
+    @mousemove="ctrlWake"
+    @mouseleave="ctrlLease"
+  >
+    <!-- 配乐: 真实音频文件(Mixkit Stock Music Free License), 与影片时钟同步; @play 兜底标记已出声 -->
+    <!-- Music: real audio file synced with the film clock via a plain <audio> element -->
+    <audio ref="audioRef" :src="promoMusic" preload="auto" @loadedmetadata="onAudioMeta" @play="onAudioPlay"></audio>
+    <!-- 1280×720 舞台，整体 transform scale 适配容器宽度 -->
+    <!-- 1280x720 stage, scaled as a whole to fit the container width -->
+    <div ref="stageRef" class="tpv-stage">
+      <!-- 背景光晕（缓慢漂移） -->
+      <!-- Slow-drifting background glows -->
+      <div class="tpv-bg" aria-hidden="true">
+        <i class="tpv-glow g1"></i>
+        <i class="tpv-glow g2"></i>
+        <i class="tpv-glow g3"></i>
+      </div>
+
+      <!-- 特效画布：粒子星野 / 渠道网络流 / Agent 脉冲 -->
+      <!-- FX canvas: star particles / gateway network flow / agent pulses -->
+      <canvas ref="canvasRef" class="tpv-canvas" aria-hidden="true"></canvas>
+
+      <!-- ══════════ S1 · 开场 ══════════ -->
+      <section class="tpv-scene s-open">
+        <div class="so-zoom">
+          <p class="tpv-kicker so-k">TXING AI · PROJECT FILM</p>
+          <h2 class="so-mark"><span class="so-mark-txt">TXING&nbsp;AI</span></h2>
+          <div class="so-line"></div>
+          <p class="so-sub">智 能 对 话 平 台</p>
+        </div>
+        <div class="so-foot">
+          <span class="so-fl">开源 · 全栈 · 高性能</span>
+          <span class="so-fr">PROJECT&nbsp;FILM</span>
+        </div>
+      </section>
+
+      <!-- ══════════ S2 · 理念与数字 ══════════ -->
+      <section class="tpv-scene s-vision">
+        <div class="sv-wrap">
+          <p class="tpv-kicker sv-k">为什么做它</p>
+          <h2 class="sv-h">
+            <span class="sv-mask"><span class="sv-l1">一个入口，</span></span>
+            <span class="sv-mask"><span class="sv-l2">连接所有大模型</span></span>
+          </h2>
+          <p class="sv-sub">Go + Vue3 全栈开源 · 从对话到工作流的完整 AI 基础设施</p>
+          <div class="sv-stats">
+            <div class="sv-stat">
+              <span class="sv-num" data-n="24000">0</span>
+              <span class="sv-lab">后端代码行</span>
+            </div>
+            <i class="sv-div"></i>
+            <div class="sv-stat">
+              <span class="sv-num" data-n="37000">0</span>
+              <span class="sv-lab">前端代码行</span>
+            </div>
+            <i class="sv-div"></i>
+            <div class="sv-stat">
+              <span class="sv-num sv-flat">100%</span>
+              <span class="sv-lab">开源</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ S3 · 多供应商渠道网关 ══════════ -->
+      <section class="tpv-scene s-gate">
+        <header class="tpv-head">
+          <p class="tpv-kicker">01 / 多供应商渠道网关</p>
+          <h2 class="tpv-hl">统一接入 · 智能选路</h2>
+        </header>
+        <div class="sg-graph">
+          <span class="sg-node sg-src">用户请求</span>
+          <span class="sg-node sg-core"><i class="sg-core-dot"></i>渠道网关</span>
+          <span
+            class="sg-node sg-prov"
+            v-for="(p, i) in providers"
+            :key="p"
+            :style="{ left: '1000px', top: sgProvTop[i] + 'px' }"
+          >{{ p }}</span>
+        </div>
+        <div class="tpv-chips sg-chips">
+          <span class="tpv-chip">条件模型映射</span>
+          <span class="tpv-chip">三层过滤选路</span>
+          <span class="tpv-chip">优先级 · 权重</span>
+          <span class="tpv-chip">故障启停降级</span>
+        </div>
+        <!-- 真实界面: 开发环境后台渠道管理页实拍, 场景后半段淡入 -->
+        <!-- Real UI: live capture of the admin channels page, fades in for the scene's second beat -->
+        <div class="tpv-real sr-gate" ref="sgRealRef">
+          <div class="tpv-real-bar">
+            <i></i><i></i><i></i>
+            <span class="tpv-real-url">txing.ai/admin/channels</span>
+            <span class="tpv-real-tag">真实界面</span>
+          </div>
+          <div class="tpv-real-view">
+            <img ref="sgRealImgRef" :src="shotChannels" alt="渠道管理真实界面" draggable="false" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ S4 · WebSocket 流式对话 ══════════ -->
+      <section class="tpv-scene s-chat">
+        <header class="tpv-head">
+          <p class="tpv-kicker">02 / WebSocket 流式对话</p>
+          <h2 class="tpv-hl">逐 Token 输出 · 实时渲染</h2>
+        </header>
+        <div class="sc-win">
+          <div class="sc-bar">
+            <i></i><i></i><i></i>
+            <span class="sc-bar-title">Txing AI · 广西北海一日游</span>
+            <span class="tpv-real-tag">真实记录</span>
+          </div>
+          <!-- 真实会话记录实拍: 工具调用链 → 攻略总结 + PDF 工件, 交叉淡切 + Ken Burns -->
+          <!-- Real session capture: tool-call chain → summary + PDF artifacts, crossfade + Ken Burns -->
+          <div class="sc-shot">
+            <img ref="scShotARef" :src="shotChatAgents" alt="智能体工具调用真实界面" draggable="false" />
+            <img ref="scShotBRef" :src="shotChatSummary" alt="攻略总结与工件真实界面" draggable="false" />
+          </div>
+        </div>
+        <div class="tpv-chips sc-chips">
+          <span class="tpv-chip">全双工通道</span>
+          <span class="tpv-chip">Markdown 实时渲染</span>
+          <span class="tpv-chip">上下文窗口管理</span>
+          <span class="tpv-chip">模型参数 · 聊天预设</span>
+        </div>
+      </section>
+      <!-- ══════════ S5 · 可视化工作流 ══════════ -->
+      <section class="tpv-scene s-flow">
+        <header class="tpv-head">
+          <p class="tpv-kicker">03 / 可视化工作流引擎</p>
+          <h2 class="tpv-hl">七类节点 · 双重校验 · 全程可视</h2>
+        </header>
+        <div class="sf-graph">
+          <svg viewBox="0 0 880 508" width="880" height="508" class="sf-svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="tpvFlowGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#4da3ff" />
+                <stop offset="1" stop-color="#a855f7" />
+              </linearGradient>
+            </defs>
+            <path class="sf-edge" d="M 108 240 C 160 240, 178 240, 230 240" />
+            <path class="sf-edge" d="M 278 240 C 330 240, 388 130, 440 130" />
+            <path class="sf-edge" d="M 278 240 C 330 240, 388 350, 440 350" />
+            <path class="sf-edge" d="M 488 130 C 540 130, 588 240, 640 240" />
+            <path class="sf-edge" d="M 488 350 C 540 350, 588 240, 640 240" />
+            <path class="sf-edge" d="M 688 240 C 740 240, 768 240, 820 240" />
+            <circle class="sf-dot" r="5" />
+            <circle class="sf-dot" r="5" />
+            <circle class="sf-dot" r="5" />
+            <circle class="sf-dot" r="5" />
+            <circle class="sf-dot" r="5" />
+            <circle class="sf-dot" r="5" />
+          </svg>
+          <div class="sf-node" style="left: 12px;  top: 217px"><i></i><span>开始</span></div>
+          <div class="sf-node sf-llm" style="left: 182px; top: 217px"><i></i><span>LLM</span></div>
+          <div class="sf-node" style="left: 392px; top: 107px"><i></i><span>HTTP</span></div>
+          <div class="sf-node" style="left: 392px; top: 327px"><i></i><span>Code</span></div>
+          <div class="sf-node" style="left: 592px; top: 217px"><i></i><span>Join</span></div>
+          <div class="sf-node" style="left: 772px; top: 217px"><i></i><span>结束</span></div>
+        </div>
+        <!-- 真实界面: 工作流编辑器画布实拍(并行多源工作流), 场景后半段淡入并缓推 -->
+        <!-- Real UI: live capture of the workflow editor canvas, fades in with a slow push-in -->
+        <div class="tpv-real sr-flow" ref="sfRealRef">
+          <div class="tpv-real-bar">
+            <i></i><i></i><i></i>
+            <span class="tpv-real-url">txing.ai/admin/workflow/editor</span>
+            <span class="tpv-real-tag">真实界面</span>
+          </div>
+          <div class="tpv-real-view">
+            <img ref="sfRealImgRef" :src="shotWorkflow" alt="工作流编辑器真实界面" draggable="false" />
+          </div>
+        </div>
+        <aside class="sf-log">
+          <p class="sf-log-title">执行日志</p>
+          <p class="sf-log-time"><span ref="sfElapsedRef">0.00</span><em>s</em></p>
+          <ul>
+            <li v-for="(l, i) in flowLogs" :key="i" :style="{ animationDelay: l[1] + 's' }">
+              <b>{{ l[0] }}</b><span>{{ l[2] }}</span>
+            </li>
+          </ul>
+          <p class="sf-log-done">✓ 执行完成 · 全节点通过</p>
+        </aside>
+        <div class="tpv-chips sf-chips">
+          <span class="tpv-chip">LLM · Code · HTTP</span>
+          <span class="tpv-chip">条件 · 并行 · Join · 子工作流</span>
+          <span class="tpv-chip">节点级失败重试</span>
+          <span class="tpv-chip">执行时间线回放</span>
+        </div>
+      </section>
+
+      <!-- ══════════ S6 · Agent 与工具体系 ══════════ -->
+      <section class="tpv-scene s-agent">
+        <header class="tpv-head">
+          <p class="tpv-kicker">04 / Agent 与工具体系</p>
+          <h2 class="tpv-hl">推理 — 执行 · 完整闭环</h2>
+        </header>
+        <div class="sa-orbit" ref="saOrbitRef">
+          <span class="sa-core"><i></i>AGENT</span>
+          <span class="sa-chip" v-for="t in agentTools" :key="t">{{ t }}</span>
+        </div>
+        <p class="sa-sub">四类 Agent · 工具调用循环 · MCP 多服务器动态接入</p>
+      </section>
+
+      <!-- ══════════ S7 · 分层架构与技术栈 ══════════ -->
+      <section class="tpv-scene s-stack">
+        <header class="tpv-head">
+          <p class="tpv-kicker">05 / 分层架构</p>
+          <h2 class="tpv-hl">工程化 · 可扩展</h2>
+        </header>
+        <div class="ss-strata">
+          <div class="ss-bar" v-for="(b, i) in strata" :key="b.n" :style="{ animationDelay: 0.25 + i * 0.22 + 's' }">
+            <em>0{{ i + 1 }}</em>
+            <b>{{ b.n }}</b>
+            <span>{{ b.d }}</span>
+          </div>
+        </div>
+        <div class="tpv-chips ss-chips">
+          <span class="tpv-chip" v-for="(t, i) in techChips" :key="t" :style="{ animationDelay: 1.6 + i * 0.12 + 's' }">{{ t }}</span>
+        </div>
+      </section>
+
+      <!-- ══════════ S8 · 尾板 ══════════ -->
+      <section class="tpv-scene s-end">
+        <div class="se-wrap">
+          <p class="tpv-kicker se-k">开源项目</p>
+          <h2 class="se-mark"><span class="se-mark-txt">Txing&nbsp;AI</span></h2>
+          <p class="se-sub">智能对话平台 · 本站正运行于其上</p>
+          <a class="se-link" href="https://github.com/lemon-puls/txing-ai" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+            <span>lemon-puls / txing-ai</span>
+          </a>
+        </div>
+        <div class="so-foot se-foot">
+          <span class="so-fl">TXING&nbsp;AI</span>
+          <span class="so-fr">PROJECT&nbsp;FILM</span>
+        </div>
+        <i class="se-fade"></i>
+      </section>
+
+      <!-- 质感层：胶片颗粒 + 暗角 -->
+      <!-- Texture: film grain + vignette -->
+      <i class="tpv-grain" aria-hidden="true"></i>
+      <i class="tpv-vignette" aria-hidden="true"></i>
+    </div>
+
+    <!-- 播放控制条 -->
+    <!-- Player controls -->
+    <div class="tpv-ctrl" @click.stop>
+      <button class="tpv-btn" :aria-label="playing ? '暂停' : '播放'" @click="togglePlay">
+        <svg v-if="!playing || ended" viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M8 5.14v14l11-7l-11-7Z"/></svg>
+        <svg v-else viewBox="0 0 24 24" width="19" height="19"><path fill="currentColor" d="M6 5h4v14H6V5Zm8 0h4v14h-4V5Z"/></svg>
+      </button>
+      <!-- 连续单条进度条: 点击/拖动 seek, hover 浮出时间气泡 -->
+      <!-- Continuous scrubber: click/drag to seek, hover shows a time bubble -->
+      <div
+        class="tpv-track"
+        ref="trackRef"
+        role="slider"
+        aria-label="播放进度"
+        @pointerdown="onTrackDown"
+        @pointermove="onTrackMove"
+        @pointerup="onTrackUp"
+        @pointercancel="onTrackUp"
+      >
+        <i class="tpv-track-fill" ref="trackFillRef"></i>
+        <span class="tpv-track-tip" ref="trackTipRef">00:00</span>
+      </div>
+      <span class="tpv-scene-name" ref="sceneNameRef">开场</span>
+      <span class="tpv-time"><b ref="timeCurRef">00:00</b>&nbsp;/&nbsp;{{ fmtTime(TOTAL) }}</span>
+      <button class="tpv-btn" aria-label="重播" @click="replay">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"/></svg>
+      </button>
+      <button class="tpv-btn" :aria-label="audioOn && audioLive ? '关闭音效' : '开启音效'" @click="toggleAudio">
+        <svg v-if="audioOn && audioLive" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        <svg v-else viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+      </button>
+      <button class="tpv-btn" :aria-label="isFs ? '退出全屏' : '全屏'" @click="toggleFs">
+        <svg v-if="!isFs" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h6v2H6v4H4V4Zm10 0h6v6h-2V6h-4V4ZM4 14h2v4h4v2H4v-6Zm14 0h2v6h-6v-2h4v-4Z"/></svg>
+        <svg v-else viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 4h2v6H5V8h4V4Zm4 0h2v4h4v2h-6V4ZM5 14h6v6H9v-4H5v-2Zm10 0h4v2h-4v4h-2v-6Z"/></svg>
+      </button>
+    </div>
+
+    <!-- 结束遮罩：重播 -->
+    <!-- Ended overlay: replay -->
+    <transition name="tpv-fade">
+      <div v-if="ended" class="tpv-endmask" @click="replay">
+        <span class="tpv-end-title">Txing AI · 智能对话平台</span>
+        <span class="tpv-end-replay">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8Z"/></svg>
+          重新播放
+        </span>
+      </div>
+    </transition>
+  </div>
+</template>
+
+<script setup name="TxingPromoVideo">
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import promoMusic from '@/assets/promo-music.mp3' // 配乐文件(Mixkit 免费授权, 头尾淡入淡出已烘入)
+// 真实界面截图(开发环境实拍, 见 components 同目录 assets/promo-shots/)
+// Real UI captures (taken from the running dev app), used for the "proof" beats of S3/S4/S5
+import shotChannels from '@/assets/promo-shots/shot-channels.jpg'
+import shotChatAgents from '@/assets/promo-shots/shot-chat-agents.jpg'
+import shotChatSummary from '@/assets/promo-shots/shot-chat-summary.jpg'
+import shotWorkflow from '@/assets/promo-shots/shot-workflow-editor.jpg'
+
+// ───────────────────────── 影片脚本配置 ─────────────────────────
+// Film script: per-scene duration (s). Total ≈ 55s.
+const scenes = [
+  { id: 'open',   name: '开场',       dur: 6.5 },
+  { id: 'vision', name: '理念',       dur: 5.5 },
+  { id: 'gate',   name: '渠道网关',   dur: 8.0 },
+  { id: 'chat',   name: '流式对话',   dur: 7.5 },
+  { id: 'flow',   name: '工作流',     dur: 8.0 },
+  { id: 'agent',  name: 'Agent',     dur: 6.5 },
+  { id: 'stack',  name: '架构与技术栈', dur: 6.0 },
+  { id: 'end',    name: '尾板',       dur: 7.0 }
+]
+const TOTAL = scenes.reduce((s, x) => s + x.dur, 0)
+const STARTS = []
+scenes.reduce((acc, s) => { STARTS.push(acc); return acc + s.dur }, 0)
+const STAGE_W = 1280
+const STAGE_H = 720
+const SCENE = Object.fromEntries(scenes.map((s, i) => [s.id, i]))
+
+const providers = ['OpenAI 兼容', '火山引擎', 'Polo', 'Eino']
+// 画布中供应商节点中心的 y 坐标；DOM 标签用同一个数组对齐
+// Provider node center Y on canvas; DOM labels align via the same array
+const sgProvY = [180, 326, 472, 618]
+const sgProvTop = sgProvY.map((y) => y - 28)
+
+const agentTools = ['联网搜索', '网页抓取', 'PDF 解析', '代码执行', '图片生成', 'MCP 工具']
+const strata = [
+  { n: '前端层', d: 'Vue3 · Element Plus · 工作流编排' },
+  { n: '接入层', d: 'Gin · WebSocket 网关 · JWT 鉴权' },
+  { n: '核心层', d: 'Agent · 工作流引擎 · 工具 · 渠道网关' },
+  { n: '适配层', d: 'OpenAI 兼容 · 火山引擎 · Polo · Eino' },
+  { n: '基础设施', d: 'MySQL · Redis · COS 对象存储' }
+]
+const techChips = ['🐹 Go', '💚 Vue3', '🔄 WebSocket', '🐬 MySQL', '⚡ Redis', '🪁 Eino', '🎨 Element Plus']
+// [节点, 延迟s, 耗时文本]
+const flowLogs = [
+  ['▸ 开始', 1.0, '入口节点就绪'],
+  ['▸ LLM', 1.55, '推理 · 812ms'],
+  ['▸ HTTP', 2.55, '并行分支 A · 341ms'],
+  ['▸ Code', 2.6, '并行分支 B · 156ms'],
+  ['▸ Join', 3.6, '汇聚分支结果 · 2ms'],
+  ['▸ 结束', 4.4, '输出结构化结果']
+]
+// 工作流边的时间窗 [起点s, 终点s]，与 sf-edge 顺序一一对应
+// Edge pulse time windows, aligned with .sf-edge order
+const EDGE_T = [[1.0, 1.5], [2.0, 2.5], [2.05, 2.55], [3.0, 3.5], [3.05, 3.55], [3.9, 4.4]]
+
+// ───────────────────────── 状态与元素 ─────────────────────────
+const rootRef = ref(null)
+const stageRef = ref(null)
+const canvasRef = ref(null)
+const trackRef = ref(null)
+const trackFillRef = ref(null)
+const trackTipRef = ref(null)
+const sceneNameRef = ref(null)
+const timeCurRef = ref(null)
+const sfElapsedRef = ref(null)
+const saOrbitRef = ref(null)
+// 真实界面层(S3/S5 整框淡入, S4 窗内双截图交叉淡切)
+// Real-UI layers: whole-frame fade for S3/S5, in-window crossfade for S4
+const sgRealRef = ref(null)
+const sgRealImgRef = ref(null)
+const sfRealRef = ref(null)
+const sfRealImgRef = ref(null)
+const scShotARef = ref(null)
+const scShotBRef = ref(null)
+
+const started = ref(false)
+const playing = ref(false)
+const ended = ref(false)
+const ctrlHide = ref(false)
+const isFs = ref(false)
+
+// 每帧更新的量全部走直接 DOM/Canvas，不进响应式，保证 60fps
+// Per-frame values bypass Vue reactivity (direct DOM/canvas writes) for 60fps
+let t = 0                 // 全局时间 (s)
+let raf = 0
+let lastTs = 0
+let activeIdx = -1
+let ctrlTimer = 0
+let autoPaused = false    // 因滚出视口/切后台而自动暂停（回来时自动续播）
+let destroyed = false
+
+let sceneEls = []
+let trackEl = null
+let trackFillEl = null
+let trackTipEl = null
+let provEls = []
+let flowPaths = []
+let flowDots = []
+let flowNodes = []
+let agentChips = []
+// 真实界面层与被其替代的概念图 DOM（淡出用）
+// Real-UI elements and the concept DOM they replace (faded out)
+let sgGraphEl = null
+let sfGraphEl = null
+let sgRealEl = null
+let sgRealImg = null
+let sfRealEl = null
+let sfRealImg = null
+let scShotAEl = null
+let scShotBEl = null
+
+// ───────────────────────── 时钟引擎 ─────────────────────────
+const fmtTime = (s) => {
+  const m = Math.floor(s / 60)
+  const ss = Math.floor(s % 60)
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+}
+const idxAt = (time) => {
+  for (let i = scenes.length - 1; i >= 0; i--) if (time >= STARTS[i]) return i
+  return 0
+}
+const easeOut = (x) => 1 - Math.pow(1 - Math.min(Math.max(x, 0), 1), 3)
+const easeIO = (x) => {
+  x = Math.min(Math.max(x, 0), 1)
+  return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
+}
+
+// 进入场景：切换 .is-on（强制回流保证 CSS 动画从头重放，seek 也走这里）
+// Enter scene: toggle .is-on (forced reflow restarts CSS animations, also on seek)
+const activate = (idx, force = false) => {
+  if (idx === activeIdx && !force) return
+  if (activeIdx >= 0 && sceneEls[activeIdx]) sceneEls[activeIdx].classList.remove('is-on')
+  activeIdx = idx
+  const el = sceneEls[idx]
+  if (!el) return
+  // 工作流场景先复位描边，再点亮，避免进场瞬间闪现完整连线
+  // Reset the flow edges before revealing the scene to avoid a full-graph flash
+  if (idx === SCENE.flow) resetFlow()
+  void el.offsetWidth
+  el.classList.add('is-on')
+  if (sceneNameRef.value) sceneNameRef.value.textContent = scenes[idx].name
+}
+
+const tick = (ts) => {
+  if (destroyed) return
+  raf = requestAnimationFrame(tick)
+  if (!playing.value) { lastTs = ts; return }
+  let dt = (ts - lastTs) / 1000
+  lastTs = ts
+  if (dt > 0.06) dt = 0.06 // 后台节流回来时不跳帧
+  t += dt
+  if (t >= TOTAL) { t = TOTAL - 0.001; finish() }
+  render()
+}
+
+const render = () => {
+  const idx = idxAt(t)
+  activate(idx)
+  const local = t - STARTS[idx]
+  // 场景内驱动（打字机/计数器/网络流/脉冲…）
+  runSceneFx(idx, local)
+  drawCanvas(idx, local)
+  // 控制条进度: 连续单条, 宽度即全片时间占比
+  // Scrubber progress: one continuous bar, width = fraction of total runtime
+  if (trackFillEl) trackFillEl.style.width = ((t / TOTAL) * 100).toFixed(2) + '%'
+  if (timeCurRef.value) {
+    const txt = fmtTime(t)
+    if (timeCurRef.value.textContent !== txt) timeCurRef.value.textContent = txt
+  }
+}
+
+const finish = () => {
+  playing.value = false
+  ended.value = true
+  ctrlHide.value = false
+  audioDuck() // 片尾停声（配乐文件自带淡出）
+}
+
+const play = () => {
+  if (ended.value) { replay(); return }
+  started.value = true
+  playing.value = true
+  audioUnduck()
+  ctrlLease()
+}
+const pause = () => {
+  playing.value = false
+  ctrlHide.value = false
+  audioDuck()
+}
+const togglePlay = () => (playing.value ? pause() : play())
+const replay = () => {
+  ended.value = false
+  t = 0
+  activate(0, true)
+  started.value = true
+  playing.value = true
+  syncAudio() // 先对表(回到 0), 再起播
+  audioUnduck()
+  ctrlLease()
+}
+const seek = (time) => {
+  t = Math.min(Math.max(time, 0), TOTAL - 0.001)
+  ended.value = false
+  activate(idxAt(t), true)
+  render()
+  syncAudio()
+  if (playing.value) audioUnduck() // 分段跳转等手势交互: 顺带激活音频
+}
+// 进度条拖动 seek: 按下先暂停(记住播放态), 拖动实时对表, 松手恢复
+// Scrubbing: pause on press (remembering state), seek live while dragging, resume on release
+const trackFrac = (e) => {
+  if (!trackEl) return 0
+  const r = trackEl.getBoundingClientRect()
+  return Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1)
+}
+let scrubbing = false
+let scrubWasPlaying = false
+const onTrackDown = (e) => {
+  scrubbing = true
+  scrubWasPlaying = playing.value
+  if (playing.value) pause()
+  ctrlLease()
+  trackEl?.setPointerCapture?.(e.pointerId)
+  seek(trackFrac(e) * TOTAL)
+}
+const onTrackMove = (e) => {
+  const f = trackFrac(e)
+  if (trackTipEl && trackEl) {
+    const w = trackEl.getBoundingClientRect().width
+    // 气泡限位在轨道内, 避免两端溢出
+    // Clamp the bubble inside the track so it never overflows the ends
+    trackTipEl.style.left = Math.min(Math.max(f * w, 26), Math.max(w - 26, 26)) + 'px'
+    trackTipEl.textContent = fmtTime(f * TOTAL)
+  }
+  if (scrubbing) seek(f * TOTAL)
+}
+const onTrackUp = () => {
+  if (!scrubbing) return
+  scrubbing = false
+  if (scrubWasPlaying && !ended.value) play()
+}
+
+const onKey = (e) => {
+  if (e.key === ' ' || e.key === 'k') { e.preventDefault(); togglePlay() }
+  else if (e.key === 'ArrowRight') seek(t + 5)
+  else if (e.key === 'ArrowLeft') seek(t - 5)
+  else if (e.key === 'f') toggleFs()
+  else if (e.key === 'Home') seek(0)
+}
+
+const toggleFs = () => {
+  // requestFullscreen 返回 Promise, 被浏览器拒绝(如无用户手势)时兜住, 避免 unhandled rejection
+  // requestFullscreen returns a Promise — swallow rejection (e.g. no user gesture)
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+  else rootRef.value?.requestFullscreen?.()?.catch(() => {})
+}
+const onFsChange = () => { isFs.value = document.fullscreenElement === rootRef.value }
+
+// 控制条自动隐藏
+const ctrlWake = () => {
+  ctrlHide.value = false
+  clearTimeout(ctrlTimer)
+  if (playing.value) ctrlTimer = setTimeout(() => { ctrlHide.value = true }, 2400)
+}
+const ctrlLease = () => ctrlWake()
+
+// ───────────────────────── 音频（真实配乐文件, 与影片时钟同步）─────────────────────────
+// Audio: a real royalty-free track (Mixkit Stock Music Free License, 免署名可商用),
+// fade in/out baked into the file, played through a plain <audio> element in sync
+// with the film clock. 自动播放策略: 无手势时静默, 首次交互(play/seek/音效按钮)才出声.
+// Audio: real music file synced to the film clock; silent until first user gesture.
+const audioOn = ref(true)    // 音效开关（用户意图）
+const audioLive = ref(false) // 是否真正出声（自动播放被浏览器拦截时为 false, 首次交互激活）
+const audioRef = ref(null)
+let audioPendingSeek = null // 元数据未就绪时暂存的 seek 目标
+
+// 把暂存的 seek 应用到配乐播放头
+// Apply the pending seek to the music playhead
+const audioApplySeek = () => {
+  const a = audioRef.value
+  if (!a || audioPendingSeek == null) return
+  try { a.currentTime = Math.min(audioPendingSeek, (a.duration || 55) - 0.05) } catch {}
+  audioPendingSeek = null
+}
+const onAudioMeta = () => audioApplySeek() // 元数据就绪后补挂 seek
+const onAudioPlay = () => { audioLive.value = true }
+const audioPlay = () => {
+  const a = audioRef.value
+  if (!a || !audioOn.value) return
+  audioApplySeek()
+  // 起播前对表: 与影片时间差过大(首次中段激活/seek 未生效)时校正到影片位置
+  // Re-align before starting when the playhead drifted from the film clock
+  if (a.readyState >= 1 && Math.abs(a.currentTime - t) > 0.3) {
+    try { a.currentTime = t } catch {}
+  }
+  if (!a.paused) return
+  a.play().catch(() => {}) // 无手势被自动播放策略拦截: 静默失败, 等首次交互
+}
+
+// 暂停/结束停声（暂停即停, 配乐文件自带头尾淡入淡出）
+// Stop the music on pause/finish
+const audioDuck = () => { const a = audioRef.value; if (a && !a.paused) a.pause() }
+const audioUnduck = () => { if (playing.value) audioPlay() }
+
+// seek/replay 后对齐配乐时间轴（配乐与影片同时长, 直接对表）
+// Align the music playhead after seek/replay (track and film share the timeline)
+const syncAudio = () => {
+  const a = audioRef.value
+  if (!a) return
+  audioPendingSeek = t
+  if (a.readyState >= 1) audioApplySeek()
+}
+
+const toggleAudio = () => {
+  // 未出声(自动播放被拦/已静音)时点击 = 开启; 已出声时点击 = 静音
+  // Click means "enable" while silent (autoplay-blocked or muted), "mute" while live
+  if (!audioOn.value || !audioLive.value) {
+    audioOn.value = true
+    if (playing.value) audioPlay()
+  } else {
+    audioOn.value = false
+    audioDuck()
+  }
+}
+
+// 开发验证辅助: 音频运行态（就绪/播放状态/对表位置）
+// Dev helper for E2E: audio runtime state
+const audioDebug = () => {
+  const a = audioRef.value
+  if (!a) return { ready: false, state: 'none', on: audioOn.value, live: audioLive.value }
+  return {
+    ready: a.readyState >= 1,
+    state: a.paused ? 'paused' : 'playing',
+    cur: +a.currentTime.toFixed(2),
+    vol: a.volume,
+    live: audioLive.value,
+    on: audioOn.value
+  }
+}
+
+// ───────────────────────── 场景内驱动 ─────────────────────────
+const clamp01 = (x) => Math.min(Math.max(x, 0), 1)
+
+const runSceneFx = (idx, l) => {
+  if (idx === SCENE.vision) updVision(l)
+  else if (idx === SCENE.gate) { updGate(l); updGateReal(l) }
+  else if (idx === SCENE.chat) updChatReal(l)
+  else if (idx === SCENE.flow) { updFlow(l); updFlowReal(l) }
+}
+
+// S2 数字滚动
+let visLast = ''
+const updVision = (l) => {
+  if (!sceneEls[SCENE.vision]) return
+  const els = sceneEls[SCENE.vision].querySelectorAll('.sv-num[data-n]')
+  const k1 = Math.round(24000 * easeOut(l / 2.2))
+  const k2 = Math.round(37000 * easeOut((l - 0.15) / 2.2))
+  const sig = k1 + '|' + k2
+  if (sig === visLast) return
+  visLast = sig
+  if (els[0]) els[0].textContent = k1.toLocaleString('en-US') + '+'
+  if (els[1]) els[1].textContent = k2.toLocaleString('en-US') + '+'
+}
+
+// S3 渠道选路：DOM 标签点亮同步（脉冲本身在 canvas 里画）
+let gateLastK = -1
+const updGate = (l) => {
+  const k = Math.floor(l / 2) % providers.length
+  if (k === gateLastK) return
+  gateLastK = k
+  provEls.forEach((el, i) => el && el.classList.toggle('lit', i === k))
+}
+
+// ── 真实界面层驱动 ────────────────────────────────────────────────
+// 全部写成影片时间 l 的纯函数: seek/回跳/暂停下样式始终与时间一致
+// All drivers are pure functions of scene time l — seek-safe by construction
+
+// S3 后段: 概念图淡出 → 后台渠道管理页实拍淡入 + Ken Burns 轻推
+// 视口已按截图纵横比定制, 推近幅度保持 ≤7%, 界面内容不被裁掉
+const updGateReal = (l) => {
+  if (!sgRealEl || !sgGraphEl) return
+  const o = clamp01((l - 4.3) / 0.8)
+  sgRealEl.style.opacity = o.toFixed(3)
+  sgRealEl.style.visibility = o > 0 ? 'visible' : 'hidden'
+  sgGraphEl.style.opacity = (1 - clamp01((l - 4.1) / 0.6)).toFixed(3)
+  if (o <= 0 || !sgRealImg) return
+  const u = easeIO(clamp01((l - 4.3) / 3.6))
+  const k = (1.02 + 0.02 * u).toFixed(3)
+  const x = (0.4 - 0.8 * u).toFixed(2)
+  const y = (0.3 - 0.6 * u).toFixed(2)
+  sgRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
+}
+
+// S4 整场: 会话实拍双截图, 前段工具调用链, 3.9s 起交叉淡切到攻略总结+PDF 工件
+// 幅度压到 ~4% 内: 输入框/工具列表等界面元素保持完整可见
+const updChatReal = (l) => {
+  if (!scShotAEl) return
+  if (scShotBEl) scShotBEl.style.opacity = clamp01((l - 3.9) / 0.8).toFixed(3)
+  const uA = easeIO(clamp01(l / 7.5))
+  scShotAEl.style.transform = `translate(-50%, -50%) scale(${(1.02 + 0.02 * uA).toFixed(3)}) translateY(${(-0.8 * uA).toFixed(2)}%)`
+  if (scShotBEl) {
+    const uB = easeIO(clamp01((l - 3.9) / 3.6))
+    scShotBEl.style.transform = `translate(-50%, -50%) scale(${(1.04 - 0.02 * uB).toFixed(3)}) translateY(${(-0.8 + 0.8 * uB).toFixed(2)}%)`
+  }
+}
+
+// S5 后段: SVG 概念图淡出 → 工作流编辑器画布实拍淡入 + 缓推(右侧执行日志不受影响, 继续跳动)
+// 注意: .sf-graph 的入场动画 fill-mode:both 会压过内联 opacity, 交叉淡切前须先摘掉动画
+// .sf-graph's entrance animation (fill both) overrides inline opacity — drop it before fading
+const updFlowReal = (l) => {
+  if (!sfRealEl || !sfGraphEl) return
+  const o = clamp01((l - 4.4) / 0.8)
+  sfRealEl.style.opacity = o.toFixed(3)
+  sfRealEl.style.visibility = o > 0 ? 'visible' : 'hidden'
+  if (l < 4.15) {
+    if (sfGraphEl.style.animation) {
+      sfGraphEl.style.animation = ''
+      sfGraphEl.style.opacity = ''
+    }
+  } else {
+    sfGraphEl.style.animation = 'none'
+    sfGraphEl.style.opacity = (1 - clamp01((l - 4.2) / 0.6)).toFixed(3)
+  }
+  if (o <= 0 || !sfRealImg) return
+  const u = easeIO(clamp01((l - 4.4) / 3.5))
+  const k = (1.04 - 0.02 * u).toFixed(3)
+  const x = (0.4 - 0.8 * u).toFixed(2)
+  const y = (0.3 - 0.6 * u).toFixed(2)
+  sfRealImg.style.transform = `translate(-50%, -50%) scale(${k}) translate(${x}%, ${y}%)`
+}
+
+// S5 工作流：进场时复位描边动画（CSS transition 驱动画线，JS 驱动脉冲点）
+const resetFlow = () => {
+  flowPaths.forEach((p) => {
+    if (!p) return
+    const len = p.__len || (p.__len = p.getTotalLength())
+    p.style.strokeDasharray = len
+    p.classList.add('no-trans')
+    p.style.strokeDashoffset = len
+    p.classList.remove('drawn')
+  })
+  void (flowPaths[0] && flowPaths[0].getBoundingClientRect())
+  flowPaths.forEach((p, i) => {
+    if (!p) return
+    p.classList.remove('no-trans')
+    void p.getBoundingClientRect()
+    p.style.transitionDelay = EDGE_T[i][0] + 's'
+    requestAnimationFrame(() => { p.style.strokeDashoffset = 0 })
+  })
+}
+
+const updFlow = (l) => {
+  // 脉冲点沿边运动 + 边画完后点亮
+  flowPaths.forEach((p, i) => {
+    const dot = flowDots[i]
+    if (!p || !dot) return
+    const [t0, t1] = EDGE_T[i]
+    const u = (l - t0) / (t1 - t0)
+    if (u < 0 || u > 1.15) { dot.style.opacity = 0; return }
+    if (p.__len === undefined) p.__len = p.getTotalLength()
+    const pt = p.getPointAtLength(p.__len * Math.min(u, 1))
+    dot.style.opacity = u > 1 ? 0 : 1
+    dot.setAttribute('cx', pt.x)
+    dot.setAttribute('cy', pt.y)
+    // 脉冲走完 → 该边切换为渐变高亮
+    if (u >= 1 && !p.classList.contains('drawn')) p.classList.add('drawn')
+  })
+  flowNodes.forEach((n, i) => {
+    if (!n) return
+    const on = [1.0, 1.55, 2.55, 2.6, 3.6, 4.4][i] <= l
+    n.classList.toggle('lit', on)
+  })
+  if (sfElapsedRef.value) {
+    const e = clamp01((l - 1.0) / 3.4) * 1.3
+    const txt = e.toFixed(2)
+    if (sfElapsedRef.value.textContent !== txt) sfElapsedRef.value.textContent = txt
+  }
+}
+
+// ───────────────────────── 画布特效 ─────────────────────────
+let ctx = null
+let stars = []
+// 渠道网关几何（舞台坐标 1280×720）
+const G_SRC = { x: 190, y: 400 }
+const G_CORE = { x: 640, y: 400 }
+const G_PROV_X = 1075
+const quadPt = (a, c, b, u) => {
+  const x = (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * c.x + u * u * b.x
+  const y = (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * c.y + u * u * b.y
+  return { x, y }
+}
+const initStars = () => {
+  stars = []
+  for (let i = 0; i < 130; i++) {
+    stars.push({
+      x: Math.random() * STAGE_W,
+      y: Math.random() * STAGE_H,
+      r: 0.5 + Math.random() * 1.4,
+      spd: 0.3 + Math.random() * 0.9,
+      ph: Math.random() * Math.PI * 2,
+      tw: 0.4 + Math.random() * 1.2
+    })
+  }
+}
+
+const drawCanvas = (idx, l) => {
+  if (!ctx) return
+  ctx.clearRect(0, 0, STAGE_W, STAGE_H)
+  // 星野：缓慢左移 + 闪烁；重内容场景里调暗
+  const dim = idx >= SCENE.gate && idx <= SCENE.agent ? 0.55 : 1
+  for (const s of stars) {
+    s.x -= s.spd * 6 * (1 / 60)
+    if (s.x < -4) s.x = STAGE_W + 4
+    const a = (0.16 + 0.3 * (0.5 + 0.5 * Math.sin(l * s.tw + s.ph))) * dim
+    ctx.beginPath()
+    ctx.fillStyle = `rgba(190,214,255,${a.toFixed(3)})`
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  if (idx === SCENE.gate) drawGate(l)
+  else if (idx === SCENE.agent) drawAgent(l)
+}
+
+const drawGate = (l) => {
+  // 底层连线
+  ctx.lineWidth = 1.2
+  ctx.strokeStyle = 'rgba(125,165,255,0.16)'
+  ctx.beginPath()
+  ctx.moveTo(G_SRC.x, G_SRC.y)
+  ctx.lineTo(G_CORE.x, G_CORE.y)
+  ctx.stroke()
+  for (let i = 0; i < providers.length; i++) {
+    const p = providers[i]
+    void p
+    const py = sgProvY[i]
+    ctx.beginPath()
+    ctx.moveTo(G_CORE.x, G_CORE.y)
+    ctx.bezierCurveTo(G_CORE.x + 150, G_CORE.y, (G_CORE.x + G_PROV_X) / 2, py, G_PROV_X, py)
+    ctx.stroke()
+  }
+  // 当前选路 k，一个请求脉冲沿「请求 → 网关 → 供应商」行进
+  const k = Math.floor(l / 2) % providers.length
+  const ph = l % 2
+  const u = easeIO(ph / 1.55)
+  if (ph < 1.55) {
+    for (let g = 2; g >= 0; g--) {
+      const uu = u - g * 0.055
+      if (uu <= 0) continue
+      const pt = u <= 0.42
+        ? { x: G_SRC.x + (G_CORE.x - G_SRC.x) * uu / 0.42, y: G_SRC.y }
+        : bezierGate(sgProvY[k], (uu - 0.42) / 0.58)
+      const a = (g === 0 ? 0.95 : 0.38 / g)
+      ctx.beginPath()
+      ctx.fillStyle = `rgba(124,232,255,${a})`
+      ctx.shadowColor = 'rgba(124,232,255,0.9)'
+      ctx.shadowBlur = 14
+      ctx.arc(pt.x, pt.y, 4.2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.shadowBlur = 0
+    }
+    // 到达闪环
+    if (u > 0.92) {
+      const ru = (u - 0.92) / 0.08
+      ctx.beginPath()
+      ctx.strokeStyle = `rgba(124,232,255,${(0.6 * (1 - ru)).toFixed(3)})`
+      ctx.lineWidth = 2
+      ctx.arc(G_PROV_X, sgProvY[k], 10 + 26 * ru, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  }
+  // 网关核心脉冲环 + 辉光
+  const frac = (l * 0.55) % 1
+  ctx.beginPath()
+  ctx.strokeStyle = `rgba(168,85,247,${(0.4 * (1 - frac)).toFixed(3)})`
+  ctx.lineWidth = 1.6
+  ctx.arc(G_CORE.x, G_CORE.y, 30 + 46 * frac, 0, Math.PI * 2)
+  ctx.stroke()
+  const gr = ctx.createRadialGradient(G_CORE.x, G_CORE.y, 4, G_CORE.x, G_CORE.y, 64)
+  gr.addColorStop(0, 'rgba(109,164,255,0.34)')
+  gr.addColorStop(1, 'rgba(109,164,255,0)')
+  ctx.fillStyle = gr
+  ctx.beginPath()
+  ctx.arc(G_CORE.x, G_CORE.y, 64, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+// 网关 → 供应商 k 的三次贝塞尔取点（与底层连线同一形状）
+const bezierGate = (py, u) => {
+  const c1x = G_CORE.x + 150, c2x = (G_CORE.x + G_PROV_X) / 2
+  const iu = 1 - u
+  return {
+    x: iu * iu * iu * G_CORE.x + 3 * iu * iu * u * c1x + 3 * iu * u * u * c2x + u * u * u * G_PROV_X,
+    y: iu * iu * iu * G_CORE.y + 3 * iu * iu * u * G_CORE.y + 3 * iu * u * u * py + u * u * u * py
+  }
+}
+
+// S6 Agent：核心 ↔ 工具 的双向脉冲
+const A_C = { x: 640, y: 402 }
+const A_R = 222
+const agentPos = agentTools.map((t2, i) => {
+  void t2
+  const ang = (-90 + i * 60) * Math.PI / 180
+  return { x: A_C.x + A_R * Math.cos(ang), y: A_C.y + A_R * Math.sin(ang) }
+})
+const drawAgent = (l) => {
+  ctx.beginPath()
+  ctx.strokeStyle = 'rgba(125,165,255,0.13)'
+  ctx.lineWidth = 1
+  ctx.setLineDash([3, 7])
+  ctx.arc(A_C.x, A_C.y, A_R, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+  // 每个工具一个相位错开的双向往返脉冲
+  for (let i = 0; i < agentPos.length; i++) {
+    const phase = (l * 0.5 + i / agentPos.length) % 1
+    const out = phase < 0.5
+    const u = easeIO(out ? phase * 2 : 2 - phase * 2)
+    const p = agentPos[i]
+    const x = A_C.x + (p.x - A_C.x) * u
+    const y = A_C.y + (p.y - A_C.y) * u
+    for (let g = 2; g >= 0; g--) {
+      const uu = Math.max(u - g * 0.05, 0)
+      const gx = A_C.x + (p.x - A_C.x) * uu
+      const gy = A_C.y + (p.y - A_C.y) * uu
+      const a = g === 0 ? 0.85 : 0.3 / g
+      ctx.beginPath()
+      ctx.fillStyle = out ? `rgba(124,232,255,${a})` : `rgba(196,140,255,${a})`
+      ctx.arc(gx, gy, g === 0 ? 3.8 : 2.6, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  // 核心辉光
+  const gr = ctx.createRadialGradient(A_C.x, A_C.y, 4, A_C.x, A_C.y, 90)
+  gr.addColorStop(0, 'rgba(109,164,255,0.3)')
+  gr.addColorStop(1, 'rgba(109,164,255,0)')
+  ctx.fillStyle = gr
+  ctx.beginPath()
+  ctx.arc(A_C.x, A_C.y, 90, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+// ───────────────────────── 生命周期 ─────────────────────────
+let ro = null
+let io = null
+
+const applyScale = () => {
+  const root = rootRef.value
+  const stage = stageRef.value
+  if (!root || !stage) return
+  const w = root.clientWidth || STAGE_W
+  const s = w / STAGE_W
+  stage.style.transform = `scale(${s})`
+  const canvas = canvasRef.value
+  if (canvas && ctx) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.round(STAGE_W * s * dpr)
+    canvas.height = Math.round(STAGE_H * s * dpr)
+    ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0)
+  }
+}
+
+const autoPause = () => {
+  if (!playing.value) return
+  autoPaused = true
+  pause()
+}
+const autoResume = () => {
+  if (!autoPaused) return
+  autoPaused = false
+  play()
+}
+const onVis = () => (document.hidden ? autoPause() : autoResume())
+
+onMounted(() => {
+  // 收集静态 DOM（模板一次性渲染，之后全部手工驱动）
+  sceneEls = Array.from(rootRef.value.querySelectorAll('.tpv-scene'))
+  trackEl = trackRef.value || null
+  trackFillEl = trackFillRef.value || null
+  trackTipEl = trackTipRef.value || null
+  provEls = Array.from(rootRef.value.querySelectorAll('.sg-prov'))
+  flowPaths = Array.from(rootRef.value.querySelectorAll('.sf-edge'))
+  flowDots = Array.from(rootRef.value.querySelectorAll('.sf-dot'))
+  flowNodes = Array.from(rootRef.value.querySelectorAll('.sf-node'))
+  agentChips = Array.from(rootRef.value.querySelectorAll('.sa-chip'))
+  // 真实界面层: 整框(S3/S5)与窗内截图(S4), 以及被替代的概念图容器
+  sgGraphEl = sceneEls[SCENE.gate]?.querySelector('.sg-graph') || null
+  sfGraphEl = sceneEls[SCENE.flow]?.querySelector('.sf-graph') || null
+  sgRealEl = sgRealRef.value
+  sgRealImg = sgRealImgRef.value
+  sfRealEl = sfRealRef.value
+  sfRealImg = sfRealImgRef.value
+  scShotAEl = scShotARef.value
+  scShotBEl = scShotBRef.value
+
+  // Agent 工具芯片按轨道坐标布点
+  agentChips.forEach((el, i) => {
+    const p = agentPos[i]
+    el.style.left = p.x - 66 + 'px'
+    el.style.top = p.y - 24 + 'px'
+  })
+
+  // 画布
+  ctx = canvasRef.value.getContext('2d')
+  initStars()
+  applyScale()
+
+  ro = new ResizeObserver(applyScale)
+  ro.observe(rootRef.value)
+  // 滚出视口自动暂停，回来续播
+  io = new IntersectionObserver((es) => es.forEach((e) => (e.isIntersecting ? autoResume() : autoPause())), { threshold: 0.2 })
+  io.observe(rootRef.value)
+  document.addEventListener('visibilitychange', onVis)
+  document.addEventListener('fullscreenchange', onFsChange)
+
+  // 影片自动开播（画面自动放映; 音效受浏览器自动播放策略限制, 首次交互后自动加入）
+  // Autoplay on mount; sound joins after the first user gesture (autoplay policy)
+  started.value = true
+  playing.value = true
+  activate(0, true)
+  ctrlLease()
+  lastTs = performance.now()
+  raf = requestAnimationFrame(tick)
+})
+
+onBeforeUnmount(() => {
+  destroyed = true
+  cancelAnimationFrame(raf)
+  clearTimeout(ctrlTimer)
+  audioRef.value?.pause() // 停配乐
+  ro?.disconnect()
+  io?.disconnect()
+  document.removeEventListener('visibilitychange', onVis)
+  document.removeEventListener('fullscreenchange', onFsChange)
+  if (document.fullscreenElement === rootRef.value) document.exitFullscreen().catch(() => {})
+})
+</script>
+
+<style scoped lang="scss">
+// ───────────────────────── 基础与舞台 ─────────────────────────
+.tpv {
+  --tb: #04060d;
+  --blue: #4da3ff;
+  --violet: #a855f7;
+  --cyan: #7be8ff;
+  --txt: #f2f6ff;
+  --dim: rgba(206, 224, 255, 0.62);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--tb);
+  border-radius: 18px;
+  overflow: hidden;
+  outline: none;
+  user-select: none;
+  cursor: default;
+  box-shadow: 0 24px 70px -22px rgba(8, 18, 48, 0.55), 0 0 0 1px rgba(120, 150, 220, 0.14);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--txt);
+
+  &:focus-visible { box-shadow: 0 0 0 2px var(--blue), 0 24px 70px -22px rgba(8, 18, 48, 0.55); }
+  &:fullscreen { border-radius: 0; box-shadow: none; }
+
+  // 暂停时冻结场内所有 CSS 动画（时钟同样停在原地，两边一致）
+  // Freeze every CSS animation while paused, in step with the clock
+  &.is-paused .tpv-stage,
+  &.is-paused .tpv-stage * { animation-play-state: paused !important; }
+}
+
+.tpv-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+}
+
+.tpv-bg { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 0%, #0a1226 0%, #05070f 55%, #04060d 100%); }
+.tpv-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  animation: tpvDrift 14s ease-in-out infinite alternate;
+  &.g1 { width: 560px; height: 560px; left: -140px; top: -180px; background: rgba(45, 96, 200, 0.32); }
+  &.g2 { width: 520px; height: 520px; right: -160px; bottom: -200px; background: rgba(126, 58, 220, 0.26); animation-delay: -5s; }
+  &.g3 { width: 380px; height: 380px; left: 42%; top: 30%; background: rgba(38, 130, 190, 0.14); animation-delay: -9s; }
+}
+@keyframes tpvDrift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(46px, 30px, 0) scale(1.12); }
+}
+
+.tpv-canvas { position: absolute; inset: 0; width: 1280px; height: 720px; pointer-events: none; }
+
+// 胶片颗粒 + 暗角
+.tpv-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+}
+.tpv-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(118% 96% at 50% 46%, transparent 58%, rgba(1, 3, 9, 0.5) 100%);
+}
+
+// ───────────────────────── 场景切换与通用元素 ─────────────────────────
+.tpv-scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.7s ease, visibility 0s linear 0.7s;
+  &.is-on {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.7s ease;
+  }
+}
+
+.tpv-kicker {
+  font-size: 15px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+}
+.tpv-head { position: absolute; left: 80px; top: 62px; z-index: 3;
+  .tpv-kicker { margin-bottom: 14px; }
+}
+.tpv-hl {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: linear-gradient(100deg, #eef4ff 30%, #9dc4ff 75%, #cdb6fd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0;
+  transform: translateY(22px);
+}
+.is-on .tpv-hl { animation: tpvRise 0.9s 0.12s var(--ease) both; }
+
+.tpv-chips {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  z-index: 3;
+}
+.tpv-chip {
+  padding: 11px 22px;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--txt);
+  border: 1px solid rgba(130, 168, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(22, 36, 72, 0.4);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(16px);
+}
+.is-on .tpv-chip { animation: tpvRise 0.7s var(--ease) both; }
+
+@keyframes tpvRise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tpvFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+// ───────────────────────── 真实界面浏览器框 ─────────────────────────
+// 运行中产品实拍截图的展示框: 深色边框 + 红绿灯 + 地址 + 「真实界面」徽标
+// Frame for real app captures: dark bezel, traffic lights, URL, authenticity badge
+.tpv-real {
+  position: absolute;
+  border-radius: 16px;
+  background: rgba(10, 16, 34, 0.92);
+  border: 1px solid rgba(130, 168, 255, 0.22);
+  box-shadow: 0 34px 80px -30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(160, 190, 255, 0.12);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+}
+.tpv-real-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(130, 168, 255, 0.14);
+  i { width: 10px; height: 10px; border-radius: 50%; background: rgba(150, 175, 230, 0.3); }
+}
+.tpv-real-url {
+  margin-left: 10px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tpv-real-tag {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  color: #9fe8c8;
+  border: 1px solid rgba(120, 220, 170, 0.35);
+  background: rgba(40, 90, 70, 0.25);
+}
+.tpv-real-view {
+  position: relative;
+  overflow: hidden;
+  height: calc(100% - 38px);
+  img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: auto;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+}
+// 两处视口尺寸按截图纵横比定制(渠道页 1600×916, 编辑器页 1600×796), 截图完整显示不裁切
+// Both viewports are sized to each capture's aspect ratio — shots render complete, uncropped
+.sr-gate { left: 235px; top: 168px; width: 810px; height: 502px; }
+.sr-flow { left: 56px; top: 194px; width: 880px; height: 476px; }
+
+// ───────────────────────── S1 开场 ─────────────────────────
+.s-open { display: flex; align-items: center; justify-content: center; }
+.so-zoom {
+  text-align: center;
+  animation: soZoom 6.8s linear both;
+}
+@keyframes soZoom { from { transform: scale(1.055); } to { transform: scale(1); } }
+.so-k { animation: tpvFadeIn 1.2s 0.2s both; }
+.so-mark { margin: 26px 0 0; font-size: 104px; font-weight: 800; letter-spacing: 0.06em; line-height: 1.1; }
+.so-mark-txt {
+  background: linear-gradient(110deg, #dfe9ff 18%, #9dc4ff 38%, var(--blue) 50%, #c9b2fb 62%, #dfe9ff 84%);
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: soSweep 2.6s 0.4s var(--ease) both, tpvRise 1.1s 0.1s var(--ease) both;
+}
+@keyframes soSweep { from { background-position: 118% 0; } to { background-position: -32% 0; } }
+.so-line {
+  width: 0;
+  height: 1px;
+  margin: 30px auto 26px;
+  background: linear-gradient(90deg, transparent, var(--blue) 30%, var(--violet) 70%, transparent);
+  animation: soLineGrow 1.4s 1.3s var(--ease) both;
+}
+@keyframes soLineGrow { to { width: 300px; } }
+.so-sub {
+  margin: 0;
+  font-size: 27px;
+  letter-spacing: 0.58em;
+  text-indent: 0.58em;
+  color: var(--txt);
+  animation: tpvFadeIn 1.5s 1.9s both;
+}
+.so-foot {
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  bottom: 44px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  letter-spacing: 0.34em;
+  color: var(--dim);
+  opacity: 0;
+}
+.is-on .so-foot { animation: tpvFadeIn 1.4s 3.4s both; }
+
+// ───────────────────────── S2 理念与数字 ─────────────────────────
+.s-vision { display: flex; align-items: center; justify-content: center; }
+.sv-wrap { text-align: center; width: 900px; }
+.sv-k { animation: tpvFadeIn 0.8s 0.15s both; }
+.sv-h { margin: 30px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.sv-mask { display: block; overflow: hidden; line-height: 1.28; }
+.sv-l1, .sv-l2 {
+  display: inline-block;
+  font-size: 62px;
+  font-weight: 750;
+  letter-spacing: 0.015em;
+  transform: translateY(110%);
+  opacity: 0;
+}
+.is-on .sv-l1 { animation: svUp 0.9s 0.3s var(--ease) both; }
+.is-on .sv-l2 {
+  animation: svUp 0.9s 0.48s var(--ease) both;
+  background: linear-gradient(100deg, #b7d4ff 10%, var(--blue) 45%, var(--violet) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@keyframes svUp { to { transform: translateY(0); opacity: 1; } }
+.sv-sub { margin: 30px 0 0; font-size: 20px; letter-spacing: 0.12em; color: var(--dim); animation: tpvFadeIn 1s 1.1s both; }
+.sv-stats {
+  margin-top: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+  opacity: 0;
+}
+.is-on .sv-stats { animation: tpvRise 0.9s 1.5s var(--ease) both; }
+.sv-stat { display: flex; flex-direction: column; gap: 8px; }
+.sv-num {
+  font-size: 54px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  background: linear-gradient(120deg, #dfe9ff, var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.sv-num-s { font-size: 44px; }
+.sv-lab { font-size: 15px; letter-spacing: 0.3em; text-indent: 0.3em; color: var(--dim); }
+.sv-div { width: 1px; height: 52px; background: linear-gradient(180deg, transparent, rgba(140, 175, 255, 0.4), transparent); }
+
+// ───────────────────────── S3 渠道网关 ─────────────────────────
+.sg-graph { position: absolute; inset: 0; z-index: 2; }
+.sg-node {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 56px;
+  padding: 0 24px;
+  border-radius: 14px;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  color: var(--txt);
+  background: rgba(20, 34, 68, 0.55);
+  border: 1px solid rgba(130, 168, 255, 0.28);
+  backdrop-filter: blur(6px);
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, color 0.35s ease;
+}
+.is-on .sg-node { animation: tpvRise 0.8s var(--ease) both; }
+.is-on .sg-src { animation-delay: 0.35s; }
+.is-on .sg-core { animation-delay: 0.55s; }
+.is-on .sg-prov { animation-delay: 0.75s; }
+.is-on .sg-prov:nth-of-type(4) { animation-delay: 0.87s; }
+.is-on .sg-prov:nth-of-type(5) { animation-delay: 0.99s; }
+.is-on .sg-prov:nth-of-type(6) { animation-delay: 1.11s; }
+.sg-src { left: 118px; top: 372px; min-width: 144px; }
+.sg-core {
+  left: 552px;
+  top: 372px;
+  min-width: 176px;
+  border-color: rgba(168, 120, 255, 0.45);
+  box-shadow: 0 0 34px rgba(109, 120, 255, 0.28), inset 0 0 18px rgba(109, 140, 255, 0.12);
+  animation: tpvRise 0.8s 0.55s var(--ease) both, sgBreath 3.2s 1.4s ease-in-out infinite alternate;
+}
+@keyframes sgBreath {
+  from { box-shadow: 0 0 26px rgba(109, 120, 255, 0.22), inset 0 0 14px rgba(109, 140, 255, 0.1); }
+  to { box-shadow: 0 0 52px rgba(140, 110, 255, 0.4), inset 0 0 22px rgba(130, 150, 255, 0.2); }
+}
+.sg-core-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+  animation: sgBlink 1.6s ease-in-out infinite;
+}
+@keyframes sgBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.sg-prov { min-width: 150px; }
+.sg-prov.lit {
+  border-color: rgba(124, 232, 255, 0.75);
+  color: #eaf8ff;
+  box-shadow: 0 0 26px rgba(96, 200, 255, 0.35), inset 0 0 14px rgba(96, 200, 255, 0.14);
+}
+.sg-chips { bottom: 64px; }
+.is-on .sg-chips .tpv-chip { animation-delay: 1.1s; }
+.is-on .sg-chips .tpv-chip:nth-child(2) { animation-delay: 1.24s; }
+.is-on .sg-chips .tpv-chip:nth-child(3) { animation-delay: 1.38s; }
+.is-on .sg-chips .tpv-chip:nth-child(4) { animation-delay: 1.52s; }
+
+// ───────────────────────── S4 流式对话 ─────────────────────────
+// 窗口按会话截图纵横比(1600×796)定制宽度: 880→776, 内容区 776×386 ≈ 2.01, 截图完整不裁切
+// Window width matched to the capture's aspect ratio (1600×796): content box ≈ 2.01, fully visible
+.sc-win {
+  position: absolute;
+  left: 252px;
+  top: 170px;
+  width: 776px;
+  height: 428px;
+  border-radius: 16px;
+  background: rgba(13, 21, 44, 0.72);
+  border: 1px solid rgba(130, 168, 255, 0.22);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(160, 190, 255, 0.12);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(26px) scale(0.985);
+}
+.is-on .sc-win { animation: scWinIn 1s 0.3s var(--ease) both; }
+@keyframes scWinIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+.sc-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 42px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(130, 168, 255, 0.14);
+  i { width: 10px; height: 10px; border-radius: 50%; background: rgba(150, 175, 230, 0.3); }
+}
+.sc-bar-title { margin-left: 12px; font-size: 14px; letter-spacing: 0.08em; color: var(--dim); }
+.sc-bar .tpv-real-tag { margin-left: auto; }
+// 窗内真实会话截图: 双层叠放, 交叉淡切 + Ken Burns(驱动见 updChatReal)
+// In-window real captures: two stacked shots, crossfade + Ken Burns (driven by updChatReal)
+.sc-shot {
+  position: absolute;
+  inset: 42px 0 0;
+  overflow: hidden;
+  img {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: auto;
+    transform: translate(-50%, -50%) scale(1.02);
+    will-change: transform, opacity;
+    &:nth-child(2) { opacity: 0; }
+  }
+}
+.sc-chips { bottom: 52px; }
+.is-on .sc-chips .tpv-chip { animation-delay: 1.2s; }
+.is-on .sc-chips .tpv-chip:nth-child(2) { animation-delay: 1.33s; }
+.is-on .sc-chips .tpv-chip:nth-child(3) { animation-delay: 1.46s; }
+.is-on .sc-chips .tpv-chip:nth-child(4) { animation-delay: 1.59s; }
+
+// ───────────────────────── S5 可视化工作流 ─────────────────────────
+.sf-graph {
+  position: absolute;
+  left: 56px;
+  top: 178px;
+  width: 880px;
+  height: 508px;
+  z-index: 2;
+  opacity: 0;
+}
+.is-on .sf-graph { animation: tpvFadeIn 0.6s 0.3s both; }
+.sf-svg { position: absolute; inset: 0; }
+.sf-edge {
+  fill: none;
+  stroke: rgba(125, 165, 255, 0.2);
+  stroke-width: 1.6;
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  &.no-trans { transition: none !important; }
+  &.drawn { stroke: url(#tpvFlowGrad); stroke-opacity: 0.85; stroke-width: 2; }
+}
+.sf-dot { fill: var(--cyan); opacity: 0; filter: drop-shadow(0 0 6px rgba(124, 232, 255, 0.9)); }
+.sf-node {
+  position: absolute;
+  width: 96px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--txt);
+  background: rgba(20, 34, 68, 0.6);
+  border: 1px solid rgba(130, 168, 255, 0.28);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  &.lit {
+    border-color: rgba(140, 160, 255, 0.8);
+    background: rgba(40, 56, 110, 0.72);
+    box-shadow: 0 0 24px rgba(110, 130, 255, 0.3);
+  }
+}
+.sf-log {
+  position: absolute;
+  left: 980px;
+  top: 178px;
+  width: 240px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: rgba(13, 21, 44, 0.66);
+  border: 1px solid rgba(130, 168, 255, 0.2);
+  backdrop-filter: blur(8px);
+  z-index: 2;
+  opacity: 0;
+}
+.is-on .sf-log { animation: scWinIn 0.9s 0.5s var(--ease) both; }
+.sf-log-title { margin: 0 0 10px; font-size: 14px; letter-spacing: 0.3em; color: var(--dim); }
+.sf-log-time {
+  margin: 0 0 14px;
+  font-size: 34px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, #dfe9ff, var(--blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  em { font-style: normal; font-size: 18px; margin-left: 2px; }
+}
+.sf-log ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.sf-log li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 14.5px;
+  opacity: 0;
+  transform: translateX(14px);
+  b { flex: none; font-weight: 650; color: #b9d2ff; }
+  span { color: var(--dim); }
+}
+.is-on .sf-log li { animation: sfLogIn 0.5s var(--ease) both; }
+@keyframes sfLogIn { to { opacity: 1; transform: translateX(0); } }
+.sf-log-done {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(130, 168, 255, 0.25);
+  font-size: 14.5px;
+  letter-spacing: 0.06em;
+  color: #8ce8c8;
+  opacity: 0;
+}
+.is-on .sf-log-done { animation: tpvFadeIn 0.7s 4.6s both; }
+.sf-chips { bottom: 48px; }
+.is-on .sf-chips .tpv-chip { animation-delay: 1.4s; }
+.is-on .sf-chips .tpv-chip:nth-child(2) { animation-delay: 1.54s; }
+.is-on .sf-chips .tpv-chip:nth-child(3) { animation-delay: 1.68s; }
+.is-on .sf-chips .tpv-chip:nth-child(4) { animation-delay: 1.82s; }
+
+// ───────────────────────── S6 Agent 与工具 ─────────────────────────
+.sa-orbit { position: absolute; inset: 0; z-index: 2; opacity: 0; }
+.is-on .sa-orbit { animation: tpvFadeIn 0.7s 0.3s both; }
+.sa-core {
+  position: absolute;
+  left: 552px;
+  top: 358px;
+  width: 176px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  grid-auto-flow: row;
+  border-radius: 22px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(77, 163, 255, 0.28), rgba(168, 85, 247, 0.26));
+  border: 1px solid rgba(150, 150, 255, 0.5);
+  box-shadow: 0 0 44px rgba(110, 120, 255, 0.35), inset 0 0 24px rgba(120, 140, 255, 0.18);
+  backdrop-filter: blur(6px);
+  animation: sgBreath 3s ease-in-out infinite alternate;
+  i {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+    animation: sgBlink 1.6s ease-in-out infinite;
+  }
+}
+.sa-chip {
+  position: absolute;
+  width: 132px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 16.5px;
+  letter-spacing: 0.05em;
+  color: var(--txt);
+  background: rgba(22, 36, 72, 0.6);
+  border: 1px solid rgba(130, 168, 255, 0.3);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: scale(0.86);
+}
+.is-on .sa-chip { animation: saChipIn 0.7s var(--ease) both; }
+.is-on .sa-chip:nth-of-type(2) { animation-delay: 0.5s; }
+.is-on .sa-chip:nth-of-type(3) { animation-delay: 0.62s; }
+.is-on .sa-chip:nth-of-type(4) { animation-delay: 0.74s; }
+.is-on .sa-chip:nth-of-type(5) { animation-delay: 0.86s; }
+.is-on .sa-chip:nth-of-type(6) { animation-delay: 0.98s; }
+.is-on .sa-chip:nth-of-type(7) { animation-delay: 1.1s; }
+@keyframes saChipIn { to { opacity: 1; transform: scale(1); } }
+.sa-sub {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 56px;
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  opacity: 0;
+}
+.is-on .sa-sub { animation: tpvFadeIn 1s 1.5s both; }
+
+// ───────────────────────── S7 架构与技术栈 ─────────────────────────
+.ss-strata {
+  position: absolute;
+  left: 260px;
+  top: 168px;
+  width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  z-index: 2;
+}
+.ss-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 58px;
+  padding: 0 24px;
+  border-radius: 13px;
+  background: linear-gradient(90deg, rgba(32, 52, 104, 0.55), rgba(20, 32, 66, 0.4));
+  border: 1px solid rgba(130, 168, 255, 0.22);
+  border-left: 3px solid var(--blue);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateX(-36px);
+  em { font-style: normal; font-size: 14px; color: rgba(160, 195, 255, 0.7); font-variant-numeric: tabular-nums; }
+  b { font-size: 19px; font-weight: 700; letter-spacing: 0.06em; min-width: 96px; }
+  span { font-size: 15.5px; color: var(--dim); letter-spacing: 0.03em; }
+}
+.is-on .ss-bar { animation: ssBarIn 0.8s var(--ease) both; }
+@keyframes ssBarIn { to { opacity: 1; transform: translateX(0); } }
+.ss-chips { bottom: 54px; }
+.is-on .ss-chips .tpv-chip { animation-delay: 1.6s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 2) { animation-delay: 1.72s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 3) { animation-delay: 1.84s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 4) { animation-delay: 1.96s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 5) { animation-delay: 2.08s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 6) { animation-delay: 2.2s; }
+.is-on .ss-chips .tpv-chip:nth-child(n + 7) { animation-delay: 2.32s; }
+
+// ───────────────────────── S8 尾板 ─────────────────────────
+.s-end { display: flex; align-items: center; justify-content: center; }
+.se-wrap { text-align: center; }
+.se-k { animation: tpvFadeIn 1s 0.2s both; }
+.se-mark { margin: 26px 0 0; font-size: 92px; font-weight: 800; letter-spacing: 0.02em; }
+.se-mark-txt {
+  background: linear-gradient(110deg, #dfe9ff 20%, #9dc4ff 45%, var(--blue) 62%, #c9b2fb 80%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: soSweep 3s 0.4s var(--ease) both, tpvRise 1.1s 0.1s var(--ease) both;
+}
+.se-sub {
+  margin: 26px 0 0;
+  font-size: 21px;
+  letter-spacing: 0.16em;
+  color: var(--txt);
+  opacity: 0;
+}
+.is-on .se-sub { animation: tpvFadeIn 1.2s 1.3s both; }
+.se-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 40px;
+  padding: 13px 26px;
+  border-radius: 999px;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  color: var(--txt);
+  text-decoration: none;
+  border: 1px solid rgba(130, 168, 255, 0.4);
+  background: rgba(24, 40, 80, 0.5);
+  backdrop-filter: blur(6px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s var(--ease);
+  opacity: 0;
+  &:hover {
+    border-color: rgba(124, 232, 255, 0.8);
+    box-shadow: 0 0 30px rgba(96, 200, 255, 0.3);
+    transform: translateY(-2px);
+  }
+}
+.is-on .se-link { animation: tpvRise 0.9s 1.9s var(--ease) both; }
+.se-foot { animation: none; opacity: 0; }
+.is-on .se-foot { animation: tpvFadeIn 1.4s 2.6s both; }
+.se-fade {
+  position: absolute;
+  inset: 0;
+  background: #02030a;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.is-on .se-fade { animation: seFade 1.6s 5.2s ease both; }
+@keyframes seFade { to { opacity: 1; } }
+
+// ───────────────────────── 播放控制条 ─────────────────────────
+.tpv-ctrl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 30px 18px 12px;
+  background: linear-gradient(180deg, transparent, rgba(2, 4, 12, 0.82) 62%);
+  opacity: 1;
+  transition: opacity 0.45s ease;
+  cursor: default;
+}
+.ctrl-hide .tpv-ctrl { opacity: 0; pointer-events: none; }
+.tpv-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(230, 240, 255, 0.9);
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+  &:hover { background: rgba(130, 168, 255, 0.18); color: #fff; }
+}
+// 连续单条进度条: 底轨 + 渐变已播填充, hover 增高并浮出滑块圆点与时间气泡
+// Continuous scrubber: base rail + gradient fill; hover grows it and shows knob + time bubble
+.tpv-track {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(160, 185, 240, 0.28);
+    transition: height 0.15s ease;
+  }
+  &:hover::before { height: 7px; }
+}
+.tpv-track-fill {
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--violet));
+  pointer-events: none;
+  transition: height 0.15s ease;
+  // 滑块圆点挂在填充末端, hover 浮现
+  // Knob rides the fill's end, revealed on hover
+  &::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 50%;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translateY(-50%) scale(0);
+    transition: transform 0.18s var(--ease);
+    box-shadow: 0 0 10px rgba(130, 168, 255, 0.65);
+  }
+}
+.tpv-track:hover .tpv-track-fill {
+  height: 7px;
+  &::after { transform: translateY(-50%) scale(1); }
+}
+.tpv-track-tip {
+  position: absolute;
+  bottom: 20px;
+  transform: translateX(-50%);
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(8, 14, 30, 0.92);
+  border: 1px solid rgba(130, 168, 255, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.tpv-track:hover .tpv-track-tip { opacity: 1; }
+.tpv-scene-name {
+  flex: none;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  min-width: 72px;
+  text-align: center;
+}
+.tpv-time {
+  flex: none;
+  font-size: 13px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  b { color: rgba(235, 243, 255, 0.95); font-weight: 600; }
+}
+
+// 结束遮罩
+.tpv-endmask {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  cursor: pointer;
+  background: radial-gradient(100% 100% at 50% 40%, rgba(10, 18, 40, 0.6), rgba(2, 3, 10, 0.88));
+  backdrop-filter: blur(2px);
+}
+.tpv-end-title { font-size: 17px; letter-spacing: 0.3em; color: var(--dim); }
+.tpv-end-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 30px;
+  border-radius: 999px;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: #fff;
+  border: 1px solid rgba(130, 168, 255, 0.5);
+  background: rgba(30, 48, 96, 0.5);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s var(--ease);
+  &:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 34px rgba(96, 200, 255, 0.35);
+    transform: translateY(-2px);
+  }
+}
+.tpv-fade-enter-active, .tpv-fade-leave-active { transition: opacity 0.5s ease; }
+.tpv-fade-enter-from, .tpv-fade-leave-to { opacity: 0; }
+
+// 暂停态呼吸角标（左上角小圆点）
+.tpv::after {
+  content: 'PAUSED';
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 9;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: rgba(230, 240, 255, 0.85);
+  background: rgba(8, 14, 30, 0.6);
+  border: 1px solid rgba(130, 168, 255, 0.3);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.tpv.is-paused::after { opacity: 1; }
+</style>

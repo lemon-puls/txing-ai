@@ -11,22 +11,28 @@ import (
 type AboutMeHeroVO struct {
 	Id         int64     `json:"id"`
 	AvatarText string    `json:"avatarText"`
-	StatusText string    `json:"statusText"`
-	Name       string    `json:"name"`
-	Subtitle   string    `json:"subtitle"`
-	CreateAt   time.Time `json:"createAt"`
-	UpdateAt   time.Time `json:"updateAt"`
+	// AvatarImage 头像图片的临时签名下载 URL（前端直接可用）；AvatarImageKey 为 COS 对象 key（管理端回填表单用）
+	// AvatarImage is the signed temporary download URL; AvatarImageKey is the raw COS key (admin form round-trip)
+	AvatarImage    string    `json:"avatarImage"`
+	AvatarImageKey string    `json:"avatarImageKey"`
+	StatusText     string    `json:"statusText"`
+	Name           string    `json:"name"`
+	Subtitle       string    `json:"subtitle"`
+	CreateAt       time.Time `json:"createAt"`
+	UpdateAt       time.Time `json:"updateAt"`
 }
 
 func ToAboutMeHeroVO(h domain.AboutMeHero) AboutMeHeroVO {
 	return AboutMeHeroVO{
-		Id:         h.Id,
-		AvatarText: h.AvatarText,
-		StatusText: h.StatusText,
-		Name:       h.Name,
-		Subtitle:   h.Subtitle,
-		CreateAt:   h.CreateTime,
-		UpdateAt:   h.UpdateTime,
+		Id:             h.Id,
+		AvatarText:     h.AvatarText,
+		AvatarImage:    h.AvatarImage,
+		AvatarImageKey: h.AvatarImage,
+		StatusText:     h.StatusText,
+		Name:           h.Name,
+		Subtitle:       h.Subtitle,
+		CreateAt:       h.CreateTime,
+		UpdateAt:       h.UpdateTime,
 	}
 }
 

@@ -1,101 +1,126 @@
 <template>
   <div class="ask-panel">
     <div class="ask-card">
-      <!-- 标题区 -->
-      <div class="ask-header">
-        <div class="ask-badge">
-          <el-icon><ChatDotRound /></el-icon>
-          <span>AI 问答</span>
-        </div>
-        <h3 class="ask-title">关于我，想问点什么？</h3>
-        <p class="ask-subtitle">由我的个人知识库驱动，AI 会现场查阅资料后作答</p>
-        <!-- 留存声明（D10：问答全量留存，须明示） -->
-        <div class="ask-notice">
-          <el-icon><InfoFilled /></el-icon>
-          <span>对话将被记录用于改进知识库质量，请勿输入敏感信息</span>
-        </div>
-      </div>
+      <!-- 极光氛围层：缓慢漂移的淡彩辉光，纯装饰 -->
+      <div class="ask-aurora aurora-a"></div>
+      <div class="ask-aurora aurora-b"></div>
 
-      <!-- 消息区 -->
-      <div class="ask-messages" ref="messagesEl">
-        <!-- 欢迎态：推荐问题 -->
-        <div v-if="messages.length === 0" class="ask-welcome">
-          <p class="welcome-hint">试试这些问题：</p>
-          <div class="suggestion-list">
+      <div class="ask-grid">
+        <!-- 左栏：品牌 + 常驻推荐问题（不随对话消失） -->
+        <aside class="ask-rail">
+          <div class="ask-badge">
+            <el-icon><ChatDotRound /></el-icon>
+            <span>AI 问答</span>
+          </div>
+          <h3 class="ask-title">关于我，<br />想问点什么？</h3>
+          <p class="ask-subtitle">由我的个人知识库驱动，AI 会现场查阅资料后作答</p>
+
+          <div class="ask-suggest">
+            <p class="suggest-hint">试试这些问题</p>
             <button
               v-for="q in suggestions"
               :key="q"
-              class="suggestion-chip"
+              class="suggest-chip"
               :disabled="sending"
               @click="sendMessage(q)"
-            >{{ q }}</button>
+            >
+              <span class="chip-spark">✦</span>
+              <span class="chip-text">{{ q }}</span>
+              <el-icon class="chip-arrow"><ArrowRight /></el-icon>
+            </button>
           </div>
-        </div>
 
-        <div
-          v-for="(msg, idx) in messages"
-          :key="idx"
-          class="ask-msg"
-          :class="`ask-msg--${msg.role}`"
-        >
-          <div class="msg-avatar" v-if="msg.role === 'assistant'">
-            <el-icon><Cpu /></el-icon>
+          <!-- 留存声明（D10：问答全量留存，须明示） -->
+          <div class="ask-notice">
+            <el-icon><InfoFilled /></el-icon>
+            <span>对话将被记录用于改进知识库质量，请勿输入敏感信息</span>
           </div>
-          <div class="msg-body">
-            <!-- 工具调用进度 -->
-            <div v-if="msg.toolCalls.length" class="msg-tools">
-              <div
-                v-for="tc in msg.toolCalls"
-                :key="tc.id"
-                class="tool-chip"
-                :class="{ 'is-running': tc.status === 'running' }"
-              >
-                <el-icon v-if="tc.status === 'running'" class="is-loading"><Loading /></el-icon>
-                <el-icon v-else><CircleCheck /></el-icon>
-                <span>{{ toolLabel(tc) }}</span>
+        </aside>
+
+        <!-- 右栏：聊天窗 -->
+        <div class="ask-chat">
+          <!-- 聊天窗标题栏：LLM Wiki 知识库品牌位，常驻不随消息滚动 -->
+          <div class="chat-topbar">
+            <div class="wiki-meta">
+              <span class="wiki-name">LLM Wiki 知识库</span>
+              <span class="wiki-status"><i class="status-dot"></i>在线 · 实时检索</span>
+            </div>
+          </div>
+          <div class="ask-messages" ref="messagesEl">
+            <!-- 欢迎态 -->
+            <div v-if="messages.length === 0" class="ask-empty">
+              <div class="empty-orb">
+                <img :src="aiAvatar" alt="" />
+              </div>
+              <p class="empty-text">我是这份主页的 AI 分身<br />知识库实时检索，欢迎考我</p>
+            </div>
+
+            <div
+              v-for="(msg, idx) in messages"
+              :key="idx"
+              class="ask-msg"
+              :class="`ask-msg--${msg.role}`"
+            >
+              <div class="msg-avatar" v-if="msg.role === 'assistant'">
+                <img :src="aiAvatar" alt="" />
+              </div>
+              <div class="msg-body">
+                <!-- 工具调用进度 -->
+                <div v-if="msg.toolCalls.length" class="msg-tools">
+                  <div
+                    v-for="tc in msg.toolCalls"
+                    :key="tc.id"
+                    class="tool-chip"
+                    :class="{ 'is-running': tc.status === 'running' }"
+                  >
+                    <el-icon v-if="tc.status === 'running'" class="is-loading"><Loading /></el-icon>
+                    <el-icon v-else><CircleCheck /></el-icon>
+                    <span>{{ toolLabel(tc) }}</span>
+                  </div>
+                </div>
+                <!-- 正文（markdown 渲染；不挂 markdown-body 类，chat 页全局引入的
+                     github-markdown-dark 会将其背景染成 #0d1117） -->
+                <div
+                  v-if="msg.content"
+                  class="msg-content"
+                  v-html="renderMarkdown(msg.content)"
+                ></div>
+                <!-- 状态行 -->
+                <div v-if="msg.streaming && !msg.content && !msg.toolCalls.length" class="msg-typing">
+                  <span></span><span></span><span></span>
+                </div>
+                <div v-if="msg.error" class="msg-error">
+                  <el-icon><WarningFilled /></el-icon>
+                  <span>{{ msg.error }}</span>
+                </div>
               </div>
             </div>
-            <!-- 正文（markdown 渲染；不挂 markdown-body 类，chat 页全局引入的
-                 github-markdown-dark 会将其背景染成 #0d1117） -->
-            <div
-              v-if="msg.content"
-              class="msg-content"
-              v-html="renderMarkdown(msg.content)"
-            ></div>
-            <!-- 状态行 -->
-            <div v-if="msg.streaming && !msg.content && !msg.toolCalls.length" class="msg-typing">
-              <span></span><span></span><span></span>
-            </div>
-            <div v-if="msg.error" class="msg-error">
-              <el-icon><WarningFilled /></el-icon>
-              <span>{{ msg.error }}</span>
-            </div>
+          </div>
+
+          <!-- 输入区 -->
+          <div class="ask-input">
+            <el-input
+              v-model="input"
+              placeholder="输入你的问题…"
+              :disabled="sending"
+              maxlength="4000"
+              @keydown.enter.exact.prevent="handleSend"
+              clearable
+            />
+            <el-button
+              v-if="!sending"
+              class="send-btn"
+              type="primary"
+              :disabled="!input.trim()"
+              @click="handleSend"
+            >
+              <el-icon><Promotion /></el-icon>
+            </el-button>
+            <el-button v-else class="send-btn stop-btn" @click="stop">
+              <el-icon><VideoPause /></el-icon>
+            </el-button>
           </div>
         </div>
-      </div>
-
-      <!-- 输入区 -->
-      <div class="ask-input">
-        <el-input
-          v-model="input"
-          placeholder="输入你的问题…"
-          :disabled="sending"
-          maxlength="4000"
-          @keydown.enter.exact.prevent="handleSend"
-          clearable
-        />
-        <el-button
-          v-if="!sending"
-          class="send-btn"
-          type="primary"
-          :disabled="!input.trim()"
-          @click="handleSend"
-        >
-          <el-icon><Promotion /></el-icon>
-        </el-button>
-        <el-button v-else class="send-btn stop-btn" @click="stop">
-          <el-icon><VideoPause /></el-icon>
-        </el-button>
       </div>
     </div>
   </div>
@@ -105,9 +130,10 @@
 import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  ChatDotRound, InfoFilled, Cpu, Loading, CircleCheck,
-  WarningFilled, Promotion, VideoPause
+  ChatDotRound, InfoFilled, Loading, CircleCheck,
+  WarningFilled, Promotion, VideoPause, ArrowRight
 } from '@element-plus/icons-vue'
+import aiAvatar from '@/assets/images/wiki-ai-avatar.png'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
 import { renderWikiMarkdown } from '@/utils/wikiMarkdown'
 
@@ -310,73 +336,244 @@ onBeforeUnmount(stop)
 </script>
 
 <style scoped lang="scss">
+/* ========== 舞台：白玻璃拟态，与页面卡片同语言 ========== */
 .ask-panel {
   width: 100%;
-  max-width: 860px;
-  margin: 0 auto;
 }
 
 .ask-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  position: relative;
   overflow: hidden;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
-.ask-header {
-  padding: 28px 28px 20px;
-  text-align: center;
-  background: linear-gradient(135deg, var(--el-color-primary-light-9), transparent);
+/* 极光氛围：两团缓慢漂移的淡彩辉光（浅色系） */
+.ask-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  opacity: 0.75;
 
-  .ask-badge {
-    display: inline-flex;
+  &.aurora-a {
+    width: 480px;
+    height: 480px;
+    left: -140px;
+    top: -180px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.16), transparent 65%);
+    animation: aurora-drift 16s ease-in-out infinite alternate;
+  }
+
+  &.aurora-b {
+    width: 420px;
+    height: 420px;
+    right: -120px;
+    bottom: -160px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.13), transparent 65%);
+    animation: aurora-drift 20s ease-in-out infinite alternate-reverse;
+  }
+}
+
+@keyframes aurora-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(60px, 40px) scale(1.15); }
+}
+
+.ask-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+}
+
+/* ========== 左栏 ========== */
+.ask-rail {
+  display: flex;
+  flex-direction: column;
+  padding: 36px 30px 28px;
+  border-right: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.ask-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.ask-title {
+  margin: 18px 0 10px;
+  font-size: 27px;
+  line-height: 1.35;
+  font-weight: 800;
+  background: linear-gradient(120deg, var(--el-text-color-primary, #1e293b), var(--el-color-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ask-subtitle {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--el-text-color-secondary);
+}
+
+.ask-suggest {
+  margin-top: auto;
+  padding-top: 26px;
+
+  .suggest-hint {
+    margin: 0 0 12px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--el-text-color-placeholder);
+  }
+
+  .suggest-chip {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 14px;
-    border-radius: 999px;
-    background: var(--el-color-primary-light-9);
-    color: var(--el-color-primary);
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 14px;
-  }
+    gap: 9px;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--el-border-color-lighter);
+    background: rgba(255, 255, 255, 0.75);
+    color: var(--el-text-color-regular);
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s;
 
-  .ask-title {
-    margin: 0 0 6px;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--el-text-color-primary);
-  }
+    .chip-spark {
+      color: var(--el-color-primary);
+      font-size: 12px;
+      transition: transform 0.25s;
+    }
 
-  .ask-subtitle {
-    margin: 0;
-    font-size: 14px;
-    color: var(--el-text-color-secondary);
-  }
+    .chip-text {
+      flex: 1;
+      min-width: 0;
+    }
 
-  .ask-notice {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 14px;
-    padding: 6px 14px;
-    border-radius: 10px;
-    background: var(--el-color-warning-light-9);
-    color: var(--el-color-warning-dark-2);
-    font-size: 12.5px;
+    .chip-arrow {
+      flex-shrink: 0;
+      font-size: 13px;
+      color: var(--el-color-primary);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: all 0.25s;
+    }
 
-    .el-icon { flex-shrink: 0; }
+    &:hover:not(:disabled) {
+      border-color: var(--el-color-primary-light-5);
+      background: #fff;
+      color: var(--el-text-color-primary);
+      transform: translateX(4px);
+      box-shadow: 0 6px 18px var(--el-color-primary-light-8);
+
+      .chip-arrow { opacity: 1; transform: translateX(0); }
+      .chip-spark { transform: rotate(90deg) scale(1.2); }
+    }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
+}
+
+.ask-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  background: var(--el-color-warning-light-9);
+  color: var(--el-color-warning-dark-2);
+  font-size: 12px;
+  line-height: 1.6;
+
+  .el-icon { flex-shrink: 0; margin-top: 2px; }
+}
+
+/* ========== 右栏：聊天窗 ========== */
+.ask-chat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* 固定总高：消息再多也只在内层滚动，面板不被撑高 */
+  height: 640px;
+}
+
+/* 聊天窗标题栏：渐变浅底 + 发丝线，与消息区分层 */
+.chat-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px 11px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.07), rgba(34, 211, 238, 0.05) 55%, transparent);
+}
+
+.wiki-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wiki-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--el-text-color-primary);
+}
+
+.wiki-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.16); }
+  50% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.28); }
 }
 
 .ask-messages {
-  height: 380px;
+  flex: 1 1 0;
+  min-height: 0; /* 允许被压缩，滚动收进内部 */
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 14px 28px 26px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.04), rgba(34, 211, 238, 0.03));
 
   &::-webkit-scrollbar { width: 6px; }
   &::-webkit-scrollbar-thumb {
@@ -385,44 +582,43 @@ onBeforeUnmount(stop)
   }
 }
 
-.ask-welcome {
+/* 欢迎态：AI 头像 + 引导语 */
+.ask-empty {
   margin: auto;
   text-align: center;
 
-  .welcome-hint {
-    margin: 0 0 14px;
-    font-size: 13px;
-    color: var(--el-text-color-secondary);
-  }
+  .empty-orb {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #fff;
+    box-shadow: 0 12px 32px rgba(79, 70, 229, 0.35);
+    animation: orb-breathe 3s ease-in-out infinite;
 
-  .suggestion-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-  }
-
-  .suggestion-chip {
-    padding: 8px 18px;
-    border-radius: 999px;
-    border: 1px solid var(--el-border-color);
-    background: var(--el-bg-color);
-    color: var(--el-text-color-regular);
-    font-size: 13.5px;
-    cursor: pointer;
-    transition: all 0.25s;
-
-    &:hover:not(:disabled) {
-      border-color: var(--el-color-primary);
-      color: var(--el-color-primary);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px var(--el-color-primary-light-8);
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
+  }
 
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  .empty-text {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.9;
+    color: var(--el-text-color-secondary);
   }
 }
 
+@keyframes orb-breathe {
+  0%, 100% { box-shadow: 0 12px 28px rgba(79, 70, 229, 0.3); transform: scale(1); }
+  50% { box-shadow: 0 12px 44px rgba(79, 70, 229, 0.48); transform: scale(1.04); }
+}
+
+/* 消息气泡 */
 .ask-msg {
   display: flex;
   gap: 10px;
@@ -432,10 +628,24 @@ onBeforeUnmount(stop)
 
     .msg-body {
       max-width: 78%;
-      background: var(--el-color-primary);
+      /* 纯色深蓝：蓝→靛渐变太"AI 味"；白字对比 ~5.2:1，浅色页面上清晰可读 */
+      background: #2563eb;
       color: #fff;
+      font-weight: 500;
       border-radius: 16px 16px 4px 16px;
       padding: 10px 16px;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.22);
+    }
+
+    /* 正文层自带深灰文字色，须在用户气泡内翻白，否则深底深字不可读 */
+    .msg-content {
+      color: #fff;
+
+      :deep(a) { color: #bfd7ff; }
+      :deep(code) {
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+      }
     }
   }
 
@@ -444,24 +654,32 @@ onBeforeUnmount(stop)
       flex-shrink: 0;
       width: 34px;
       height: 34px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--el-color-primary-light-9);
-      color: var(--el-color-primary);
-      font-size: 17px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid #fff;
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
     }
 
     .msg-body {
       max-width: 82%;
-      background: var(--el-fill-color-light);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--el-border-color-lighter);
+      color: var(--el-text-color-regular);
       border-radius: 4px 16px 16px 16px;
       padding: 12px 16px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
     }
   }
 }
 
+/* 工具调用进度 */
 .msg-tools {
   display: flex;
   flex-wrap: wrap;
@@ -479,6 +697,7 @@ onBeforeUnmount(stop)
   border-radius: 999px;
   font-size: 12px;
   background: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
   color: var(--el-color-primary);
   max-width: 100%;
   overflow: hidden;
@@ -489,10 +708,12 @@ onBeforeUnmount(stop)
   .el-icon { flex-shrink: 0; }
 }
 
+/* 正文（浅色底配色） */
 .msg-content {
   font-size: 14px;
   line-height: 1.75;
   word-break: break-word;
+  color: var(--el-text-color-regular);
 
   :deep(p) { margin: 0 0 8px; &:last-child { margin-bottom: 0; } }
   :deep(ul), :deep(ol) { margin: 4px 0 8px; padding-left: 20px; }
@@ -553,7 +774,7 @@ onBeforeUnmount(stop)
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--el-text-color-placeholder);
+    background: var(--el-color-primary);
     animation: ask-bounce 1.2s infinite;
 
     &:nth-child(2) { animation-delay: 0.2s; }
@@ -569,27 +790,85 @@ onBeforeUnmount(stop)
   font-size: 13px;
 }
 
+/* 输入区 */
 .ask-input {
   display: flex;
   gap: 10px;
-  padding: 16px 20px 20px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  padding: 16px 24px 22px;
+  border-top: 1px solid rgba(99, 102, 241, 0.12);
 
-  :deep(.el-input__wrapper) { border-radius: 14px; }
+  :deep(.el-input__wrapper) {
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    transition: box-shadow 0.25s;
+  }
 
   .send-btn {
     border-radius: 14px;
     padding: 0 18px;
+    border: none;
+    /* 纯色深蓝与用户气泡同语言；渐变已去（AI 味） */
+    background: #2563eb;
+    transition: all 0.25s;
+
+    &:not(:disabled):hover {
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    &.is-disabled {
+      background: var(--el-fill-color);
+      color: var(--el-text-color-placeholder);
+    }
   }
 
+  /* 停止键：纯色 danger。注意不能只改 --el-button-bg-color——
+     .send-btn 的 background 会作为 background-image 盖在背景色上（曾因此紫色渐变盖住红） */
   .stop-btn {
-    --el-button-bg-color: var(--el-color-danger);
-    --el-button-border-color: var(--el-color-danger);
+    background: var(--el-color-danger);
+
+    &:not(:disabled):hover {
+      background: color-mix(in srgb, var(--el-color-danger) 88%, #000);
+      box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35);
+      transform: translateY(-1px);
+    }
   }
 }
 
 @keyframes ask-bounce {
   0%, 60%, 100% { transform: translateY(0); }
   30% { transform: translateY(-6px); }
+}
+
+/* ========== 响应式：窄屏收成单列 ========== */
+@media (max-width: 960px) {
+  .ask-grid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .ask-rail {
+    border-right: none;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+    padding: 28px 24px 22px;
+  }
+
+  .ask-title { margin-top: 14px; font-size: 22px; }
+
+  .ask-suggest {
+    margin-top: 18px;
+    padding-top: 0;
+
+    .suggest-chip {
+      width: auto;
+      margin-bottom: 0;
+
+      .chip-arrow { display: none; }
+    }
+  }
+
+  .ask-chat { height: auto; }
+  .ask-messages { flex: none; height: 360px; padding: 20px 18px; }
+  .ask-input { padding: 14px 18px 18px; }
 }
 </style>

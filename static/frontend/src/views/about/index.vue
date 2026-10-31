@@ -12,15 +12,20 @@
       <div class="hero-content animate-on-scroll">
         <div class="avatar-wrapper">
           <div class="main-avatar">
-            <span class="avatar-text">{{ heroData.avatarText }}</span>
+            <!-- 图片头像优先；未配置时回落到文字占位 -->
+            <!-- image avatar first; fall back to placeholder text when unset -->
+            <img v-if="heroData.avatarImage" :src="heroData.avatarImage" class="avatar-img" alt="" />
+            <span v-else class="avatar-text">{{ heroData.avatarText }}</span>
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
-          </div>
-          <div class="status-badge">
-            <span class="status-dot"></span>
-            {{ heroData.statusText }}
+            <!-- 在线状态徽章：社交头像的在线点惯例，语义自带、不占版式 -->
+            <!-- Online presence dot: the social-avatar convention, self-explanatory and layout-free -->
+            <span v-if="heroData.statusText" class="online-badge"></span>
           </div>
         </div>
+        <!-- 状态文案：标题上方的 eyebrow 引导语，无背景无边框，读作一句话而非标签 -->
+        <!-- Status copy: eyebrow lead-in above the title — no box, no border, reads as a sentence -->
+        <p v-if="heroData.statusText" class="status-eyebrow">{{ heroData.statusText }}</p>
         <h1 class="hero-title">
           你好，我是
           <!-- FlickerText 名字特效：入场霓虹灯管点亮，悬停再闪三下 -->
@@ -72,6 +77,16 @@
           <span>{{ icon.symbol }}</span>
         </div>
       </div>
+    </section>
+
+    <!-- AI 问答 Section（LLM Wiki 知识库）：紧跟首屏，开场即可向 AI 发问 -->
+    <section id="ask" class="section ask-section">
+      <div class="section-header animate-on-scroll">
+        <h2 class="section-title">问问我吧</h2>
+        <div class="title-underline"></div>
+        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
+      </div>
+      <AskPanel />
     </section>
 
     <!-- Why Choose Me Section -->
@@ -198,6 +213,15 @@
                 </div>
               </el-carousel-item>
             </el-carousel>
+            <div v-else-if="isPromoProject(project)" class="promo-cover">
+              <i class="promo-cover-glow"></i>
+              <div class="promo-cover-mark">TXING&nbsp;AI</div>
+              <div class="promo-cover-sub">智 能 对 话 平 台</div>
+              <div class="promo-cover-play">
+                <el-icon><VideoPlay /></el-icon>
+                <span>观看介绍影片 · 55s</span>
+              </div>
+            </div>
             <div v-else class="project-icon">
               <el-icon><component :is="project.icon" /></el-icon>
             </div>
@@ -236,12 +260,51 @@
                 </el-button>
               </div>
 
+              <!-- 项目介绍影片：Txing AI 专属。顶部影片区可切换：理念影片（代码动画）/ 作品媒体里的视频（如产品宣传片 mp4） -->
+              <!-- Project promo film area (Txing AI only): switch between the code-driven concept film and mp4 films from project media -->
+              <div v-if="isPromoProject(project)" class="detail-promo-wrap">
+                <div class="promo-tabs" v-if="promoVideoItems(project).length">
+                  <button class="promo-tab" :class="{ active: promoTab === 'concept' }" @click="promoTab = 'concept'">
+                    <el-icon><VideoPlay /></el-icon>理念影片 · 55s
+                  </button>
+                  <button
+                    v-for="v in promoVideoItems(project)"
+                    :key="v.key"
+                    class="promo-tab"
+                    :class="{ active: promoTab === v.key }"
+                    @click="promoTab = v.key"
+                  >
+                    <el-icon><Film /></el-icon>{{ v.caption || '产品宣传片' }}
+                  </button>
+                </div>
+                <TxingPromoVideo v-if="promoTab === 'concept'" class="detail-promo" />
+                <video
+                  v-else
+                  :src="videoByKey(project, promoTab)?.url"
+                  class="detail-promo-video"
+                  controls
+                  autoplay
+                  playsinline
+                ></video>
+              </div>
+
               <!-- Media Gallery -->
               <div class="media-gallery" v-if="project.media && project.media.length">
                 <div class="gallery-scroll">
                   <div v-for="(media, mIndex) in project.media" :key="mIndex" class="media-item">
                     <img v-if="media.type === 'image'" :src="media.url" :alt="media.caption" @click="openMediaPreview(media)" />
-                    <video v-else-if="media.type === 'video'" :src="media.url" muted loop @mouseenter="$event.target.play()" @mouseleave="$event.target.pause()" />
+                    <video
+                      v-else-if="media.type === 'video'"
+                      :src="media.url"
+                      muted
+                      loop
+                      preload="metadata"
+                      playsinline
+                      @mouseenter="$event.target.play()"
+                      @mouseleave="$event.target.pause()"
+                      @click="openMediaPreview(media)"
+                    />
+                    <div v-if="media.type === 'video'" class="media-play-badge"><el-icon><VideoPlay /></el-icon></div>
                     <div class="media-caption">{{ media.caption }}</div>
                   </div>
                 </div>
@@ -352,16 +415,6 @@
       </div>
     </section>
 
-    <!-- AI 问答 Section（LLM Wiki 知识库） -->
-    <section id="ask" class="section ask-section">
-      <div class="section-header animate-on-scroll">
-        <h2 class="section-title">问问我吧</h2>
-        <div class="title-underline"></div>
-        <p class="section-subtitle">AI 读过我的全部资料，替我随时在线</p>
-      </div>
-      <AskPanel />
-    </section>
-
     <!-- Contact Section -->
     <section id="contact" class="section contact-section">
       <div class="contact-card animate-on-scroll">
@@ -444,7 +497,9 @@ import {
   FullScreen,
   ZoomIn,
   ZoomOut,
-  Aim
+  Aim,
+  VideoPlay,
+  Film
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
 import { resolveIcon } from '@/utils/iconResolver.js'
@@ -453,6 +508,7 @@ import { BufferAttribute, BufferGeometry, CanvasTexture, Group, PerspectiveCamer
 import CloudSky from '@/components/CloudSky.vue'
 import FlickerText from '@/components/FlickerText.vue'
 import AskPanel from '@/components/wiki/AskPanel.vue'
+import TxingPromoVideo from '@/components/TxingPromoVideo.vue'
 
 const Github = {
   template: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33c.85 0 1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>`
@@ -463,6 +519,7 @@ const Github = {
 const loading = ref(true)
 const heroData = ref({
   avatarText: 'T',
+  avatarImage: '',
   statusText: 'Ready for New Challenges',
   name: 'Txing',
   subtitle: '全栈开发工程师 / AI 架构爱好者 / 产品极客'
@@ -701,6 +758,7 @@ const loadAboutSnapshot = async () => {
       if (data.hero) {
         heroData.value = {
           avatarText: data.hero.avatarText || 'T',
+          avatarImage: data.hero.avatarImage || '',
           statusText: data.hero.statusText || '',
           name: data.hero.name || 'Txing',
           subtitle: data.hero.subtitle || ''
@@ -735,6 +793,14 @@ const loadAboutSnapshot = async () => {
 
 // Project expand state
 const expandedProject = ref(null)
+// 介绍影片项目：Txing AI 智能对话平台（卡片海报 + 详情内嵌播放器）
+// Promo-film project: Txing AI (card poster + embedded player in the detail)
+const isPromoProject = (p) => (p?.name || '').includes('Txing AI 智能对话平台')
+// 详情顶部影片切换：'concept' = 代码驱动理念影片；其余值 = 作品媒体里视频的 key
+// Top film switcher in detail: 'concept' = code-driven concept film; otherwise a video key from project media
+const promoTab = ref('concept')
+const promoVideoItems = (p) => (p?.media || []).filter((m) => m.type === 'video')
+const videoByKey = (p, key) => promoVideoItems(p).find((v) => v.key === key)
 // 工作亮点详情展开（单开，按标题记录当前展开项；切换项目时收起）
 // Expanded highlight detail (single-open, keyed by title; collapsed on project switch)
 const openFeature = ref(null)
@@ -750,6 +816,7 @@ const toggleProject = async (id) => {
   const next = expandedProject.value === id ? null : id
   expandedProject.value = next
   openFeature.value = null
+  promoTab.value = 'concept'
   openArch.value = next
   // 展开后渲染架构区与详情中的 Mermaid 图表
   // Render Mermaid diagrams in the architecture section & details after expanding
@@ -1448,6 +1515,19 @@ const scrollToContact = () => {
   }
 }
 
+// 影片海报封面光晕呼吸
+// Breathing glow for the promo-film poster cover
+@keyframes promoGlow {
+  from {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+  to {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
 @keyframes float-particle {
   0%, 100% {
     transform: translateY(0) translateX(0) scale(1);
@@ -1473,6 +1553,11 @@ const scrollToContact = () => {
   padding: 80px 24px;
   max-width: 1100px;
   margin: 0 auto;
+}
+
+/* 问问问吧：交互主角，给更宽的舞台 */
+.ask-section {
+  max-width: 1280px;
 }
 
 .section-header {
@@ -1566,7 +1651,7 @@ const scrollToContact = () => {
 
   .avatar-wrapper {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 
     .main-avatar {
       width: 140px;
@@ -1578,6 +1663,21 @@ const scrollToContact = () => {
       justify-content: center;
       box-shadow: 0 10px 40px rgba(43, 94, 255, 0.4);
       position: relative;
+      // 高于下方铭牌，圆底把铭牌上缘"压"在身后
+      // above the nameplate so the circle's bottom tucks it behind
+      z-index: 1;
+
+      .avatar-img {
+        // 铺满圆形容器，不变形；置于文字层同层级（环在其上）
+        // fill the circular container without distortion
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        z-index: 1;
+      }
 
       .avatar-text {
         font-size: 56px;
@@ -1599,83 +1699,57 @@ const scrollToContact = () => {
           animation-delay: 1.5s;
         }
       }
-    }
 
-    .status-badge {
-      position: absolute;
-      bottom: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      // 毛玻璃胶囊：呼应云海/星空底幕的通透质感；品牌绿只留一线描边与呼吸光点，不再整块铺色
-      // Glass capsule: echoes the sky/space backdrop; emerald shrinks to a hairline ring and a breathing dot
-      padding: 7px 16px 7px 14px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.55));
-      backdrop-filter: blur(12px) saturate(1.5);
-      -webkit-backdrop-filter: blur(12px) saturate(1.5);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      box-shadow:
-        0 8px 24px rgba(16, 185, 129, 0.22),
-        0 2px 8px rgba(15, 23, 42, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.65);
-      color: #047857;
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow: hidden;
-      animation: badge-bounce 3s ease-in-out infinite;
-
-      // 掠过胶囊的绿调扫光（复用全局 shimmer 关键帧）
-      // A green-tinted sheen sweeping across the capsule (reuses the global shimmer keyframes)
-      &::before {
-        content: '';
+      // 在线状态徽章：右下角 45°，白环 + 极淡呼吸光晕；不占版式，只做"在线"的语义点缀
+      // Presence dot at 45°: white ring plus a faint breathing glow — semantic, not layout
+      .online-badge {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(105deg, transparent, rgba(52, 211, 153, 0.18), transparent);
-        animation: shimmer 3.5s ease-in-out infinite;
-        pointer-events: none;
-      }
-
-      // 暗色下沉入夜空：深色玻璃底 + 更亮的文字与描边
-      // Dark theme sinks into the night: darker glass, brighter text and ring
-      html.dark & {
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.5));
-        border-color: rgba(52, 211, 153, 0.3);
-        box-shadow:
-          0 8px 24px rgba(0, 0, 0, 0.35),
-          0 0 18px rgba(16, 185, 129, 0.12),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
-        color: #6ee7b7;
-      }
-
-      .status-dot {
-        position: relative;
-        width: 8px;
-        height: 8px;
+        right: 10px;
+        bottom: 10px;
+        width: 19px;
+        height: 19px;
         border-radius: 50%;
-        flex-shrink: 0;
-        background: radial-gradient(circle at 30% 30%, #34d399, #059669);
-        box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
-        animation: pulse-dot 2s infinite;
+        background: radial-gradient(circle at 32% 30%, #4ade80, #16a34a);
+        border: 3px solid rgb(255 255 255 / 96%);
+        box-shadow: 0 2px 10px rgb(22 163 74 / 45%);
+        z-index: 3;
 
-        // 外圈信号波：与主头像 pulse-ring 同语言的“在线心跳”
-        // Outer signal ring: an "online heartbeat" echoing the avatar's pulse-ring
+        // 光晕呼吸而不缩放，避免小圆点视觉上"跳动"
+        // glow breathing without scaling, so the dot never visually bounces
         &::after {
           content: '';
           position: absolute;
-          inset: 0;
+          inset: -5px;
           border-radius: 50%;
-          border: 1px solid rgba(16, 185, 129, 0.6);
-          animation: dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+          background: radial-gradient(circle, rgb(34 197 94 / 34%), transparent 68%);
+          animation: online-breathe 2.8s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        html.dark & {
+          border-color: rgb(15 23 42 / 92%);
         }
       }
+    }
+  }
+
+  // 标题上方的 eyebrow 状态文案：层级只靠字号/字重/颜色/字距，不加任何容器
+  // Eyebrow status above the title: hierarchy from size/weight/color/tracking only, no container
+  .status-eyebrow {
+    margin: -12px 0 -14px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: #334155;
+    opacity: 0.85;
+    // 天空底上的轻微白晕，提升清晰度而非加背景框
+    // a faint white halo for legibility on the sky, instead of a background box
+    text-shadow: 0 1px 6px rgb(255 255 255 / 55%);
+
+    html.dark & {
+      color: #cbd5e1;
+      opacity: 0.8;
+      text-shadow: none;
     }
   }
 
@@ -1894,6 +1968,10 @@ const scrollToContact = () => {
 
 .why-me-card {
   position: relative;
+  // 显式建立层叠上下文：配合 .card-glow 的 z-index:-1，保证光晕垫在背景之上、内容之下
+  // Establish a stacking context explicitly: keeps .card-glow (z-index:-1) above the card
+  // background yet below its content
+  isolation: isolate;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(20px);
   padding: 32px;
@@ -1922,6 +2000,11 @@ const scrollToContact = () => {
 
   .card-glow {
     position: absolute;
+    // z-index:-1：定位元素默认绘制在非定位兄弟内容之上，hover 光晕会把文字罩住；
+    // 沉到内容层之下、卡片背景之上，只做底光
+    // z-index:-1: positioned elements paint above non-positioned siblings by default,
+    // so the hover glow used to veil the text; sink it below content, above the background
+    z-index: -1;
     top: -50%;
     left: -50%;
     width: 200%;
@@ -2344,6 +2427,73 @@ const scrollToContact = () => {
       }
     }
 
+    // 介绍影片海报封面（Txing AI 项目专属）：深空底 + 字标 + 播放胶囊
+    // Promo-film poster cover (Txing AI only): deep-space base + wordmark + play pill
+    .promo-cover {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background:
+        radial-gradient(120% 90% at 50% 0%, #0a1226 0%, #05070f 55%, #04060d 100%);
+      overflow: hidden;
+    }
+
+    .promo-cover-glow {
+      position: absolute;
+      width: 65%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(77, 163, 255, 0.28) 0%, rgba(168, 85, 247, 0.16) 45%, transparent 70%);
+      filter: blur(30px);
+      animation: promoGlow 6s ease-in-out infinite alternate;
+    }
+
+    .promo-cover-mark {
+      position: relative;
+      font-size: clamp(30px, 3.4vw, 46px);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      background: linear-gradient(110deg, #dfe9ff 20%, #9dc4ff 45%, #4da3ff 62%, #c9b2fb 82%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .promo-cover-sub {
+      position: relative;
+      font-size: clamp(12px, 1.1vw, 15px);
+      letter-spacing: 0.5em;
+      text-indent: 0.5em;
+      color: rgba(206, 224, 255, 0.72);
+    }
+
+    .promo-cover-play {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #eaf2ff;
+      border: 1px solid rgba(130, 168, 255, 0.45);
+      background: rgba(24, 40, 80, 0.55);
+      backdrop-filter: blur(6px);
+      transition: all 0.35s ease;
+    }
+
+    .project-image:hover .promo-cover-play {
+      border-color: rgba(124, 232, 255, 0.8);
+      box-shadow: 0 0 26px rgba(96, 200, 255, 0.35);
+      transform: translateY(-2px);
+    }
+
     .project-badge {
       position: absolute;
       top: 16px;
@@ -2517,6 +2667,64 @@ const scrollToContact = () => {
       }
     }
 
+    // 项目介绍影片区（Txing AI 专属）：胶囊 tab 在「理念影片 / 作品视频」间切换
+    // Project promo film area (Txing AI only): pill tabs switch between concept film and media videos
+    .detail-promo-wrap {
+      max-width: 900px;
+      margin: 0 auto 28px;
+
+      .promo-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .promo-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border: 1px solid var(--el-border-color);
+        border-radius: 999px;
+        background: var(--el-bg-color);
+        color: var(--el-text-color-regular);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.25s;
+
+        .el-icon {
+          font-size: 15px;
+        }
+
+        &:hover {
+          color: var(--el-color-primary);
+          border-color: var(--el-color-primary-light-5);
+        }
+
+        &.active {
+          background: var(--el-color-primary);
+          border-color: var(--el-color-primary);
+          color: #fff;
+          box-shadow: 0 4px 14px var(--el-color-primary-light-5);
+        }
+      }
+
+      :deep(.detail-promo) {
+        margin: 0;
+      }
+
+      .detail-promo-video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 16px;
+        background: #000;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+      }
+    }
+
     .media-gallery {
       margin-bottom: 24px;
 
@@ -2538,6 +2746,7 @@ const scrollToContact = () => {
       }
 
       .media-item {
+        position: relative;
         flex-shrink: 0;
         width: 280px;
         border-radius: 16px;
@@ -2550,6 +2759,27 @@ const scrollToContact = () => {
         &:hover {
           transform: scale(1.03);
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        // 视频缩略图中央的播放角标（点击缩略图进灯箱播放）
+        // Play badge over video thumbnails (click opens the lightbox player)
+        .media-play-badge {
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.45);
+          backdrop-filter: blur(4px);
+          border: 1.5px solid rgba(255, 255, 255, 0.75);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          pointer-events: none;
         }
 
         img, video {
@@ -3035,27 +3265,15 @@ const scrollToContact = () => {
   66% { transform: translate(-20px, 30px) scale(0.9); }
   100% { transform: translate(50px, 50px) scale(1.05); }
 }
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+@keyframes online-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
 }
-
-@keyframes badge-bounce {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-4px); }
-}
-
-@keyframes dot-ping {
-  0% { transform: scale(1); opacity: 0.9; }
-  80%, 100% { transform: scale(2.4); opacity: 0; }
-}
-
 @keyframes rotate-gradient {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

@@ -1402,7 +1402,11 @@ onBeforeUnmount(stopStreaming)
 .msg-content {
   white-space: normal;
 
-  :deep(.markdown-body) {
+  // 注意类名是 md-body 而非 markdown-body：后者会被 chat/about 页全局引入的
+  // github-markdown-css 染背景（系统深色时整块变 #0d1117），见 utils/markdown.js
+  // md-body, not markdown-body: the latter gets repainted by the globally
+  // injected github-markdown-css (see utils/markdown.js)
+  :deep(.md-body) {
     font-size: 14px;
     line-height: 1.65;
     color: var(--el-text-color-primary);

@@ -6003,6 +6003,10 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "avatarImage": {
+                    "description": "头像图片 COS key；空串表示不使用图片头像（回落到 avatarText）\nCOS key of the avatar image; empty falls back to avatarText",
+                    "type": "string"
+                },
                 "avatarText": {
                     "type": "string"
                 },
@@ -6731,6 +6735,13 @@ const docTemplate = `{
         "vo.AboutMeHeroVO": {
             "type": "object",
             "properties": {
+                "avatarImage": {
+                    "description": "AvatarImage 头像图片的临时签名下载 URL（前端直接可用）；AvatarImageKey 为 COS 对象 key（管理端回填表单用）\nAvatarImage is the signed temporary download URL; AvatarImageKey is the raw COS key (admin form round-trip)",
+                    "type": "string"
+                },
+                "avatarImageKey": {
+                    "type": "string"
+                },
                 "avatarText": {
                     "type": "string"
                 },

@@ -107,7 +107,9 @@ const props = defineProps({
   placeholder: { type: String, default: '点击上传' },
   maxSize: { type: Number, default: 50 }, // 文件大小限制 MB
   // 如果传入 model 端的已有 type（如后端返回的 media.type），强制锁定；否则按扩展名/dom 探测
-  lockedType: { type: String, default: '' }
+  lockedType: { type: String, default: '' },
+  // COS 对象 key 目录前缀（不含尾斜杠），默认 media；不同业务可归类（如 avatar）
+  keyPrefix: { type: String, default: 'media' }
 })
 
 const emit = defineEmits(['update:modelValue', 'success', 'error', 'change'])
@@ -194,7 +196,7 @@ const confirmUpload = async () => {
   uploading.value = true
   try {
     const result = await uploadFileToOSS(pendingFile.value, {
-      keyPrefix: 'media',
+      keyPrefix: props.keyPrefix,
       mimeType: pendingFile.value.type
     })
     emit('update:modelValue', result.url)

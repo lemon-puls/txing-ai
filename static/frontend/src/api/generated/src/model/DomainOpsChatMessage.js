@@ -12,7 +12,7 @@
  */
 
 import ApiClient from '../ApiClient';
-import DomainOpsChatProposal from './DomainOpsChatProposal';
+import DomainOpsChatProposalItem from './DomainOpsChatProposalItem';
 import DomainOpsChatToolCall from './DomainOpsChatToolCall';
 
 /**
@@ -55,6 +55,9 @@ class DomainOpsChatMessage {
             if (data.hasOwnProperty('content')) {
                 obj['content'] = ApiClient.convertToType(data['content'], 'String');
             }
+            if (data.hasOwnProperty('durationMs')) {
+                obj['durationMs'] = ApiClient.convertToType(data['durationMs'], 'Number');
+            }
             if (data.hasOwnProperty('error')) {
                 obj['error'] = ApiClient.convertToType(data['error'], 'String');
             }
@@ -62,13 +65,16 @@ class DomainOpsChatMessage {
                 obj['interrupted'] = ApiClient.convertToType(data['interrupted'], 'Boolean');
             }
             if (data.hasOwnProperty('proposal')) {
-                obj['proposal'] = DomainOpsChatProposal.constructFromObject(data['proposal']);
+                obj['proposal'] = ApiClient.convertToType(data['proposal'], Object);
             }
             if (data.hasOwnProperty('proposalMessage')) {
                 obj['proposalMessage'] = ApiClient.convertToType(data['proposalMessage'], 'String');
             }
             if (data.hasOwnProperty('proposalStatus')) {
                 obj['proposalStatus'] = ApiClient.convertToType(data['proposalStatus'], 'String');
+            }
+            if (data.hasOwnProperty('proposals')) {
+                obj['proposals'] = ApiClient.convertToType(data['proposals'], [DomainOpsChatProposalItem]);
             }
             if (data.hasOwnProperty('reasoning')) {
                 obj['reasoning'] = ApiClient.convertToType(data['reasoning'], 'String');
@@ -97,10 +103,6 @@ class DomainOpsChatMessage {
         if (data['error'] && !(typeof data['error'] === 'string' || data['error'] instanceof String)) {
             throw new Error("Expected the field `error` to be a primitive type in the JSON string but got " + data['error']);
         }
-        // validate the optional field `proposal`
-        if (data['proposal']) { // data not null
-          DomainOpsChatProposal.validateJSON(data['proposal']);
-        }
         // ensure the json data is a string
         if (data['proposalMessage'] && !(typeof data['proposalMessage'] === 'string' || data['proposalMessage'] instanceof String)) {
             throw new Error("Expected the field `proposalMessage` to be a primitive type in the JSON string but got " + data['proposalMessage']);
@@ -108,6 +110,16 @@ class DomainOpsChatMessage {
         // ensure the json data is a string
         if (data['proposalStatus'] && !(typeof data['proposalStatus'] === 'string' || data['proposalStatus'] instanceof String)) {
             throw new Error("Expected the field `proposalStatus` to be a primitive type in the JSON string but got " + data['proposalStatus']);
+        }
+        if (data['proposals']) { // data not null
+            // ensure the json data is an array
+            if (!Array.isArray(data['proposals'])) {
+                throw new Error("Expected the field `proposals` to be an array in the JSON data but got " + data['proposals']);
+            }
+            // validate the optional field `proposals` (array)
+            for (const item of data['proposals']) {
+                DomainOpsChatProposalItem.validateJSON(item);
+            };
         }
         // ensure the json data is a string
         if (data['reasoning'] && !(typeof data['reasoning'] === 'string' || data['reasoning'] instanceof String)) {
@@ -148,6 +160,12 @@ DomainOpsChatMessage.prototype['confirmed'] = undefined;
 DomainOpsChatMessage.prototype['content'] = undefined;
 
 /**
+ * DurationMs 本次回复总耗时（毫秒），随消息持久化，回放时可展示
+ * @member {Number} durationMs
+ */
+DomainOpsChatMessage.prototype['durationMs'] = undefined;
+
+/**
  * @member {String} error
  */
 DomainOpsChatMessage.prototype['error'] = undefined;
@@ -159,7 +177,8 @@ DomainOpsChatMessage.prototype['error'] = undefined;
 DomainOpsChatMessage.prototype['interrupted'] = undefined;
 
 /**
- * @member {module:model/DomainOpsChatProposal} proposal
+ * Proposal/ProposalStatus/ProposalMessage 为旧版单提案字段，仅用于反序列化历史数据； QueryOpsChatSessionById 加载时经 NormalizeProposals 统一并入 Proposals，保存后即落为新结构
+ * @member {Object} proposal
  */
 DomainOpsChatMessage.prototype['proposal'] = undefined;
 
@@ -172,6 +191,12 @@ DomainOpsChatMessage.prototype['proposalMessage'] = undefined;
  * @member {String} proposalStatus
  */
 DomainOpsChatMessage.prototype['proposalStatus'] = undefined;
+
+/**
+ * Proposals 本条消息携带的全部提案卡片
+ * @member {Array.<module:model/DomainOpsChatProposalItem>} proposals
+ */
+DomainOpsChatMessage.prototype['proposals'] = undefined;
 
 /**
  * @member {String} reasoning

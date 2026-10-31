@@ -1,5 +1,6 @@
 import { ElMessage } from 'element-plus'
 import {defaultApi} from "@/api/index.js";
+import { showAuthDialog } from '@/utils/authPrompt'
 
 // 标记是否正在刷新token
 let isRefreshing = false
@@ -26,6 +27,9 @@ export async function refreshToken(refreshTokenApi) {
   const refreshToken = localStorage.getItem('refreshToken')
   if (!refreshToken) {
     logout()
+    // 无刷新令牌 = 会话已失效：弹登录框而不是只报错
+    // no refresh token = session gone: pop the login dialog instead of a bare toast
+    showAuthDialog()
     return Promise.reject(new Error('请先登录'))
   }
 
@@ -48,12 +52,13 @@ export async function refreshToken(refreshTokenApi) {
       } else {
         // 刷新失败，清除用户信息
         logout()
-        ElMessage.error('请重新登录!')
+        showAuthDialog()
         return Promise.reject(new Error('请重新登录'))
       }
     } catch (refreshError) {
       // 刷新失败，清除用户信息
       logout()
+      showAuthDialog()
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false
@@ -105,13 +110,14 @@ export async function handle401Error(error, path, refreshTokenApi, retryRequest,
             } else {
               // 刷新失败，清除用户信息
               logout()
-              ElMessage.error('请重新登录!')
+              showAuthDialog()
               if (onError) onError(new Error('请重新登录'))
               return Promise.reject(new Error('请重新登录'))
             }
           } catch (refreshError) {
             // 刷新失败，清除用户信息
             logout()
+            showAuthDialog()
             if (onError) onError(refreshError)
             return Promise.reject(refreshError)
           } finally {
@@ -132,7 +138,9 @@ export async function handle401Error(error, path, refreshTokenApi, retryRequest,
     } else {
       // 没有刷新令牌，执行登出
       logout()
-      ElMessage.error('请先登录')
+      // 会话失效：弹登录框引导用户重新登录，而非只弹错误提示
+      // session expired: pop the login dialog instead of an error toast
+      showAuthDialog()
       if (onError) onError(new Error('请先登录'))
       return Promise.reject(new Error('请先登录'))
     }

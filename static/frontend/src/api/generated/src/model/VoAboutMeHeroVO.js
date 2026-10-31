@@ -47,6 +47,12 @@ class VoAboutMeHeroVO {
         if (data) {
             obj = obj || new VoAboutMeHeroVO();
 
+            if (data.hasOwnProperty('avatarImage')) {
+                obj['avatarImage'] = ApiClient.convertToType(data['avatarImage'], 'String');
+            }
+            if (data.hasOwnProperty('avatarImageKey')) {
+                obj['avatarImageKey'] = ApiClient.convertToType(data['avatarImageKey'], 'String');
+            }
             if (data.hasOwnProperty('avatarText')) {
                 obj['avatarText'] = ApiClient.convertToType(data['avatarText'], 'String');
             }
@@ -79,6 +85,14 @@ class VoAboutMeHeroVO {
      */
     static validateJSON(data) {
         // ensure the json data is a string
+        if (data['avatarImage'] && !(typeof data['avatarImage'] === 'string' || data['avatarImage'] instanceof String)) {
+            throw new Error("Expected the field `avatarImage` to be a primitive type in the JSON string but got " + data['avatarImage']);
+        }
+        // ensure the json data is a string
+        if (data['avatarImageKey'] && !(typeof data['avatarImageKey'] === 'string' || data['avatarImageKey'] instanceof String)) {
+            throw new Error("Expected the field `avatarImageKey` to be a primitive type in the JSON string but got " + data['avatarImageKey']);
+        }
+        // ensure the json data is a string
         if (data['avatarText'] && !(typeof data['avatarText'] === 'string' || data['avatarText'] instanceof String)) {
             throw new Error("Expected the field `avatarText` to be a primitive type in the JSON string but got " + data['avatarText']);
         }
@@ -110,6 +124,17 @@ class VoAboutMeHeroVO {
 }
 
 
+
+/**
+ * AvatarImage 头像图片的临时签名下载 URL（前端直接可用）；AvatarImageKey 为 COS 对象 key（管理端回填表单用） AvatarImage is the signed temporary download URL; AvatarImageKey is the raw COS key (admin form round-trip)
+ * @member {String} avatarImage
+ */
+VoAboutMeHeroVO.prototype['avatarImage'] = undefined;
+
+/**
+ * @member {String} avatarImageKey
+ */
+VoAboutMeHeroVO.prototype['avatarImageKey'] = undefined;
 
 /**
  * @member {String} avatarText

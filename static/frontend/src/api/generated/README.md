@@ -274,7 +274,7 @@ Class | Method | HTTP request | Description
  - [TxingAiApi.ApiWorkflowTemplatesPost200Response](docs/ApiWorkflowTemplatesPost200Response.md)
  - [TxingAiApi.ApiWorkflowValidatePost200Response](docs/ApiWorkflowValidatePost200Response.md)
  - [TxingAiApi.DomainOpsChatMessage](docs/DomainOpsChatMessage.md)
- - [TxingAiApi.DomainOpsChatProposal](docs/DomainOpsChatProposal.md)
+ - [TxingAiApi.DomainOpsChatProposalItem](docs/DomainOpsChatProposalItem.md)
  - [TxingAiApi.DomainOpsChatToolCall](docs/DomainOpsChatToolCall.md)
  - [TxingAiApi.DomainWikiPage](docs/DomainWikiPage.md)
  - [TxingAiApi.DomainWikiSource](docs/DomainWikiSource.md)
