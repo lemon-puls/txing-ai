@@ -18,14 +18,14 @@
             <span v-else class="avatar-text">{{ heroData.avatarText }}</span>
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
-          </div>
-          <!-- 状态铭牌：上缘塞进头像圆底后面，像肖像下的姓名牌，不遮照片 -->
-          <!-- Status nameplate: top edge tucked behind the circle, like a plaque under a portrait -->
-          <div v-if="heroData.statusText" class="status-line">
-            <span class="status-dot"></span>
-            {{ heroData.statusText }}
+            <!-- 在线状态徽章：社交头像的在线点惯例，语义自带、不占版式 -->
+            <!-- Online presence dot: the social-avatar convention, self-explanatory and layout-free -->
+            <span v-if="heroData.statusText" class="online-badge"></span>
           </div>
         </div>
+        <!-- 状态文案：标题上方的 eyebrow 引导语，无背景无边框，读作一句话而非标签 -->
+        <!-- Status copy: eyebrow lead-in above the title — no box, no border, reads as a sentence -->
+        <p v-if="heroData.statusText" class="status-eyebrow">{{ heroData.statusText }}</p>
         <h1 class="hero-title">
           你好，我是
           <!-- FlickerText 名字特效：入场霓虹灯管点亮，悬停再闪三下 -->
@@ -1699,69 +1699,57 @@ const scrollToContact = () => {
           animation-delay: 1.5s;
         }
       }
-    }
 
-    // 状态铭牌：肖像下的”姓名牌”。上缘负 margin 塞进头像圆底之后（z 低于头像），
-    // 像底座一样从照片后面伸出来，完全不遮挡照片本身
-    // Status nameplate: a plaque under the portrait — its top edge slides behind the
-    // circle (lower z), so it reads as a pedestal emerging from behind the photo
-    .status-line {
-      position: relative;
-      z-index: 0;
-      margin: -12px auto 0;
-      padding: 15px 14px 8px;
-      width: fit-content;
-      max-width: 190px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 78%));
-      backdrop-filter: blur(10px) saturate(1.4);
-      -webkit-backdrop-filter: blur(10px) saturate(1.4);
-      border: 1px solid rgb(255 255 255 / 90%);
-      box-shadow:
-        0 10px 22px rgb(15 23 42 / 12%),
-        inset 0 1px 0 rgb(255 255 255 / 80%);
-      color: #047857;
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.4;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-
-      // 暗色下入夜：深色玻璃铭牌 + 亮绿文字
-      // Dark theme: dark glass plaque with brighter green text
-      html.dark & {
-        background: linear-gradient(180deg, rgb(15 23 42 / 82%), rgb(15 23 42 / 62%));
-        border-color: rgb(255 255 255 / 10%);
-        box-shadow:
-          0 12px 28px rgb(0 0 0 / 40%),
-          inset 0 1px 0 rgb(255 255 255 / 8%);
-        color: #6ee7b7;
-      }
-
-      .status-dot {
-        position: relative;
-        width: 8px;
-        height: 8px;
+      // 在线状态徽章：右下角 45°，白环 + 极淡呼吸光晕；不占版式，只做"在线"的语义点缀
+      // Presence dot at 45°: white ring plus a faint breathing glow — semantic, not layout
+      .online-badge {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 19px;
+        height: 19px;
         border-radius: 50%;
-        flex-shrink: 0;
-        background: radial-gradient(circle at 30% 30%, #34d399, #059669);
-        box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
-        animation: pulse-dot 2s infinite;
+        background: radial-gradient(circle at 32% 30%, #4ade80, #16a34a);
+        border: 3px solid rgb(255 255 255 / 96%);
+        box-shadow: 0 2px 10px rgb(22 163 74 / 45%);
+        z-index: 3;
 
-        // 外圈信号波：与主头像 pulse-ring 同语言的”在线心跳”
-        // Outer signal ring: an “online heartbeat” echoing the avatar's pulse-ring
+        // 光晕呼吸而不缩放，避免小圆点视觉上"跳动"
+        // glow breathing without scaling, so the dot never visually bounces
         &::after {
           content: '';
           position: absolute;
-          inset: 0;
+          inset: -5px;
           border-radius: 50%;
-          border: 1px solid rgba(16, 185, 129, 0.6);
-          animation: dot-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+          background: radial-gradient(circle, rgb(34 197 94 / 34%), transparent 68%);
+          animation: online-breathe 2.8s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        html.dark & {
+          border-color: rgb(15 23 42 / 92%);
         }
       }
+    }
+  }
+
+  // 标题上方的 eyebrow 状态文案：层级只靠字号/字重/颜色/字距，不加任何容器
+  // Eyebrow status above the title: hierarchy from size/weight/color/tracking only, no container
+  .status-eyebrow {
+    margin: -12px 0 -14px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: #334155;
+    opacity: 0.85;
+    // 天空底上的轻微白晕，提升清晰度而非加背景框
+    // a faint white halo for legibility on the sky, instead of a background box
+    text-shadow: 0 1px 6px rgb(255 255 255 / 55%);
+
+    html.dark & {
+      color: #cbd5e1;
+      opacity: 0.8;
+      text-shadow: none;
     }
   }
 
@@ -3277,22 +3265,15 @@ const scrollToContact = () => {
   66% { transform: translate(-20px, 30px) scale(0.9); }
   100% { transform: translate(50px, 50px) scale(1.05); }
 }
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+@keyframes online-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
 }
-
-@keyframes dot-ping {
-  0% { transform: scale(1); opacity: 0.9; }
-  80%, 100% { transform: scale(2.4); opacity: 0; }
-}
-
 @keyframes rotate-gradient {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

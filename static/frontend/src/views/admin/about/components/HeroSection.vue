@@ -51,11 +51,13 @@
           <div class="hp-avatar-circle">
             <img v-if="avatarPreview" :src="avatarPreview" class="hp-avatar-img" alt="" />
             <template v-else>{{ form.avatarText || 'T' }}</template>
+            <!-- 复刻前台：右下角在线绿点 -->
+            <!-- mirrors the front: presence dot at the bottom-right -->
+            <span v-if="form.statusText" class="hp-badge" />
           </div>
         </div>
         <transition name="hp-fade" mode="out-in">
           <div v-if="form.statusText" :key="form.statusText" class="hp-status">
-            <span class="hp-dot" />
             {{ form.statusText }}
           </div>
         </transition>
@@ -191,12 +193,31 @@ const save = async () => {
       background: rgb(255 255 255 / 18%);
       border: 2px solid rgb(255 255 255 / 35%);
       backdrop-filter: blur(6px);
-      overflow: hidden;
+      // 不能用 overflow:hidden 裁图：会把头像右下角的在线绿点一起裁掉；
+      // 改为图片自身圆角（前台头像也是这个做法）
+      // no overflow:hidden here — it would clip the presence dot; round the image itself
+      overflow: visible;
 
       .hp-avatar-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: 50%;
+      }
+
+      // 复刻前台：头像右下角在线绿点
+      // mirrors the front presence dot
+      .hp-badge {
+        position: absolute;
+        right: 6px;
+        bottom: 6px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 32% 30%, #4ade80, #16a34a);
+        border: 2px solid rgb(255 255 255 / 96%);
+        box-shadow: 0 1px 6px rgb(22 163 74 / 45%);
+        z-index: 3;
       }
     }
 
@@ -218,38 +239,13 @@ const save = async () => {
     }
   }
 
-  // 复刻前台状态铭牌：白色小铭牌上缘塞进头像圆底后面（肖像姓名牌）
-  // mirrors the front status nameplate: white plaque tucked behind the circle's bottom
+  // 复刻前台状态文案：无容器的 eyebrow 小字，在线语义交给头像角标
+  // mirrors the front eyebrow: plain small text, presence handled by the avatar dot
   .hp-status {
-    position: relative;
-    z-index: 0;
-    // flex 容器 gap:14px 会先推开再负拉回：-24 = 塞进圆底后面 10px
-    // the flex gap pushes +14 first; -24 nets a 10px tuck behind the circle
-    margin: -24px auto 0;
-    padding: 13px 12px 7px;
-    width: fit-content;
-    max-width: 200px;
-    border-radius: 10px;
-    background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 78%));
-    box-shadow: 0 8px 18px rgb(15 23 42 / 18%);
-    color: #047857;
     font-size: 11px;
-    font-weight: 600;
-    line-height: 1.4;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-
-    .hp-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      background: #10b981;
-      box-shadow: 0 0 8px rgb(16 185 129 / 80%);
-    }
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: rgb(255 255 255 / 82%);
   }
 
   .hp-name {
