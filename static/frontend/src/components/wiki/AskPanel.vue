@@ -41,9 +41,6 @@
         <div class="ask-chat">
           <!-- 聊天窗标题栏：LLM Wiki 知识库品牌位，常驻不随消息滚动 -->
           <div class="chat-topbar">
-            <div class="wiki-mark">
-              <el-icon><Collection /></el-icon>
-            </div>
             <div class="wiki-meta">
               <span class="wiki-name">LLM Wiki 知识库</span>
               <span class="wiki-status"><i class="status-dot"></i>在线 · 实时检索</span>
@@ -134,7 +131,7 @@ import { ref, nextTick, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   ChatDotRound, InfoFilled, Loading, CircleCheck,
-  WarningFilled, Promotion, VideoPause, ArrowRight, Collection
+  WarningFilled, Promotion, VideoPause, ArrowRight
 } from '@element-plus/icons-vue'
 import aiAvatar from '@/assets/images/wiki-ai-avatar.png'
 import { fetchSSEWithAuth } from '@/api/sseRequest'
@@ -531,21 +528,6 @@ onBeforeUnmount(stop)
   padding: 12px 20px 11px;
   border-bottom: 1px solid rgba(99, 102, 241, 0.1);
   background: linear-gradient(90deg, rgba(99, 102, 241, 0.07), rgba(34, 211, 238, 0.05) 55%, transparent);
-}
-
-/* 渐变图标位：与发送键 / AI 头像同一渐变语言 */
-.wiki-mark {
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  color: #fff;
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
 .wiki-meta {
