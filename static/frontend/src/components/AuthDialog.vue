@@ -212,15 +212,22 @@ const handleSubmit = async () => {
 <template>
   <!-- 使用 Teleport 将弹窗内容传送到 body 元素上 -->
   <Teleport to="body">
-    <div class="auth-wrapper" v-show="modelValue">
-      <!-- 玻璃拟态背景 -->
-      <div class="auth-backdrop" @click.self="closeDialog"></div>
+    <!-- 外层淡出过渡：backdrop-filter 的遮罩层必须以 opacity 动画正常释放，
+         直接 v-show→display:none 瞬拆会触发 Chromium 合成器残留（模糊层不消失，
+         后续页面像蒙了一层灰）。见仓库记忆 webgl-overlay-gotchas 同类问题 -->
+    <!-- Outer fade: a backdrop-filter layer must be released via an opacity
+         transition; tearing it down with display:none leaves a stale blur
+         layer over whatever page renders next (Chromium compositor bug) -->
+    <Transition name="auth-fade">
+      <div class="auth-wrapper" v-show="modelValue">
+        <!-- 玻璃拟态背景 -->
+        <div class="auth-backdrop" @click.self="closeDialog"></div>
 
-      <!-- 弹窗主体 -->
-      <Transition name="zoom">
-        <div class="auth-dialog" v-show="modelValue">
-          <!-- Logo 区域 -->
-          <div class="logo-container">
+        <!-- 弹窗主体 -->
+        <Transition name="zoom">
+          <div class="auth-dialog" v-show="modelValue">
+            <!-- Logo 区域 -->
+            <div class="logo-container">
             <div class="logo-text">
               <span class="gradient-text">Txing</span>
               <span class="ai-text">AI</span>
@@ -357,9 +364,10 @@ const handleSubmit = async () => {
               {{ activeTab === 'login' ? '登 录' : '注 册' }}
             </el-button>
           </div>
-        </div>
-      </Transition>
-    </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -409,6 +417,19 @@ const handleSubmit = async () => {
 .zoom-leave-to {
   opacity: 0;
   transform: scale(0.9);
+}
+
+/* 遮罩层淡入淡出：给 backdrop-filter 的合成层一个正常的释放动画，
+   防止 display:none 瞬拆后模糊层残留在后续页面上（Chromium 合成器 bug） */
+/* Fade the backdrop so the backdrop-filter compositor layer is released
+   gracefully instead of leaving a stale blur over the next page */
+.auth-fade-enter-active,
+.auth-fade-leave-active {
+  transition: opacity 0.28s ease;
+}
+.auth-fade-enter-from,
+.auth-fade-leave-to {
+  opacity: 0;
 }
 
 .logo-container {
