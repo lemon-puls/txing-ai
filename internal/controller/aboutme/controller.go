@@ -33,7 +33,25 @@ func GetHero(ctx *gin.Context) {
 		utils.OkWithData(ctx, vo.AboutMeHeroVO{})
 		return
 	}
-	utils.OkWithData(ctx, vo.ToAboutMeHeroVO(hero))
+	heroVO := vo.ToAboutMeHeroVO(hero)
+	signHeroAvatar(ctx, &heroVO)
+	utils.OkWithData(ctx, heroVO)
+}
+
+// signHeroAvatar 将 Hero 头像的 COS key 原地换成带签名的临时下载 URL（AvatarImageKey 保留原 key）
+// signHeroAvatar replaces the hero avatar COS key in place with a signed temporary
+// download URL (AvatarImageKey keeps the raw key)
+func signHeroAvatar(ctx *gin.Context, heroVO *vo.AboutMeHeroVO) {
+	if heroVO == nil || heroVO.AvatarImageKey == "" {
+		return
+	}
+	client := utils.GetCosClientFromContext[*utils.COSClient](ctx)
+	if client == nil {
+		return
+	}
+	if url, err := client.GenerateDownloadPresignedURL(heroVO.AvatarImageKey); err == nil {
+		heroVO.AvatarImage = url
+	}
 }
 
 // UpsertHero 创建或更新 Hero 配置
@@ -56,6 +74,7 @@ func UpsertHero(ctx *gin.Context) {
 	err := db.First(&hero).Error
 	if err == nil {
 		hero.AvatarText = req.AvatarText
+		hero.AvatarImage = req.AvatarImage
 		hero.StatusText = req.StatusText
 		hero.Name = req.Name
 		hero.Subtitle = req.Subtitle
@@ -65,17 +84,20 @@ func UpsertHero(ctx *gin.Context) {
 		}
 	} else {
 		hero = domain.AboutMeHero{
-			AvatarText: req.AvatarText,
-			StatusText: req.StatusText,
-			Name:       req.Name,
-			Subtitle:   req.Subtitle,
+			AvatarText:  req.AvatarText,
+			AvatarImage: req.AvatarImage,
+			StatusText:  req.StatusText,
+			Name:        req.Name,
+			Subtitle:    req.Subtitle,
 		}
 		if err := db.Create(&hero).Error; err != nil {
 			utils.ErrorWithMsg(ctx, "创建 Hero 失败", err)
 			return
 		}
 	}
-	utils.OkWithData(ctx, vo.ToAboutMeHeroVO(hero))
+	heroVO := vo.ToAboutMeHeroVO(hero)
+	signHeroAvatar(ctx, &heroVO)
+	utils.OkWithData(ctx, heroVO)
 }
 
 // ============================================================================
@@ -888,8 +910,11 @@ func PublicSnapshot(ctx *gin.Context) {
 	var contact domain.AboutMeContact
 	_ = db.First(&contact).Error
 
+	heroVO := vo.ToAboutMeHeroVO(hero)
+	signHeroAvatar(ctx, &heroVO)
+
 	snapshot := vo.AboutMeSnapshotVO{
-		Hero:         vo.ToAboutMeHeroVO(hero),
+		Hero:         heroVO,
 		FloatingIcon: vo.ToAboutMeFloatingIconVOs(floatingIcons),
 		Reasons:      vo.ToAboutMeReasonVOs(reasons),
 		Skills:       vo.ToAboutMeSkillVOs(skills),

@@ -22,12 +22,11 @@ class DtoOpsChatAppendReq {
     /**
      * Constructs a new <code>DtoOpsChatAppendReq</code>.
      * @alias module:model/DtoOpsChatAppendReq
-     * @param content {String} 
      * @param role {module:model/DtoOpsChatAppendReq.RoleEnum} 
      */
-    constructor(content, role) { 
+    constructor(role) { 
         
-        DtoOpsChatAppendReq.initialize(this, content, role);
+        DtoOpsChatAppendReq.initialize(this, role);
     }
 
     /**
@@ -35,8 +34,7 @@ class DtoOpsChatAppendReq {
      * This method is used by the constructors of any subclasses, in order to implement multiple inheritance (mix-ins).
      * Only for internal use.
      */
-    static initialize(obj, content, role) { 
-        obj['content'] = content;
+    static initialize(obj, role) { 
         obj['role'] = role;
     }
 
@@ -56,6 +54,12 @@ class DtoOpsChatAppendReq {
             }
             if (data.hasOwnProperty('markProposalConfirmed')) {
                 obj['markProposalConfirmed'] = ApiClient.convertToType(data['markProposalConfirmed'], 'Boolean');
+            }
+            if (data.hasOwnProperty('proposalName')) {
+                obj['proposalName'] = ApiClient.convertToType(data['proposalName'], 'String');
+            }
+            if (data.hasOwnProperty('rewindLastRound')) {
+                obj['rewindLastRound'] = ApiClient.convertToType(data['rewindLastRound'], 'Boolean');
             }
             if (data.hasOwnProperty('role')) {
                 obj['role'] = ApiClient.convertToType(data['role'], 'String');
@@ -81,6 +85,10 @@ class DtoOpsChatAppendReq {
             throw new Error("Expected the field `content` to be a primitive type in the JSON string but got " + data['content']);
         }
         // ensure the json data is a string
+        if (data['proposalName'] && !(typeof data['proposalName'] === 'string' || data['proposalName'] instanceof String)) {
+            throw new Error("Expected the field `proposalName` to be a primitive type in the JSON string but got " + data['proposalName']);
+        }
+        // ensure the json data is a string
         if (data['role'] && !(typeof data['role'] === 'string' || data['role'] instanceof String)) {
             throw new Error("Expected the field `role` to be a primitive type in the JSON string but got " + data['role']);
         }
@@ -91,7 +99,7 @@ class DtoOpsChatAppendReq {
 
 }
 
-DtoOpsChatAppendReq.RequiredProperties = ["content", "role"];
+DtoOpsChatAppendReq.RequiredProperties = ["role"];
 
 /**
  * @member {String} content
@@ -99,10 +107,22 @@ DtoOpsChatAppendReq.RequiredProperties = ["content", "role"];
 DtoOpsChatAppendReq.prototype['content'] = undefined;
 
 /**
- * 是否将最后一条未确认的提案标记为已确认
+ * 是否将未确认的提案标记为已确认
  * @member {Boolean} markProposalConfirmed
  */
 DtoOpsChatAppendReq.prototype['markProposalConfirmed'] = undefined;
+
+/**
+ * 被确认提案的 name（批量录入时精确匹配；为空时回退为\"最后一条未确认提案\"）
+ * @member {String} proposalName
+ */
+DtoOpsChatAppendReq.prototype['proposalName'] = undefined;
+
+/**
+ * 回退最后一轮问答（重新生成/失败重试前调用）：移除末尾的助手消息与其对应用户消息； 为 true 时 Content 可为空（不追加任何消息）
+ * @member {Boolean} rewindLastRound
+ */
+DtoOpsChatAppendReq.prototype['rewindLastRound'] = undefined;
 
 /**
  * @member {module:model/DtoOpsChatAppendReq.RoleEnum} role

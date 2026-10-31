@@ -5,9 +5,12 @@ package domain
 type AboutMeHero struct {
 	BaseModel
 	AvatarText string `gorm:"type:varchar(10);not null;comment:头像占位文字" json:"avatarText"`
-	StatusText string `gorm:"type:varchar(100);comment:状态徽标文字" json:"statusText"`
-	Name       string `gorm:"type:varchar(50);not null;comment:打字机显示的名字" json:"name"`
-	Subtitle   string `gorm:"type:varchar(255);comment:打字机显示的副标题" json:"subtitle"`
+	// 头像图片的 COS 对象 key（非完整 URL；下发时现签临时下载链接，避免签名过期）
+	// COS object key of the hero avatar (not a full URL; signed at serve time)
+	AvatarImage string `gorm:"type:varchar(200);comment:头像图片对象key" json:"avatarImage"`
+	StatusText  string `gorm:"type:varchar(100);comment:状态徽标文字" json:"statusText"`
+	Name        string `gorm:"type:varchar(50);not null;comment:打字机显示的名字" json:"name"`
+	Subtitle    string `gorm:"type:varchar(255);comment:打字机显示的副标题" json:"subtitle"`
 }
 
 // 浮动小图标

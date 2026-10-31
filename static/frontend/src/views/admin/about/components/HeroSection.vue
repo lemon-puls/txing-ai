@@ -7,8 +7,25 @@
   >
     <div v-loading="saving" class="hero-layout">
       <el-form :model="form" label-width="90px" class="hero-form">
+        <el-form-item label="头像图片">
+          <!-- 上传后持久化 COS key（form.avatarImage），预览用签名 URL（avatarPreview） -->
+          <!-- persist the COS key; the preview keeps the signed URL -->
+          <MediaUploader
+            v-model="avatarPreview"
+            media-type="image"
+            key-prefix="avatar"
+            :width="120"
+            :height="120"
+            placeholder="上传头像"
+            :max-size="10"
+            @change="(info) => (form.avatarImage = info.key)"
+          />
+        </el-form-item>
+        <el-form-item label=" ">
+          <el-button round text type="danger" :disabled="!form.avatarImage" @click="clearAvatar">清除图片，改用文字占位</el-button>
+        </el-form-item>
         <el-form-item label="头像文字">
-          <el-input v-model="form.avatarText" maxlength="5" show-word-limit placeholder="如 T，展示在圆形头像中心" class="hero-input" />
+          <el-input v-model="form.avatarText" maxlength="5" show-word-limit placeholder="如 T，未上传图片时展示在圆形头像中心" class="hero-input" />
         </el-form-item>
         <el-form-item label="状态徽标">
           <el-input v-model="form.statusText" placeholder="如 Ready for New Challenges，头像下方胶囊" class="hero-input" />
@@ -31,7 +48,10 @@
         <div class="hp-avatar">
           <span class="hp-ring hp-ring--1" />
           <span class="hp-ring hp-ring--2" />
-          <div class="hp-avatar-circle">{{ form.avatarText || 'T' }}</div>
+          <div class="hp-avatar-circle">
+            <img v-if="avatarPreview" :src="avatarPreview" class="hp-avatar-img" alt="" />
+            <template v-else>{{ form.avatarText || 'T' }}</template>
+          </div>
         </div>
         <transition name="hp-fade" mode="out-in">
           <div v-if="form.statusText" :key="form.statusText" class="hp-status">
@@ -53,13 +73,17 @@ import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { defaultApi } from '@/api'
 import SectionCard from './SectionCard.vue'
+import MediaUploader from '@/components/common/MediaUploader.vue'
 
 const props = defineProps({
   data: { type: Object, default: null }
 })
 const emit = defineEmits(['changed'])
 
-const form = reactive({ avatarText: '', statusText: '', name: '', subtitle: '' })
+const form = reactive({ avatarText: '', avatarImage: '', statusText: '', name: '', subtitle: '' })
+// 头像图片预览 URL（签名地址，仅展示用；落库的是 form.avatarImage 里的 COS key）
+// avatar image preview URL (signed, display only; the COS key persisted is form.avatarImage)
+const avatarPreview = ref('')
 const saving = ref(false)
 
 // 父组件加载完成后回填（仅已知字段，避免带入多余属性）
@@ -69,6 +93,8 @@ watch(
   (v) => {
     if (!v) return
     form.avatarText = v.avatarText || ''
+    form.avatarImage = v.avatarImageKey || ''
+    avatarPreview.value = v.avatarImage || ''
     form.statusText = v.statusText || ''
     form.name = v.name || ''
     form.subtitle = v.subtitle || ''
@@ -76,11 +102,17 @@ watch(
   { immediate: true }
 )
 
+const clearAvatar = () => {
+  form.avatarImage = ''
+  avatarPreview.value = ''
+}
+
 const save = async () => {
   saving.value = true
   try {
     const payload = {
       avatarText: form.avatarText,
+      avatarImage: form.avatarImage,
       statusText: form.statusText,
       name: form.name,
       subtitle: form.subtitle
@@ -157,6 +189,13 @@ const save = async () => {
       background: rgb(255 255 255 / 18%);
       border: 2px solid rgb(255 255 255 / 35%);
       backdrop-filter: blur(6px);
+      overflow: hidden;
+
+      .hp-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     }
 
     // 双层扩散环，复刻前台 pulse-ring

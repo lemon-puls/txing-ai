@@ -1950,7 +1950,7 @@ No authorization required
 
 追加运营助手会话消息
 
-持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将最后一条未确认提案置为已确认
+持久化前端本地产生的消息（如提案确认提示）；markProposalConfirmed 时将未确认提案置为已确认；rewindLastRound 时回退最后一轮问答（重新生成/失败重试用）
 
 ### Example
 
@@ -2128,7 +2128,7 @@ No authorization required
 
 运营助手流式对话
 
-管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（如网站录入提案，确认后才入库）；会话由服务端持久化，首帧返回 sessionId
+管理后台运营助手，基于 SSE 流式返回内容、工具调用进度与结构化提案（网站/模型/渠道/助手 录入或优化提案，确认后才走现有管理接口入库）；会话由服务端持久化，首帧返回 sessionId。工具集按请求中的 context.page 门控
 
 ### Example
 

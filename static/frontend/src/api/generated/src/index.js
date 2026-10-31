@@ -45,7 +45,7 @@ import ApiWorkflowPublicIdGet200Response from './model/ApiWorkflowPublicIdGet200
 import ApiWorkflowTemplatesPost200Response from './model/ApiWorkflowTemplatesPost200Response';
 import ApiWorkflowValidatePost200Response from './model/ApiWorkflowValidatePost200Response';
 import DomainOpsChatMessage from './model/DomainOpsChatMessage';
-import DomainOpsChatProposal from './model/DomainOpsChatProposal';
+import DomainOpsChatProposalItem from './model/DomainOpsChatProposalItem';
 import DomainOpsChatToolCall from './model/DomainOpsChatToolCall';
 import DomainWikiPage from './model/DomainWikiPage';
 import DomainWikiSource from './model/DomainWikiSource';
@@ -390,10 +390,10 @@ export {
     DomainOpsChatMessage,
 
     /**
-     * The DomainOpsChatProposal model constructor.
-     * @property {module:model/DomainOpsChatProposal}
+     * The DomainOpsChatProposalItem model constructor.
+     * @property {module:model/DomainOpsChatProposalItem}
      */
-    DomainOpsChatProposal,
+    DomainOpsChatProposalItem,
 
     /**
      * The DomainOpsChatToolCall model constructor.

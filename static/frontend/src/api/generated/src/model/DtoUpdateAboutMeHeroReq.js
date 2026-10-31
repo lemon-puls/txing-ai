@@ -51,6 +51,9 @@ class DtoUpdateAboutMeHeroReq {
         if (data) {
             obj = obj || new DtoUpdateAboutMeHeroReq();
 
+            if (data.hasOwnProperty('avatarImage')) {
+                obj['avatarImage'] = ApiClient.convertToType(data['avatarImage'], 'String');
+            }
             if (data.hasOwnProperty('avatarText')) {
                 obj['avatarText'] = ApiClient.convertToType(data['avatarText'], 'String');
             }
@@ -80,6 +83,10 @@ class DtoUpdateAboutMeHeroReq {
             }
         }
         // ensure the json data is a string
+        if (data['avatarImage'] && !(typeof data['avatarImage'] === 'string' || data['avatarImage'] instanceof String)) {
+            throw new Error("Expected the field `avatarImage` to be a primitive type in the JSON string but got " + data['avatarImage']);
+        }
+        // ensure the json data is a string
         if (data['avatarText'] && !(typeof data['avatarText'] === 'string' || data['avatarText'] instanceof String)) {
             throw new Error("Expected the field `avatarText` to be a primitive type in the JSON string but got " + data['avatarText']);
         }
@@ -103,6 +110,12 @@ class DtoUpdateAboutMeHeroReq {
 }
 
 DtoUpdateAboutMeHeroReq.RequiredProperties = ["avatarText", "name"];
+
+/**
+ * 头像图片 COS key；空串表示不使用图片头像（回落到 avatarText） COS key of the avatar image; empty falls back to avatarText
+ * @member {String} avatarImage
+ */
+DtoUpdateAboutMeHeroReq.prototype['avatarImage'] = undefined;
 
 /**
  * @member {String} avatarText

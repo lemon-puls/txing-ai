@@ -6,9 +6,12 @@ import "txing-ai/internal/utils/page"
 
 type UpdateAboutMeHeroReq struct {
 	AvatarText string `json:"avatarText" binding:"required"`
-	StatusText string `json:"statusText"`
-	Name       string `json:"name" binding:"required"`
-	Subtitle   string `json:"subtitle"`
+	// 头像图片 COS key；空串表示不使用图片头像（回落到 avatarText）
+	// COS key of the avatar image; empty falls back to avatarText
+	AvatarImage string `json:"avatarImage"`
+	StatusText  string `json:"statusText"`
+	Name        string `json:"name" binding:"required"`
+	Subtitle    string `json:"subtitle"`
 }
 
 // === Floating Icon ===

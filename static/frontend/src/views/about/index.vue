@@ -12,7 +12,10 @@
       <div class="hero-content animate-on-scroll">
         <div class="avatar-wrapper">
           <div class="main-avatar">
-            <span class="avatar-text">{{ heroData.avatarText }}</span>
+            <!-- 图片头像优先；未配置时回落到文字占位 -->
+            <!-- image avatar first; fall back to placeholder text when unset -->
+            <img v-if="heroData.avatarImage" :src="heroData.avatarImage" class="avatar-img" alt="" />
+            <span v-else class="avatar-text">{{ heroData.avatarText }}</span>
             <div class="avatar-ring"></div>
             <div class="avatar-ring ring-2"></div>
           </div>
@@ -514,6 +517,7 @@ const Github = {
 const loading = ref(true)
 const heroData = ref({
   avatarText: 'T',
+  avatarImage: '',
   statusText: 'Ready for New Challenges',
   name: 'Txing',
   subtitle: '全栈开发工程师 / AI 架构爱好者 / 产品极客'
@@ -752,6 +756,7 @@ const loadAboutSnapshot = async () => {
       if (data.hero) {
         heroData.value = {
           avatarText: data.hero.avatarText || 'T',
+          avatarImage: data.hero.avatarImage || '',
           statusText: data.hero.statusText || '',
           name: data.hero.name || 'Txing',
           subtitle: data.hero.subtitle || ''
@@ -1656,6 +1661,18 @@ const scrollToContact = () => {
       justify-content: center;
       box-shadow: 0 10px 40px rgba(43, 94, 255, 0.4);
       position: relative;
+
+      .avatar-img {
+        // 铺满圆形容器，不变形；置于文字层同层级（环在其上）
+        // fill the circular container without distortion
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        z-index: 1;
+      }
 
       .avatar-text {
         font-size: 56px;
