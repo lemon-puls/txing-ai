@@ -56,6 +56,12 @@ class VoAgentFlowVO {
             if (data.hasOwnProperty('description')) {
                 obj['description'] = ApiClient.convertToType(data['description'], 'String');
             }
+            if (data.hasOwnProperty('icon')) {
+                obj['icon'] = ApiClient.convertToType(data['icon'], 'String');
+            }
+            if (data.hasOwnProperty('iconKey')) {
+                obj['iconKey'] = ApiClient.convertToType(data['iconKey'], 'String');
+            }
             if (data.hasOwnProperty('id')) {
                 obj['id'] = ApiClient.convertToType(data['id'], 'Number');
             }
@@ -96,6 +102,14 @@ class VoAgentFlowVO {
             throw new Error("Expected the field `description` to be a primitive type in the JSON string but got " + data['description']);
         }
         // ensure the json data is a string
+        if (data['icon'] && !(typeof data['icon'] === 'string' || data['icon'] instanceof String)) {
+            throw new Error("Expected the field `icon` to be a primitive type in the JSON string but got " + data['icon']);
+        }
+        // ensure the json data is a string
+        if (data['iconKey'] && !(typeof data['iconKey'] === 'string' || data['iconKey'] instanceof String)) {
+            throw new Error("Expected the field `iconKey` to be a primitive type in the JSON string but got " + data['iconKey']);
+        }
+        // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
         }
@@ -134,6 +148,17 @@ VoAgentFlowVO.prototype['currentVersion'] = undefined;
  * @member {String} description
  */
 VoAgentFlowVO.prototype['description'] = undefined;
+
+/**
+ * Icon 为签名后的临时下载 URL（管理端预览）；IconKey 为 COS 对象 key（表单回填） Icon is the signed download URL for preview; IconKey is the raw COS key
+ * @member {String} icon
+ */
+VoAgentFlowVO.prototype['icon'] = undefined;
+
+/**
+ * @member {String} iconKey
+ */
+VoAgentFlowVO.prototype['iconKey'] = undefined;
 
 /**
  * @member {Number} id

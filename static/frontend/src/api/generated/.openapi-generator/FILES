@@ -295,4 +295,3 @@ src/model/WikiGraphData.js
 src/model/WikiGraphEdge.js
 src/model/WikiGraphNode.js
 src/model/WikiagentQAHistoryItem.js
-test/model/DomainOpsChatProposalItem.spec.js

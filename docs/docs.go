@@ -5491,6 +5491,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "icon": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -6205,6 +6208,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "description": {
+                    "type": "string"
+                },
+                "icon": {
                     "type": "string"
                 },
                 "name": {
@@ -7016,6 +7022,13 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "icon": {
+                    "description": "Icon 为签名后的临时下载 URL（管理端预览）；IconKey 为 COS 对象 key（表单回填）\nIcon is the signed download URL for preview; IconKey is the raw COS key",
+                    "type": "string"
+                },
+                "iconKey": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -7699,6 +7712,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "icon": {
+                    "description": "Icon 为签名后的临时下载 URL（前台直接展示）；IconKey 为 COS 对象 key\nIcon is the signed download URL for the client; IconKey is the raw COS key",
+                    "type": "string"
+                },
+                "iconKey": {
                     "type": "string"
                 },
                 "id": {

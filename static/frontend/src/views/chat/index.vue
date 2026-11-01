@@ -2086,6 +2086,9 @@ const isCurrentStreamingMessage = (message) => {
 // 欢迎页预填后是否需要聚焦编辑器（initEditor 中消费，一次性）
 // Whether to focus the editor after a welcome-prompt prefill (consumed once in initEditor)
 let welcomePromptFocus = false
+// 欢迎页带来的提示词是否需要自动发送（编辑器就绪后消费，一次性）
+// Whether the welcome-page prompt should be auto-sent (consumed once after the editor is ready)
+let welcomePromptAutoSend = false
 
 // 监听系统主题变化
 onMounted(async () => {
@@ -2097,6 +2100,9 @@ onMounted(async () => {
   if (typeof welcomePrompt === 'string' && welcomePrompt.trim()) {
     messageInput.value = welcomePrompt
     welcomePromptFocus = true
+    // 首页「问问 Txing AI...」发起的对话：进入聊天页即自动发送，无需再按回车
+    // Conversations started from the home search box are sent automatically
+    welcomePromptAutoSend = true
   }
 
   // 清空进行中消息缓存
@@ -2148,6 +2154,16 @@ onMounted(async () => {
     // 最后初始化编辑器内容
     nextTick(() => {
       initEditor()
+      // 欢迎页带提示词进入：编辑器就绪后自动发送（等价于用户按下回车）
+      // Arriving with a welcome prompt: send it once the editor is ready (same as pressing Enter)
+      if (welcomePromptAutoSend) {
+        welcomePromptAutoSend = false
+        if (currentChat.value) {
+          // 自动发送失败不应阻塞页面，仅记录日志（sendMessage 内部已有用户可见的错误提示）
+          // A failed auto-send must not block the page; sendMessage surfaces its own errors
+          sendMessage().catch(err => console.error('自动发送首页提示词失败:', err))
+        }
+      }
     })
   }
 })

@@ -56,6 +56,12 @@ class VoPublishedWorkflowVO {
             if (data.hasOwnProperty('description')) {
                 obj['description'] = ApiClient.convertToType(data['description'], 'String');
             }
+            if (data.hasOwnProperty('icon')) {
+                obj['icon'] = ApiClient.convertToType(data['icon'], 'String');
+            }
+            if (data.hasOwnProperty('iconKey')) {
+                obj['iconKey'] = ApiClient.convertToType(data['iconKey'], 'String');
+            }
             if (data.hasOwnProperty('id')) {
                 obj['id'] = ApiClient.convertToType(data['id'], 'Number');
             }
@@ -88,6 +94,14 @@ class VoPublishedWorkflowVO {
             throw new Error("Expected the field `description` to be a primitive type in the JSON string but got " + data['description']);
         }
         // ensure the json data is a string
+        if (data['icon'] && !(typeof data['icon'] === 'string' || data['icon'] instanceof String)) {
+            throw new Error("Expected the field `icon` to be a primitive type in the JSON string but got " + data['icon']);
+        }
+        // ensure the json data is a string
+        if (data['iconKey'] && !(typeof data['iconKey'] === 'string' || data['iconKey'] instanceof String)) {
+            throw new Error("Expected the field `iconKey` to be a primitive type in the JSON string but got " + data['iconKey']);
+        }
+        // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
         }
@@ -118,6 +132,17 @@ VoPublishedWorkflowVO.prototype['createTime'] = undefined;
  * @member {String} description
  */
 VoPublishedWorkflowVO.prototype['description'] = undefined;
+
+/**
+ * Icon 为签名后的临时下载 URL（前台直接展示）；IconKey 为 COS 对象 key Icon is the signed download URL for the client; IconKey is the raw COS key
+ * @member {String} icon
+ */
+VoPublishedWorkflowVO.prototype['icon'] = undefined;
+
+/**
+ * @member {String} iconKey
+ */
+VoPublishedWorkflowVO.prototype['iconKey'] = undefined;
 
 /**
  * @member {Number} id

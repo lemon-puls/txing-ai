@@ -1,27 +1,19 @@
 <template>
   <div class="workflow-market-container">
-    <!-- 顶部 Hero 区域 / Top Hero Section -->
+    <!-- 顶部标题区：品牌色氛围底（极淡光晕 + 网格渐隐），克制但有焦点 -->
+    <!-- Top header: faint brand halo + fading grid — subtle but with a focal point -->
     <section class="hero-section">
-      <div class="hero-bg">
-        <div class="hero-aurora aurora-1"></div>
-        <div class="hero-aurora aurora-2"></div>
-        <div class="hero-aurora aurora-3"></div>
+      <div class="hero-bg" aria-hidden="true">
         <div class="hero-grid"></div>
-        <div class="hero-noise"></div>
       </div>
-
       <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          <span>AI App Store · {{ workflows.length }}+ 应用</span>
+        <div class="hero-heading">
+          <div>
+            <h1 class="hero-title"><span class="title-bar"></span>AI 应用市场</h1>
+            <p class="hero-subtitle">即插即用的智能工作流，从内容创作到代码生成</p>
+          </div>
+          <span class="hero-count">{{ workflows.length }} 个应用</span>
         </div>
-        <h1 class="hero-title">
-          <span class="title-line">探索强大的</span>
-          <span class="title-line gradient-text">AI 应用市场</span>
-        </h1>
-        <p class="hero-subtitle">
-          即插即用的智能工作流，让 AI 真正为你所用 —— 从内容创作到代码生成，从知识学习到生活助手。
-        </p>
 
         <div class="search-wrapper">
           <div class="search-box" :class="{ focused: searchFocused }">
@@ -29,7 +21,7 @@
             <input
               v-model="searchQuery"
               class="search-input"
-              placeholder="搜索你需要的 AI 应用..."
+              placeholder="搜索你需要的 AI 应用"
               clearable
               @keyup.enter="handleSearch"
               @focus="searchFocused = true"
@@ -38,13 +30,10 @@
             <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">
               <el-icon><Close /></el-icon>
             </button>
-            <button class="search-btn" @click="handleSearch">
-              <el-icon><Search /></el-icon>
-              <span>搜索</span>
-            </button>
+            <button class="search-btn" @click="handleSearch">搜索</button>
           </div>
           <div class="hot-tags">
-            <span class="hot-label">热门:</span>
+            <span class="hot-label">热门</span>
             <span
               v-for="tag in hotSearches"
               :key="tag"
@@ -56,34 +45,22 @@
       </div>
     </section>
 
-    <!-- 分类导航 / Category Navigation -->
+    <!-- 分类导航：紧凑 pill，选中态只有主色，不再每类一个彩色图标 -->
+    <!-- Category nav: compact pills; the selected one only uses the brand color -->
     <section class="category-section">
       <div class="category-wrapper">
-        <div class="category-header">
-          <h2 class="section-title">
-            <span class="title-decor"></span>
-            应用分类
-          </h2>
-          <span class="category-count">{{ workflows.length }} 个应用</span>
-        </div>
         <div class="category-scroll">
           <div class="category-nav">
-            <div
+            <button
               v-for="tag in categories"
               :key="tag.id"
               class="category-item"
-              :class="[`cat-${tag.id}`, { active: currentCategory === tag.id }]"
+              :class="{ active: currentCategory === tag.id }"
               @click="selectCategory(tag.id)"
             >
-              <div class="cat-icon">
-                <el-icon :size="18"><component :is="tag.icon" /></el-icon>
-              </div>
-              <div class="cat-info">
-                <span class="cat-name">{{ tag.name }}</span>
-                <span class="cat-desc">{{ tag.desc }}</span>
-              </div>
-              <div class="cat-glow"></div>
-            </div>
+              <el-icon :size="14"><component :is="tag.icon" /></el-icon>
+              <span>{{ tag.name }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -92,10 +69,7 @@
     <!-- 应用列表 / App Grid -->
     <section class="apps-section">
       <div class="apps-header">
-        <h2 class="section-title">
-          <span class="title-decor"></span>
-          {{ currentCategoryName }}
-        </h2>
+        <h2 class="section-title">{{ currentCategoryName }}</h2>
         <div class="view-toggle">
           <button
             class="view-btn"
@@ -118,12 +92,8 @@
 
       <!-- 加载状态 / Loading -->
       <div v-if="loading" class="loading-state">
-        <div class="loading-spinner">
-          <div class="spinner-ring"></div>
-          <div class="spinner-ring"></div>
-          <div class="spinner-ring"></div>
-        </div>
-        <p>正在加载应用...</p>
+        <el-icon class="is-loading" :size="22"><Loading /></el-icon>
+        <span>正在加载应用…</span>
       </div>
 
       <!-- 空状态 / Empty -->
@@ -134,7 +104,7 @@
       >
         <template #image>
           <div class="empty-illustration">
-            <el-icon :size="80"><Box /></el-icon>
+            <el-icon :size="56"><Box /></el-icon>
           </div>
         </template>
       </el-empty>
@@ -145,64 +115,72 @@
           v-for="(workflow, index) in workflows"
           :key="workflow.id"
           class="app-card"
-          :class="[`cat-${workflow.category || 'default'}`]"
-          :style="{ animationDelay: `${index * 0.05}s` }"
+          :style="{ animationDelay: `${index * 0.04}s` }"
           @click="useWorkflow(workflow)"
+          @mousemove="onCardMove"
         >
-          <!-- 卡片光效 / Card glow -->
-          <div class="card-glow"></div>
+          <!-- 跟随鼠标的品牌色光斑（8%，仅在悬停时出现） -->
+          <!-- Pointer-following brand glow (8%, hover only) -->
+          <span class="card-spot" aria-hidden="true"></span>
 
-          <!-- 头部 / Header -->
+          <!-- 右下角水印：同分类的大号淡图标，悬停时微微回正放大 -->
+          <!-- Corner watermark: oversized faint category glyph that levels up on hover -->
+          <span class="card-watermark" aria-hidden="true">
+            <el-icon><component :is="getCategoryIcon(workflow.category)" /></el-icon>
+          </span>
+
+          <!-- 头部：图标 + 标题/副行 + 右侧圆形箭头 CTA -->
+          <!-- Header: icon + title/subline + a round arrow CTA -->
           <header class="card-top">
-            <div class="app-icon">
-              <div class="icon-bg"></div>
-              <el-icon :size="26"><component :is="getCategoryIcon(workflow.category)" /></el-icon>
-              <div class="icon-shine"></div>
+            <!-- 优先用后台上传的图标；未上传时回退确定性字母头像 -->
+            <!-- Prefer the uploaded icon; fall back to the deterministic letter avatar -->
+            <div
+              v-if="workflow.icon"
+              class="app-icon app-icon--image"
+            >
+              <img :src="workflow.icon" :alt="workflow.name" loading="lazy" />
             </div>
-            <div class="app-meta-tags">
-              <span v-if="workflow.isHot" class="hot-pin">
-                <el-icon><StarFilled /></el-icon>
-                HOT
+            <div v-else class="app-icon" :style="{ background: appAvatar(workflow).bg }">
+              <span class="app-icon-ch">{{ appAvatar(workflow).ch }}</span>
+            </div>
+            <div class="card-headline">
+              <h3 class="app-title">
+                <span class="app-name">{{ workflow.name }}</span>
+                <span v-if="workflow.isHot" class="hot-pin">热门</span>
+                <span v-if="workflow.isNew" class="new-pin">新</span>
+              </h3>
+              <span v-if="workflow.category || workflow.model" class="app-sub">
+                {{ getCategoryLabel(workflow.category) }}<template v-if="workflow.model"> · {{ workflow.model }}</template>
               </span>
-              <span v-if="workflow.isNew" class="new-pin">NEW</span>
             </div>
           </header>
 
-          <!-- 内容 / Content -->
-          <div class="card-content">
-            <h3 class="app-title">{{ workflow.name }}</h3>
-            <p class="app-desc">{{ workflow.description || '暂无描述' }}</p>
-          </div>
+          <!-- 描述 / Description -->
+          <p class="app-desc">{{ workflow.description || '暂无描述' }}</p>
 
-          <!-- 标签 / Tags -->
-          <div class="card-tags">
-            <span class="tag-pill">
-              <el-icon :size="12"><Folder /></el-icon>
-              {{ getCategoryLabel(workflow.category) }}
-            </span>
-            <span v-if="workflow.model" class="tag-pill">
-              <el-icon :size="12"><Cpu /></el-icon>
-              {{ workflow.model }}
-            </span>
-          </div>
-
-          <!-- 底部 / Footer -->
-          <footer class="card-bottom">
+          <!-- 底部：仅有统计数据时渲染，避免空栏 -->
+          <!-- Footer renders only when stats exist -->
+          <footer
+            v-if="workflow.usageCount !== undefined || workflow.rating !== undefined"
+            class="card-bottom"
+          >
             <div class="app-stats">
               <div class="stat-item" v-if="workflow.usageCount !== undefined">
-                <el-icon :size="14"><View /></el-icon>
+                <el-icon :size="13"><View /></el-icon>
                 <span>{{ formatCount(workflow.usageCount) }}</span>
               </div>
               <div class="stat-item" v-if="workflow.rating !== undefined">
-                <el-icon :size="14" class="star-icon"><Star /></el-icon>
+                <el-icon :size="13" class="star-icon"><Star /></el-icon>
                 <span>{{ workflow.rating.toFixed ? workflow.rating.toFixed(1) : workflow.rating }}</span>
               </div>
             </div>
-            <button class="run-btn" @click.stop="useWorkflow(workflow)">
-              <span>立即使用</span>
-              <el-icon><ArrowRight /></el-icon>
-            </button>
           </footer>
+
+          <!-- 圆形箭头 CTA：固定在卡片右下角，整卡可点时作为视觉提示 -->
+          <!-- Round arrow CTA pinned to the card corner; the whole card is clickable -->
+          <span class="card-arrow" aria-hidden="true">
+            <el-icon><ArrowRight /></el-icon>
+          </span>
         </article>
       </div>
     </section>
@@ -214,11 +192,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Search, ArrowRight, Grid, Star, Tools, Edit, Monitor, Reading, House, More,
-  Close, StarFilled, Box, List, View, Cpu, Folder, ChatLineRound, Document,
+  Close, StarFilled, Box, List, View, Loading, ChatLineRound, Document,
   Picture, Promotion, DataAnalysis
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { defaultApi } from '@/api'
+import { useThemeStore } from '@/stores/theme'
 import { authResolvedTick, isAuthError } from '@/utils/authPrompt'
 
 defineOptions({
@@ -226,6 +205,7 @@ defineOptions({
 })
 
 const router = useRouter()
+const themeStore = useThemeStore()
 
 const searchQuery = ref('')
 const searchFocused = ref(false)
@@ -270,18 +250,50 @@ const iconMap = {
 }
 
 const getCategoryIcon = (category) => {
+  // 映射表存「组件名字符串」再查 iconMap；直接存组件对象会让 iconMap[对象] 恒为 undefined（图标空白）
+  // Keep strings here: indexing iconMap with a component object always yields undefined (blank icons)
   const map = {
-    popular: StarFilled,
-    chat: ChatLineRound,
-    writing: Edit,
-    tools: Tools,
-    coding: Monitor,
-    learning: Reading,
-    image: Picture,
-    analysis: DataAnalysis,
-    life: House
+    popular: 'StarFilled',
+    chat: 'ChatLineRound',
+    writing: 'Edit',
+    tools: 'Tools',
+    coding: 'Monitor',
+    learning: 'Reading',
+    image: 'Picture',
+    analysis: 'DataAnalysis',
+    life: 'House'
   }
   return iconMap[map[category] || 'Grid']
+}
+
+// 字母头像：无图标数据时按应用名生成确定性头像（首字符 + 哈希选色），
+// 参考主流市场（VS Code/Google Contacts/Raycast）的 letter-avatar 兜底。
+// 同一应用永远同色（可记忆），不同应用大概率不同色（避免分类级重复）。
+// Letter avatar: deterministic per-app fallback (initial + name-hash colour),
+// the mainstream pattern when apps ship no icon of their own
+const appAvatar = (workflow) => {
+  const name = String(workflow.name || '').trim()
+  const chars = Array.from(name)
+  const first = chars[0] || 'A'
+  const isLatin = /^[a-z]$/i.test(first)
+  const ch = isLatin ? first.toUpperCase() : first
+  // 种子从首字符出发并叠加次字符：让同前缀（如多个 "AI …"）的应用也大概率散开
+  // Seed from the first char and fold in the second, so same-prefix names
+  // (e.g. several "AI …") still spread across the hue band
+  let h = (first.codePointAt(0) * 131) >>> 0
+  if (chars.length > 1) h = (h * 31 + chars[1].codePointAt(0)) >>> 0
+  for (let i = 2; i < chars.length; i++) h = (h * 31 + chars[i].codePointAt(0)) >>> 0
+  // 色相限定在青→蓝→靛→紫冷色带（185°-305°，16 档）并叠加两档亮度，
+  // 共 32 种组合：与品牌蓝同族不花哨，几十个应用也几乎不撞色，白字对比达标
+  // Hue spread over a 16-step cool band plus two lightness steps (32 combos):
+  // harmonious with the brand colour; dozens of apps rarely share a look
+  // 色带围绕品牌蓝（hue≈225）两侧展开：185°-265°，青→蓝→靛，
+  // 越过 265° 就开始发紫、与品牌蓝脱钩，故不外扩
+  // band centred on the brand blue: 185°-265° (teal→blue→indigo);
+  // past ~265° it turns purple and drifts away from the brand hue
+  const hue = 185 + (h % 9) * 10
+  const light = 38 - ((h >>> 4) % 2) * 3
+  return { ch, bg: `hsl(${hue}, 62%, ${light}%)` }
 }
 
 const getCategoryLabel = (category) => {
@@ -373,250 +385,161 @@ const useWorkflow = (workflow) => {
   })
 }
 
+// 卡片光斑跟随指针：只写 CSS 变量，样式侧消费，避免每帧触发 Vue 更新
+// Track the pointer with CSS variables only — no reactive updates per frame
+const onCardMove = (e) => {
+  const el = e.currentTarget
+  const rect = el.getBoundingClientRect()
+  el.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+  el.style.setProperty('--my', `${e.clientY - rect.top}px`)
+}
+
 onMounted(() => {
+  // 应用用户主题偏好：本页此前不调用，深色偏好直开/刷新时失效（与其他公开页一致）
+  // Apply the saved theme; without this a direct load ignores the dark preference
+  themeStore.initTheme()
   loadWorkflows()
 })
 </script>
 
 <style lang="scss" scoped>
 // ====================
-// 主题变量 / Theme Variables
+// 视觉基调 / Visual language
+// 去装饰化：无渐变文字、无极光/网格/噪点、无光晕与流光、无每类一色的图标；
+// 只用品牌色 + 中性灰阶，靠排版、间距与边框建立层次
+// Decoration-free: no gradient text, aurora, grid, noise, glows or shine, and no
+// per-category colors — hierarchy comes from type, spacing and hairlines instead
 // ====================
-$primary: var(--el-color-primary, #409EFF);
-$primary-rgb: var(--el-color-primary-rgb, 64, 158, 255);
 
-// 渐变色板 / Gradient Palette
-$grad-blue: linear-gradient(135deg, #2B5EFF 0%, #4facfe 100%);
-$grad-purple: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
-$grad-cyan: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
-$grad-orange: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
-$grad-green: linear-gradient(135deg, #10B981 0%, #34D399 100%);
-$grad-pink: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
-$grad-amber: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
-$grad-indigo: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
-$grad-teal: linear-gradient(135deg, #14B8A6 0%, #06B6D4 100%);
-$grad-rose: linear-gradient(135deg, #F43F5E 0%, #FB7185 100%);
-$grad-violet: linear-gradient(135deg, #A78BFA 0%, #C084FC 100%);
-
-// 分类颜色映射 / Category Color Mapping
-$cat-colors: (
-  popular: $grad-orange,
-  chat: $grad-blue,
-  writing: $grad-purple,
-  tools: $grad-amber,
-  coding: $grad-cyan,
-  learning: $grad-green,
-  image: $grad-pink,
-  analysis: $grad-indigo,
-  life: $grad-teal,
-  other: $grad-violet,
-  default: $grad-blue
-);
-
-// ====================
-// 容器 / Container
-// ====================
 .workflow-market-container {
   min-height: 100vh;
-  background: var(--el-bg-color-page, #f5f7fa);
-  position: relative;
-  overflow-x: hidden;
+  // 页面底色与顶栏/卡片的白面拉开一层，但保持中性
+  // Neutral page ground, one step below the white header and cards
+  background: var(--el-bg-color-page, #f7f8fa);
+  color: var(--el-text-color-primary);
 }
 
 // ====================
-// Hero 区域
+// 标题区 / Header
 // ====================
 .hero-section {
   position: relative;
-  padding: 80px 24px 120px;
   overflow: hidden;
-  isolation: isolate;
+  background: var(--el-bg-color);
 }
 
+// 品牌氛围底：顶部中心的极淡光晕 + 向下渐隐的细网格
+// Brand ambience: faint halo at the top centre plus a fading fine grid
 .hero-bg {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(
+    620px 280px at 50% -80px,
+    color-mix(in srgb, var(--el-color-primary) 17%, transparent),
+    transparent 72%
+  );
 
-  // 极光效果 / Aurora effect
-  .hero-aurora {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.5;
-    animation: aurora-float 20s ease-in-out infinite;
-
-    &.aurora-1 {
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(43, 94, 255, 0.4), transparent 70%);
-      top: -200px;
-      left: -100px;
-      animation-delay: 0s;
-    }
-
-    &.aurora-2 {
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(139, 92, 246, 0.35), transparent 70%);
-      top: -100px;
-      right: -100px;
-      animation-delay: -7s;
-    }
-
-    &.aurora-3 {
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(236, 72, 153, 0.25), transparent 70%);
-      bottom: -100px;
-      left: 50%;
-      animation-delay: -14s;
-    }
-  }
-
-  // 网格背景 / Grid background
   .hero-grid {
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(var(--divider-rgb, 0, 0, 0), 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(var(--divider-rgb, 0, 0, 0), 0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+      linear-gradient(color-mix(in srgb, var(--el-color-primary) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--el-color-primary) 9%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 620px 300px at 50% 0%, #000 15%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 620px 300px at 50% 0%, #000 15%, transparent 78%);
   }
-
-  // 噪点纹理 / Noise texture
-  .hero-noise {
-    position: absolute;
-    inset: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  }
-}
-
-@keyframes aurora-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%      { transform: translate(30px, -30px) scale(1.1); }
-  66%      { transform: translate(-20px, 20px) scale(0.95); }
 }
 
 .hero-content {
   position: relative;
-  z-index: 1;
-  max-width: 760px;
+  max-width: 1120px;
   margin: 0 auto;
-  text-align: center;
+  padding: 46px 24px 30px;
 }
 
-// Hero Badge
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
+.hero-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 24px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--el-text-color-regular);
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 999px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(8px);
-
-  .badge-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #10B981, #34D399);
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.6; transform: scale(1.2); }
-}
-
-// Hero Title
 .hero-title {
-  margin: 0 0 20px;
-  font-size: 3.4em;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -1px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 7px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  line-height: 1.22;
   color: var(--el-text-color-primary);
 
-  .title-line {
-    display: block;
+  // 品牌色竖条：纯色而非渐变，作为标题的视觉起点
+  // Solid brand bar (not a gradient) anchoring the title
+  .title-bar {
+    width: 4px;
+    height: 26px;
+    border-radius: 2px;
+    background: var(--el-color-primary);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--el-color-primary) 45%, transparent);
   }
-
-  .gradient-text {
-    background: linear-gradient(135deg, #2B5EFF 0%, #8B5CF6 50%, #EC4899 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: gradient-shift 6s ease-in-out infinite;
-  }
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% center; }
-  50%      { background-position: 100% center; }
 }
 
 .hero-subtitle {
-  margin: 0 auto 40px;
-  max-width: 580px;
-  font-size: 1.05em;
-  line-height: 1.7;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--el-text-color-secondary);
 }
 
-// Search Box
+.hero-count {
+  padding: 3px 11px;
+  font-size: 12.5px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+// 搜索：扁平输入框 + 实心按钮，聚焦只变边框与一圈极淡的主色环
+// Search: flat field + solid button; focus only shifts the border and adds a faint ring
 .search-wrapper {
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 560px;
 }
 
 .search-box {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 56px;
-  padding: 6px;
+  height: 48px;
+  padding: 0 4px 0 14px;
   background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 18px;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--el-border-color);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 
   &.focused {
-    border-color: $primary;
+    border-color: var(--el-color-primary);
     box-shadow:
-      0 0 0 4px rgba($primary-rgb, 0.08),
-      0 8px 32px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+      0 0 0 3px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+      0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   .search-icon {
-    margin-left: 12px;
-    font-size: 18px;
-    color: var(--el-text-color-secondary);
+    font-size: 17px;
+    color: var(--el-text-color-placeholder);
   }
 
   .search-input {
     flex: 1;
     height: 100%;
     padding: 0 8px;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--el-text-color-primary);
     background: transparent;
     border: none;
@@ -631,353 +554,225 @@ $cat-colors: (
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     color: var(--el-text-color-secondary);
-    background: var(--el-fill-color-light);
+    background: transparent;
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.18s ease, background 0.18s ease;
 
     &:hover {
       color: var(--el-text-color-primary);
-      background: var(--el-fill-color);
+      background: var(--el-fill-color-light);
     }
   }
 
   .search-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 100%;
+    height: 38px;
     padding: 0 20px;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 500;
     color: #fff;
-    background: linear-gradient(135deg, #2B5EFF 0%, #4facfe 100%);
+    background: var(--el-color-primary);
     border: none;
-    border-radius: 14px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(43, 94, 255, 0.25);
+    transition: opacity 0.18s ease;
 
     &:hover {
-      transform: scale(1.02);
-      box-shadow: 0 6px 18px rgba(43, 94, 255, 0.35);
-    }
-
-    &:active {
-      transform: scale(0.98);
+      opacity: 0.88;
     }
   }
 }
 
-// Hot Tags
 .hot-tags {
   display: flex;
   align-items: center;
-  justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
+  gap: 6px;
+  margin-top: 14px;
   font-size: 13px;
 
   .hot-label {
-    color: var(--el-text-color-secondary);
+    margin-right: 2px;
+    color: var(--el-text-color-placeholder);
   }
 
   .hot-tag {
-    padding: 4px 12px;
+    padding: 2px 9px;
     color: var(--el-text-color-regular);
-    background: var(--el-bg-color);
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 999px;
+    background: var(--el-fill-color-light);
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.18s ease, background 0.18s ease;
 
     &:hover {
-      color: $primary;
-      border-color: $primary;
-      background: rgba($primary-rgb, 0.04);
-      transform: translateY(-1px);
+      color: var(--el-color-primary);
+      background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
     }
   }
 }
 
 // ====================
-// 分类导航
+// 分类导航：灰底上的白 pill，选中用主色浅底
+// Category nav: white pills on the page ground; the selected one is brand-tinted
 // ====================
 .category-section {
-  margin-top: -60px;
-  padding: 0 24px;
-  position: relative;
-  z-index: 5;
+  padding-top: 24px;
 }
 
 .category-wrapper {
-  max-width: 1200px;
+  max-width: 1120px;
   margin: 0 auto;
-}
-
-.category-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 0 4px;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-  font-size: 1.4em;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-
-  .title-decor {
-    width: 4px;
-    height: 20px;
-    background: linear-gradient(135deg, #2B5EFF 0%, #8B5CF6 100%);
-    border-radius: 2px;
-  }
-}
-
-.category-count {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-
-  &::before {
-    content: '·';
-    margin-right: 6px;
-    color: $primary;
-  }
+  padding: 0 24px;
 }
 
 .category-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 4px;
+  scrollbar-width: none;
 
   &::-webkit-scrollbar {
-    height: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--el-border-color);
-    border-radius: 2px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
+    height: 0;
   }
 }
 
 .category-nav {
   display: flex;
-  gap: 12px;
-  padding: 4px;
+  gap: 8px;
   min-width: max-content;
 }
 
 .category-item {
-  position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  min-width: 140px;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 14px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  white-space: nowrap;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease,
+    transform 0.18s ease, box-shadow 0.18s ease;
 
-  .cat-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    color: #fff;
-    background: $grad-blue;
-    border-radius: 12px;
-    transition: transform 0.3s ease;
-    flex-shrink: 0;
-  }
-
-  .cat-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .cat-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
-    line-height: 1.2;
-  }
-
-  .cat-desc {
-    font-size: 11px;
-    color: var(--el-text-color-secondary);
-    line-height: 1.2;
-  }
-
-  .cat-glow {
-    position: absolute;
-    inset: 0;
-    border-radius: 14px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    background: radial-gradient(circle at center, rgba($primary-rgb, 0.08), transparent 70%);
+  .el-icon {
+    color: var(--el-text-color-placeholder);
+    transition: color 0.18s ease;
   }
 
   &:hover {
-    transform: translateY(-2px);
-    border-color: rgba($primary-rgb, 0.3);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+    color: var(--el-color-primary);
+    border-color: var(--el-color-primary-light-7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
-    .cat-icon {
-      transform: scale(1.08) rotate(-5deg);
+    .el-icon {
+      color: var(--el-color-primary);
     }
   }
 
+  // 选中：主色实底白字，成为分类行里唯一的强对比焦点
+  // Selected: solid brand fill with white text — the single strong contrast in the row
   &.active {
-    border-color: transparent;
-    box-shadow: 0 8px 24px rgba(43, 94, 255, 0.18);
+    color: #fff;
+    font-weight: 600;
+    background: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 32%, transparent);
 
-    .cat-glow {
-      opacity: 1;
+    .el-icon {
+      color: #fff;
     }
 
-    .cat-icon {
-      background: linear-gradient(135deg, #2B5EFF 0%, #8B5CF6 100%);
+    &:hover {
+      color: #fff;
     }
-  }
-}
-
-// 分类图标颜色 / Category icon colors
-@each $name, $gradient in $cat-colors {
-  .category-item.cat-#{$name} .cat-icon {
-    background: $gradient;
   }
 }
 
 // ====================
-// 应用列表
+// 应用列表 / Apps
 // ====================
 .apps-section {
-  max-width: 1200px;
-  padding: 48px 24px 80px;
+  max-width: 1120px;
   margin: 0 auto;
+  padding: 28px 24px 64px;
 }
 
 .apps-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
 }
 
 .view-toggle {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--el-fill-color-light);
-  border-radius: 10px;
+  gap: 2px;
 
   .view-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 28px;
+    width: 28px;
+    height: 26px;
     color: var(--el-text-color-secondary);
     background: transparent;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: color 0.18s ease, background 0.18s ease;
 
     &:hover {
       color: var(--el-text-color-primary);
+      background: var(--el-fill-color-light);
     }
 
     &.active {
-      color: $primary;
-      background: var(--el-bg-color);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      color: var(--el-color-primary);
+      background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
     }
   }
 }
 
-// 加载状态 / Loading state
 .loading-state {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 0;
-  gap: 20px;
+  gap: 10px;
+  padding: 64px 0;
+  font-size: 13px;
   color: var(--el-text-color-secondary);
-
-  .loading-spinner {
-    position: relative;
-    width: 60px;
-    height: 60px;
-  }
-
-  .spinner-ring {
-    position: absolute;
-    inset: 0;
-    border: 3px solid transparent;
-    border-top-color: $primary;
-    border-radius: 50%;
-    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-
-    &:nth-child(2) {
-      inset: 8px;
-      border-top-color: #8B5CF6;
-      animation-duration: 1.6s;
-      animation-direction: reverse;
-    }
-
-    &:nth-child(3) {
-      inset: 16px;
-      border-top-color: #EC4899;
-      animation-duration: 2s;
-    }
-  }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// 空状态 / Empty state
 .empty-state {
-  padding: 60px 0;
+  padding: 56px 0;
 
   .empty-illustration {
     color: var(--el-text-color-placeholder);
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 
-// 应用网格 / Apps grid
 .apps-grid {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 
   &.view-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 
   &.view-list {
@@ -985,92 +780,94 @@ $cat-colors: (
   }
 }
 
-// 应用卡片 / App card
+// 卡片：白面 + 发丝边；悬停上浮 2px、顶部扫过一道品牌色亮线，光斑跟随指针
+// Cards: white surface + hairline; hover lifts 2px, a brand light sweeps the top edge
+// and a pointer-following glow becomes visible
 .app-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 22px;
+  padding: 20px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 18px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  animation: card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 
-  // 顶部光效 / Top glow
+  // 顶部亮线：悬停时从中间向两侧展开
+  // Top light: expands from the centre outwards on hover
   &::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 80px;
-    opacity: 0;
-    transition: opacity 0.4s ease;
+    left: 14px;
+    right: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--el-color-primary), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
     pointer-events: none;
-    z-index: 0;
-  }
-
-  // 悬停光斑 / Hover glow
-  .card-glow {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-    background: radial-gradient(
-      circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
-      rgba($primary-rgb, 0.08),
-      transparent 40%
-    );
   }
 
   &:hover {
-    transform: translateY(-6px);
-    border-color: rgba($primary-rgb, 0.2);
-    box-shadow:
-      0 16px 48px rgba(0, 0, 0, 0.08),
-      0 4px 12px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+    border-color: var(--el-color-primary-light-7);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
 
-    .card-glow {
-      opacity: 1;
+    &::before {
+      transform: scaleX(1);
     }
 
-    .run-btn {
-      background: linear-gradient(135deg, #2B5EFF 0%, #4facfe 100%);
-      color: #fff;
-      box-shadow: 0 6px 18px rgba(43, 94, 255, 0.3);
-
-      .el-icon {
-        transform: translateX(4px);
-      }
+    .card-spot {
+      opacity: 1;
     }
   }
 
-  // 列表视图样式 / List view style
+  // 指针光斑：位置由 --mx/--my 驱动，只在悬停时浮现
+  // Pointer glow driven by --mx/--my, visible on hover only
+  .card-spot {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in srgb, var(--el-color-primary) 10%, transparent),
+      transparent 66%
+    );
+    transition: opacity 0.25s ease;
+  }
+
+  // 列表视图：单行横排
+  // List view: a single horizontal row
   .view-list & {
     flex-direction: row;
     align-items: center;
-    gap: 20px;
-    padding: 18px 24px;
+    gap: 18px;
+    padding: 14px 18px;
 
     .card-top {
       flex-shrink: 0;
       margin-bottom: 0;
     }
 
-    .card-content {
+    .app-desc {
       flex: 1;
       margin-bottom: 0;
+      min-height: 0;
+      -webkit-line-clamp: 1;
     }
 
-    .card-tags {
-      flex-shrink: 0;
+    // 列表模式信息密集，去掉水印与光斑，只留箭头作为可点提示
+    // The list is dense: drop the watermark and glow, keep only the arrow hint
+    .card-watermark,
+    .card-spot {
+      display: none;
     }
 
     .card-bottom {
@@ -1081,168 +878,209 @@ $cat-colors: (
   }
 }
 
-@keyframes card-enter {
+@keyframes card-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
-// 卡片顶部 / Card top
+// 尊重"减少动态效果"偏好：入场与悬停位移全部关闭
+// Honour prefers-reduced-motion: no entrance or hover motion
+@media (prefers-reduced-motion: reduce) {
+  .app-card {
+    animation: none;
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+
+    &::before,
+    .card-spot {
+      display: none;
+    }
+  }
+}
+
 .card-top {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
+// 标题 + 分类/模型副行，占据头部中间的弹性宽度
+// Title with a category/model subline, taking the flexible middle width
+.card-headline {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-sub {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 字母头像：哈希选色的实底 + 白色首字符，作为每张卡片的视觉锚点
+// Letter avatar: hash-picked solid with a white initial — the per-card anchor
 .app-icon {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  color: #fff;
-  background: $grad-blue;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 6px 16px rgba(43, 94, 255, 0.25);
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 
-  .icon-bg {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent 60%);
+  // 上传的图标：铺满圆角方块，白底兜底透明度
+  // Uploaded icon fills the rounded square, on a white backing
+  &.app-icon--image {
+    background: var(--el-bg-color);
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
   }
 
-  .icon-shine {
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 50%;
-    height: 200%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    transform: skewX(-20deg);
-    animation: shine 4s ease-in-out infinite;
-  }
-}
-
-@keyframes shine {
-  0%, 100% { transform: translateX(0) skewX(-20deg); }
-  50%      { transform: translateX(300%) skewX(-20deg); }
-}
-
-// 分类图标颜色
-@each $name, $gradient in $cat-colors {
-  .app-card.cat-#{$name} .app-icon {
-    background: $gradient;
-  }
-}
-
-.app-meta-tags {
-  display: flex;
-  gap: 6px;
-
-  .hot-pin,
-  .new-pin {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    border-radius: 999px;
-  }
-
-  .hot-pin {
+  .app-icon-ch {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1;
     color: #fff;
-    background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
-  }
-
-  .new-pin {
-    color: #fff;
-    background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    // 视觉重心微调：汉字/字母都略上移居中
+    // nudge the glyph up slightly for optical centring
+    transform: translateY(-0.5px);
   }
 }
 
-// 卡片内容 / Card content
-.card-content {
+.app-card:hover .app-icon {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--el-color-primary) 34%, transparent);
+}
+
+// 水印：超大号淡色分类图标压在右下角，给卡片一层"图案"而非空白
+// Watermark: an oversized, very faint category glyph in the corner
+.card-watermark {
+  position: absolute;
+  right: -20px;
+  top: -22px;
+  z-index: 0;
+  font-size: 84px;
+  line-height: 1;
+  color: var(--el-color-primary);
+  opacity: 0.04;
+  transform: rotate(-10deg);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.app-card:hover .card-watermark {
+  opacity: 0.075;
+  transform: rotate(-4deg) scale(1.04);
+}
+
+// 标题内的状态徽章：紧跟标题，作为标题的附属信息
+// Status pins inline after the title
+.hot-pin,
+.new-pin {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.7;
+  border-radius: 4px;
+  vertical-align: 1px;
+}
+
+.hot-pin {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.new-pin {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+// 描述区：占据剩余高度，底栏自然沉到卡片底部
+// Description takes the remaining height so the footer settles at the bottom
+.app-desc {
   position: relative;
   z-index: 1;
   flex: 1;
-  margin-bottom: 14px;
-}
-
-.app-title {
-  margin: 0 0 8px;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--el-text-color-primary);
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.app-desc {
-  margin: 0;
+  margin: 0 0 16px;
+  min-height: 40px;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--el-text-color-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 42px;
 }
 
-// 卡片标签 / Card tags
-.card-tags {
-  position: relative;
-  z-index: 1;
+.app-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.tag-pill {
-  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--el-text-color-secondary);
-  background: var(--el-fill-color-light);
-  border-radius: 999px;
-  transition: all 0.2s ease;
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--el-text-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+
+  // 名称单独截断（可收缩），徽章保持原尺寸（不收缩）
+  // The name shrinks and ellipsises; pins never shrink
+  .app-name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hot-pin,
+  .new-pin {
+    flex-shrink: 0;
+  }
 }
 
-.app-card:hover .tag-pill {
-  color: var(--el-text-color-regular);
-}
 
-// 卡片底部 / Card bottom
+
+
+
 .card-bottom {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 14px;
-  border-top: 1px dashed var(--el-border-color-lighter);
+  margin-top: 10px;
+  padding-right: 34px;
 }
 
 .app-stats {
@@ -1252,105 +1090,83 @@ $cat-colors: (
   .stat-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: var(--el-text-color-placeholder);
 
     .star-icon {
-      color: #F59E0B;
+      color: #f59e0b;
     }
   }
 }
 
-.run-btn {
-  display: inline-flex;
+// 头部圆形箭头：默认浅主色，悬停变实底并右移一格
+// Round arrow CTA: brand-tinted by default, solid and nudged right on hover
+.card-arrow {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: $primary;
-  background: rgba($primary-rgb, 0.08);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) 8%, transparent);
+  border-radius: 50%;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
 
-  .el-icon {
-    transition: transform 0.3s ease;
-  }
-
-  &:hover {
-    background: rgba($primary-rgb, 0.12);
-  }
+.app-card:hover .card-arrow {
+  color: #fff;
+  background: var(--el-color-primary);
+  transform: translateX(2px);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 32%, transparent);
 }
 
 // ====================
-// 暗色模式适配
+// 暗色模式：只调对比度，不引入第二套装饰
+// Dark mode: contrast adjustments only, no second decoration pass
+// 注意 scoped 下必须用 html.dark &，:global(.dark) 嵌套会坍缩成裸 .dark 糊到 html 上
 // ====================
-// scoped 下必须用 html.dark & 写法（与 OpsChatPanel/AskPanel 一致）：
-// :global(.dark) 嵌套会被 sass+vue 编译器坍缩成裸 .dark 规则糊到 <html> 上，
-// 曾把整页染成 opacity:0.3 的白纱（切换到本页后再回首页必现）
-// Dark mode must use html.dark & in scoped blocks: :global(.dark) nesting
-// collapses into bare `.dark` rules that stain <html> itself (the white wash bug)
-.hero-section {
+.workflow-market-container {
   html.dark & {
-    background: linear-gradient(180deg, #0a0a0a 0%, #141414 100%);
-  }
-}
-
-.hero-bg {
-  .hero-grid {
-    html.dark & {
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    .hero-section {
+      background: #17181a;
     }
-  }
 
-  .hero-aurora {
-    html.dark & {
-      opacity: 0.3;
+    .search-box,
+    .app-card {
+      background: #17181a;
+      border-color: #2b2c30;
     }
-  }
-}
 
-.search-box,
-.category-item,
-.app-card {
-  html.dark & {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 255, 255, 0.12);
+    .app-card:hover {
+      border-color: #3d3e43;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
     }
-  }
-}
 
-.hero-badge {
-  html.dark & {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-}
-
-.hot-tag {
-  html.dark & {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
-
-    &:hover {
-      background: rgba(64, 158, 255, 0.1);
+    .category-item {
+      background: #17181a;
+      border-color: #2b2c30;
     }
-  }
-}
 
-.tag-pill {
-  html.dark & {
-    background: rgba(255, 255, 255, 0.06);
+    .hot-tag {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .hot-pin {
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.16);
+    }
+
+    .new-pin {
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.16);
+    }
   }
 }
 
@@ -1358,89 +1174,58 @@ $cat-colors: (
 // 响应式 / Responsive
 // ====================
 @media (max-width: 768px) {
-  .hero-section {
-    padding: 50px 16px 90px;
+  .hero-content {
+    padding: 28px 16px 22px;
   }
 
   .hero-title {
-    font-size: 2.2em;
-
-    .title-line {
-      display: inline;
-    }
+    font-size: 22px;
   }
 
-  .hero-subtitle {
-    font-size: 0.95em;
-    margin-bottom: 28px;
+  .hero-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
-  .search-box {
-    height: 50px;
-    border-radius: 14px;
-
-    .search-btn {
-      padding: 0 14px;
-
-      span {
-        display: none;
-      }
-    }
+  .hero-count {
+    padding-bottom: 0;
   }
 
-  .category-section {
-    margin-top: -40px;
-    padding: 0 12px;
-  }
-
-  .category-item {
-    padding: 12px 14px;
-    min-width: 120px;
-
-    .cat-icon {
-      width: 36px;
-      height: 36px;
-    }
-
-    .cat-name {
-      font-size: 13px;
-    }
-
-    .cat-desc {
-      font-size: 10px;
-    }
+  .category-wrapper {
+    padding: 0 16px;
   }
 
   .apps-section {
-    padding: 32px 12px 60px;
-  }
-
-  .section-title {
-    font-size: 1.2em;
+    padding: 22px 16px 48px;
   }
 
   .apps-grid {
-    gap: 14px;
+    gap: 10px;
 
     &.view-grid {
       grid-template-columns: 1fr;
     }
   }
 
-  .app-card {
-    padding: 18px;
-  }
-}
+  // 窄屏下列表视图回到纵向，避免挤压
+  .view-list .app-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
 
-@media (max-width: 480px) {
-  .hero-badge {
-    font-size: 12px;
-    padding: 5px 12px;
-  }
+    .card-top {
+      margin-bottom: 12px;
+    }
 
-  .app-icon {
-    width: 46px;
-    height: 46px;
+    .app-desc {
+      margin-bottom: 12px;
+    }
+
+    .card-bottom {
+      padding-top: 12px;
+      border-top: 1px solid var(--el-border-color-lighter);
+    }
   }
 }
 </style>

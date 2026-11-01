@@ -13,6 +13,7 @@ func Create(req dto.CreateAgentFlowReq, db *gorm.DB) error {
 		Name:        req.Name,
 		Description: req.Description,
 		Topology:    req.Topology,
+		Icon:        req.Icon,
 	}
 	return db.Create(flow).Error
 }
@@ -22,6 +23,7 @@ func Update(id int64, req dto.UpdateAgentFlowReq, db *gorm.DB) error {
 		"name":        req.Name,
 		"description": req.Description,
 		"topology":    req.Topology,
+		"icon":        req.Icon,
 	}
 	return db.Model(&domain.AgentFlow{}).Where("id = ?", id).Updates(updates).Error
 }
