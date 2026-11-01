@@ -1,12 +1,15 @@
 <template>
   <div class="workflow-market-container">
-    <!-- 顶部标题区：扁平、紧凑，不用极光/网格/渐变字 -->
-    <!-- Top header: flat and compact — no aurora, grid or gradient text -->
+    <!-- 顶部标题区：品牌色氛围底（极淡光晕 + 网格渐隐），克制但有焦点 -->
+    <!-- Top header: faint brand halo + fading grid — subtle but with a focal point -->
     <section class="hero-section">
+      <div class="hero-bg" aria-hidden="true">
+        <div class="hero-grid"></div>
+      </div>
       <div class="hero-content">
         <div class="hero-heading">
           <div>
-            <h1 class="hero-title">AI 应用市场</h1>
+            <h1 class="hero-title"><span class="title-bar"></span>AI 应用市场</h1>
             <p class="hero-subtitle">即插即用的智能工作流，从内容创作到代码生成</p>
           </div>
           <span class="hero-count">{{ workflows.length }} 个应用</span>
@@ -109,11 +112,16 @@
       <!-- 应用卡片网格 / Apps Grid -->
       <div v-else class="apps-grid" :class="`view-${viewMode}`">
         <article
-          v-for="workflow in workflows"
+          v-for="(workflow, index) in workflows"
           :key="workflow.id"
           class="app-card"
+          :style="{ animationDelay: `${index * 0.04}s` }"
           @click="useWorkflow(workflow)"
+          @mousemove="onCardMove"
         >
+          <!-- 跟随鼠标的品牌色光斑（8%，仅在悬停时出现） -->
+          <!-- Pointer-following brand glow (8%, hover only) -->
+          <span class="card-spot" aria-hidden="true"></span>
           <!-- 头部 / Header -->
           <header class="card-top">
             <div class="app-icon">
@@ -328,6 +336,15 @@ const useWorkflow = (workflow) => {
   })
 }
 
+// 卡片光斑跟随指针：只写 CSS 变量，样式侧消费，避免每帧触发 Vue 更新
+// Track the pointer with CSS variables only — no reactive updates per frame
+const onCardMove = (e) => {
+  const el = e.currentTarget
+  const rect = el.getBoundingClientRect()
+  el.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+  el.style.setProperty('--my', `${e.clientY - rect.top}px`)
+}
+
 onMounted(() => {
   // 应用用户主题偏好：本页此前不调用，深色偏好直开/刷新时失效（与其他公开页一致）
   // Apply the saved theme; without this a direct load ignores the dark preference
@@ -357,10 +374,37 @@ onMounted(() => {
 // 标题区 / Header
 // ====================
 .hero-section {
+  position: relative;
+  overflow: hidden;
   background: var(--el-bg-color);
 }
 
+// 品牌氛围底：顶部中心的极淡光晕 + 向下渐隐的细网格
+// Brand ambience: faint halo at the top centre plus a fading fine grid
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    620px 280px at 50% -80px,
+    color-mix(in srgb, var(--el-color-primary) 17%, transparent),
+    transparent 72%
+  );
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--el-color-primary) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--el-color-primary) 9%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 620px 300px at 50% 0%, #000 15%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 620px 300px at 50% 0%, #000 15%, transparent 78%);
+  }
+}
+
 .hero-content {
+  position: relative;
   max-width: 1120px;
   margin: 0 auto;
   padding: 46px 24px 30px;
@@ -375,12 +419,25 @@ onMounted(() => {
 }
 
 .hero-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0 0 7px;
   font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.4px;
   line-height: 1.22;
   color: var(--el-text-color-primary);
+
+  // 品牌色竖条：纯色而非渐变，作为标题的视觉起点
+  // Solid brand bar (not a gradient) anchoring the title
+  .title-bar {
+    width: 4px;
+    height: 26px;
+    border-radius: 2px;
+    background: var(--el-color-primary);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--el-color-primary) 45%, transparent);
+  }
 }
 
 .hero-subtitle {
@@ -551,7 +608,8 @@ onMounted(() => {
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease,
+    transform 0.18s ease, box-shadow 0.18s ease;
 
   .el-icon {
     color: var(--el-text-color-placeholder);
@@ -559,22 +617,31 @@ onMounted(() => {
   }
 
   &:hover {
+    transform: translateY(-1px);
     color: var(--el-color-primary);
     border-color: var(--el-color-primary-light-7);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
     .el-icon {
       color: var(--el-color-primary);
     }
   }
 
+  // 选中：主色实底白字，成为分类行里唯一的强对比焦点
+  // Selected: solid brand fill with white text — the single strong contrast in the row
   &.active {
-    color: var(--el-color-primary);
+    color: #fff;
     font-weight: 600;
-    background: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
-    border-color: color-mix(in srgb, var(--el-color-primary) 28%, transparent);
+    background: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 32%, transparent);
 
     .el-icon {
-      color: var(--el-color-primary);
+      color: #fff;
+    }
+
+    &:hover {
+      color: #fff;
     }
   }
 }
@@ -664,9 +731,11 @@ onMounted(() => {
   }
 }
 
-// 卡片：白面 + 发丝边；悬停只上浮 2px 并加一层柔和阴影，不发光
-// Cards: white surface + hairline; hover lifts 2px with a soft shadow, no glow
+// 卡片：白面 + 发丝边；悬停上浮 2px、顶部扫过一道品牌色亮线，光斑跟随指针
+// Cards: white surface + hairline; hover lifts 2px, a brand light sweeps the top edge
+// and a pointer-following glow becomes visible
 .app-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -675,12 +744,54 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: pointer;
+  overflow: hidden;
+  animation: card-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  // 顶部亮线：悬停时从中间向两侧展开
+  // Top light: expands from the centre outwards on hover
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 14px;
+    right: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--el-color-primary), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+  }
 
   &:hover {
     transform: translateY(-2px);
     border-color: var(--el-color-primary-light-7);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+
+    &::before {
+      transform: scaleX(1);
+    }
+
+    .card-spot {
+      opacity: 1;
+    }
+  }
+
+  // 指针光斑：位置由 --mx/--my 驱动，只在悬停时浮现
+  // Pointer glow driven by --mx/--my, visible on hover only
+  .card-spot {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in srgb, var(--el-color-primary) 10%, transparent),
+      transparent 66%
+    );
+    transition: opacity 0.25s ease;
   }
 
   // 列表视图：单行横排
@@ -719,23 +830,60 @@ onMounted(() => {
   }
 }
 
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// 尊重"减少动态效果"偏好：入场与悬停位移全部关闭
+// Honour prefers-reduced-motion: no entrance or hover motion
+@media (prefers-reduced-motion: reduce) {
+  .app-card {
+    animation: none;
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+
+    &::before,
+    .card-spot {
+      display: none;
+    }
+  }
+}
+
 .card-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 14px;
 }
 
-// 图标：统一的品牌色实底 + 白色线性图标，作为每张卡片的视觉锚点
-// Icons: solid brand fill with a white glyph — one consistent anchor per card
+// 图标：品牌色同色系渐变实底 + 白色线性图标，作为每张卡片的视觉锚点
+// Icons: same-hue brand gradient with a white glyph — one consistent anchor per card
 .app-icon {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   color: #fff;
-  background: var(--el-color-primary);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--el-color-primary) 82%, #fff) 0%,
+    var(--el-color-primary) 100%
+  );
   border-radius: 11px;
   box-shadow: 0 2px 6px color-mix(in srgb, var(--el-color-primary) 28%, transparent);
   flex-shrink: 0;
@@ -771,6 +919,8 @@ onMounted(() => {
 }
 
 .card-content {
+  position: relative;
+  z-index: 1;
   flex: 1;
   margin-bottom: 12px;
 }
@@ -799,6 +949,8 @@ onMounted(() => {
 }
 
 .card-tags {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -817,6 +969,8 @@ onMounted(() => {
 }
 
 .card-bottom {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
