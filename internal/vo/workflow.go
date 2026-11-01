@@ -6,10 +6,14 @@ import (
 )
 
 type AgentFlowVO struct {
-	Id               int64     `json:"id"`
-	Name             string    `json:"name"`
-	Description      string    `json:"description"`
-	Topology         string    `json:"topology"`
+	Id          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Topology    string `json:"topology"`
+	// Icon 为签名后的临时下载 URL（管理端预览）；IconKey 为 COS 对象 key（表单回填）
+	// Icon is the signed download URL for preview; IconKey is the raw COS key
+	Icon             string    `json:"icon"`
+	IconKey          string    `json:"iconKey"`
 	CurrentVersion   int       `json:"currentVersion"`
 	PublishedVersion int       `json:"publishedVersion"`
 	IsTemplate       bool      `json:"isTemplate"`
@@ -24,6 +28,8 @@ func ToAgentFlowVO(flow domain.AgentFlow) AgentFlowVO {
 		Name:             flow.Name,
 		Description:      flow.Description,
 		Topology:         flow.Topology,
+		Icon:             flow.Icon,
+		IconKey:          flow.Icon,
 		CurrentVersion:   flow.CurrentVersion,
 		PublishedVersion: flow.PublishedVersion,
 		IsTemplate:       flow.IsTemplate,
@@ -35,12 +41,16 @@ func ToAgentFlowVO(flow domain.AgentFlow) AgentFlowVO {
 
 // PublishedWorkflowVO 已发布工作流 VO（客户端用，包含拓扑数据用于解析 inputSchema）
 type PublishedWorkflowVO struct {
-	Id          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Topology    string    `json:"topology"`
-	Category    string    `json:"category"`
-	CreateTime  time.Time `json:"createTime"`
+	Id          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Topology    string `json:"topology"`
+	Category    string `json:"category"`
+	// Icon 为签名后的临时下载 URL（前台直接展示）；IconKey 为 COS 对象 key
+	// Icon is the signed download URL for the client; IconKey is the raw COS key
+	Icon       string    `json:"icon"`
+	IconKey    string    `json:"iconKey"`
+	CreateTime time.Time `json:"createTime"`
 }
 
 func ToPublishedWorkflowVO(flow domain.AgentFlow) PublishedWorkflowVO {
@@ -50,6 +60,8 @@ func ToPublishedWorkflowVO(flow domain.AgentFlow) PublishedWorkflowVO {
 		Description: flow.Description,
 		Topology:    flow.Topology,
 		Category:    flow.TemplateCategory,
+		Icon:        flow.Icon,
+		IconKey:     flow.Icon,
 		CreateTime:  flow.CreateTime,
 	}
 }
@@ -143,7 +155,7 @@ type ValidationResultVO struct {
 
 // ValidationErrorVO 校验错误详情
 type ValidationErrorVO struct {
-	Level   string `json:"level"`           // "error" | "warning"
+	Level   string `json:"level"`            // "error" | "warning"
 	NodeID  string `json:"nodeId,omitempty"` // 关联节点 ID
 	Code    string `json:"code"`             // 错误码
 	Message string `json:"message"`          // 人类可读描述

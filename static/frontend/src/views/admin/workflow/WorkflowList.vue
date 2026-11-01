@@ -247,7 +247,27 @@
         label-position="top"
         class="workflow-form"
       >
-        <el-form-item label="工作流名称" prop="name">
+        <el-form-item label="应用图标">
+        <!-- 上传后落库 COS key（form.icon），预览用签名 URL（iconPreview）；不传则前台用字母头像兜底 -->
+        <!-- Persist the COS key; preview keeps the signed URL; no icon means a letter avatar -->
+        <div class="icon-field">
+          <MediaUploader
+            v-model="iconPreview"
+            media-type="image"
+            key-prefix="workflow"
+            :width="88"
+            :height="88"
+            placeholder="上传图标"
+            :max-size="5"
+            @change="(info) => (form.icon = info.key)"
+          />
+          <div class="icon-hint">
+            <span>建议上传正方形图片（≥128×128）</span>
+            <el-button v-if="form.icon" link type="danger" size="small" @click="clearIcon">移除图标</el-button>
+          </div>
+        </div>
+      </el-form-item>
+      <el-form-item label="工作流名称" prop="name">
           <el-input 
             v-model="form.name" 
             placeholder="请输入工作流名称" 
@@ -289,6 +309,7 @@ import {
   Edit, MoreFilled, Operation
 } from '@element-plus/icons-vue'
 import { defaultApi } from '@/api'
+import MediaUploader from '@/components/common/MediaUploader.vue'
 
 const router = useRouter()
 
@@ -315,7 +336,15 @@ const dialogVisible = ref(false)
 const dialogType = ref('add')
 const submitLoading = ref(false)
 const formRef = ref(null)
-const form = ref({ name: '', description: '' })
+const form = ref({ name: '', description: '', icon: '' })
+// 图标预览用的签名 URL（表单里存的是 COS key）
+// Signed URL for preview; the form keeps the COS key
+const iconPreview = ref('')
+
+const clearIcon = () => {
+  form.value.icon = ''
+  iconPreview.value = ''
+}
 
 const rules = {
   name: [
@@ -368,13 +397,21 @@ const handleReset = () => { searchForm.value.name = ''; handleSearch() }
 
 const handleAdd = () => {
   dialogType.value = 'add'
-  form.value = { name: '', description: '' }
+  form.value = { name: '', description: '', icon: '' }
+  iconPreview.value = ''
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   dialogType.value = 'edit'
-  form.value = { id: row.id, name: row.name, description: row.description, topology: row.topology }
+  form.value = {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    topology: row.topology,
+    icon: row.iconKey || ''
+  }
+  iconPreview.value = row.icon || ''
   dialogVisible.value = true
 }
 
@@ -438,7 +475,7 @@ const handleSubmit = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        const data = { name: form.value.name, description: form.value.description }
+        const data = { name: form.value.name, description: form.value.description, icon: form.value.icon || '' }
         let res
         if (dialogType.value === 'add') {
           data.topology = ''
@@ -471,6 +508,22 @@ onMounted(() => { loadData() })
 </script>
 
 <style lang="scss" scoped>
+// 图标上传行：上传框 + 说明/移除按钮并排
+// Icon row: uploader beside its hint and remove action
+.icon-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.icon-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
 // 主题色
 $primary: #2B5EFF;
 $primary-light: rgba(#2B5EFF, 0.1);

@@ -132,7 +132,15 @@
           <!-- 头部：图标 + 标题/副行 + 右侧圆形箭头 CTA -->
           <!-- Header: icon + title/subline + a round arrow CTA -->
           <header class="card-top">
-            <div class="app-icon" :style="{ background: appAvatar(workflow).bg }">
+            <!-- 优先用后台上传的图标；未上传时回退确定性字母头像 -->
+            <!-- Prefer the uploaded icon; fall back to the deterministic letter avatar -->
+            <div
+              v-if="workflow.icon"
+              class="app-icon app-icon--image"
+            >
+              <img :src="workflow.icon" :alt="workflow.name" loading="lazy" />
+            </div>
+            <div v-else class="app-icon" :style="{ background: appAvatar(workflow).bg }">
               <span class="app-icon-ch">{{ appAvatar(workflow).ch }}</span>
             </div>
             <div class="card-headline">
@@ -941,6 +949,20 @@ onMounted(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  // 上传的图标：铺满圆角方块，白底兜底透明度
+  // Uploaded icon fills the rounded square, on a white backing
+  &.app-icon--image {
+    background: var(--el-bg-color);
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
 
   .app-icon-ch {
     font-size: 19px;

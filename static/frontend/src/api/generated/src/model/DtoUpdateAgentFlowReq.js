@@ -52,6 +52,9 @@ class DtoUpdateAgentFlowReq {
             if (data.hasOwnProperty('description')) {
                 obj['description'] = ApiClient.convertToType(data['description'], 'String');
             }
+            if (data.hasOwnProperty('icon')) {
+                obj['icon'] = ApiClient.convertToType(data['icon'], 'String');
+            }
             if (data.hasOwnProperty('name')) {
                 obj['name'] = ApiClient.convertToType(data['name'], 'String');
             }
@@ -79,6 +82,10 @@ class DtoUpdateAgentFlowReq {
             throw new Error("Expected the field `description` to be a primitive type in the JSON string but got " + data['description']);
         }
         // ensure the json data is a string
+        if (data['icon'] && !(typeof data['icon'] === 'string' || data['icon'] instanceof String)) {
+            throw new Error("Expected the field `icon` to be a primitive type in the JSON string but got " + data['icon']);
+        }
+        // ensure the json data is a string
         if (data['name'] && !(typeof data['name'] === 'string' || data['name'] instanceof String)) {
             throw new Error("Expected the field `name` to be a primitive type in the JSON string but got " + data['name']);
         }
@@ -99,6 +106,11 @@ DtoUpdateAgentFlowReq.RequiredProperties = ["name"];
  * @member {String} description
  */
 DtoUpdateAgentFlowReq.prototype['description'] = undefined;
+
+/**
+ * @member {String} icon
+ */
+DtoUpdateAgentFlowReq.prototype['icon'] = undefined;
 
 /**
  * @member {String} name

@@ -6,12 +6,14 @@ type CreateAgentFlowReq struct {
 	Name        string `json:"name" binding:"required" comment:"工作流名称"`
 	Description string `json:"description" comment:"工作流描述"`
 	Topology    string `json:"topology" comment:"工作流拓扑图数据"`
+	Icon        string `json:"icon" comment:"应用图标对象key（COS）"`
 }
 
 type UpdateAgentFlowReq struct {
 	Name        string `json:"name" binding:"required" comment:"工作流名称"`
 	Description string `json:"description" comment:"工作流描述"`
 	Topology    string `json:"topology" comment:"工作流拓扑图数据"`
+	Icon        string `json:"icon" comment:"应用图标对象key（COS）"`
 }
 
 type ListAgentFlowReq struct {

@@ -88,6 +88,37 @@ func Update(ctx *gin.Context) {
 	utils.OkWithMsg(ctx, "更新成功")
 }
 
+// signWorkflowIcon 将 COS 对象 key 换成临时下载 URL（沿用项目媒体同一契约）；
+// 未配置图标或签名失败时保留空值，前端回退字母头像
+// signWorkflowIcon swaps the COS key for a temporary download URL (same contract as
+// project media); leaves it empty on failure so the client falls back to a letter avatar
+func signWorkflowIcon(ctx *gin.Context, v *vo.AgentFlowVO) {
+	if v == nil || v.IconKey == "" {
+		return
+	}
+	client := utils.GetCosClientFromContext[*utils.COSClient](ctx)
+	if client == nil {
+		return
+	}
+	if url, err := client.GenerateDownloadPresignedURL(v.IconKey); err == nil {
+		v.Icon = url
+	}
+}
+
+// signPublishedIcon 同上，面向公开接口的 VO
+func signPublishedIcon(ctx *gin.Context, v *vo.PublishedWorkflowVO) {
+	if v == nil || v.IconKey == "" {
+		return
+	}
+	client := utils.GetCosClientFromContext[*utils.COSClient](ctx)
+	if client == nil {
+		return
+	}
+	if url, err := client.GenerateDownloadPresignedURL(v.IconKey); err == nil {
+		v.Icon = url
+	}
+}
+
 // Delete 删除工作流
 // @Summary 删除工作流
 // @Description 删除现有的 AgentFlow 工作流
@@ -138,7 +169,9 @@ func Get(ctx *gin.Context) {
 		return
 	}
 
-	utils.OkWithData(ctx, vo.ToAgentFlowVO(*flow))
+	flowVO := vo.ToAgentFlowVO(*flow)
+	signWorkflowIcon(ctx, &flowVO)
+	utils.OkWithData(ctx, flowVO)
 }
 
 // List 获取工作流列表
@@ -168,6 +201,9 @@ func List(ctx *gin.Context) {
 
 	// 转换为 VO
 	vos := vo.ToAgentFlowVOs(pageVo.Records)
+	for i := range vos {
+		signWorkflowIcon(ctx, &vos[i])
+	}
 	result := page.Convert(pageVo, vos)
 
 	utils.OkWithData(ctx, result)
@@ -941,6 +977,9 @@ func ListPublished(ctx *gin.Context) {
 	}
 
 	vos := vo.ToPublishedWorkflowVOs(pageVo.Records)
+	for i := range vos {
+		signPublishedIcon(ctx, &vos[i])
+	}
 	result := page.Convert(pageVo, vos)
 	utils.OkWithData(ctx, result)
 }
@@ -974,7 +1013,9 @@ func GetPublishedDetail(ctx *gin.Context) {
 		return
 	}
 
-	utils.OkWithData(ctx, vo.ToPublishedWorkflowVO(*flow))
+	flowVO := vo.ToPublishedWorkflowVO(*flow)
+	signPublishedIcon(ctx, &flowVO)
+	utils.OkWithData(ctx, flowVO)
 }
 
 // UpdateStatus 更新工作流状态
