@@ -358,13 +358,12 @@ onMounted(() => {
 // ====================
 .hero-section {
   background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .hero-content {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 40px 24px 28px;
+  padding: 46px 24px 30px;
 }
 
 .hero-heading {
@@ -372,15 +371,15 @@ onMounted(() => {
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
 
 .hero-title {
-  margin: 0 0 6px;
-  font-size: 26px;
+  margin: 0 0 7px;
+  font-size: 30px;
   font-weight: 700;
-  letter-spacing: -0.2px;
-  line-height: 1.25;
+  letter-spacing: -0.4px;
+  line-height: 1.22;
   color: var(--el-text-color-primary);
 }
 
@@ -392,9 +391,11 @@ onMounted(() => {
 }
 
 .hero-count {
-  padding-bottom: 3px;
-  font-size: 13px;
+  padding: 3px 11px;
+  font-size: 12.5px;
   color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-light);
+  border-radius: 999px;
   white-space: nowrap;
 }
 
@@ -408,20 +409,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 44px;
-  padding: 0 4px 0 12px;
+  height: 48px;
+  padding: 0 4px 0 14px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color);
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 
   &.focused {
     border-color: var(--el-color-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--el-color-primary) 12%, transparent);
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--el-color-primary) 12%, transparent),
+      0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   .search-icon {
-    font-size: 16px;
+    font-size: 17px;
     color: var(--el-text-color-placeholder);
   }
 
@@ -460,14 +464,14 @@ onMounted(() => {
   }
 
   .search-btn {
-    height: 34px;
-    padding: 0 18px;
-    font-size: 13px;
+    height: 38px;
+    padding: 0 20px;
+    font-size: 13.5px;
     font-weight: 500;
     color: #fff;
     background: var(--el-color-primary);
     border: none;
-    border-radius: 7px;
+    border-radius: 8px;
     cursor: pointer;
     transition: opacity 0.18s ease;
 
@@ -506,12 +510,11 @@ onMounted(() => {
 }
 
 // ====================
-// 分类导航：文字 tab + 下划线，替代彩色卡片
-// Category nav: underline tabs instead of colored cards
+// 分类导航：灰底上的白 pill，选中用主色浅底
+// Category nav: white pills on the page ground; the selected one is brand-tinted
 // ====================
 .category-section {
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  padding-top: 24px;
 }
 
 .category-wrapper {
@@ -532,7 +535,7 @@ onMounted(() => {
 
 .category-nav {
   display: flex;
-  gap: 2px;
+  gap: 8px;
   min-width: max-content;
 }
 
@@ -540,15 +543,15 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 13px 12px;
-  font-size: 13.5px;
+  padding: 7px 14px;
+  font-size: 13px;
   color: var(--el-text-color-regular);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.18s ease, border-color 0.18s ease;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 
   .el-icon {
     color: var(--el-text-color-placeholder);
@@ -557,6 +560,7 @@ onMounted(() => {
 
   &:hover {
     color: var(--el-color-primary);
+    border-color: var(--el-color-primary-light-7);
 
     .el-icon {
       color: var(--el-color-primary);
@@ -566,7 +570,8 @@ onMounted(() => {
   &.active {
     color: var(--el-color-primary);
     font-weight: 600;
-    border-bottom-color: var(--el-color-primary);
+    background: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
+    border-color: color-mix(in srgb, var(--el-color-primary) 28%, transparent);
 
     .el-icon {
       color: var(--el-color-primary);
@@ -587,7 +592,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  padding: 0 2px;
 }
 
 .section-title {
@@ -647,7 +653,7 @@ onMounted(() => {
 
 .apps-grid {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 
   &.view-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -658,25 +664,23 @@ onMounted(() => {
   }
 }
 
-// 卡片：白面 + 发丝边，悬停只加一层极轻的边框与阴影，不上浮、不发光
-// Cards: white surface + hairline; hover only shifts the border and adds a faint shadow
+// 卡片：白面 + 发丝边；悬停只上浮 2px 并加一层柔和阴影，不发光
+// Cards: white surface + hairline; hover lifts 2px with a soft shadow, no glow
 .app-card {
   display: flex;
   flex-direction: column;
-  padding: 18px;
+  padding: 20px;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 
   &:hover {
+    transform: translateY(-2px);
     border-color: var(--el-color-primary-light-7);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-    .run-link {
-      color: var(--el-color-primary);
-    }
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
   }
 
   // 列表视图：单行横排
@@ -719,21 +723,28 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
-// 图标：统一主色浅底 + 主色线性图标（不再是每类一种渐变）
-// Icons: one tinted neutral surface with the brand-colored glyph
+// 图标：统一的品牌色实底 + 白色线性图标，作为每张卡片的视觉锚点
+// Icons: solid brand fill with a white glyph — one consistent anchor per card
 .app-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  color: var(--el-color-primary);
-  background: color-mix(in srgb, var(--el-color-primary) 9%, transparent);
-  border-radius: 9px;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: var(--el-color-primary);
+  border-radius: 11px;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--el-color-primary) 28%, transparent);
   flex-shrink: 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.app-card:hover .app-icon {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--el-color-primary) 34%, transparent);
 }
 
 .app-meta-tags {
@@ -792,6 +803,9 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
+  // 固定占位：没有标签的卡片也能与有标签的保持同一节奏
+  // Reserved row so tag-less cards keep the same rhythm
+  min-height: 22px;
 }
 
 .tag-pill {
@@ -827,13 +841,31 @@ onMounted(() => {
   }
 }
 
+// 「使用」：浅主色底的小按钮，悬停加深一档
+// "Use": a small brand-tinted button that deepens on hover
 .run-link {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  padding: 5px 11px;
   font-size: 12.5px;
-  color: var(--el-text-color-secondary);
-  transition: color 0.18s ease;
+  font-weight: 500;
+  color: var(--el-color-primary);
+  background: color-mix(in srgb, var(--el-color-primary) 8%, transparent);
+  border-radius: 7px;
+  transition: background 0.18s ease;
+
+  .el-icon {
+    transition: transform 0.18s ease;
+  }
+}
+
+.app-card:hover .run-link {
+  background: color-mix(in srgb, var(--el-color-primary) 14%, transparent);
+
+  .el-icon {
+    transform: translateX(2px);
+  }
 }
 
 // ====================
@@ -843,8 +875,7 @@ onMounted(() => {
 // ====================
 .workflow-market-container {
   html.dark & {
-    .hero-section,
-    .category-section {
+    .hero-section {
       background: #17181a;
     }
 
@@ -856,7 +887,12 @@ onMounted(() => {
 
     .app-card:hover {
       border-color: #3d3e43;
-      box-shadow: none;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .category-item {
+      background: #17181a;
+      border-color: #2b2c30;
     }
 
     .tag-pill,
