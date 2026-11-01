@@ -132,8 +132,8 @@
           <!-- 头部：图标 + 标题/副行 + 右侧圆形箭头 CTA -->
           <!-- Header: icon + title/subline + a round arrow CTA -->
           <header class="card-top">
-            <div class="app-icon">
-              <el-icon :size="22"><component :is="getCategoryIcon(workflow.category)" /></el-icon>
+            <div class="app-icon" :style="{ background: appAvatar(workflow).bg }">
+              <span class="app-icon-ch">{{ appAvatar(workflow).ch }}</span>
             </div>
             <div class="card-headline">
               <h3 class="app-title">
@@ -256,6 +256,36 @@ const getCategoryIcon = (category) => {
     life: 'House'
   }
   return iconMap[map[category] || 'Grid']
+}
+
+// 字母头像：无图标数据时按应用名生成确定性头像（首字符 + 哈希选色），
+// 参考主流市场（VS Code/Google Contacts/Raycast）的 letter-avatar 兜底。
+// 同一应用永远同色（可记忆），不同应用大概率不同色（避免分类级重复）。
+// Letter avatar: deterministic per-app fallback (initial + name-hash colour),
+// the mainstream pattern when apps ship no icon of their own
+const appAvatar = (workflow) => {
+  const name = String(workflow.name || '').trim()
+  const chars = Array.from(name)
+  const first = chars[0] || 'A'
+  const isLatin = /^[a-z]$/i.test(first)
+  const ch = isLatin ? first.toUpperCase() : first
+  // 种子从首字符出发并叠加次字符：让同前缀（如多个 "AI …"）的应用也大概率散开
+  // Seed from the first char and fold in the second, so same-prefix names
+  // (e.g. several "AI …") still spread across the hue band
+  let h = (first.codePointAt(0) * 131) >>> 0
+  if (chars.length > 1) h = (h * 31 + chars[1].codePointAt(0)) >>> 0
+  for (let i = 2; i < chars.length; i++) h = (h * 31 + chars[i].codePointAt(0)) >>> 0
+  // 色相限定在青→蓝→靛→紫冷色带（185°-305°，16 档）并叠加两档亮度，
+  // 共 32 种组合：与品牌蓝同族不花哨，几十个应用也几乎不撞色，白字对比达标
+  // Hue spread over a 16-step cool band plus two lightness steps (32 combos):
+  // harmonious with the brand colour; dozens of apps rarely share a look
+  // 色带围绕品牌蓝（hue≈225）两侧展开：185°-265°，青→蓝→靛，
+  // 越过 265° 就开始发紫、与品牌蓝脱钩，故不外扩
+  // band centred on the brand blue: 185°-265° (teal→blue→indigo);
+  // past ~265° it turns purple and drifts away from the brand hue
+  const hue = 185 + (h % 9) * 10
+  const light = 38 - ((h >>> 4) % 2) * 3
+  return { ch, bg: `hsl(${hue}, 62%, ${light}%)` }
 }
 
 const getCategoryLabel = (category) => {
@@ -897,8 +927,8 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-// 图标：品牌色同色系渐变实底 + 白色线性图标，作为每张卡片的视觉锚点
-// Icons: same-hue brand gradient with a white glyph — one consistent anchor per card
+// 字母头像：哈希选色的实底 + 白色首字符，作为每张卡片的视觉锚点
+// Letter avatar: hash-picked solid with a white initial — the per-card anchor
 .app-icon {
   position: relative;
   z-index: 1;
@@ -907,16 +937,20 @@ onMounted(() => {
   justify-content: center;
   width: 44px;
   height: 44px;
-  color: #fff;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--el-color-primary) 82%, #fff) 0%,
-    var(--el-color-primary) 100%
-  );
   border-radius: 11px;
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--el-color-primary) 28%, transparent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  .app-icon-ch {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    // 视觉重心微调：汉字/字母都略上移居中
+    // nudge the glyph up slightly for optical centring
+    transform: translateY(-0.5px);
+  }
 }
 
 .app-card:hover .app-icon {
