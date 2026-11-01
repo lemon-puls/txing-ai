@@ -122,31 +122,40 @@
           <!-- 跟随鼠标的品牌色光斑（8%，仅在悬停时出现） -->
           <!-- Pointer-following brand glow (8%, hover only) -->
           <span class="card-spot" aria-hidden="true"></span>
-          <!-- 头部 / Header -->
+
+          <!-- 右下角水印：同分类的大号淡图标，悬停时微微回正放大 -->
+          <!-- Corner watermark: oversized faint category glyph that levels up on hover -->
+          <span class="card-watermark" aria-hidden="true">
+            <el-icon><component :is="getCategoryIcon(workflow.category)" /></el-icon>
+          </span>
+
+          <!-- 头部：图标 + 标题/副行 + 右侧圆形箭头 CTA -->
+          <!-- Header: icon + title/subline + a round arrow CTA -->
           <header class="card-top">
             <div class="app-icon">
-              <el-icon :size="20"><component :is="getCategoryIcon(workflow.category)" /></el-icon>
+              <el-icon :size="22"><component :is="getCategoryIcon(workflow.category)" /></el-icon>
             </div>
-            <div class="app-meta-tags">
-              <span v-if="workflow.isHot" class="hot-pin">热门</span>
-              <span v-if="workflow.isNew" class="new-pin">新</span>
+            <div class="card-headline">
+              <h3 class="app-title">
+                <span class="app-name">{{ workflow.name }}</span>
+                <span v-if="workflow.isHot" class="hot-pin">热门</span>
+                <span v-if="workflow.isNew" class="new-pin">新</span>
+              </h3>
+              <span v-if="workflow.category || workflow.model" class="app-sub">
+                {{ getCategoryLabel(workflow.category) }}<template v-if="workflow.model"> · {{ workflow.model }}</template>
+              </span>
             </div>
           </header>
 
-          <!-- 内容 / Content -->
-          <div class="card-content">
-            <h3 class="app-title">{{ workflow.name }}</h3>
-            <p class="app-desc">{{ workflow.description || '暂无描述' }}</p>
-          </div>
+          <!-- 描述 / Description -->
+          <p class="app-desc">{{ workflow.description || '暂无描述' }}</p>
 
-          <!-- 标签 / Tags（无分类时不渲染空占位，避免卡片高度参差） -->
-          <div class="card-tags">
-            <span v-if="workflow.category" class="tag-pill">{{ getCategoryLabel(workflow.category) }}</span>
-            <span v-if="workflow.model" class="tag-pill">{{ workflow.model }}</span>
-          </div>
-
-          <!-- 底部 / Footer -->
-          <footer class="card-bottom">
+          <!-- 底部：仅有统计数据时渲染，避免空栏 -->
+          <!-- Footer renders only when stats exist -->
+          <footer
+            v-if="workflow.usageCount !== undefined || workflow.rating !== undefined"
+            class="card-bottom"
+          >
             <div class="app-stats">
               <div class="stat-item" v-if="workflow.usageCount !== undefined">
                 <el-icon :size="13"><View /></el-icon>
@@ -157,11 +166,13 @@
                 <span>{{ workflow.rating.toFixed ? workflow.rating.toFixed(1) : workflow.rating }}</span>
               </div>
             </div>
-            <span class="run-link">
-              使用
-              <el-icon><ArrowRight /></el-icon>
-            </span>
           </footer>
+
+          <!-- 圆形箭头 CTA：固定在卡片右下角，整卡可点时作为视觉提示 -->
+          <!-- Round arrow CTA pinned to the card corner; the whole card is clickable -->
+          <span class="card-arrow" aria-hidden="true">
+            <el-icon><ArrowRight /></el-icon>
+          </span>
         </article>
       </div>
     </section>
@@ -723,7 +734,7 @@ onMounted(() => {
   gap: 16px;
 
   &.view-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 
   &.view-list {
@@ -807,19 +818,18 @@ onMounted(() => {
       margin-bottom: 0;
     }
 
-    .card-content {
+    .app-desc {
       flex: 1;
       margin-bottom: 0;
-    }
-
-    .app-desc {
       min-height: 0;
       -webkit-line-clamp: 1;
     }
 
-    .card-tags {
-      flex-shrink: 0;
-      margin-bottom: 0;
+    // 列表模式信息密集，去掉水印与光斑，只留箭头作为可点提示
+    // The list is dense: drop the watermark and glow, keep only the arrow hint
+    .card-watermark,
+    .card-spot {
+      display: none;
     }
 
     .card-bottom {
@@ -863,9 +873,28 @@ onMounted(() => {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 14px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+// 标题 + 分类/模型副行，占据头部中间的弹性宽度
+// Title with a category/model subline, taking the flexible middle width
+.card-headline {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-sub {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // 图标：品牌色同色系渐变实底 + 白色线性图标，作为每张卡片的视觉锚点
@@ -895,78 +924,98 @@ onMounted(() => {
   box-shadow: 0 4px 10px color-mix(in srgb, var(--el-color-primary) 34%, transparent);
 }
 
-.app-meta-tags {
-  display: flex;
-  gap: 6px;
-
-  .hot-pin,
-  .new-pin {
-    padding: 1px 7px;
-    font-size: 11px;
-    line-height: 1.6;
-    border-radius: 4px;
-  }
-
-  .hot-pin {
-    color: #b45309;
-    background: rgba(245, 158, 11, 0.12);
-  }
-
-  .new-pin {
-    color: #047857;
-    background: rgba(16, 185, 129, 0.12);
-  }
+// 水印：超大号淡色分类图标压在右下角，给卡片一层"图案"而非空白
+// Watermark: an oversized, very faint category glyph in the corner
+.card-watermark {
+  position: absolute;
+  right: -20px;
+  top: -22px;
+  z-index: 0;
+  font-size: 84px;
+  line-height: 1;
+  color: var(--el-color-primary);
+  opacity: 0.04;
+  transform: rotate(-10deg);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.card-content {
+.app-card:hover .card-watermark {
+  opacity: 0.075;
+  transform: rotate(-4deg) scale(1.04);
+}
+
+// 标题内的状态徽章：紧跟标题，作为标题的附属信息
+// Status pins inline after the title
+.hot-pin,
+.new-pin {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.7;
+  border-radius: 4px;
+  vertical-align: 1px;
+}
+
+.hot-pin {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.new-pin {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+// 描述区：占据剩余高度，底栏自然沉到卡片底部
+// Description takes the remaining height so the footer settles at the bottom
+.app-desc {
   position: relative;
   z-index: 1;
   flex: 1;
-  margin-bottom: 12px;
-}
-
-.app-title {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--el-text-color-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.app-desc {
-  margin: 0;
+  margin: 0 0 16px;
+  min-height: 40px;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--el-text-color-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 42px;
 }
 
-.card-tags {
-  position: relative;
-  z-index: 1;
+.app-title {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-  // 固定占位：没有标签的卡片也能与有标签的保持同一节奏
-  // Reserved row so tag-less cards keep the same rhythm
-  min-height: 22px;
+  align-items: center;
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--el-text-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+
+  // 名称单独截断（可收缩），徽章保持原尺寸（不收缩）
+  // The name shrinks and ellipsises; pins never shrink
+  .app-name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hot-pin,
+  .new-pin {
+    flex-shrink: 0;
+  }
 }
 
-.tag-pill {
-  padding: 2px 8px;
-  font-size: 11.5px;
-  color: var(--el-text-color-secondary);
-  background: var(--el-fill-color-light);
-  border-radius: 5px;
-}
+
+
+
 
 .card-bottom {
   position: relative;
@@ -974,8 +1023,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--el-border-color-lighter);
+  margin-top: 10px;
+  padding-right: 34px;
 }
 
 .app-stats {
@@ -995,31 +1044,31 @@ onMounted(() => {
   }
 }
 
-// 「使用」：浅主色底的小按钮，悬停加深一档
-// "Use": a small brand-tinted button that deepens on hover
-.run-link {
-  display: inline-flex;
+// 头部圆形箭头：默认浅主色，悬停变实底并右移一格
+// Round arrow CTA: brand-tinted by default, solid and nudged right on hover
+.card-arrow {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 5px 11px;
-  font-size: 12.5px;
-  font-weight: 500;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
   color: var(--el-color-primary);
   background: color-mix(in srgb, var(--el-color-primary) 8%, transparent);
-  border-radius: 7px;
-  transition: background 0.18s ease;
-
-  .el-icon {
-    transition: transform 0.18s ease;
-  }
+  border-radius: 50%;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.app-card:hover .run-link {
-  background: color-mix(in srgb, var(--el-color-primary) 14%, transparent);
-
-  .el-icon {
-    transform: translateX(2px);
-  }
+.app-card:hover .card-arrow {
+  color: #fff;
+  background: var(--el-color-primary);
+  transform: translateX(2px);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--el-color-primary) 32%, transparent);
 }
 
 // ====================
@@ -1049,7 +1098,6 @@ onMounted(() => {
       border-color: #2b2c30;
     }
 
-    .tag-pill,
     .hot-tag {
       background: rgba(255, 255, 255, 0.06);
     }
@@ -1114,11 +1162,7 @@ onMounted(() => {
       margin-bottom: 12px;
     }
 
-    .card-content {
-      margin-bottom: 12px;
-    }
-
-    .card-tags {
+    .app-desc {
       margin-bottom: 12px;
     }
 
