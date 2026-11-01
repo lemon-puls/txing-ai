@@ -31,7 +31,7 @@
         <h1 class="main-title">Txing AI</h1>
         <p class="subtitle">智能助手，让我们都有光明的未来</p>
 
-        <!-- 直接提问：回车带入新对话（chat 页读取 query.prompt 预填） -->
+        <!-- 直接提问：回车带入新对话（chat 页读取 query.prompt 后自动发送） -->
         <form class="prompt-box" @submit.prevent="goChat">
           <el-icon class="prompt-icon"><Search /></el-icon>
           <input
